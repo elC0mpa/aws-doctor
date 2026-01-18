@@ -14,6 +14,8 @@ A terminal-based tool that acts as a comprehensive health check for your AWS acc
 
 ### Waste
 
+![](https://github.com/elC0mpa/aws-cost-billing/blob/main/demo/waste.gif)
+
 ## Features
 
 - **📉 Cost Comparison:** Compares costs between the current and previous month for the exact same period (e.g., comparing Jan 1–15 vs Feb 1–15) to give a fair assessment of spending velocity.
