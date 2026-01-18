@@ -3,7 +3,7 @@ package flag
 import (
 	"flag"
 
-	"github.com/elC0mpa/aws-billing/model"
+	"github.com/elC0mpa/aws-doctor/model"
 )
 
 func NewService() *service {

@@ -1,4 +1,4 @@
-module github.com/elC0mpa/aws-billing
+module github.com/elC0mpa/aws-doctor
 
 go 1.24.6
 

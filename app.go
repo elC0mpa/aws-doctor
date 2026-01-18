@@ -3,13 +3,13 @@ package main
 import (
 	"context"
 
-	awsconfig "github.com/elC0mpa/aws-billing/service/aws_config"
-	awscostexplorer "github.com/elC0mpa/aws-billing/service/costexplorer"
-	awsec2 "github.com/elC0mpa/aws-billing/service/ec2"
-	"github.com/elC0mpa/aws-billing/service/flag"
-	"github.com/elC0mpa/aws-billing/service/orchestrator"
-	awssts "github.com/elC0mpa/aws-billing/service/sts"
-	"github.com/elC0mpa/aws-billing/utils"
+	awsconfig "github.com/elC0mpa/aws-doctor/service/aws_config"
+	awscostexplorer "github.com/elC0mpa/aws-doctor/service/costexplorer"
+	awsec2 "github.com/elC0mpa/aws-doctor/service/ec2"
+	"github.com/elC0mpa/aws-doctor/service/flag"
+	"github.com/elC0mpa/aws-doctor/service/orchestrator"
+	awssts "github.com/elC0mpa/aws-doctor/service/sts"
+	"github.com/elC0mpa/aws-doctor/utils"
 )
 
 func main() {

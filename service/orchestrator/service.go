@@ -3,11 +3,11 @@ package orchestrator
 import (
 	"context"
 
-	"github.com/elC0mpa/aws-billing/model"
-	awscostexplorer "github.com/elC0mpa/aws-billing/service/costexplorer"
-	awsec2 "github.com/elC0mpa/aws-billing/service/ec2"
-	awssts "github.com/elC0mpa/aws-billing/service/sts"
-	"github.com/elC0mpa/aws-billing/utils"
+	"github.com/elC0mpa/aws-doctor/model"
+	awscostexplorer "github.com/elC0mpa/aws-doctor/service/costexplorer"
+	awsec2 "github.com/elC0mpa/aws-doctor/service/ec2"
+	awssts "github.com/elC0mpa/aws-doctor/service/sts"
+	"github.com/elC0mpa/aws-doctor/utils"
 )
 
 func NewService(stsService awssts.STSService, costService awscostexplorer.CostService, ec2Service awsec2.EC2Service) *service {

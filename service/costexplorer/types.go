@@ -5,7 +5,7 @@ import (
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/service/costexplorer"
-	"github.com/elC0mpa/aws-billing/model"
+	"github.com/elC0mpa/aws-doctor/model"
 )
 
 type service struct {

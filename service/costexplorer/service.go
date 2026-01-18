@@ -9,7 +9,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/costexplorer"
 	"github.com/aws/aws-sdk-go-v2/service/costexplorer/types"
-	"github.com/elC0mpa/aws-billing/model"
+	"github.com/elC0mpa/aws-doctor/model"
 )
 
 func NewService(awsconfig aws.Config) *service {

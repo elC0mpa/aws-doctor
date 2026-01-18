@@ -1,10 +1,10 @@
 package orchestrator
 
 import (
-	"github.com/elC0mpa/aws-billing/model"
-	awscostexplorer "github.com/elC0mpa/aws-billing/service/costexplorer"
-	awsec2 "github.com/elC0mpa/aws-billing/service/ec2"
-	awssts "github.com/elC0mpa/aws-billing/service/sts"
+	"github.com/elC0mpa/aws-doctor/model"
+	awscostexplorer "github.com/elC0mpa/aws-doctor/service/costexplorer"
+	awsec2 "github.com/elC0mpa/aws-doctor/service/ec2"
+	awssts "github.com/elC0mpa/aws-doctor/service/sts"
 )
 
 type service struct {
