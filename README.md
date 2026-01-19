@@ -50,14 +50,12 @@ I created **aws-doctor** to fill that gap. It doesn't just show you the bill; it
   - [ ] Inactive VPC interface endpoints.
   - [ ] Inactive NAT Gateways.
   - [ ] Idle Load Balancers.
-  - [ ] RDS Idle DB Instances.
+  - [ ] RDS Idle DB Instances.## Roadmap
 
-Roadmap
+## Roadmap
 
-[x] Add monthly trend analysis.
+- [x] Add monthly trend analysis
+- [x] Add waste / wastage analysis logic
+- [ ] Export reports to CSV and PDF formats (medical records for your cloud)
+- [ ] Distribute the CLI via Fedora, Ubuntu, and macOS repositories
 
-[x] Add waste/waste analysis logic.
-
-[ ] Export reports to CSV and PDF formats (Medical records for your cloud).
-
-[ ] Distribute the CLI in Fedora, Ubuntu, and macOS repositories.
