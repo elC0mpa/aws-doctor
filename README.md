@@ -50,7 +50,7 @@ I created **aws-doctor** to fill that gap. It doesn't just show you the bill; it
   - [ ] Inactive VPC interface endpoints.
   - [ ] Inactive NAT Gateways.
   - [ ] Idle Load Balancers.
-  - [ ] RDS Idle DB Instances.## Roadmap
+  - [ ] RDS Idle DB Instances.
 
 ## Roadmap
 
