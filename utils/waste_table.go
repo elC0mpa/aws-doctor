@@ -27,7 +27,6 @@ func DrawWasteTable(accountId string, elasticIpInfo []types.Address, unusedEBSVo
 		return
 	}
 
-	// --- Existing Logic ---
 	if len(unusedEBSVolumeInfo) > 0 || len(attachedToStoppedInstancesEBSVolumeInfo) > 0 {
 		drawEBSTable(unusedEBSVolumeInfo, attachedToStoppedInstancesEBSVolumeInfo)
 	}
@@ -56,27 +55,29 @@ func drawEBSTable(unusedEBSVolumeInfo []types.Volume, attachedToStoppedInstances
 		},
 	})
 
-	statusAvailable := "Available (Unattached)"
-	rows := populateEBSRows(unusedEBSVolumeInfo)
+	if len(unusedEBSVolumeInfo) > 0 {
+		statusAvailable := "Available (Unattached)"
+		rows := populateEBSRows(unusedEBSVolumeInfo)
 
-	halfRow := len(rows) / 2
-	rows[halfRow][0] = text.FgHiRed.Sprint(statusAvailable)
+		halfRow := len(rows) / 2
+		rows[halfRow][0] = text.FgHiRed.Sprint(statusAvailable)
 
-	t.AppendRows(rows)
-
-	rows = []table.Row{}
+		t.AppendRows(rows)
+	}
 
 	if len(unusedEBSVolumeInfo) > 0 && len(attachedToStoppedInstancesEBSVolumeInfo) > 0 {
 		t.AppendSeparator()
 	}
 
-	statusStopped := "Attached to Stopped Instance"
-	rows = populateEBSRows(attachedToStoppedInstancesEBSVolumeInfo)
+	if len(attachedToStoppedInstancesEBSVolumeInfo) > 0 {
+		statusStopped := "Attached to Stopped Instance"
+		rows := populateEBSRows(attachedToStoppedInstancesEBSVolumeInfo)
 
-	halfRow = len(rows) / 2
-	rows[halfRow][0] = text.FgHiRed.Sprint(statusStopped)
+		halfRow := len(rows) / 2
+		rows[halfRow][0] = text.FgHiRed.Sprint(statusStopped)
 
-	t.AppendRows(rows)
+		t.AppendRows(rows)
+	}
 
 	if t.Length() > 0 {
 		t.Render()
@@ -102,7 +103,6 @@ func drawEC2Table(instances []types.Instance, ris []model.RiExpirationInfo) {
 		statusLabel := "Stopped Instance(> 30 Days)"
 		rows := populateInstanceRows(instances)
 
-		// Apply grouped status label
 		halfRow := len(rows) / 2
 		rows[halfRow][0] = text.FgHiRed.Sprint(statusLabel)
 
@@ -110,9 +110,7 @@ func drawEC2Table(instances []types.Instance, ris []model.RiExpirationInfo) {
 		hasPreviousRows = true
 	}
 
-	// --- SECTION 2 & 3: Reserved Instances ---
 	if len(ris) > 0 {
-		// We split RIs into two groups for better status labeling
 		var expiring, expired []model.RiExpirationInfo
 		for _, ri := range ris {
 			if ri.Status == "EXPIRING SOON" {
@@ -122,7 +120,6 @@ func drawEC2Table(instances []types.Instance, ris []model.RiExpirationInfo) {
 			}
 		}
 
-		// Group: Expiring Soon
 		if len(expiring) > 0 {
 			if hasPreviousRows {
 				t.AppendSeparator()
@@ -137,7 +134,6 @@ func drawEC2Table(instances []types.Instance, ris []model.RiExpirationInfo) {
 			hasPreviousRows = true
 		}
 
-		// Group: Recently Expired
 		if len(expired) > 0 {
 			if hasPreviousRows {
 				t.AppendSeparator()
