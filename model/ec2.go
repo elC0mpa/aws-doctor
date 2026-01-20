@@ -21,3 +21,17 @@ type RiExpirationInfo struct {
 	State              string
 	Status             string
 }
+
+// AMIWasteInfo contains information about potentially unused AMIs
+type AMIWasteInfo struct {
+	ImageId         string
+	Name            string
+	Description     string
+	CreationDate    time.Time
+	DaysSinceCreate int
+	IsPublic        bool
+	SnapshotIds     []string  // Associated EBS snapshots
+	SnapshotSizeGB  int64     // Total size of associated snapshots
+	UsedByInstances int       // Number of instances using this AMI
+	EstimatedCost   float64   // Monthly storage cost of associated snapshots
+}

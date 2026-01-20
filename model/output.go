@@ -52,6 +52,7 @@ type WasteReportJSON struct {
 	StoppedInstances    []StoppedInstanceJSON  `json:"stopped_instances"`
 	ReservedInstances   []ReservedInstanceJSON `json:"reserved_instances"`
 	UnusedLoadBalancers []LoadBalancerJSON     `json:"unused_load_balancers"`
+	UnusedAMIs          []AMIJSON              `json:"unused_amis"`
 }
 
 // ElasticIPJSON represents an unused Elastic IP
@@ -89,4 +90,17 @@ type LoadBalancerJSON struct {
 	Name string `json:"name"`
 	ARN  string `json:"arn"`
 	Type string `json:"type"`
+}
+
+// AMIJSON represents an unused AMI
+type AMIJSON struct {
+	ImageID         string   `json:"image_id"`
+	Name            string   `json:"name"`
+	Description     string   `json:"description,omitempty"`
+	CreationDate    string   `json:"creation_date"`
+	DaysSinceCreate int      `json:"days_since_create"`
+	IsPublic        bool     `json:"is_public"`
+	SnapshotIDs     []string `json:"snapshot_ids"`
+	SnapshotSizeGB  int64    `json:"snapshot_size_gb"`
+	EstimatedCost   float64  `json:"estimated_monthly_cost"`
 }
