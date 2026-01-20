@@ -4,25 +4,24 @@ import (
 	"context"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
-	"github.com/aws/aws-sdk-go-v2/service/elasticloadbalancingv2"
-	elb "github.com/aws/aws-sdk-go-v2/service/elasticloadbalancingv2"
+	elbsdk "github.com/aws/aws-sdk-go-v2/service/elasticloadbalancingv2"
 	"github.com/aws/aws-sdk-go-v2/service/elasticloadbalancingv2/types"
 )
 
 func NewService(awsconfig aws.Config) *service {
-	client := elb.NewFromConfig(awsconfig)
+	client := elbsdk.NewFromConfig(awsconfig)
 	return &service{
 		client: client,
 	}
 }
 
 func (s *service) GetUnusedLoadBalancers(ctx context.Context) ([]types.LoadBalancer, error) {
-	lbOutput, err := s.client.DescribeLoadBalancers(ctx, &elasticloadbalancingv2.DescribeLoadBalancersInput{})
+	lbOutput, err := s.client.DescribeLoadBalancers(ctx, &elbsdk.DescribeLoadBalancersInput{})
 	if err != nil {
 		return nil, err
 	}
 
-	tgOutput, err := s.client.DescribeTargetGroups(ctx, &elasticloadbalancingv2.DescribeTargetGroupsInput{})
+	tgOutput, err := s.client.DescribeTargetGroups(ctx, &elbsdk.DescribeTargetGroupsInput{})
 	if err != nil {
 		return nil, err
 	}

@@ -8,6 +8,7 @@ import (
 	awsconfig "github.com/elC0mpa/aws-doctor/service/aws_config"
 	awscostexplorer "github.com/elC0mpa/aws-doctor/service/costexplorer"
 	awsec2 "github.com/elC0mpa/aws-doctor/service/ec2"
+	"github.com/elC0mpa/aws-doctor/service/elb"
 	"github.com/elC0mpa/aws-doctor/service/flag"
 	"github.com/elC0mpa/aws-doctor/service/orchestrator"
 	awssts "github.com/elC0mpa/aws-doctor/service/sts"
@@ -41,8 +42,9 @@ func run() error {
 	costService := awscostexplorer.NewService(awsCfg)
 	stsService := awssts.NewService(awsCfg)
 	ec2Service := awsec2.NewService(awsCfg)
+	elbService := elb.NewService(awsCfg)
 
-	orchestratorService := orchestrator.NewService(stsService, costService, ec2Service)
+	orchestratorService := orchestrator.NewService(stsService, costService, ec2Service, elbService)
 
 	if err := orchestratorService.Orchestrate(flags); err != nil {
 		return fmt.Errorf("orchestration failed: %w", err)
