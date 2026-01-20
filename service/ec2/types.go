@@ -20,4 +20,6 @@ type EC2Service interface {
 	GetReservedInstanceExpiringOrExpired30DaysWaste(ctx context.Context) ([]model.RiExpirationInfo, error)
 	GetUnusedAMIs(ctx context.Context, staleDays int) ([]model.AMIWasteInfo, error)
 	GetOrphanedSnapshots(ctx context.Context, staleDays int) ([]model.SnapshotWasteInfo, error)
+	GetNatGateways(ctx context.Context) ([]types.NatGateway, error)
+	GetVpcEndpoints(ctx context.Context) ([]types.VpcEndpoint, error)
 }

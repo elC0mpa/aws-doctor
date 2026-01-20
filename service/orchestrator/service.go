@@ -97,6 +97,8 @@ func (s *service) wasteWorkflow() error {
 	var unusedLoadBalancers []elbtypes.LoadBalancer
 	var unusedAMIs []model.AMIWasteInfo
 	var orphanedSnapshots []model.SnapshotWasteInfo
+	var natGateways []types.NatGateway
+	var vpcEndpoints []types.VpcEndpoint
 	var stsResult *sts.GetCallerIdentityOutput
 
 	// Fetch unused Elastic IPs concurrently
@@ -131,6 +133,20 @@ func (s *service) wasteWorkflow() error {
 	g.Go(func() error {
 		var err error
 		unusedLoadBalancers, err = s.elbService.GetUnusedLoadBalancers(ctx)
+		return err
+	})
+
+	// Fetch NAT Gateways concurrently
+	g.Go(func() error {
+		var err error
+		natGateways, err = s.ec2Service.GetNatGateways(ctx)
+		return err
+	})
+
+	// Fetch VPC Endpoints concurrently
+	g.Go(func() error {
+		var err error
+		vpcEndpoints, err = s.ec2Service.GetVpcEndpoints(ctx)
 		return err
 	})
 
@@ -172,5 +188,7 @@ func (s *service) wasteWorkflow() error {
 		unusedLoadBalancers,
 		unusedAMIs,
 		orphanedSnapshots,
+		natGateways,
+		vpcEndpoints,
 	)
 }

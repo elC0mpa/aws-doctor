@@ -73,3 +73,19 @@ func (m *MockEC2Service) GetOrphanedSnapshots(ctx context.Context, staleDays int
 	}
 	return args.Get(0).([]model.SnapshotWasteInfo), args.Error(1)
 }
+
+func (m *MockEC2Service) GetNatGateways(ctx context.Context) ([]types.NatGateway, error) {
+	args := m.Called(ctx)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).([]types.NatGateway), args.Error(1)
+}
+
+func (m *MockEC2Service) GetVpcEndpoints(ctx context.Context) ([]types.VpcEndpoint, error) {
+	args := m.Called(ctx)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).([]types.VpcEndpoint), args.Error(1)
+}
