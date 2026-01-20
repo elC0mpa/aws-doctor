@@ -55,6 +55,8 @@ type WasteReportJSON struct {
 	UnusedAMIs          []AMIJSON              `json:"unused_amis"`
 	OrphanedSnapshots   []SnapshotJSON         `json:"orphaned_snapshots"`
 	StaleSnapshots      []SnapshotJSON         `json:"stale_snapshots"`
+	NatGateways         []NatGatewayJSON       `json:"nat_gateways"`
+	VpcEndpoints        []VpcEndpointJSON      `json:"vpc_endpoints"`
 }
 
 // ElasticIPJSON represents an unused Elastic IP
@@ -119,7 +121,23 @@ type SnapshotJSON struct {
 	StartTime           string  `json:"start_time"`
 	DaysSinceCreate     int     `json:"days_since_create"`
 	Description         string  `json:"description,omitempty"`
-	Category            string  `json:"category"`                // "orphaned" or "stale"
-	Reason              string  `json:"reason"`                  // Human-readable reason
-	MaxPotentialSavings float64 `json:"max_potential_savings"`   // Actual savings may be lower due to incremental storage
+	Category            string  `json:"category"`              // "orphaned" or "stale"
+	Reason              string  `json:"reason"`                // Human-readable reason
+	MaxPotentialSavings float64 `json:"max_potential_savings"` // Actual savings may be lower due to incremental storage
+}
+
+// NatGatewayJSON represents a NAT Gateway for review
+type NatGatewayJSON struct {
+	NatGatewayID string `json:"nat_gateway_id"`
+	SubnetID     string `json:"subnet_id"`
+	VpcID        string `json:"vpc_id,omitempty"`
+	State        string `json:"state"`
+}
+
+// VpcEndpointJSON represents a VPC Endpoint for review
+type VpcEndpointJSON struct {
+	VpcEndpointID string `json:"vpc_endpoint_id"`
+	ServiceName   string `json:"service_name"`
+	VpcID         string `json:"vpc_id,omitempty"`
+	State         string `json:"state"`
 }

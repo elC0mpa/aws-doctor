@@ -446,6 +446,42 @@ func (s *service) GetOrphanedSnapshots(ctx context.Context, staleDays int) ([]mo
 	return results, nil
 }
 
+func (s *service) GetNatGateways(ctx context.Context) ([]types.NatGateway, error) {
+	output, err := s.client.DescribeNatGateways(ctx, &ec2.DescribeNatGatewaysInput{
+		Filter: []types.Filter{
+			{
+				Name:   aws.String("state"),
+				Values: []string{"available"},
+			},
+		},
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return output.NatGateways, nil
+}
+
+func (s *service) GetVpcEndpoints(ctx context.Context) ([]types.VpcEndpoint, error) {
+	output, err := s.client.DescribeVpcEndpoints(ctx, &ec2.DescribeVpcEndpointsInput{
+		Filters: []types.Filter{
+			{
+				Name:   aws.String("vpc-endpoint-type"),
+				Values: []string{"Interface"},
+			},
+			{
+				Name:   aws.String("vpc-endpoint-state"),
+				Values: []string{"available"},
+			},
+		},
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return output.VpcEndpoints, nil
+}
+
 func (s *service) getResourceTypeFromDescription(description string) types.NetworkInterfaceType {
 	desc := strings.ToLower(description)
 

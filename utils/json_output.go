@@ -69,7 +69,7 @@ func OutputTrendJSON(accountID string, costInfo []model.CostInfo) error {
 }
 
 // OutputWasteJSON outputs waste detection data as JSON
-func OutputWasteJSON(accountID string, elasticIPs []types.Address, unusedVolumes []types.Volume, stoppedVolumes []types.Volume, ris []model.RiExpirationInfo, stoppedInstances []types.Instance, loadBalancers []elbtypes.LoadBalancer, unusedAMIs []model.AMIWasteInfo, orphanedSnapshots []model.SnapshotWasteInfo) error {
+func OutputWasteJSON(accountID string, elasticIPs []types.Address, unusedVolumes []types.Volume, stoppedVolumes []types.Volume, ris []model.RiExpirationInfo, stoppedInstances []types.Instance, loadBalancers []elbtypes.LoadBalancer, unusedAMIs []model.AMIWasteInfo, orphanedSnapshots []model.SnapshotWasteInfo, natGateways []types.NatGateway, vpcEndpoints []types.VpcEndpoint) error {
 	output := model.WasteReportJSON{
 		AccountID:           accountID,
 		GeneratedAt:         time.Now().UTC().Format(time.RFC3339),
@@ -82,6 +82,8 @@ func OutputWasteJSON(accountID string, elasticIPs []types.Address, unusedVolumes
 		UnusedAMIs:          []model.AMIJSON{},
 		OrphanedSnapshots:   []model.SnapshotJSON{},
 		StaleSnapshots:      []model.SnapshotJSON{},
+		NatGateways:         []model.NatGatewayJSON{},
+		VpcEndpoints:        []model.VpcEndpointJSON{},
 	}
 
 	// Unused Elastic IPs
@@ -185,6 +187,26 @@ func OutputWasteJSON(accountID string, elasticIPs []types.Address, unusedVolumes
 		}
 	}
 
+	// NAT Gateways
+	for _, ng := range natGateways {
+		output.NatGateways = append(output.NatGateways, model.NatGatewayJSON{
+			NatGatewayID: aws.ToString(ng.NatGatewayId),
+			SubnetID:     aws.ToString(ng.SubnetId),
+			VpcID:        aws.ToString(ng.VpcId),
+			State:        string(ng.State),
+		})
+	}
+
+	// VPC Endpoints
+	for _, ep := range vpcEndpoints {
+		output.VpcEndpoints = append(output.VpcEndpoints, model.VpcEndpointJSON{
+			VpcEndpointID: aws.ToString(ep.VpcEndpointId),
+			ServiceName:   aws.ToString(ep.ServiceName),
+			VpcID:         aws.ToString(ep.VpcId),
+			State:         string(ep.State),
+		})
+	}
+
 	output.HasWaste = len(output.UnusedElasticIPs) > 0 ||
 		len(output.UnusedEBSVolumes) > 0 ||
 		len(output.StoppedVolumes) > 0 ||
@@ -193,7 +215,9 @@ func OutputWasteJSON(accountID string, elasticIPs []types.Address, unusedVolumes
 		len(output.UnusedLoadBalancers) > 0 ||
 		len(output.UnusedAMIs) > 0 ||
 		len(output.OrphanedSnapshots) > 0 ||
-		len(output.StaleSnapshots) > 0
+		len(output.StaleSnapshots) > 0 ||
+		len(output.NatGateways) > 0 ||
+		len(output.VpcEndpoints) > 0
 
 	return printJSON(output)
 }
