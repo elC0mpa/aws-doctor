@@ -28,6 +28,7 @@ A terminal-based tool that acts as a comprehensive health check for your AWS acc
 - **📉 Cost Comparison:** Compares costs between the current and previous month for the exact same period (e.g., comparing Jan 1–15 vs Feb 1–15) to give a fair assessment of spending velocity.
 - **🏥 Waste Detection (The "Checkup"):** Scans your account for "zombie" resources and inefficiencies that are silently inflating your bill.
 - **📊 Trend Analysis:** Visualizes cost history over the last 6 months to spot long-term anomalies.
+- **📅 Daily Analysis:** Shows daily cost analysis for the last 30 days with day-of-week patterns.
 
 ## Motivation
 
@@ -64,6 +65,7 @@ Available platforms:
 - `--profile`: Specify the AWS profile to use (default is "").
 - `--region`: Specify the AWS region to use. If not provided, uses `AWS_REGION` or `AWS_DEFAULT_REGION` environment variables, or the region from `~/.aws/config`.
 - `--trend`: Shows a trend analysis for the last 6 months.
+- `--daily`: Shows daily cost analysis for the last 30 days with day-of-week patterns.
 - `--output`: Output format: `table` (default) or `json`.
 - `--waste`: Makes an analysis of possible money waste you have in your AWS Account.
   - [x] Unused EBS Volumes (not attached to any instance).
@@ -85,5 +87,6 @@ Available platforms:
 - [x] Add monthly trend analysis
 - [x] Add waste / wastage analysis logic
 - [x] Export reports to JSON format
+- [x] Add daily cost analysis
 - [ ] Export reports to CSV and PDF formats (medical records for your cloud)
 - [ ] Distribute the CLI via Fedora, Ubuntu, and macOS repositories

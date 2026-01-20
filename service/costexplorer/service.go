@@ -150,6 +150,60 @@ func (s *service) GetMonthTotalCosts(ctx context.Context, endDate time.Time) (*s
 	return &total, nil
 }
 
+func (s *service) GetDailyCosts(ctx context.Context, days int) ([]model.DailyCostInfo, error) {
+	endDate := time.Now()
+	startDate := endDate.AddDate(0, 0, -days)
+	costsAggregation := "UnblendedCost"
+
+	input := &costexplorer.GetCostAndUsageInput{
+		Granularity: types.GranularityDaily,
+		TimePeriod: &types.DateInterval{
+			Start: aws.String(startDate.Format("2006-01-02")),
+			End:   aws.String(endDate.Format("2006-01-02")),
+		},
+		Metrics: []string{costsAggregation},
+	}
+
+	output, err := s.client.GetCostAndUsage(ctx, input)
+	if err != nil {
+		return nil, err
+	}
+
+	dailyCosts := make([]model.DailyCostInfo, 0, len(output.ResultsByTime))
+
+	for _, timeResult := range output.ResultsByTime {
+		if timeResult.Total == nil {
+			continue
+		}
+
+		totalInfo, ok := timeResult.Total[costsAggregation]
+		if !ok || totalInfo.Amount == nil {
+			continue
+		}
+
+		amount, err := strconv.ParseFloat(*totalInfo.Amount, 64)
+		if err != nil {
+			continue
+		}
+
+		// Parse the date to get day of week
+		dateStr := *timeResult.TimePeriod.Start
+		date, err := time.Parse("2006-01-02", dateStr)
+		if err != nil {
+			continue
+		}
+
+		dailyCosts = append(dailyCosts, model.DailyCostInfo{
+			Date:      dateStr,
+			DayOfWeek: date.Weekday().String(),
+			Amount:    amount,
+			Unit:      *totalInfo.Unit,
+		})
+	}
+
+	return dailyCosts, nil
+}
+
 func (s *service) getFirstDayOfMonth(month time.Time) time.Time {
 	return time.Date(month.Year(), month.Month(), 1, 0, 0, 0, 0, month.Location())
 }
