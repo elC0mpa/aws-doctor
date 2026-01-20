@@ -55,7 +55,7 @@ Available platforms:
 ## Flags
 
 - `--profile`: Specify the AWS profile to use (default is "").
-- `--region`: Specify the AWS region to use (default is "us-east-1").
+- `--region`: Specify the AWS region to use. If not provided, uses `AWS_REGION` or `AWS_DEFAULT_REGION` environment variables, or the region from `~/.aws/config`.
 - `--trend`: Shows a trend analysis for the last 6 months.
 - `--waste`: Makes an analysis of possible money waste you have in your AWS Account.
   - [x] Unused EBS Volumes (not attached to any instance).
