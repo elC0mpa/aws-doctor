@@ -64,7 +64,7 @@ Available platforms:
   - [x] EC2 reserved instance that are scheduled to expire in the next 30 days or have expired in the preceding 30 days.
   - [x] EC2 instance stopped for more than 30 days.
   - [x] EC2 instances stopped for more than 30 days.
-  - [ ] Load Balancers with no attached target groups.
+  - [x] Load Balancers with no attached target groups.
   - [ ] Inactive VPC interface endpoints.
   - [ ] Inactive NAT Gateways.
   - [ ] Idle Load Balancers.

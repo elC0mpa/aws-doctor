@@ -11,6 +11,6 @@ type service struct {
 	client *elb.Client
 }
 
-type EC2Service interface {
+type ELBService interface {
 	GetUnusedLoadBalancers(ctx context.Context) ([]types.LoadBalancer, error)
 }

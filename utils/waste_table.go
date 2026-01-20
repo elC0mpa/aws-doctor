@@ -6,12 +6,13 @@ import (
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/service/ec2/types"
+	elbtypes "github.com/aws/aws-sdk-go-v2/service/elasticloadbalancingv2/types"
 	"github.com/elC0mpa/aws-doctor/model"
 	"github.com/jedib0t/go-pretty/v6/table"
 	"github.com/jedib0t/go-pretty/v6/text"
 )
 
-func DrawWasteTable(accountId string, elasticIpInfo []types.Address, unusedEBSVolumeInfo []types.Volume, attachedToStoppedInstancesEBSVolumeInfo []types.Volume, expireReservedInstancesInfo []model.RiExpirationInfo, instancesStoppedMoreThan30Days []types.Instance) {
+func DrawWasteTable(accountId string, elasticIpInfo []types.Address, unusedEBSVolumeInfo []types.Volume, attachedToStoppedInstancesEBSVolumeInfo []types.Volume, expireReservedInstancesInfo []model.RiExpirationInfo, instancesStoppedMoreThan30Days []types.Instance, unusedLoadBalancers []elbtypes.LoadBalancer) {
 	fmt.Printf("\n%s\n", text.FgHiWhite.Sprint(" 🏥 AWS DOCTOR CHECKUP"))
 	fmt.Printf(" Account ID: %s\n", text.FgBlue.Sprint(accountId))
 	fmt.Println(text.FgHiBlue.Sprint(" ------------------------------------------------"))
@@ -20,7 +21,8 @@ func DrawWasteTable(accountId string, elasticIpInfo []types.Address, unusedEBSVo
 		len(unusedEBSVolumeInfo) > 0 ||
 		len(attachedToStoppedInstancesEBSVolumeInfo) > 0 ||
 		len(instancesStoppedMoreThan30Days) > 0 ||
-		len(expireReservedInstancesInfo) > 0
+		len(expireReservedInstancesInfo) > 0 ||
+		len(unusedLoadBalancers) > 0
 
 	if !hasWaste {
 		fmt.Println("\n" + text.FgHiGreen.Sprint(" ✅  Your account is healthy! No waste found."))
@@ -37,6 +39,10 @@ func DrawWasteTable(accountId string, elasticIpInfo []types.Address, unusedEBSVo
 
 	if len(instancesStoppedMoreThan30Days) > 0 || len(expireReservedInstancesInfo) > 0 {
 		drawEC2Table(instancesStoppedMoreThan30Days, expireReservedInstancesInfo)
+	}
+
+	if len(unusedLoadBalancers) > 0 {
+		drawLoadBalancerTable(unusedLoadBalancers)
 	}
 }
 
@@ -259,5 +265,47 @@ func populateRiRows(ris []model.RiExpirationInfo) []table.Row {
 			timeInfo,
 		})
 	}
+	return rows
+}
+
+func drawLoadBalancerTable(loadBalancers []elbtypes.LoadBalancer) {
+	t := table.NewWriter()
+	t.SetOutputMirror(os.Stdout)
+	t.SetStyle(table.StyleRounded)
+	t.SetTitle("Load Balancer Waste")
+
+	t.AppendHeader(table.Row{"Status", "Load Balancer Name", "Type"})
+
+	statusLabel := "No Target Groups"
+	rows := populateLoadBalancerRows(loadBalancers)
+
+	if len(rows) > 0 {
+		halfRow := len(rows) / 2
+		rows[halfRow][0] = text.FgHiRed.Sprint(statusLabel)
+	}
+
+	t.AppendRows(rows)
+	t.Render()
+	fmt.Println()
+}
+
+func populateLoadBalancerRows(loadBalancers []elbtypes.LoadBalancer) []table.Row {
+	var rows []table.Row
+
+	for _, lb := range loadBalancers {
+		lbName := ""
+		if lb.LoadBalancerName != nil {
+			lbName = *lb.LoadBalancerName
+		}
+
+		lbType := string(lb.Type)
+
+		rows = append(rows, table.Row{
+			"",
+			lbName,
+			lbType,
+		})
+	}
+
 	return rows
 }

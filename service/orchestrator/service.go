@@ -4,20 +4,23 @@ import (
 	"context"
 
 	"github.com/aws/aws-sdk-go-v2/service/ec2/types"
+	elbtypes "github.com/aws/aws-sdk-go-v2/service/elasticloadbalancingv2/types"
 	"github.com/aws/aws-sdk-go-v2/service/sts"
 	"github.com/elC0mpa/aws-doctor/model"
 	awscostexplorer "github.com/elC0mpa/aws-doctor/service/costexplorer"
 	awsec2 "github.com/elC0mpa/aws-doctor/service/ec2"
+	awselb "github.com/elC0mpa/aws-doctor/service/elb"
 	awssts "github.com/elC0mpa/aws-doctor/service/sts"
 	"github.com/elC0mpa/aws-doctor/utils"
 	"golang.org/x/sync/errgroup"
 )
 
-func NewService(stsService awssts.STSService, costService awscostexplorer.CostService, ec2Service awsec2.EC2Service) *service {
+func NewService(stsService awssts.STSService, costService awscostexplorer.CostService, ec2Service awsec2.EC2Service, elbService awselb.ELBService) *service {
 	return &service{
 		stsService:  stsService,
 		costService: costService,
 		ec2Service:  ec2Service,
+		elbService:  elbService,
 	}
 }
 
@@ -93,6 +96,7 @@ func (s *service) wasteWorkflow() error {
 	var stoppedInstancesMoreThan30Days []types.Instance
 	var attachedToStoppedInstancesEBSVolumesInfo []types.Volume
 	var expireReservedInstancesInfo []model.RiExpirationInfo
+	var unusedLoadBalancers []elbtypes.LoadBalancer
 	var stsResult *sts.GetCallerIdentityOutput
 
 	// Fetch unused Elastic IPs concurrently
@@ -123,6 +127,13 @@ func (s *service) wasteWorkflow() error {
 		return err
 	})
 
+	// Fetch unused Load Balancers concurrently
+	g.Go(func() error {
+		var err error
+		unusedLoadBalancers, err = s.elbService.GetUnusedLoadBalancers(ctx)
+		return err
+	})
+
 	// Fetch caller identity concurrently
 	g.Go(func() error {
 		var err error
@@ -137,7 +148,7 @@ func (s *service) wasteWorkflow() error {
 
 	utils.StopSpinner()
 
-	utils.DrawWasteTable(*stsResult.Account, elasticIpInfo, availableEBSVolumesInfo, attachedToStoppedInstancesEBSVolumesInfo, expireReservedInstancesInfo, stoppedInstancesMoreThan30Days)
+	utils.DrawWasteTable(*stsResult.Account, elasticIpInfo, availableEBSVolumesInfo, attachedToStoppedInstancesEBSVolumesInfo, expireReservedInstancesInfo, stoppedInstancesMoreThan30Days, unusedLoadBalancers)
 
 	return nil
 }
