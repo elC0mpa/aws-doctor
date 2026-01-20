@@ -3,11 +3,14 @@ package orchestrator
 import (
 	"context"
 
+	"github.com/aws/aws-sdk-go-v2/service/ec2/types"
+	"github.com/aws/aws-sdk-go-v2/service/sts"
 	"github.com/elC0mpa/aws-doctor/model"
 	awscostexplorer "github.com/elC0mpa/aws-doctor/service/costexplorer"
 	awsec2 "github.com/elC0mpa/aws-doctor/service/ec2"
 	awssts "github.com/elC0mpa/aws-doctor/service/sts"
 	"github.com/elC0mpa/aws-doctor/utils"
+	"golang.org/x/sync/errgroup"
 )
 
 func NewService(stsService awssts.STSService, costService awscostexplorer.CostService, ec2Service awsec2.EC2Service) *service {
@@ -81,28 +84,54 @@ func (s *service) trendWorkflow() error {
 }
 
 func (s *service) wasteWorkflow() error {
-	elasticIpInfo, err := s.ec2Service.GetUnusedElasticIpAddressesInfo(context.Background())
-	if err != nil {
-		return err
-	}
+	ctx := context.Background()
+	g, ctx := errgroup.WithContext(ctx)
 
-	availableEBSVolumesInfo, err := s.ec2Service.GetUnusedEBSVolumes(context.Background())
-	if err != nil {
-		return err
-	}
+	// Results from concurrent API calls
+	var elasticIpInfo []types.Address
+	var availableEBSVolumesInfo []types.Volume
+	var stoppedInstancesMoreThan30Days []types.Instance
+	var attachedToStoppedInstancesEBSVolumesInfo []types.Volume
+	var expireReservedInstancesInfo []model.RiExpirationInfo
+	var stsResult *sts.GetCallerIdentityOutput
 
-	stoppedInstancesMoreThan30Days, attachedToStoppedInstancesEBSVolumesInfo, err := s.ec2Service.GetStoppedInstancesInfo(context.Background())
-	if err != nil {
+	// Fetch unused Elastic IPs concurrently
+	g.Go(func() error {
+		var err error
+		elasticIpInfo, err = s.ec2Service.GetUnusedElasticIpAddressesInfo(ctx)
 		return err
-	}
+	})
 
-	expireReservedInstancesInfo, err := s.ec2Service.GetReservedInstanceExpiringOrExpired30DaysWaste(context.Background())
-	if err != nil {
+	// Fetch unused EBS volumes concurrently
+	g.Go(func() error {
+		var err error
+		availableEBSVolumesInfo, err = s.ec2Service.GetUnusedEBSVolumes(ctx)
 		return err
-	}
+	})
 
-	stsResult, err := s.stsService.GetCallerIdentity(context.Background())
-	if err != nil {
+	// Fetch stopped instances info concurrently
+	g.Go(func() error {
+		var err error
+		stoppedInstancesMoreThan30Days, attachedToStoppedInstancesEBSVolumesInfo, err = s.ec2Service.GetStoppedInstancesInfo(ctx)
+		return err
+	})
+
+	// Fetch reserved instance expiration info concurrently
+	g.Go(func() error {
+		var err error
+		expireReservedInstancesInfo, err = s.ec2Service.GetReservedInstanceExpiringOrExpired30DaysWaste(ctx)
+		return err
+	})
+
+	// Fetch caller identity concurrently
+	g.Go(func() error {
+		var err error
+		stsResult, err = s.stsService.GetCallerIdentity(ctx)
+		return err
+	})
+
+	// Wait for all goroutines to complete
+	if err := g.Wait(); err != nil {
 		return err
 	}
 
