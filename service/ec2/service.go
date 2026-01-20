@@ -305,6 +305,103 @@ func (s *service) GetUnusedAMIs(ctx context.Context, staleDays int) ([]model.AMI
 	return results, nil
 }
 
+// GetOrphanedSnapshots returns EBS snapshots that are potentially orphaned
+// (source volume deleted, not used by any AMI, or older than staleDays)
+func (s *service) GetOrphanedSnapshots(ctx context.Context, staleDays int) ([]model.SnapshotWasteInfo, error) {
+	var results []model.SnapshotWasteInfo
+
+	// Collect all snapshots owned by this account using pagination
+	var allSnapshots []types.Snapshot
+	snapshotPaginator := ec2.NewDescribeSnapshotsPaginator(s.client, &ec2.DescribeSnapshotsInput{
+		OwnerIds: []string{"self"},
+	})
+	for snapshotPaginator.HasMorePages() {
+		page, err := snapshotPaginator.NextPage(ctx)
+		if err != nil {
+			return nil, fmt.Errorf("failed to describe snapshots: %w", err)
+		}
+		allSnapshots = append(allSnapshots, page.Snapshots...)
+	}
+
+	// Build a set of existing volume IDs using pagination
+	existingVolumes := make(map[string]bool)
+	volumePaginator := ec2.NewDescribeVolumesPaginator(s.client, &ec2.DescribeVolumesInput{})
+	for volumePaginator.HasMorePages() {
+		page, err := volumePaginator.NextPage(ctx)
+		if err != nil {
+			return nil, fmt.Errorf("failed to describe volumes: %w", err)
+		}
+		for _, vol := range page.Volumes {
+			existingVolumes[aws.ToString(vol.VolumeId)] = true
+		}
+	}
+
+	// Build a map of snapshot IDs used by AMIs
+	// Note: DescribeImages doesn't have a paginator, but typically returns all at once
+	amiOutput, err := s.client.DescribeImages(ctx, &ec2.DescribeImagesInput{
+		Owners: []string{"self"},
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to describe images: %w", err)
+	}
+
+	snapshotToAMI := make(map[string]string)
+	for _, image := range amiOutput.Images {
+		for _, bdm := range image.BlockDeviceMappings {
+			if bdm.Ebs != nil && bdm.Ebs.SnapshotId != nil {
+				snapshotToAMI[*bdm.Ebs.SnapshotId] = aws.ToString(image.ImageId)
+			}
+		}
+	}
+
+	cutoffTime := time.Now().AddDate(0, 0, -staleDays)
+	now := time.Now()
+
+	for _, snapshot := range allSnapshots {
+		volumeId := aws.ToString(snapshot.VolumeId)
+		snapshotId := aws.ToString(snapshot.SnapshotId)
+		volumeExists := existingVolumes[volumeId]
+		amiId, usedByAMI := snapshotToAMI[snapshotId]
+
+		startTime := time.Time{}
+		if snapshot.StartTime != nil {
+			startTime = *snapshot.StartTime
+		}
+
+		daysSinceCreate := int(now.Sub(startTime).Hours() / 24)
+
+		// Consider orphaned if:
+		// 1. Source volume doesn't exist AND not used by AMI, OR
+		// 2. Older than staleDays AND not used by AMI
+		isOrphaned := (!volumeExists && !usedByAMI) || (startTime.Before(cutoffTime) && !usedByAMI)
+
+		if isOrphaned {
+			sizeGB := int32(0)
+			if snapshot.VolumeSize != nil {
+				sizeGB = *snapshot.VolumeSize
+			}
+
+			// EBS Snapshot pricing: ~$0.05 per GB per month
+			estimatedCost := float64(sizeGB) * 0.05
+
+			results = append(results, model.SnapshotWasteInfo{
+				SnapshotId:      snapshotId,
+				VolumeId:        volumeId,
+				VolumeExists:    volumeExists,
+				UsedByAMI:       usedByAMI,
+				AMIId:           amiId,
+				SizeGB:          sizeGB,
+				StartTime:       startTime,
+				DaysSinceCreate: daysSinceCreate,
+				Description:     aws.ToString(snapshot.Description),
+				EstimatedCost:   estimatedCost,
+			})
+		}
+	}
+
+	return results, nil
+}
+
 func (s *service) getResourceTypeFromDescription(description string) types.NetworkInterfaceType {
 	desc := strings.ToLower(description)
 
