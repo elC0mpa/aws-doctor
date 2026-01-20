@@ -34,6 +34,10 @@ func (s *service) Orchestrate(flags model.Flags) error {
 		return s.trendWorkflow()
 	}
 
+	if flags.Daily {
+		return s.dailyWorkflow()
+	}
+
 	return s.defaultWorkflow()
 }
 
@@ -82,6 +86,22 @@ func (s *service) trendWorkflow() error {
 	s.outputService.StopSpinner()
 
 	return s.outputService.RenderTrend(*stsResult.Account, costInfo)
+}
+
+func (s *service) dailyWorkflow() error {
+	dailyCosts, err := s.costService.GetDailyCosts(context.Background(), 30)
+	if err != nil {
+		return err
+	}
+
+	stsResult, err := s.stsService.GetCallerIdentity(context.Background())
+	if err != nil {
+		return err
+	}
+
+	s.outputService.StopSpinner()
+
+	return s.outputService.RenderDaily(*stsResult.Account, dailyCosts)
 }
 
 func (s *service) wasteWorkflow() error {

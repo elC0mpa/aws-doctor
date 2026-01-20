@@ -27,6 +27,11 @@ func (m *MockOutputService) RenderWaste(accountID string, elasticIPs []types.Add
 	return args.Error(0)
 }
 
+func (m *MockOutputService) RenderDaily(accountID string, dailyCosts []model.DailyCost) error {
+	args := m.Called(accountID, dailyCosts)
+	return args.Error(0)
+}
+
 func (m *MockOutputService) StopSpinner() {
 	m.Called()
 }

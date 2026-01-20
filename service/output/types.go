@@ -30,6 +30,9 @@ type Service interface {
 	// RenderWaste outputs waste report data in the configured format
 	RenderWaste(accountID string, elasticIPs []types.Address, unusedVolumes []types.Volume, stoppedVolumes []types.Volume, ris []model.RiExpirationInfo, stoppedInstances []types.Instance, loadBalancers []elbtypes.LoadBalancer, unusedAMIs []model.AMIWasteInfo, orphanedSnapshots []model.SnapshotWasteInfo) error
 
+	// RenderDaily outputs daily cost data in the configured format
+	RenderDaily(accountID string, dailyCosts []model.DailyCost) error
+
 	// StopSpinner stops the loading spinner before rendering output
 	StopSpinner()
 }

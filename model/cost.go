@@ -17,3 +17,11 @@ type ServiceCost struct {
 	Amount float64
 	Unit   string
 }
+
+// DailyCostInfo represents cost data for a single day
+type DailyCostInfo struct {
+	Date      string  // YYYY-MM-DD format
+	DayOfWeek string  // Monday, Tuesday, etc.
+	Amount    float64
+	Unit      string
+}

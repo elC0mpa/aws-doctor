@@ -49,6 +49,15 @@ func (s *service) RenderWaste(accountID string, elasticIPs []types.Address, unus
 	return nil
 }
 
+func (s *service) RenderDaily(accountID string, dailyCosts []model.DailyCost) error {
+	if s.format == FormatJSON {
+		return utils.OutputDailyJSON(accountID, dailyCosts)
+	}
+
+	utils.DrawDailyChart(accountID, dailyCosts)
+	return nil
+}
+
 func (s *service) StopSpinner() {
 	utils.StopSpinner()
 }
