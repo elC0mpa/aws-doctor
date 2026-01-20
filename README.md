@@ -30,9 +30,27 @@ I created **aws-doctor** to fill that gap. It doesn't just show you the bill; it
 
 ## Installation
 
-### Golang
+### Quick Install (macOS/Linux)
 
-- go install github.com/elC0mpa/aws-doctor@latest
+```bash
+curl -sSfL https://raw.githubusercontent.com/elC0mpa/aws-doctor/main/install.sh | sh
+```
+
+### Using Go
+
+```bash
+go install github.com/elC0mpa/aws-doctor@latest
+```
+
+### Download Binary
+
+Download the latest release for your platform from the [Releases page](https://github.com/elC0mpa/aws-doctor/releases).
+
+Available platforms:
+
+- macOS (Intel & Apple Silicon)
+- Linux (amd64 & arm64)
+- Windows (amd64)
 
 ## Flags
 
@@ -52,10 +70,23 @@ I created **aws-doctor** to fill that gap. It doesn't just show you the bill; it
   - [ ] Idle Load Balancers.
   - [ ] RDS Idle DB Instances.
 
+## Releasing
+
+To create a new release:
+
+```bash
+git tag v1.0.0
+git push origin v1.0.0
+```
+
+This will automatically:
+
+- Build binaries for all supported platforms
+- Create a GitHub release with changelog
+
 ## Roadmap
 
 - [x] Add monthly trend analysis
 - [x] Add waste / wastage analysis logic
 - [ ] Export reports to CSV and PDF formats (medical records for your cloud)
 - [ ] Distribute the CLI via Fedora, Ubuntu, and macOS repositories
-
