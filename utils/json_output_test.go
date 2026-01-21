@@ -246,7 +246,7 @@ func TestOutputWasteJSON(t *testing.T) {
 
 	var err error
 	output := captureStdout(func() {
-		err = OutputWasteJSON("123456789012", elasticIPs, unusedVolumes, stoppedVolumes, ris, stoppedInstances, loadBalancers)
+		err = OutputWasteJSON("123456789012", elasticIPs, unusedVolumes, stoppedVolumes, ris, stoppedInstances, loadBalancers, nil)
 	})
 
 	if err != nil {
@@ -295,7 +295,7 @@ func TestOutputWasteJSON(t *testing.T) {
 func TestOutputWasteJSON_NoWaste(t *testing.T) {
 	var err error
 	output := captureStdout(func() {
-		err = OutputWasteJSON("123456789012", nil, nil, nil, nil, nil, nil)
+		err = OutputWasteJSON("123456789012", nil, nil, nil, nil, nil, nil, nil)
 	})
 
 	if err != nil {
@@ -322,7 +322,7 @@ func TestOutputWasteJSON_InstanceWithoutTransitionReason(t *testing.T) {
 
 	var err error
 	output := captureStdout(func() {
-		err = OutputWasteJSON("123456789012", nil, nil, nil, nil, stoppedInstances, nil)
+		err = OutputWasteJSON("123456789012", nil, nil, nil, nil, stoppedInstances, nil, nil)
 	})
 
 	if err != nil {
@@ -354,7 +354,7 @@ func TestOutputWasteJSON_InstanceWithInvalidTransitionReason(t *testing.T) {
 
 	var err error
 	output := captureStdout(func() {
-		err = OutputWasteJSON("123456789012", nil, nil, nil, nil, stoppedInstances, nil)
+		err = OutputWasteJSON("123456789012", nil, nil, nil, nil, stoppedInstances, nil, nil)
 	})
 
 	if err != nil {
@@ -388,6 +388,6 @@ func BenchmarkOutputWasteJSON(b *testing.B) {
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		OutputWasteJSON("123456789012", elasticIPs, nil, nil, nil, nil, nil)
+		OutputWasteJSON("123456789012", elasticIPs, nil, nil, nil, nil, nil, nil)
 	}
 }

@@ -3,7 +3,6 @@ package awscostexplorer
 import (
 	"context"
 	"fmt"
-	"regexp"
 	"strings"
 	"time"
 
