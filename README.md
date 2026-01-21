@@ -70,20 +70,6 @@ Available platforms:
   - [ ] Idle Load Balancers.
   - [ ] RDS Idle DB Instances.
 
-## Releasing
-
-To create a new release:
-
-```bash
-git tag v1.0.0
-git push origin v1.0.0
-```
-
-This will automatically:
-
-- Build binaries for all supported platforms
-- Create a GitHub release with changelog
-
 ## Roadmap
 
 - [x] Add monthly trend analysis
