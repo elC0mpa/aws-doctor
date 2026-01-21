@@ -2,6 +2,8 @@ package main
 
 import (
 	"context"
+	"fmt"
+	"os"
 
 	awsconfig "github.com/elC0mpa/aws-doctor/service/aws_config"
 	awscostexplorer "github.com/elC0mpa/aws-doctor/service/costexplorer"
@@ -13,19 +15,27 @@ import (
 )
 
 func main() {
+	if err := run(); err != nil {
+		utils.StopSpinner()
+		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
+		os.Exit(1)
+	}
+}
+
+func run() error {
 	utils.DrawBanner()
 	utils.StartSpinner()
 
 	flagService := flag.NewService()
 	flags, err := flagService.GetParsedFlags()
 	if err != nil {
-		panic(err)
+		return fmt.Errorf("failed to parse flags: %w", err)
 	}
 
 	cfgService := awsconfig.NewService()
 	awsCfg, err := cfgService.GetAWSCfg(context.Background(), flags.Region, flags.Profile)
 	if err != nil {
-		panic(err)
+		return fmt.Errorf("failed to load AWS config: %w", err)
 	}
 
 	costService := awscostexplorer.NewService(awsCfg)
@@ -34,8 +44,9 @@ func main() {
 
 	orchestratorService := orchestrator.NewService(stsService, costService, ec2Service)
 
-	err = orchestratorService.Orchestrate(flags)
-	if err != nil {
-		panic(err)
+	if err := orchestratorService.Orchestrate(flags); err != nil {
+		return err
 	}
+
+	return nil
 }
