@@ -2,7 +2,6 @@ package awscostexplorer
 
 import (
 	"context"
-	"regexp"
 	"strings"
 	"time"
 
@@ -19,8 +18,6 @@ func NewService(awsconfig aws.Config) *service {
 		client: client,
 	}
 }
-
-var transitionReasonRegex = regexp.MustCompile(`\(([^)]+)\)`)
 
 func (s *service) GetElasticIpAddressesInfo(ctx context.Context) (*model.ElasticIpInfo, error) {
 	output, err := s.client.DescribeAddresses(ctx, nil)
