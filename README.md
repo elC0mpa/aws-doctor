@@ -1,5 +1,11 @@
 # aws-doctor
 
+[![Go Report Card](https://goreportcard.com/badge/github.com/elC0mpa/aws-doctor)](https://goreportcard.com/report/github.com/elC0mpa/aws-doctor)
+[![Go Reference](https://pkg.go.dev/badge/github.com/elC0mpa/aws-doctor.svg)](https://pkg.go.dev/github.com/elC0mpa/aws-doctor)
+[![Go Version](https://img.shields.io/github/go-mod/go-version/elC0mpa/aws-doctor)](https://github.com/elC0mpa/aws-doctor/blob/main/go.mod)
+[![License](https://img.shields.io/github/license/elC0mpa/aws-doctor)](https://github.com/elC0mpa/aws-doctor/blob/main/LICENSE)
+[![Maintained](https://img.shields.io/badge/Maintained-yes-green.svg)](https://github.com/elC0mpa/aws-doctor/commits/main)
+
 A terminal-based tool that acts as a comprehensive health check for your AWS accounts. Built with Golang, **aws-doctor** diagnoses cost anomalies, detects idle resources, and provides a proactive analysis of your cloud infrastructure—effectively giving you the insights of AWS Trusted Advisor without the need for a Business or Enterprise support plan.
 
 ## Demo
