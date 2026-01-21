@@ -1,8 +1,13 @@
 package utils
 
 import (
+	"bytes"
+	"io"
+	"os"
+	"strings"
 	"testing"
 
+	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/elC0mpa/aws-doctor/model"
 )
 
@@ -293,5 +298,173 @@ func BenchmarkOrderCostServices(b *testing.B) {
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		orderCostServices(&costGroups)
+	}
+}
+
+// captureTableOutput captures stdout during function execution
+func captureTableOutput(f func()) string {
+	old := os.Stdout
+	r, w, _ := os.Pipe()
+	os.Stdout = w
+
+	f()
+
+	w.Close()
+	os.Stdout = old
+
+	var buf bytes.Buffer
+	io.Copy(&buf, r)
+	return buf.String()
+}
+
+func TestDrawCostTable(t *testing.T) {
+	lastMonthGroups := &model.CostInfo{
+		CostGroup: model.CostGroup{
+			"Amazon EC2": {Amount: 100.0, Unit: "USD"},
+			"Amazon S3":  {Amount: 50.0, Unit: "USD"},
+		},
+	}
+	lastMonthGroups.Start = aws.String("2024-01-01")
+	lastMonthGroups.End = aws.String("2024-01-31")
+
+	currentMonthGroups := &model.CostInfo{
+		CostGroup: model.CostGroup{
+			"Amazon EC2": {Amount: 120.0, Unit: "USD"},
+			"Amazon S3":  {Amount: 45.0, Unit: "USD"},
+		},
+	}
+	currentMonthGroups.Start = aws.String("2024-02-01")
+	currentMonthGroups.End = aws.String("2024-02-29")
+
+	output := captureTableOutput(func() {
+		DrawCostTable("123456789012", "150.00 USD", "165.00 USD", lastMonthGroups, currentMonthGroups, "UnblendedCost")
+	})
+
+	// Verify output contains expected elements
+	if !strings.Contains(output, "AWS COST DIAGNOSIS") {
+		t.Error("DrawCostTable() output missing header")
+	}
+
+	if !strings.Contains(output, "123456789012") {
+		t.Error("DrawCostTable() output missing account ID")
+	}
+
+	// Verify table structure is present (tables use box-drawing characters)
+	if len(output) < 200 {
+		t.Errorf("DrawCostTable() output seems too short: %d chars", len(output))
+	}
+
+	// Verify service names appear in output
+	if !strings.Contains(output, "EC2") {
+		t.Error("DrawCostTable() output missing EC2 service")
+	}
+}
+
+func TestDrawCostTable_CostsIncreased(t *testing.T) {
+	lastMonthGroups := &model.CostInfo{
+		CostGroup: model.CostGroup{
+			"Amazon EC2": {Amount: 100.0, Unit: "USD"},
+		},
+	}
+	lastMonthGroups.Start = aws.String("2024-01-01")
+	lastMonthGroups.End = aws.String("2024-01-31")
+
+	currentMonthGroups := &model.CostInfo{
+		CostGroup: model.CostGroup{
+			"Amazon EC2": {Amount: 200.0, Unit: "USD"},
+		},
+	}
+	currentMonthGroups.Start = aws.String("2024-02-01")
+	currentMonthGroups.End = aws.String("2024-02-29")
+
+	output := captureTableOutput(func() {
+		DrawCostTable("123456789012", "100.00 USD", "200.00 USD", lastMonthGroups, currentMonthGroups, "UnblendedCost")
+	})
+
+	// Should have output (table with red colors for increases)
+	if len(output) == 0 {
+		t.Error("DrawCostTable() with increased costs produced no output")
+	}
+}
+
+func TestDrawCostTable_CostsDecreased(t *testing.T) {
+	lastMonthGroups := &model.CostInfo{
+		CostGroup: model.CostGroup{
+			"Amazon EC2": {Amount: 200.0, Unit: "USD"},
+		},
+	}
+	lastMonthGroups.Start = aws.String("2024-01-01")
+	lastMonthGroups.End = aws.String("2024-01-31")
+
+	currentMonthGroups := &model.CostInfo{
+		CostGroup: model.CostGroup{
+			"Amazon EC2": {Amount: 100.0, Unit: "USD"},
+		},
+	}
+	currentMonthGroups.Start = aws.String("2024-02-01")
+	currentMonthGroups.End = aws.String("2024-02-29")
+
+	output := captureTableOutput(func() {
+		DrawCostTable("123456789012", "200.00 USD", "100.00 USD", lastMonthGroups, currentMonthGroups, "UnblendedCost")
+	})
+
+	// Should have output (table with green colors for decreases)
+	if len(output) == 0 {
+		t.Error("DrawCostTable() with decreased costs produced no output")
+	}
+}
+
+func TestDrawCostTable_EmptyServices(t *testing.T) {
+	lastMonthGroups := &model.CostInfo{
+		CostGroup: model.CostGroup{},
+	}
+	lastMonthGroups.Start = aws.String("2024-01-01")
+	lastMonthGroups.End = aws.String("2024-01-31")
+
+	currentMonthGroups := &model.CostInfo{
+		CostGroup: model.CostGroup{},
+	}
+	currentMonthGroups.Start = aws.String("2024-02-01")
+	currentMonthGroups.End = aws.String("2024-02-29")
+
+	output := captureTableOutput(func() {
+		DrawCostTable("123456789012", "0.00 USD", "0.00 USD", lastMonthGroups, currentMonthGroups, "UnblendedCost")
+	})
+
+	// Should still produce header and table structure
+	if !strings.Contains(output, "AWS COST DIAGNOSIS") {
+		t.Error("DrawCostTable() with empty services missing header")
+	}
+}
+
+func BenchmarkDrawCostTable(b *testing.B) {
+	lastMonthGroups := &model.CostInfo{
+		CostGroup: model.CostGroup{
+			"Amazon EC2": {Amount: 100.0, Unit: "USD"},
+			"Amazon S3":  {Amount: 50.0, Unit: "USD"},
+			"AWS Lambda": {Amount: 25.0, Unit: "USD"},
+		},
+	}
+	lastMonthGroups.Start = aws.String("2024-01-01")
+	lastMonthGroups.End = aws.String("2024-01-31")
+
+	currentMonthGroups := &model.CostInfo{
+		CostGroup: model.CostGroup{
+			"Amazon EC2": {Amount: 120.0, Unit: "USD"},
+			"Amazon S3":  {Amount: 45.0, Unit: "USD"},
+			"AWS Lambda": {Amount: 30.0, Unit: "USD"},
+		},
+	}
+	currentMonthGroups.Start = aws.String("2024-02-01")
+	currentMonthGroups.End = aws.String("2024-02-29")
+
+	// Redirect stdout to discard
+	old := os.Stdout
+	os.Stdout, _ = os.Open(os.DevNull)
+	defer func() { os.Stdout = old }()
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		DrawCostTable("123456789012", "175.00 USD", "195.00 USD", lastMonthGroups, currentMonthGroups, "UnblendedCost")
 	}
 }

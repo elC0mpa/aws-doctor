@@ -1,6 +1,10 @@
 package utils
 
 import (
+	"bytes"
+	"io"
+	"os"
+	"strings"
 	"testing"
 	"time"
 
@@ -468,5 +472,334 @@ func BenchmarkPopulateInstanceRows(b *testing.B) {
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		populateInstanceRows(instances)
+	}
+}
+
+// captureWasteOutput captures stdout during function execution
+func captureWasteOutput(f func()) string {
+	old := os.Stdout
+	r, w, _ := os.Pipe()
+	os.Stdout = w
+
+	f()
+
+	w.Close()
+	os.Stdout = old
+
+	var buf bytes.Buffer
+	io.Copy(&buf, r)
+	return buf.String()
+}
+
+func TestDrawWasteTable_NoWaste(t *testing.T) {
+	output := captureWasteOutput(func() {
+		DrawWasteTable("123456789012", nil, nil, nil, nil, nil, nil)
+	})
+
+	if !strings.Contains(output, "AWS DOCTOR CHECKUP") {
+		t.Error("DrawWasteTable() missing header")
+	}
+
+	if !strings.Contains(output, "123456789012") {
+		t.Error("DrawWasteTable() missing account ID")
+	}
+
+	if !strings.Contains(output, "healthy") || !strings.Contains(output, "No waste found") {
+		t.Error("DrawWasteTable() with no waste should show healthy message")
+	}
+}
+
+func TestDrawWasteTable_WithElasticIPs(t *testing.T) {
+	elasticIPs := []types.Address{
+		{PublicIp: aws.String("1.2.3.4"), AllocationId: aws.String("eipalloc-123")},
+	}
+
+	output := captureWasteOutput(func() {
+		DrawWasteTable("123456789012", elasticIPs, nil, nil, nil, nil, nil)
+	})
+
+	if !strings.Contains(output, "Elastic IP") {
+		t.Error("DrawWasteTable() with elastic IPs missing Elastic IP section")
+	}
+}
+
+func TestDrawWasteTable_WithEBSVolumes(t *testing.T) {
+	unusedVolumes := []types.Volume{
+		{VolumeId: aws.String("vol-123"), Size: aws.Int32(100)},
+	}
+
+	output := captureWasteOutput(func() {
+		DrawWasteTable("123456789012", nil, unusedVolumes, nil, nil, nil, nil)
+	})
+
+	if !strings.Contains(output, "EBS") {
+		t.Error("DrawWasteTable() with EBS volumes missing EBS section")
+	}
+}
+
+func TestDrawWasteTable_WithStoppedInstances(t *testing.T) {
+	stoppedInstances := []types.Instance{
+		{
+			InstanceId:            aws.String("i-123"),
+			StateTransitionReason: aws.String("User initiated (2024-01-01 00:00:00 UTC)"),
+		},
+	}
+
+	output := captureWasteOutput(func() {
+		DrawWasteTable("123456789012", nil, nil, nil, nil, stoppedInstances, nil)
+	})
+
+	if !strings.Contains(output, "EC2") || !strings.Contains(output, "Reserved Instance") {
+		t.Error("DrawWasteTable() with stopped instances missing EC2 section")
+	}
+}
+
+func TestDrawWasteTable_WithReservedInstances(t *testing.T) {
+	ris := []model.RiExpirationInfo{
+		{
+			ReservedInstanceId: "ri-123",
+			DaysUntilExpiry:    15,
+			Status:             "EXPIRING SOON",
+		},
+	}
+
+	output := captureWasteOutput(func() {
+		DrawWasteTable("123456789012", nil, nil, nil, ris, nil, nil)
+	})
+
+	if !strings.Contains(output, "Reserved Instance") {
+		t.Error("DrawWasteTable() with reserved instances missing RI section")
+	}
+}
+
+func TestDrawWasteTable_WithLoadBalancers(t *testing.T) {
+	loadBalancers := []elbtypes.LoadBalancer{
+		{
+			LoadBalancerName: aws.String("my-alb"),
+			Type:             elbtypes.LoadBalancerTypeEnumApplication,
+		},
+	}
+
+	output := captureWasteOutput(func() {
+		DrawWasteTable("123456789012", nil, nil, nil, nil, nil, loadBalancers)
+	})
+
+	if !strings.Contains(output, "Load Balancer") {
+		t.Error("DrawWasteTable() with load balancers missing LB section")
+	}
+}
+
+func TestDrawWasteTable_AllWasteTypes(t *testing.T) {
+	elasticIPs := []types.Address{
+		{PublicIp: aws.String("1.2.3.4"), AllocationId: aws.String("eipalloc-123")},
+	}
+	unusedVolumes := []types.Volume{
+		{VolumeId: aws.String("vol-123"), Size: aws.Int32(100)},
+	}
+	stoppedVolumes := []types.Volume{
+		{VolumeId: aws.String("vol-456"), Size: aws.Int32(200)},
+	}
+	ris := []model.RiExpirationInfo{
+		{ReservedInstanceId: "ri-123", DaysUntilExpiry: 15, Status: "EXPIRING SOON"},
+	}
+	stoppedInstances := []types.Instance{
+		{InstanceId: aws.String("i-123"), StateTransitionReason: aws.String("User initiated (2024-01-01 00:00:00 UTC)")},
+	}
+	loadBalancers := []elbtypes.LoadBalancer{
+		{LoadBalancerName: aws.String("my-alb"), Type: elbtypes.LoadBalancerTypeEnumApplication},
+	}
+
+	output := captureWasteOutput(func() {
+		DrawWasteTable("123456789012", elasticIPs, unusedVolumes, stoppedVolumes, ris, stoppedInstances, loadBalancers)
+	})
+
+	// Should have all sections
+	if !strings.Contains(output, "EBS") {
+		t.Error("Missing EBS section")
+	}
+	if !strings.Contains(output, "Elastic IP") {
+		t.Error("Missing Elastic IP section")
+	}
+	if !strings.Contains(output, "EC2") {
+		t.Error("Missing EC2 section")
+	}
+	if !strings.Contains(output, "Load Balancer") {
+		t.Error("Missing Load Balancer section")
+	}
+}
+
+func TestDrawEBSTable(t *testing.T) {
+	unusedVolumes := []types.Volume{
+		{VolumeId: aws.String("vol-111"), Size: aws.Int32(100)},
+		{VolumeId: aws.String("vol-222"), Size: aws.Int32(200)},
+	}
+	stoppedVolumes := []types.Volume{
+		{VolumeId: aws.String("vol-333"), Size: aws.Int32(300)},
+	}
+
+	output := captureWasteOutput(func() {
+		drawEBSTable(unusedVolumes, stoppedVolumes)
+	})
+
+	if !strings.Contains(output, "EBS Volume Waste") {
+		t.Error("drawEBSTable() missing title")
+	}
+
+	if !strings.Contains(output, "vol-111") {
+		t.Error("drawEBSTable() missing unused volume ID")
+	}
+
+	if !strings.Contains(output, "vol-333") {
+		t.Error("drawEBSTable() missing stopped volume ID")
+	}
+}
+
+func TestDrawEBSTable_OnlyUnused(t *testing.T) {
+	unusedVolumes := []types.Volume{
+		{VolumeId: aws.String("vol-111"), Size: aws.Int32(100)},
+	}
+
+	output := captureWasteOutput(func() {
+		drawEBSTable(unusedVolumes, nil)
+	})
+
+	if !strings.Contains(output, "Available") {
+		t.Error("drawEBSTable() with only unused volumes missing Available status")
+	}
+}
+
+func TestDrawEBSTable_OnlyStopped(t *testing.T) {
+	stoppedVolumes := []types.Volume{
+		{VolumeId: aws.String("vol-333"), Size: aws.Int32(300)},
+	}
+
+	output := captureWasteOutput(func() {
+		drawEBSTable(nil, stoppedVolumes)
+	})
+
+	if !strings.Contains(output, "Stopped Instance") {
+		t.Error("drawEBSTable() with only stopped volumes missing Stopped Instance status")
+	}
+}
+
+func TestDrawEC2Table(t *testing.T) {
+	instances := []types.Instance{
+		{
+			InstanceId:            aws.String("i-123"),
+			StateTransitionReason: aws.String("User initiated (2024-01-01 00:00:00 UTC)"),
+		},
+	}
+	ris := []model.RiExpirationInfo{
+		{ReservedInstanceId: "ri-123", DaysUntilExpiry: 15, Status: "EXPIRING SOON"},
+		{ReservedInstanceId: "ri-456", DaysUntilExpiry: -5, Status: "EXPIRED"},
+	}
+
+	output := captureWasteOutput(func() {
+		drawEC2Table(instances, ris)
+	})
+
+	if !strings.Contains(output, "EC2 & Reserved Instance Waste") {
+		t.Error("drawEC2Table() missing title")
+	}
+
+	if !strings.Contains(output, "i-123") {
+		t.Error("drawEC2Table() missing instance ID")
+	}
+
+	if !strings.Contains(output, "ri-123") {
+		t.Error("drawEC2Table() missing RI ID")
+	}
+}
+
+func TestDrawEC2Table_OnlyInstances(t *testing.T) {
+	instances := []types.Instance{
+		{InstanceId: aws.String("i-123"), StateTransitionReason: aws.String("User initiated (2024-01-01 00:00:00 UTC)")},
+	}
+
+	output := captureWasteOutput(func() {
+		drawEC2Table(instances, nil)
+	})
+
+	if !strings.Contains(output, "Stopped Instance") {
+		t.Error("drawEC2Table() with only instances missing Stopped Instance status")
+	}
+}
+
+func TestDrawEC2Table_OnlyRIs(t *testing.T) {
+	ris := []model.RiExpirationInfo{
+		{ReservedInstanceId: "ri-123", DaysUntilExpiry: 15, Status: "EXPIRING SOON"},
+	}
+
+	output := captureWasteOutput(func() {
+		drawEC2Table(nil, ris)
+	})
+
+	if !strings.Contains(output, "Expiring Soon") {
+		t.Error("drawEC2Table() with only expiring RIs missing Expiring Soon status")
+	}
+}
+
+func TestDrawElasticIpTable(t *testing.T) {
+	elasticIPs := []types.Address{
+		{PublicIp: aws.String("1.2.3.4"), AllocationId: aws.String("eipalloc-123")},
+		{PublicIp: aws.String("5.6.7.8"), AllocationId: aws.String("eipalloc-456")},
+	}
+
+	output := captureWasteOutput(func() {
+		drawElasticIpTable(elasticIPs)
+	})
+
+	if !strings.Contains(output, "Elastic IP Waste") {
+		t.Error("drawElasticIpTable() missing title")
+	}
+
+	if !strings.Contains(output, "1.2.3.4") {
+		t.Error("drawElasticIpTable() missing IP address")
+	}
+
+	if !strings.Contains(output, "eipalloc-123") {
+		t.Error("drawElasticIpTable() missing allocation ID")
+	}
+}
+
+func TestDrawLoadBalancerTable(t *testing.T) {
+	loadBalancers := []elbtypes.LoadBalancer{
+		{LoadBalancerName: aws.String("my-alb"), Type: elbtypes.LoadBalancerTypeEnumApplication},
+		{LoadBalancerName: aws.String("my-nlb"), Type: elbtypes.LoadBalancerTypeEnumNetwork},
+	}
+
+	output := captureWasteOutput(func() {
+		drawLoadBalancerTable(loadBalancers)
+	})
+
+	if !strings.Contains(output, "Load Balancer Waste") {
+		t.Error("drawLoadBalancerTable() missing title")
+	}
+
+	if !strings.Contains(output, "my-alb") {
+		t.Error("drawLoadBalancerTable() missing ALB name")
+	}
+
+	if !strings.Contains(output, "application") {
+		t.Error("drawLoadBalancerTable() missing ALB type")
+	}
+}
+
+func BenchmarkDrawWasteTable(b *testing.B) {
+	elasticIPs := []types.Address{
+		{PublicIp: aws.String("1.2.3.4"), AllocationId: aws.String("eipalloc-123")},
+	}
+	unusedVolumes := []types.Volume{
+		{VolumeId: aws.String("vol-123"), Size: aws.Int32(100)},
+	}
+
+	// Redirect stdout to discard
+	old := os.Stdout
+	os.Stdout, _ = os.Open(os.DevNull)
+	defer func() { os.Stdout = old }()
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		DrawWasteTable("123456789012", elasticIPs, unusedVolumes, nil, nil, nil, nil)
 	}
 }

@@ -1,9 +1,13 @@
 package utils
 
 import (
+	"bytes"
+	"io"
+	"os"
 	"strings"
 	"testing"
 
+	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/elC0mpa/aws-doctor/model"
 )
 
@@ -268,5 +272,108 @@ func BenchmarkAssignRankedColors(b *testing.B) {
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		assignRankedColors(costs)
+	}
+}
+
+// captureOutput captures stdout during function execution
+func captureOutput(f func()) string {
+	old := os.Stdout
+	r, w, _ := os.Pipe()
+	os.Stdout = w
+
+	f()
+
+	w.Close()
+	os.Stdout = old
+
+	var buf bytes.Buffer
+	io.Copy(&buf, r)
+	return buf.String()
+}
+
+func TestDrawTrendChart(t *testing.T) {
+	// Create test data with 6 months of costs
+	monthlyCosts := []model.CostInfo{
+		{CostGroup: model.CostGroup{"Total": {Amount: 100.0, Unit: "USD"}}},
+		{CostGroup: model.CostGroup{"Total": {Amount: 150.0, Unit: "USD"}}},
+		{CostGroup: model.CostGroup{"Total": {Amount: 120.0, Unit: "USD"}}},
+		{CostGroup: model.CostGroup{"Total": {Amount: 180.0, Unit: "USD"}}},
+		{CostGroup: model.CostGroup{"Total": {Amount: 90.0, Unit: "USD"}}},
+		{CostGroup: model.CostGroup{"Total": {Amount: 200.0, Unit: "USD"}}},
+	}
+
+	// Set Start dates for each month
+	monthlyCosts[0].Start = aws.String("2024-01-01")
+	monthlyCosts[1].Start = aws.String("2024-02-01")
+	monthlyCosts[2].Start = aws.String("2024-03-01")
+	monthlyCosts[3].Start = aws.String("2024-04-01")
+	monthlyCosts[4].Start = aws.String("2024-05-01")
+	monthlyCosts[5].Start = aws.String("2024-06-01")
+
+	output := captureOutput(func() {
+		DrawTrendChart("123456789012", monthlyCosts)
+	})
+
+	// Verify output contains expected elements
+	if !strings.Contains(output, "AWS DOCTOR TREND") {
+		t.Error("DrawTrendChart() output missing header")
+	}
+
+	if !strings.Contains(output, "123456789012") {
+		t.Error("DrawTrendChart() output missing account ID")
+	}
+
+	// Verify output is not empty
+	if len(output) < 100 {
+		t.Errorf("DrawTrendChart() output seems too short: %d chars", len(output))
+	}
+}
+
+func TestDrawTrendChart_EmptyCosts(t *testing.T) {
+	output := captureOutput(func() {
+		DrawTrendChart("123456789012", []model.CostInfo{})
+	})
+
+	// Should still produce header output
+	if !strings.Contains(output, "AWS DOCTOR TREND") {
+		t.Error("DrawTrendChart() with empty costs missing header")
+	}
+}
+
+func TestDrawTrendChart_SingleMonth(t *testing.T) {
+	monthlyCosts := []model.CostInfo{
+		{CostGroup: model.CostGroup{"Total": {Amount: 100.0, Unit: "USD"}}},
+	}
+	monthlyCosts[0].Start = aws.String("2024-01-01")
+
+	output := captureOutput(func() {
+		DrawTrendChart("123456789012", monthlyCosts)
+	})
+
+	if len(output) == 0 {
+		t.Error("DrawTrendChart() with single month produced no output")
+	}
+}
+
+func BenchmarkDrawTrendChart(b *testing.B) {
+	monthlyCosts := make([]model.CostInfo, 6)
+	for i := 0; i < 6; i++ {
+		monthlyCosts[i] = model.CostInfo{
+			CostGroup: model.CostGroup{
+				"Total": {Amount: float64((i + 1) * 100), Unit: "USD"},
+			},
+		}
+		month := i + 1
+		monthlyCosts[i].Start = aws.String(strings.Replace("2024-0X-01", "X", string(rune('0'+month)), 1))
+	}
+
+	// Redirect stdout to discard
+	old := os.Stdout
+	os.Stdout, _ = os.Open(os.DevNull)
+	defer func() { os.Stdout = old }()
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		DrawTrendChart("123456789012", monthlyCosts)
 	}
 }
