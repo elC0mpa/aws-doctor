@@ -28,7 +28,7 @@ type Service interface {
 	RenderTrend(accountID string, costInfo []model.CostInfo) error
 
 	// RenderWaste outputs waste report data in the configured format
-	RenderWaste(accountID string, elasticIPs []types.Address, unusedVolumes []types.Volume, stoppedVolumes []types.Volume, ris []model.RiExpirationInfo, stoppedInstances []types.Instance, loadBalancers []elbtypes.LoadBalancer, unusedAMIs []model.AMIWasteInfo, orphanedSnapshots []model.SnapshotWasteInfo) error
+	RenderWaste(accountID string, elasticIPs []types.Address, unusedVolumes []types.Volume, stoppedVolumes []types.Volume, ris []model.RiExpirationInfo, stoppedInstances []types.Instance, loadBalancers []elbtypes.LoadBalancer, unusedAMIs []model.AMIWasteInfo, orphanedSnapshots []model.SnapshotWasteInfo, emptyHostedZones []model.HostedZoneWasteInfo) error
 
 	// StopSpinner stops the loading spinner before rendering output
 	StopSpinner()
