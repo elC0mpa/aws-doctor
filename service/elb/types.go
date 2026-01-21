@@ -3,12 +3,12 @@ package elb
 import (
 	"context"
 
-	elbsdk "github.com/aws/aws-sdk-go-v2/service/elasticloadbalancingv2"
+	elb "github.com/aws/aws-sdk-go-v2/service/elasticloadbalancingv2"
 	"github.com/aws/aws-sdk-go-v2/service/elasticloadbalancingv2/types"
 )
 
 type service struct {
-	client *elbsdk.Client
+	client *elb.Client
 }
 
 // ELBService defines the interface for ELB service operations.
