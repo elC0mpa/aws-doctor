@@ -13,7 +13,7 @@ import (
 	"github.com/jedib0t/go-pretty/v6/text"
 )
 
-func DrawWasteTable(accountId string, elasticIpInfo []types.Address, unusedEBSVolumeInfo []types.Volume, attachedToStoppedInstancesEBSVolumeInfo []types.Volume, expireReservedInstancesInfo []model.RiExpirationInfo, instancesStoppedMoreThan30Days []types.Instance, unusedLoadBalancers []elbtypes.LoadBalancer, unusedAMIs []model.AMIWasteInfo, orphanedSnapshots []model.SnapshotWasteInfo) {
+func DrawWasteTable(accountId string, elasticIpInfo []types.Address, unusedEBSVolumeInfo []types.Volume, attachedToStoppedInstancesEBSVolumeInfo []types.Volume, expireReservedInstancesInfo []model.RiExpirationInfo, instancesStoppedMoreThan30Days []types.Instance, unusedLoadBalancers []elbtypes.LoadBalancer, unusedAMIs []model.AMIWasteInfo, orphanedSnapshots []model.SnapshotWasteInfo, emptyHostedZones []model.HostedZoneWasteInfo) {
 	fmt.Printf("\n%s\n", text.FgHiWhite.Sprint(" 🏥 AWS DOCTOR CHECKUP"))
 	fmt.Printf(" Account ID: %s\n", text.FgBlue.Sprint(accountId))
 	fmt.Println(text.FgHiBlue.Sprint(" ------------------------------------------------"))
@@ -25,7 +25,8 @@ func DrawWasteTable(accountId string, elasticIpInfo []types.Address, unusedEBSVo
 		len(expireReservedInstancesInfo) > 0 ||
 		len(unusedLoadBalancers) > 0 ||
 		len(unusedAMIs) > 0 ||
-		len(orphanedSnapshots) > 0
+		len(orphanedSnapshots) > 0 ||
+		len(emptyHostedZones) > 0
 
 	if !hasWaste {
 		fmt.Println("\n" + text.FgHiGreen.Sprint(" ✅  Your account is healthy! No waste found."))
@@ -54,6 +55,10 @@ func DrawWasteTable(accountId string, elasticIpInfo []types.Address, unusedEBSVo
 
 	if len(orphanedSnapshots) > 0 {
 		drawSnapshotTable(orphanedSnapshots)
+	}
+
+	if len(emptyHostedZones) > 0 {
+		drawHostedZoneTable(emptyHostedZones)
 	}
 }
 
@@ -427,6 +432,45 @@ func populateSnapshotRows(snapshots []model.SnapshotWasteInfo) []table.Row {
 			snap.Reason,
 			fmt.Sprintf("%d GB", snap.SizeGB),
 			fmt.Sprintf("$%.2f/mo", snap.MaxPotentialSavings),
+		})
+	}
+
+	return rows
+}
+
+func drawHostedZoneTable(hostedZones []model.HostedZoneWasteInfo) {
+	t := table.NewWriter()
+	t.SetOutputMirror(os.Stdout)
+	t.SetStyle(table.StyleRounded)
+	t.SetTitle("Route 53 Empty Hosted Zones")
+
+	t.AppendHeader(table.Row{"Status", "Zone Name", "Zone ID", "Cost/Mo"})
+
+	t.SetColumnConfigs([]table.ColumnConfig{
+		{Number: 4, Align: text.AlignRight},
+	})
+
+	rows := populateHostedZoneRows(hostedZones)
+
+	if len(rows) > 0 {
+		halfRow := len(rows) / 2
+		rows[halfRow][0] = text.FgHiRed.Sprint("Empty Zone")
+	}
+
+	t.AppendRows(rows)
+	t.Render()
+	fmt.Println()
+}
+
+func populateHostedZoneRows(hostedZones []model.HostedZoneWasteInfo) []table.Row {
+	var rows []table.Row
+
+	for _, zone := range hostedZones {
+		rows = append(rows, table.Row{
+			"",
+			zone.Name,
+			zone.HostedZoneId,
+			fmt.Sprintf("$%.2f", zone.MonthlyCost),
 		})
 	}
 

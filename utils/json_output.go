@@ -69,7 +69,7 @@ func OutputTrendJSON(accountID string, costInfo []model.CostInfo) error {
 }
 
 // OutputWasteJSON outputs waste detection data as JSON
-func OutputWasteJSON(accountID string, elasticIPs []types.Address, unusedVolumes []types.Volume, stoppedVolumes []types.Volume, ris []model.RiExpirationInfo, stoppedInstances []types.Instance, loadBalancers []elbtypes.LoadBalancer, unusedAMIs []model.AMIWasteInfo, orphanedSnapshots []model.SnapshotWasteInfo) error {
+func OutputWasteJSON(accountID string, elasticIPs []types.Address, unusedVolumes []types.Volume, stoppedVolumes []types.Volume, ris []model.RiExpirationInfo, stoppedInstances []types.Instance, loadBalancers []elbtypes.LoadBalancer, unusedAMIs []model.AMIWasteInfo, orphanedSnapshots []model.SnapshotWasteInfo, emptyHostedZones []model.HostedZoneWasteInfo) error {
 	output := model.WasteReportJSON{
 		AccountID:           accountID,
 		GeneratedAt:         time.Now().UTC().Format(time.RFC3339),
@@ -82,6 +82,7 @@ func OutputWasteJSON(accountID string, elasticIPs []types.Address, unusedVolumes
 		UnusedAMIs:          []model.AMIJSON{},
 		OrphanedSnapshots:   []model.SnapshotJSON{},
 		StaleSnapshots:      []model.SnapshotJSON{},
+		EmptyHostedZones:    []model.HostedZoneJSON{},
 	}
 
 	// Unused Elastic IPs
@@ -185,6 +186,19 @@ func OutputWasteJSON(accountID string, elasticIPs []types.Address, unusedVolumes
 		}
 	}
 
+	// Empty hosted zones
+	for _, zone := range emptyHostedZones {
+		output.EmptyHostedZones = append(output.EmptyHostedZones, model.HostedZoneJSON{
+			HostedZoneID:   zone.HostedZoneId,
+			Name:           zone.Name,
+			RecordSetCount: zone.RecordSetCount,
+			IsPrivate:      zone.IsPrivate,
+			Comment:        zone.Comment,
+			MonthlyCost:    zone.MonthlyCost,
+		})
+	}
+
+
 	output.HasWaste = len(output.UnusedElasticIPs) > 0 ||
 		len(output.UnusedEBSVolumes) > 0 ||
 		len(output.StoppedVolumes) > 0 ||
@@ -193,7 +207,8 @@ func OutputWasteJSON(accountID string, elasticIPs []types.Address, unusedVolumes
 		len(output.UnusedLoadBalancers) > 0 ||
 		len(output.UnusedAMIs) > 0 ||
 		len(output.OrphanedSnapshots) > 0 ||
-		len(output.StaleSnapshots) > 0
+		len(output.StaleSnapshots) > 0 ||
+		len(output.EmptyHostedZones) > 0
 
 	return printJSON(output)
 }
