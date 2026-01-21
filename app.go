@@ -45,7 +45,7 @@ func run() error {
 	orchestratorService := orchestrator.NewService(stsService, costService, ec2Service)
 
 	if err := orchestratorService.Orchestrate(flags); err != nil {
-		return err
+		return fmt.Errorf("orchestration failed: %w", err)
 	}
 
 	return nil
