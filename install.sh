@@ -11,15 +11,15 @@ YELLOW='\033[1;33m'
 NC='\033[0m'
 
 log_info() {
-    printf "${GREEN}[INFO]${NC} %s\n" "$1"
+    printf "${GREEN}[INFO]${NC} %s\n" "$1" >&2
 }
 
 log_warn() {
-    printf "${YELLOW}[WARN]${NC} %s\n" "$1"
+    printf "${YELLOW}[WARN]${NC} %s\n" "$1" >&2
 }
 
 log_error() {
-    printf "${RED}[ERROR]${NC} %s\n" "$1"
+    printf "${RED}[ERROR]${NC} %s\n" "$1" >&2
 }
 
 detect_os() {
@@ -57,6 +57,7 @@ download_and_verify() {
     VERSION="$1"
     OS="$2"
     ARCH="$3"
+    TMP_DIR="$4"
 
     if [ "$OS" = "windows" ]; then
         EXT="zip"
@@ -69,10 +70,7 @@ download_and_verify() {
     CHECKSUM_URL="https://github.com/${REPO}/releases/download/${VERSION}/checksums.txt"
 
     log_info "Downloading ${FILENAME}..."
-
-    TMP_DIR=$(mktemp -d)
-    trap 'rm -rf "$TMP_DIR"' EXIT
-
+    
     curl -sSfL "$DOWNLOAD_URL" -o "${TMP_DIR}/${FILENAME}"
     curl -sSfL "$CHECKSUM_URL" -o "${TMP_DIR}/checksums.txt"
 
@@ -130,6 +128,9 @@ main() {
     log_info "AWS Doctor Installer"
     log_info "===================="
 
+    TMP_DIR=$(mktemp -d)
+    trap 'rm -rf "$TMP_DIR"' EXIT
+
     OS=$(detect_os)
     ARCH=$(detect_arch)
 
@@ -137,7 +138,6 @@ main() {
     log_info "Detected architecture: $ARCH"
 
     VERSION="${1:-$(get_latest_version)}"
-
     if [ -z "$VERSION" ]; then
         log_error "Could not determine version to install"
         exit 1
@@ -145,7 +145,7 @@ main() {
 
     log_info "Installing version: $VERSION"
 
-    BINARY_PATH=$(download_and_verify "$VERSION" "$OS" "$ARCH")
+    BINARY_PATH=$(download_and_verify "$VERSION" "$OS" "$ARCH" "$TMP_DIR")
 
     install_binary "$BINARY_PATH"
 
