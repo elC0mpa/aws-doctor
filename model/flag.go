@@ -5,4 +5,5 @@ type Flags struct {
 	Profile string
 	Trend   bool
 	Waste   bool
+	Output  string // Output format: "table" (default) or "json"
 }

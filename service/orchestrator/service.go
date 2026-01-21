@@ -26,17 +26,17 @@ func NewService(stsService awssts.STSService, costService awscostexplorer.CostSe
 
 func (s *service) Orchestrate(flags model.Flags) error {
 	if flags.Waste {
-		return s.wasteWorkflow()
+		return s.wasteWorkflow(flags.Output)
 	}
 
 	if flags.Trend {
-		return s.trendWorkflow()
+		return s.trendWorkflow(flags.Output)
 	}
 
-	return s.defaultWorkflow()
+	return s.defaultWorkflow(flags.Output)
 }
 
-func (s *service) defaultWorkflow() error {
+func (s *service) defaultWorkflow(outputFormat string) error {
 	currentMonthData, err := s.costService.GetCurrentMonthCostsByService(context.Background())
 	if err != nil {
 		return err
@@ -64,11 +64,21 @@ func (s *service) defaultWorkflow() error {
 
 	utils.StopSpinner()
 
+	if outputFormat == "json" {
+		return utils.OutputCostComparisonJSON(
+			*stsResult.Account,
+			utils.ParseCostString(*lastTotalCost),
+			utils.ParseCostString(*currentTotalCost),
+			lastMonthData,
+			currentMonthData,
+		)
+	}
+
 	utils.DrawCostTable(*stsResult.Account, *lastTotalCost, *currentTotalCost, lastMonthData, currentMonthData, "UnblendedCost")
 	return nil
 }
 
-func (s *service) trendWorkflow() error {
+func (s *service) trendWorkflow(outputFormat string) error {
 	costInfo, err := s.costService.GetLastSixMonthsCosts(context.Background())
 	if err != nil {
 		return err
@@ -81,12 +91,16 @@ func (s *service) trendWorkflow() error {
 
 	utils.StopSpinner()
 
+	if outputFormat == "json" {
+		return utils.OutputTrendJSON(*stsResult.Account, costInfo)
+	}
+
 	utils.DrawTrendChart(*stsResult.Account, costInfo)
 
 	return nil
 }
 
-func (s *service) wasteWorkflow() error {
+func (s *service) wasteWorkflow(outputFormat string) error {
 	ctx := context.Background()
 	g, ctx := errgroup.WithContext(ctx)
 
@@ -147,6 +161,18 @@ func (s *service) wasteWorkflow() error {
 	}
 
 	utils.StopSpinner()
+
+	if outputFormat == "json" {
+		return utils.OutputWasteJSON(
+			*stsResult.Account,
+			elasticIpInfo,
+			availableEBSVolumesInfo,
+			attachedToStoppedInstancesEBSVolumesInfo,
+			expireReservedInstancesInfo,
+			stoppedInstancesMoreThan30Days,
+			unusedLoadBalancers,
+		)
+	}
 
 	utils.DrawWasteTable(*stsResult.Account, elasticIpInfo, availableEBSVolumesInfo, attachedToStoppedInstancesEBSVolumesInfo, expireReservedInstancesInfo, stoppedInstancesMoreThan30Days, unusedLoadBalancers)
 

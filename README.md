@@ -57,6 +57,7 @@ Available platforms:
 - `--profile`: Specify the AWS profile to use (default is "").
 - `--region`: Specify the AWS region to use. If not provided, uses `AWS_REGION` or `AWS_DEFAULT_REGION` environment variables, or the region from `~/.aws/config`.
 - `--trend`: Shows a trend analysis for the last 6 months.
+- `--output`: Output format: `table` (default) or `json`.
 - `--waste`: Makes an analysis of possible money waste you have in your AWS Account.
   - [x] Unused EBS Volumes (not attached to any instance).
   - [x] EBS Volumes attached to stopped EC2 instances.
@@ -74,5 +75,6 @@ Available platforms:
 
 - [x] Add monthly trend analysis
 - [x] Add waste / wastage analysis logic
+- [x] Export reports to JSON format
 - [ ] Export reports to CSV and PDF formats (medical records for your cloud)
 - [ ] Distribute the CLI via Fedora, Ubuntu, and macOS repositories
