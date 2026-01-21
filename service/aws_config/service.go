@@ -12,5 +12,18 @@ func NewService() *service {
 }
 
 func (s *service) GetAWSCfg(ctx context.Context, region, profile string) (aws.Config, error) {
-	return config.LoadDefaultConfig(ctx, config.WithRegion(region), config.WithSharedConfigProfile(profile))
+	var opts []func(*config.LoadOptions) error
+
+	// Only set region if explicitly provided; otherwise use SDK defaults
+	// (AWS_REGION, AWS_DEFAULT_REGION env vars, or ~/.aws/config)
+	if region != "" {
+		opts = append(opts, config.WithRegion(region))
+	}
+
+	// Only set profile if explicitly provided
+	if profile != "" {
+		opts = append(opts, config.WithSharedConfigProfile(profile))
+	}
+
+	return config.LoadDefaultConfig(ctx, opts...)
 }
