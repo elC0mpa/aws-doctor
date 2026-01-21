@@ -86,6 +86,39 @@ git push origin your-branch-name --force
 
 **Note:** Some contributors may name the original repository remote differently (e.g., `origin` instead of `upstream`). Adjust commands accordingly based on your setup.
 
+### Local Integration Branch (Optional)
+
+If you're working on multiple features and want to test them together locally before they're merged upstream, you can maintain a local integration branch:
+
+```bash
+# Create a local-only integration branch based on upstream/development
+git checkout -b local/integration upstream/development
+
+# Merge feature branches you want to test together
+git merge feat/your-feature-1 --no-edit
+git merge feat/your-feature-2 --no-edit
+git merge feat/your-feature-3 --no-edit
+```
+
+**Key principles:**
+
+- **Prefix with `local/`** - signals this branch should never be pushed upstream
+- **Base on `upstream/development`** - matches where PRs are merged
+- **Use merge, not rebase** - easier to recreate when upstream changes
+- **Recreate rather than update** - when upstream/development changes significantly, it's cleaner to recreate the integration branch from scratch:
+
+```bash
+# When upstream changes, recreate the integration branch
+git checkout local/integration
+git reset --hard upstream/development
+
+# Re-merge your feature branches
+git merge feat/your-feature-1 --no-edit
+git merge feat/your-feature-2 --no-edit
+```
+
+This approach lets you test multiple features together locally without affecting the upstream repository or complicating your PR branches.
+
 ## Pull Request Guidelines
 
 ### Before Submitting
