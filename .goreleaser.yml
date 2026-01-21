@@ -1,0 +1,89 @@
+version: 2
+
+project_name: aws-doctor
+
+before:
+  hooks:
+    - go mod tidy
+
+builds:
+  - id: aws-doctor
+    main: ./app.go
+    binary: aws-doctor
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - darwin
+      - linux
+      - windows
+    goarch:
+      - amd64
+      - arm64
+    ignore:
+      - goos: windows
+        goarch: arm64
+    ldflags:
+      - -s -w
+      - -X main.version={{.Version}}
+      - -X main.commit={{.Commit}}
+      - -X main.date={{.Date}}
+
+archives:
+  - id: default
+    formats:
+      - tar.gz
+    name_template: >-
+      {{ .ProjectName }}_
+      {{- .Version }}_
+      {{- .Os }}_
+      {{- .Arch }}
+    format_overrides:
+      - goos: windows
+        formats:
+          - zip
+    files:
+      - README.md
+      - LICENSE*
+
+checksum:
+  name_template: 'checksums.txt'
+  algorithm: sha256
+
+changelog:
+  sort: asc
+  filters:
+    exclude:
+      - '^docs:'
+      - '^test:'
+      - '^ci:'
+      - '^chore:'
+      - Merge pull request
+      - Merge branch
+
+release:
+  draft: false
+  prerelease: auto
+  name_template: "{{.ProjectName}} v{{.Version}}"
+  header: |
+    ## AWS Doctor v{{.Version}}
+
+    Analyze your AWS infrastructure for cost optimization and security best practices.
+
+  footer: |
+    ## Installation
+
+    ### Using Go
+    ```bash
+    go install github.com/elC0mpa/aws-doctor@{{.Tag}}
+    ```
+
+    ### Using install script (macOS/Linux)
+    ```bash
+    curl -sSfL https://raw.githubusercontent.com/elC0mpa/aws-doctor/main/install.sh | sh
+    ```
+
+    ### Direct download
+    Download the appropriate archive for your platform from the assets below.
+
+    ---
+    **Full Changelog**: https://github.com/elC0mpa/aws-doctor/compare/{{ .PreviousTag }}...{{ .Tag }}

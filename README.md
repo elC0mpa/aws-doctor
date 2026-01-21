@@ -1,5 +1,11 @@
 # aws-doctor
 
+[![Go Report Card](https://goreportcard.com/badge/github.com/elC0mpa/aws-doctor)](https://goreportcard.com/report/github.com/elC0mpa/aws-doctor)
+[![Go Reference](https://pkg.go.dev/badge/github.com/elC0mpa/aws-doctor.svg)](https://pkg.go.dev/github.com/elC0mpa/aws-doctor)
+[![Go Version](https://img.shields.io/github/go-mod/go-version/elC0mpa/aws-doctor)](https://github.com/elC0mpa/aws-doctor/blob/main/go.mod)
+[![License](https://img.shields.io/github/license/elC0mpa/aws-doctor)](https://github.com/elC0mpa/aws-doctor/blob/main/LICENSE)
+[![Maintained](https://img.shields.io/badge/Maintained-yes-green.svg)](https://github.com/elC0mpa/aws-doctor/commits/main)
+
 A terminal-based tool that acts as a comprehensive health check for your AWS accounts. Built with Golang, **aws-doctor** diagnoses cost anomalies, detects idle resources, and provides a proactive analysis of your cloud infrastructure—effectively giving you the insights of AWS Trusted Advisor without the need for a Business or Enterprise support plan.
 
 ## Demo
@@ -30,23 +36,41 @@ I created **aws-doctor** to fill that gap. It doesn't just show you the bill; it
 
 ## Installation
 
-### Golang
+### Quick Install (macOS/Linux)
 
-- go install github.com/elC0mpa/aws-doctor@latest
+```bash
+curl -sSfL https://raw.githubusercontent.com/elC0mpa/aws-doctor/main/install.sh | sh
+```
+
+### Using Go
+
+```bash
+go install github.com/elC0mpa/aws-doctor@latest
+```
+
+### Download Binary
+
+Download the latest release for your platform from the [Releases page](https://github.com/elC0mpa/aws-doctor/releases).
+
+Available platforms:
+
+- macOS (Intel & Apple Silicon)
+- Linux (amd64 & arm64)
+- Windows (amd64)
 
 ## Flags
 
 - `--profile`: Specify the AWS profile to use (default is "").
-- `--region`: Specify the AWS region to use (default is "us-east-1").
+- `--region`: Specify the AWS region to use. If not provided, uses `AWS_REGION` or `AWS_DEFAULT_REGION` environment variables, or the region from `~/.aws/config`.
 - `--trend`: Shows a trend analysis for the last 6 months.
+- `--output`: Output format: `table` (default) or `json`.
 - `--waste`: Makes an analysis of possible money waste you have in your AWS Account.
   - [x] Unused EBS Volumes (not attached to any instance).
   - [x] EBS Volumes attached to stopped EC2 instances.
   - [x] Unassociated Elastic IPs.
   - [x] EC2 reserved instance that are scheduled to expire in the next 30 days or have expired in the preceding 30 days.
   - [x] EC2 instance stopped for more than 30 days.
-  - [x] EC2 instances stopped for more than 30 days.
-  - [ ] Load Balancers with no attached target groups.
+  - [x] Load Balancers with no attached target groups.
   - [ ] Inactive VPC interface endpoints.
   - [ ] Inactive NAT Gateways.
   - [ ] Idle Load Balancers.
@@ -56,6 +80,6 @@ I created **aws-doctor** to fill that gap. It doesn't just show you the bill; it
 
 - [x] Add monthly trend analysis
 - [x] Add waste / wastage analysis logic
+- [x] Export reports to JSON format
 - [ ] Export reports to CSV and PDF formats (medical records for your cloud)
 - [ ] Distribute the CLI via Fedora, Ubuntu, and macOS repositories
-

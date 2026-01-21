@@ -132,10 +132,18 @@ func (s *service) GetMonthTotalCosts(ctx context.Context, endDate time.Time) (*s
 		return nil, err
 	}
 
-	totalInfo := output.ResultsByTime[0].Total[costsAggregation]
+	if len(output.ResultsByTime) == 0 {
+		return nil, fmt.Errorf("no cost data returned for the specified time period")
+	}
+
+	totalInfo, ok := output.ResultsByTime[0].Total[costsAggregation]
+	if !ok || totalInfo.Amount == nil {
+		return nil, fmt.Errorf("cost data missing %s metric", costsAggregation)
+	}
+
 	amount, err := strconv.ParseFloat(*totalInfo.Amount, 64)
-	if err != nil || amount == 0 {
-		panic("Could not parse total amount")
+	if err != nil {
+		return nil, fmt.Errorf("could not parse total amount %q: %w", *totalInfo.Amount, err)
 	}
 
 	total := fmt.Sprintf("%.2f %s", amount, *totalInfo.Unit)

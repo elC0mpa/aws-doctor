@@ -2,7 +2,6 @@ package awscostexplorer
 
 import (
 	"context"
-	"regexp"
 	"strings"
 	"time"
 
@@ -19,8 +18,6 @@ func NewService(awsconfig aws.Config) *service {
 		client: client,
 	}
 }
-
-var transitionReasonRegex = regexp.MustCompile(`\(([^)]+)\)`)
 
 func (s *service) GetElasticIpAddressesInfo(ctx context.Context) (*model.ElasticIpInfo, error) {
 	output, err := s.client.DescribeAddresses(ctx, nil)
@@ -84,7 +81,9 @@ func (s *service) GetUnusedElasticIpAddressesInfo(ctx context.Context) ([]types.
 }
 
 func (s *service) GetUnusedEBSVolumes(ctx context.Context) ([]types.Volume, error) {
-	output, err := s.client.DescribeVolumes(ctx, &ec2.DescribeVolumesInput{
+	var allVolumes []types.Volume
+
+	paginator := ec2.NewDescribeVolumesPaginator(s.client, &ec2.DescribeVolumesInput{
 		Filters: []types.Filter{
 			{
 				Name:   aws.String("status"),
@@ -92,11 +91,16 @@ func (s *service) GetUnusedEBSVolumes(ctx context.Context) ([]types.Volume, erro
 			},
 		},
 	})
-	if err != nil {
-		return nil, err
+
+	for paginator.HasMorePages() {
+		output, err := paginator.NextPage(ctx)
+		if err != nil {
+			return nil, err
+		}
+		allVolumes = append(allVolumes, output.Volumes...)
 	}
 
-	return output.Volumes, nil
+	return allVolumes, nil
 }
 
 func (s *service) GetStoppedInstancesInfo(ctx context.Context) ([]types.Instance, []types.Volume, error) {
@@ -109,31 +113,36 @@ func (s *service) GetStoppedInstancesInfo(ctx context.Context) ([]types.Instance
 		},
 	}
 
-	output, err := s.client.DescribeInstances(ctx, input)
-	if err != nil {
-		return nil, nil, err
-	}
-
 	var stoppedInstanceVolumeIDs []string
 	var stoppedInstanceForMoreThan30Days []types.Instance
 
 	thresholdTime := time.Now().Add(-30 * 24 * time.Hour)
 
-	for _, reservation := range output.Reservations {
-		for _, instance := range reservation.Instances {
-			for _, mapping := range instance.BlockDeviceMappings {
-				if mapping.Ebs != nil {
-					stoppedInstanceVolumeIDs = append(stoppedInstanceVolumeIDs, aws.ToString(mapping.Ebs.VolumeId))
-				}
-			}
-			reason := aws.ToString(instance.StateTransitionReason)
-			stoppedAt, err := utils.ParseTransitionDate(reason)
-			if err != nil {
-				continue
-			}
+	// Use paginator to handle large numbers of instances
+	paginator := ec2.NewDescribeInstancesPaginator(s.client, input)
 
-			if stoppedAt.Before(thresholdTime) {
-				stoppedInstanceForMoreThan30Days = append(stoppedInstanceForMoreThan30Days, instance)
+	for paginator.HasMorePages() {
+		output, err := paginator.NextPage(ctx)
+		if err != nil {
+			return nil, nil, err
+		}
+
+		for _, reservation := range output.Reservations {
+			for _, instance := range reservation.Instances {
+				for _, mapping := range instance.BlockDeviceMappings {
+					if mapping.Ebs != nil {
+						stoppedInstanceVolumeIDs = append(stoppedInstanceVolumeIDs, aws.ToString(mapping.Ebs.VolumeId))
+					}
+				}
+				reason := aws.ToString(instance.StateTransitionReason)
+				stoppedAt, err := utils.ParseTransitionDate(reason)
+				if err != nil {
+					continue
+				}
+
+				if stoppedAt.Before(thresholdTime) {
+					stoppedInstanceForMoreThan30Days = append(stoppedInstanceForMoreThan30Days, instance)
+				}
 			}
 		}
 	}
@@ -141,14 +150,18 @@ func (s *service) GetStoppedInstancesInfo(ctx context.Context) ([]types.Instance
 	var stoppedInstanceVolumes []types.Volume
 
 	if len(stoppedInstanceVolumeIDs) > 0 {
-		outputEBS, err := s.client.DescribeVolumes(ctx, &ec2.DescribeVolumesInput{
+		// Use paginator for volumes as well (in case of many volumes)
+		volumePaginator := ec2.NewDescribeVolumesPaginator(s.client, &ec2.DescribeVolumesInput{
 			VolumeIds: stoppedInstanceVolumeIDs,
 		})
-		if err != nil {
-			return nil, nil, err
-		}
 
-		stoppedInstanceVolumes = outputEBS.Volumes
+		for volumePaginator.HasMorePages() {
+			outputEBS, err := volumePaginator.NextPage(ctx)
+			if err != nil {
+				return nil, nil, err
+			}
+			stoppedInstanceVolumes = append(stoppedInstanceVolumes, outputEBS.Volumes...)
+		}
 	}
 
 	return stoppedInstanceForMoreThan30Days, stoppedInstanceVolumes, nil
