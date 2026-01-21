@@ -493,7 +493,7 @@ func captureWasteOutput(f func()) string {
 
 func TestDrawWasteTable_NoWaste(t *testing.T) {
 	output := captureWasteOutput(func() {
-		DrawWasteTable("123456789012", nil, nil, nil, nil, nil, nil, nil, nil)
+		DrawWasteTable("123456789012", nil, nil, nil, nil, nil, nil, nil, nil, nil)
 	})
 
 	if !strings.Contains(output, "AWS DOCTOR CHECKUP") {
@@ -515,7 +515,7 @@ func TestDrawWasteTable_WithElasticIPs(t *testing.T) {
 	}
 
 	output := captureWasteOutput(func() {
-		DrawWasteTable("123456789012", elasticIPs, nil, nil, nil, nil, nil, nil, nil)
+		DrawWasteTable("123456789012", elasticIPs, nil, nil, nil, nil, nil, nil, nil, nil)
 	})
 
 	if !strings.Contains(output, "Elastic IP") {
@@ -529,7 +529,7 @@ func TestDrawWasteTable_WithEBSVolumes(t *testing.T) {
 	}
 
 	output := captureWasteOutput(func() {
-		DrawWasteTable("123456789012", nil, unusedVolumes, nil, nil, nil, nil, nil, nil)
+		DrawWasteTable("123456789012", nil, unusedVolumes, nil, nil, nil, nil, nil, nil, nil)
 	})
 
 	if !strings.Contains(output, "EBS") {
@@ -546,7 +546,7 @@ func TestDrawWasteTable_WithStoppedInstances(t *testing.T) {
 	}
 
 	output := captureWasteOutput(func() {
-		DrawWasteTable("123456789012", nil, nil, nil, nil, stoppedInstances, nil, nil, nil)
+		DrawWasteTable("123456789012", nil, nil, nil, nil, stoppedInstances, nil, nil, nil, nil)
 	})
 
 	if !strings.Contains(output, "EC2") || !strings.Contains(output, "Reserved Instance") {
@@ -564,7 +564,7 @@ func TestDrawWasteTable_WithReservedInstances(t *testing.T) {
 	}
 
 	output := captureWasteOutput(func() {
-		DrawWasteTable("123456789012", nil, nil, nil, ris, nil, nil, nil, nil)
+		DrawWasteTable("123456789012", nil, nil, nil, ris, nil, nil, nil, nil, nil)
 	})
 
 	if !strings.Contains(output, "Reserved Instance") {
@@ -581,7 +581,7 @@ func TestDrawWasteTable_WithLoadBalancers(t *testing.T) {
 	}
 
 	output := captureWasteOutput(func() {
-		DrawWasteTable("123456789012", nil, nil, nil, nil, nil, loadBalancers, nil, nil)
+		DrawWasteTable("123456789012", nil, nil, nil, nil, nil, loadBalancers, nil, nil, nil)
 	})
 
 	if !strings.Contains(output, "Load Balancer") {
@@ -610,7 +610,7 @@ func TestDrawWasteTable_AllWasteTypes(t *testing.T) {
 	}
 
 	output := captureWasteOutput(func() {
-		DrawWasteTable("123456789012", elasticIPs, unusedVolumes, stoppedVolumes, ris, stoppedInstances, loadBalancers, nil, nil)
+		DrawWasteTable("123456789012", elasticIPs, unusedVolumes, stoppedVolumes, ris, stoppedInstances, loadBalancers, nil, nil, nil)
 	})
 
 	// Should have all sections
@@ -966,7 +966,7 @@ func TestDrawWasteTable_WithUnusedAMIs(t *testing.T) {
 	}
 
 	output := captureWasteOutput(func() {
-		DrawWasteTable("123456789012", nil, nil, nil, nil, nil, nil, unusedAMIs, nil)
+		DrawWasteTable("123456789012", nil, nil, nil, nil, nil, nil, unusedAMIs, nil, nil)
 	})
 
 	if !strings.Contains(output, "Unused AMI") {
@@ -1010,6 +1010,6 @@ func BenchmarkDrawWasteTable(b *testing.B) {
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		DrawWasteTable("123456789012", elasticIPs, unusedVolumes, nil, nil, nil, nil, nil, nil)
+		DrawWasteTable("123456789012", elasticIPs, unusedVolumes, nil, nil, nil, nil, nil, nil, nil)
 	}
 }

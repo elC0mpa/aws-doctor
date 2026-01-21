@@ -42,10 +42,7 @@ func (s *service) GetEmptyHostedZones(ctx context.Context) ([]model.HostedZoneWa
 			isEmpty := recordCount <= 2
 
 			// Extract zone ID without /hostedzone/ prefix
-			zoneId := aws.ToString(zone.Id)
-			if strings.HasPrefix(zoneId, "/hostedzone/") {
-				zoneId = strings.TrimPrefix(zoneId, "/hostedzone/")
-			}
+			zoneId := strings.TrimPrefix(aws.ToString(zone.Id), "/hostedzone/")
 
 			comment := ""
 			if zone.Config != nil && zone.Config.Comment != nil {
