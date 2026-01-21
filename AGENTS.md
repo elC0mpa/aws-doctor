@@ -145,8 +145,14 @@ for paginator.HasMorePages() {
 ### Error Handling
 
 - Return errors to callers, don't log and continue
-- Wrap errors with context when helpful
+- Wrap errors with context using `fmt.Errorf("context: %w", err)`
 - Check for nil pointers before dereferencing AWS response fields
+
+### Staticcheck Compliance
+
+The CI runs staticcheck. Common issues to avoid:
+- **S1017**: Use `strings.TrimPrefix(s, prefix)` directly instead of `if strings.HasPrefix(s, prefix) { s = strings.TrimPrefix(s, prefix) }`
+- Remove unused imports (the build will fail)
 
 ## Testing
 
@@ -182,12 +188,15 @@ func TestFunction(t *testing.T) {
 
 ### Adding a New Waste Detection Type
 
-1. Add method to `service/ec2/service.go` (or appropriate service)
-2. Update interface in `service/ec2/types.go`
-3. Add concurrent call in `service/orchestrator/service.go` wasteWorkflow
-4. Add display function in `utils/waste_table.go`
-5. Update README.md checklist
-6. Add tests for any pure helper functions
+1. Add model type in `model/` package (e.g., `model/ec2.go` for `SnapshotWasteInfo`)
+2. Add method to `service/ec2/service.go` (or appropriate service)
+3. Update interface in `service/ec2/types.go`
+4. Add concurrent call in `service/orchestrator/service.go` wasteWorkflow
+5. Add display function in `utils/waste_table.go` (update `DrawWasteTable` signature)
+6. Add JSON output type in `model/output.go` and update `utils/json_output.go`
+7. **Update all test calls** when function signatures change (e.g., `DrawWasteTable`, `OutputWasteJSON`)
+8. Update README.md checklist
+9. Add tests for any pure helper functions
 
 ### Adding a New CLI Flag
 
@@ -202,9 +211,21 @@ Before submitting:
 - [ ] Rebased against upstream `development` branch
 - [ ] `go build ./...` succeeds
 - [ ] `go test ./...` passes
+- [ ] `go vet ./...` passes
 - [ ] New features have tests (for testable code)
 - [ ] README.md updated if adding flags/features
 - [ ] PR targets `development` branch (not `main`)
+
+After pushing:
+- [ ] CI passes (build, lint, tests on Go 1.23 and 1.24)
+- [ ] Address any staticcheck warnings
+
+## PR Best Practices
+
+- **Keep PRs focused** - one feature/fix per PR
+- **Maintainers may ask to split PRs** - if a PR has parts with different dependencies, be prepared to split it
+- **Rebase when asked** - maintainers may request rebasing after upstream changes
+- **CI must pass** - fix any build, lint, or test failures before requesting review
 
 ## Don't
 
