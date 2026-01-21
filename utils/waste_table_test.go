@@ -1,0 +1,472 @@
+package utils
+
+import (
+	"testing"
+	"time"
+
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/service/ec2/types"
+	elbtypes "github.com/aws/aws-sdk-go-v2/service/elasticloadbalancingv2/types"
+	"github.com/elC0mpa/aws-doctor/model"
+)
+
+func TestPopulateEBSRows(t *testing.T) {
+	tests := []struct {
+		name    string
+		volumes []types.Volume
+		wantLen int
+	}{
+		{
+			name:    "empty_volumes",
+			volumes: []types.Volume{},
+			wantLen: 0,
+		},
+		{
+			name: "single_volume",
+			volumes: []types.Volume{
+				{
+					VolumeId: aws.String("vol-12345"),
+					Size:     aws.Int32(100),
+				},
+			},
+			wantLen: 1,
+		},
+		{
+			name: "multiple_volumes",
+			volumes: []types.Volume{
+				{VolumeId: aws.String("vol-111"), Size: aws.Int32(50)},
+				{VolumeId: aws.String("vol-222"), Size: aws.Int32(100)},
+				{VolumeId: aws.String("vol-333"), Size: aws.Int32(200)},
+			},
+			wantLen: 3,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			rows := populateEBSRows(tt.volumes)
+
+			if len(rows) != tt.wantLen {
+				t.Errorf("populateEBSRows() returned %d rows, want %d", len(rows), tt.wantLen)
+				return
+			}
+
+			// Verify each row has 3 columns
+			for i, row := range rows {
+				if len(row) != 3 {
+					t.Errorf("Row %d has %d columns, want 3", i, len(row))
+				}
+			}
+
+			// Verify volume IDs are in the rows
+			for i, vol := range tt.volumes {
+				if rows[i][1] != *vol.VolumeId {
+					t.Errorf("Row %d VolumeId = %v, want %v", i, rows[i][1], *vol.VolumeId)
+				}
+			}
+		})
+	}
+}
+
+func TestPopulateElasticIpRows(t *testing.T) {
+	tests := []struct {
+		name    string
+		ips     []types.Address
+		wantLen int
+	}{
+		{
+			name:    "empty_ips",
+			ips:     []types.Address{},
+			wantLen: 0,
+		},
+		{
+			name: "single_ip",
+			ips: []types.Address{
+				{
+					PublicIp:     aws.String("1.2.3.4"),
+					AllocationId: aws.String("eipalloc-12345"),
+				},
+			},
+			wantLen: 1,
+		},
+		{
+			name: "multiple_ips",
+			ips: []types.Address{
+				{PublicIp: aws.String("1.2.3.4"), AllocationId: aws.String("eipalloc-111")},
+				{PublicIp: aws.String("5.6.7.8"), AllocationId: aws.String("eipalloc-222")},
+			},
+			wantLen: 2,
+		},
+		{
+			name: "ip_with_nil_fields",
+			ips: []types.Address{
+				{PublicIp: nil, AllocationId: nil},
+			},
+			wantLen: 1,
+		},
+		{
+			name: "ip_with_only_public_ip",
+			ips: []types.Address{
+				{PublicIp: aws.String("10.0.0.1"), AllocationId: nil},
+			},
+			wantLen: 1,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			rows := populateElasticIpRows(tt.ips)
+
+			if len(rows) != tt.wantLen {
+				t.Errorf("populateElasticIpRows() returned %d rows, want %d", len(rows), tt.wantLen)
+				return
+			}
+
+			// Verify each row has 3 columns
+			for i, row := range rows {
+				if len(row) != 3 {
+					t.Errorf("Row %d has %d columns, want 3", i, len(row))
+				}
+			}
+		})
+	}
+}
+
+func TestPopulateInstanceRows(t *testing.T) {
+	tests := []struct {
+		name      string
+		instances []types.Instance
+		wantLen   int
+	}{
+		{
+			name:      "empty_instances",
+			instances: []types.Instance{},
+			wantLen:   0,
+		},
+		{
+			name: "single_instance_with_valid_date",
+			instances: []types.Instance{
+				{
+					InstanceId:            aws.String("i-12345"),
+					StateTransitionReason: aws.String("User initiated (2024-01-01 00:00:00 UTC)"),
+				},
+			},
+			wantLen: 1,
+		},
+		{
+			name: "instance_with_nil_reason",
+			instances: []types.Instance{
+				{
+					InstanceId:            aws.String("i-67890"),
+					StateTransitionReason: nil,
+				},
+			},
+			wantLen: 1,
+		},
+		{
+			name: "instance_with_invalid_date",
+			instances: []types.Instance{
+				{
+					InstanceId:            aws.String("i-abcde"),
+					StateTransitionReason: aws.String("Unknown reason"),
+				},
+			},
+			wantLen: 1,
+		},
+		{
+			name: "multiple_instances",
+			instances: []types.Instance{
+				{InstanceId: aws.String("i-111"), StateTransitionReason: aws.String("User initiated (2024-01-01 00:00:00 UTC)")},
+				{InstanceId: aws.String("i-222"), StateTransitionReason: nil},
+				{InstanceId: aws.String("i-333"), StateTransitionReason: aws.String("invalid")},
+			},
+			wantLen: 3,
+		},
+		{
+			name: "instance_with_nil_instance_id",
+			instances: []types.Instance{
+				{
+					InstanceId:            nil,
+					StateTransitionReason: aws.String("User initiated (2024-01-01 00:00:00 UTC)"),
+				},
+			},
+			wantLen: 1,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			rows := populateInstanceRows(tt.instances)
+
+			if len(rows) != tt.wantLen {
+				t.Errorf("populateInstanceRows() returned %d rows, want %d", len(rows), tt.wantLen)
+				return
+			}
+
+			// Verify each row has 3 columns
+			for i, row := range rows {
+				if len(row) != 3 {
+					t.Errorf("Row %d has %d columns, want 3", i, len(row))
+				}
+			}
+		})
+	}
+}
+
+func TestPopulateInstanceRows_TimeInfo(t *testing.T) {
+	// Test that the time info is calculated correctly
+	now := time.Now()
+	thirtyDaysAgo := now.AddDate(0, 0, -30).Format("2006-01-02 15:04:05") + " UTC"
+
+	instances := []types.Instance{
+		{
+			InstanceId:            aws.String("i-test"),
+			StateTransitionReason: aws.String("User initiated (" + thirtyDaysAgo + ")"),
+		},
+	}
+
+	rows := populateInstanceRows(instances)
+
+	if len(rows) != 1 {
+		t.Fatalf("Expected 1 row, got %d", len(rows))
+	}
+
+	// The time info should contain "days ago"
+	timeInfo := rows[0][2].(string)
+	if timeInfo == "-" {
+		t.Error("Expected time info to be calculated, got '-'")
+	}
+}
+
+func TestPopulateRiRows(t *testing.T) {
+	tests := []struct {
+		name    string
+		ris     []model.RiExpirationInfo
+		wantLen int
+	}{
+		{
+			name:    "empty_ris",
+			ris:     []model.RiExpirationInfo{},
+			wantLen: 0,
+		},
+		{
+			name: "single_ri_expiring_soon",
+			ris: []model.RiExpirationInfo{
+				{
+					ReservedInstanceId: "ri-12345",
+					DaysUntilExpiry:    15,
+					Status:             "EXPIRING SOON",
+				},
+			},
+			wantLen: 1,
+		},
+		{
+			name: "single_ri_expired",
+			ris: []model.RiExpirationInfo{
+				{
+					ReservedInstanceId: "ri-67890",
+					DaysUntilExpiry:    -10,
+					Status:             "EXPIRED",
+				},
+			},
+			wantLen: 1,
+		},
+		{
+			name: "multiple_ris",
+			ris: []model.RiExpirationInfo{
+				{ReservedInstanceId: "ri-111", DaysUntilExpiry: 30},
+				{ReservedInstanceId: "ri-222", DaysUntilExpiry: 0},
+				{ReservedInstanceId: "ri-333", DaysUntilExpiry: -5},
+			},
+			wantLen: 3,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			rows := populateRiRows(tt.ris)
+
+			if len(rows) != tt.wantLen {
+				t.Errorf("populateRiRows() returned %d rows, want %d", len(rows), tt.wantLen)
+				return
+			}
+
+			// Verify each row has 3 columns
+			for i, row := range rows {
+				if len(row) != 3 {
+					t.Errorf("Row %d has %d columns, want 3", i, len(row))
+				}
+			}
+		})
+	}
+}
+
+func TestPopulateRiRows_TimeInfo(t *testing.T) {
+	tests := []struct {
+		name            string
+		daysUntilExpiry int
+		wantContains    string
+	}{
+		{
+			name:            "expiring_in_future",
+			daysUntilExpiry: 15,
+			wantContains:    "In 15 days",
+		},
+		{
+			name:            "expired_in_past",
+			daysUntilExpiry: -10,
+			wantContains:    "10 days ago",
+		},
+		{
+			name:            "expires_today",
+			daysUntilExpiry: 0,
+			wantContains:    "In 0 days",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ris := []model.RiExpirationInfo{
+				{ReservedInstanceId: "ri-test", DaysUntilExpiry: tt.daysUntilExpiry},
+			}
+
+			rows := populateRiRows(ris)
+			timeInfo := rows[0][2].(string)
+
+			if timeInfo != tt.wantContains {
+				t.Errorf("Time info = %q, want %q", timeInfo, tt.wantContains)
+			}
+		})
+	}
+}
+
+func TestPopulateLoadBalancerRows(t *testing.T) {
+	tests := []struct {
+		name          string
+		loadBalancers []elbtypes.LoadBalancer
+		wantLen       int
+	}{
+		{
+			name:          "empty_load_balancers",
+			loadBalancers: []elbtypes.LoadBalancer{},
+			wantLen:       0,
+		},
+		{
+			name: "single_alb",
+			loadBalancers: []elbtypes.LoadBalancer{
+				{
+					LoadBalancerName: aws.String("my-alb"),
+					Type:             elbtypes.LoadBalancerTypeEnumApplication,
+				},
+			},
+			wantLen: 1,
+		},
+		{
+			name: "single_nlb",
+			loadBalancers: []elbtypes.LoadBalancer{
+				{
+					LoadBalancerName: aws.String("my-nlb"),
+					Type:             elbtypes.LoadBalancerTypeEnumNetwork,
+				},
+			},
+			wantLen: 1,
+		},
+		{
+			name: "multiple_load_balancers",
+			loadBalancers: []elbtypes.LoadBalancer{
+				{LoadBalancerName: aws.String("alb-1"), Type: elbtypes.LoadBalancerTypeEnumApplication},
+				{LoadBalancerName: aws.String("nlb-1"), Type: elbtypes.LoadBalancerTypeEnumNetwork},
+				{LoadBalancerName: aws.String("gwlb-1"), Type: elbtypes.LoadBalancerTypeEnumGateway},
+			},
+			wantLen: 3,
+		},
+		{
+			name: "load_balancer_with_nil_name",
+			loadBalancers: []elbtypes.LoadBalancer{
+				{
+					LoadBalancerName: nil,
+					Type:             elbtypes.LoadBalancerTypeEnumApplication,
+				},
+			},
+			wantLen: 1,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			rows := populateLoadBalancerRows(tt.loadBalancers)
+
+			if len(rows) != tt.wantLen {
+				t.Errorf("populateLoadBalancerRows() returned %d rows, want %d", len(rows), tt.wantLen)
+				return
+			}
+
+			// Verify each row has 3 columns
+			for i, row := range rows {
+				if len(row) != 3 {
+					t.Errorf("Row %d has %d columns, want 3", i, len(row))
+				}
+			}
+		})
+	}
+}
+
+func TestPopulateLoadBalancerRows_Values(t *testing.T) {
+	loadBalancers := []elbtypes.LoadBalancer{
+		{
+			LoadBalancerName: aws.String("test-alb"),
+			Type:             elbtypes.LoadBalancerTypeEnumApplication,
+		},
+	}
+
+	rows := populateLoadBalancerRows(loadBalancers)
+
+	if len(rows) != 1 {
+		t.Fatalf("Expected 1 row, got %d", len(rows))
+	}
+
+	// Column 0 is status placeholder (empty)
+	if rows[0][0] != "" {
+		t.Errorf("Column 0 should be empty, got %v", rows[0][0])
+	}
+
+	// Column 1 is name
+	if rows[0][1] != "test-alb" {
+		t.Errorf("Column 1 = %v, want 'test-alb'", rows[0][1])
+	}
+
+	// Column 2 is type
+	if rows[0][2] != "application" {
+		t.Errorf("Column 2 = %v, want 'application'", rows[0][2])
+	}
+}
+
+func BenchmarkPopulateEBSRows(b *testing.B) {
+	volumes := make([]types.Volume, 50)
+	for i := 0; i < 50; i++ {
+		volumes[i] = types.Volume{
+			VolumeId: aws.String("vol-" + string(rune('a'+i%26))),
+			Size:     aws.Int32(int32(100 + i*10)),
+		}
+	}
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		populateEBSRows(volumes)
+	}
+}
+
+func BenchmarkPopulateInstanceRows(b *testing.B) {
+	instances := make([]types.Instance, 20)
+	for i := 0; i < 20; i++ {
+		instances[i] = types.Instance{
+			InstanceId:            aws.String("i-" + string(rune('a'+i%26))),
+			StateTransitionReason: aws.String("User initiated (2024-01-15 10:00:00 UTC)"),
+		}
+	}
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		populateInstanceRows(instances)
+	}
+}
