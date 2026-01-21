@@ -138,7 +138,7 @@ This approach lets you test multiple features together locally without affecting
 
 ### PR Title Format
 
-Use conventional commit style:
+Use [Conventional Commits](https://www.conventionalcommits.org/) style:
 
 - `feat: add new feature description`
 - `fix: resolve bug description`
@@ -237,6 +237,8 @@ func TestFunctionName(t *testing.T) {
 ```
 
 ## Commit Messages
+
+Follow the [Conventional Commits](https://www.conventionalcommits.org/) specification.
 
 ### Format
 
