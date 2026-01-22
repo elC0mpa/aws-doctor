@@ -15,6 +15,12 @@ import (
 	"github.com/elC0mpa/aws-doctor/utils"
 )
 
+var (
+	version = "dev"
+	commit  = "none"
+	date    = "unknown"
+)
+
 func main() {
 	if err := run(); err != nil {
 		utils.StopSpinner()
@@ -24,6 +30,15 @@ func main() {
 }
 
 func run() error {
+	for _, arg := range os.Args[1:] {
+		if arg == "--version" || arg == "-version" {
+			fmt.Printf("aws-doctor version %s\n", version)
+			fmt.Printf("commit: %s\n", commit)
+			fmt.Printf("built at: %s\n", date)
+			return nil
+		}
+	}
+
 	utils.DrawBanner()
 	utils.StartSpinner()
 
