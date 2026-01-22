@@ -57,3 +57,11 @@ func (m *MockEC2Service) GetReservedInstanceExpiringOrExpired30DaysWaste(ctx con
 	}
 	return args.Get(0).([]model.RiExpirationInfo), args.Error(1)
 }
+
+func (m *MockEC2Service) GetUnusedAMIs(ctx context.Context, staleDays int) ([]model.AMIWasteInfo, error) {
+	args := m.Called(ctx, staleDays)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).([]model.AMIWasteInfo), args.Error(1)
+}
