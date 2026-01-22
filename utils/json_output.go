@@ -69,7 +69,7 @@ func OutputTrendJSON(accountID string, costInfo []model.CostInfo) error {
 }
 
 // OutputWasteJSON outputs waste detection data as JSON
-func OutputWasteJSON(accountID string, elasticIPs []types.Address, unusedVolumes []types.Volume, stoppedVolumes []types.Volume, ris []model.RiExpirationInfo, stoppedInstances []types.Instance, loadBalancers []elbtypes.LoadBalancer) error {
+func OutputWasteJSON(accountID string, elasticIPs []types.Address, unusedVolumes []types.Volume, stoppedVolumes []types.Volume, ris []model.RiExpirationInfo, stoppedInstances []types.Instance, loadBalancers []elbtypes.LoadBalancer, unusedAMIs []model.AMIWasteInfo, orphanedSnapshots []model.SnapshotWasteInfo) error {
 	output := model.WasteReportJSON{
 		AccountID:           accountID,
 		GeneratedAt:         time.Now().UTC().Format(time.RFC3339),
@@ -79,6 +79,9 @@ func OutputWasteJSON(accountID string, elasticIPs []types.Address, unusedVolumes
 		StoppedInstances:    []model.StoppedInstanceJSON{},
 		ReservedInstances:   []model.ReservedInstanceJSON{},
 		UnusedLoadBalancers: []model.LoadBalancerJSON{},
+		UnusedAMIs:          []model.AMIJSON{},
+		OrphanedSnapshots:   []model.SnapshotJSON{},
+		StaleSnapshots:      []model.SnapshotJSON{},
 	}
 
 	// Unused Elastic IPs
@@ -143,12 +146,54 @@ func OutputWasteJSON(accountID string, elasticIPs []types.Address, unusedVolumes
 		})
 	}
 
+	// Unused AMIs
+	for _, ami := range unusedAMIs {
+		output.UnusedAMIs = append(output.UnusedAMIs, model.AMIJSON{
+			ImageID:            ami.ImageId,
+			Name:               ami.Name,
+			Description:        ami.Description,
+			CreationDate:       ami.CreationDate.Format(time.RFC3339),
+			DaysSinceCreate:    ami.DaysSinceCreate,
+			IsPublic:           ami.IsPublic,
+			SnapshotIDs:        ami.SnapshotIds,
+			SnapshotSizeGB:     ami.SnapshotSizeGB,
+			MaxPotentialSaving: ami.MaxPotentialSaving,
+			SafetyWarning:      ami.SafetyWarning,
+		})
+	}
+
+	// Snapshots (split by category: orphaned vs stale)
+	for _, snap := range orphanedSnapshots {
+		snapshotJSON := model.SnapshotJSON{
+			SnapshotID:          snap.SnapshotId,
+			VolumeID:            snap.VolumeId,
+			VolumeExists:        snap.VolumeExists,
+			UsedByAMI:           snap.UsedByAMI,
+			AMIID:               snap.AMIId,
+			SizeGB:              snap.SizeGB,
+			StartTime:           snap.StartTime.Format(time.RFC3339),
+			DaysSinceCreate:     snap.DaysSinceCreate,
+			Description:         snap.Description,
+			Category:            string(snap.Category),
+			Reason:              snap.Reason,
+			MaxPotentialSavings: snap.MaxPotentialSavings,
+		}
+		if snap.Category == model.SnapshotCategoryOrphaned {
+			output.OrphanedSnapshots = append(output.OrphanedSnapshots, snapshotJSON)
+		} else {
+			output.StaleSnapshots = append(output.StaleSnapshots, snapshotJSON)
+		}
+	}
+
 	output.HasWaste = len(output.UnusedElasticIPs) > 0 ||
 		len(output.UnusedEBSVolumes) > 0 ||
 		len(output.StoppedVolumes) > 0 ||
 		len(output.StoppedInstances) > 0 ||
 		len(output.ReservedInstances) > 0 ||
-		len(output.UnusedLoadBalancers) > 0
+		len(output.UnusedLoadBalancers) > 0 ||
+		len(output.UnusedAMIs) > 0 ||
+		len(output.OrphanedSnapshots) > 0 ||
+		len(output.StaleSnapshots) > 0
 
 	return printJSON(output)
 }

@@ -52,6 +52,9 @@ type WasteReportJSON struct {
 	StoppedInstances    []StoppedInstanceJSON  `json:"stopped_instances"`
 	ReservedInstances   []ReservedInstanceJSON `json:"reserved_instances"`
 	UnusedLoadBalancers []LoadBalancerJSON     `json:"unused_load_balancers"`
+	UnusedAMIs          []AMIJSON              `json:"unused_amis"`
+	OrphanedSnapshots   []SnapshotJSON         `json:"orphaned_snapshots"`
+	StaleSnapshots      []SnapshotJSON         `json:"stale_snapshots"`
 }
 
 // ElasticIPJSON represents an unused Elastic IP
@@ -89,4 +92,34 @@ type LoadBalancerJSON struct {
 	Name string `json:"name"`
 	ARN  string `json:"arn"`
 	Type string `json:"type"`
+}
+
+// AMIJSON represents an unused AMI
+type AMIJSON struct {
+	ImageID            string   `json:"image_id"`
+	Name               string   `json:"name"`
+	Description        string   `json:"description,omitempty"`
+	CreationDate       string   `json:"creation_date"`
+	DaysSinceCreate    int      `json:"days_since_create"`
+	IsPublic           bool     `json:"is_public"`
+	SnapshotIDs        []string `json:"snapshot_ids"`
+	SnapshotSizeGB     int64    `json:"snapshot_size_gb"`
+	MaxPotentialSaving float64  `json:"max_potential_saving_monthly"`
+	SafetyWarning      string   `json:"safety_warning"`
+}
+
+// SnapshotJSON represents an orphaned or stale EBS snapshot
+type SnapshotJSON struct {
+	SnapshotID          string  `json:"snapshot_id"`
+	VolumeID            string  `json:"volume_id,omitempty"`
+	VolumeExists        bool    `json:"volume_exists"`
+	UsedByAMI           bool    `json:"used_by_ami"`
+	AMIID               string  `json:"ami_id,omitempty"`
+	SizeGB              int32   `json:"size_gb"`
+	StartTime           string  `json:"start_time"`
+	DaysSinceCreate     int     `json:"days_since_create"`
+	Description         string  `json:"description,omitempty"`
+	Category            string  `json:"category"`                // "orphaned" or "stale"
+	Reason              string  `json:"reason"`                  // Human-readable reason
+	MaxPotentialSavings float64 `json:"max_potential_savings"`   // Actual savings may be lower due to incremental storage
 }

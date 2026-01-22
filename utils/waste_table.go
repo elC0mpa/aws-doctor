@@ -13,7 +13,7 @@ import (
 	"github.com/jedib0t/go-pretty/v6/text"
 )
 
-func DrawWasteTable(accountId string, elasticIpInfo []types.Address, unusedEBSVolumeInfo []types.Volume, attachedToStoppedInstancesEBSVolumeInfo []types.Volume, expireReservedInstancesInfo []model.RiExpirationInfo, instancesStoppedMoreThan30Days []types.Instance, unusedLoadBalancers []elbtypes.LoadBalancer) {
+func DrawWasteTable(accountId string, elasticIpInfo []types.Address, unusedEBSVolumeInfo []types.Volume, attachedToStoppedInstancesEBSVolumeInfo []types.Volume, expireReservedInstancesInfo []model.RiExpirationInfo, instancesStoppedMoreThan30Days []types.Instance, unusedLoadBalancers []elbtypes.LoadBalancer, unusedAMIs []model.AMIWasteInfo, orphanedSnapshots []model.SnapshotWasteInfo) {
 	fmt.Printf("\n%s\n", text.FgHiWhite.Sprint(" 🏥 AWS DOCTOR CHECKUP"))
 	fmt.Printf(" Account ID: %s\n", text.FgBlue.Sprint(accountId))
 	fmt.Println(text.FgHiBlue.Sprint(" ------------------------------------------------"))
@@ -23,7 +23,9 @@ func DrawWasteTable(accountId string, elasticIpInfo []types.Address, unusedEBSVo
 		len(attachedToStoppedInstancesEBSVolumeInfo) > 0 ||
 		len(instancesStoppedMoreThan30Days) > 0 ||
 		len(expireReservedInstancesInfo) > 0 ||
-		len(unusedLoadBalancers) > 0
+		len(unusedLoadBalancers) > 0 ||
+		len(unusedAMIs) > 0 ||
+		len(orphanedSnapshots) > 0
 
 	if !hasWaste {
 		fmt.Println("\n" + text.FgHiGreen.Sprint(" ✅  Your account is healthy! No waste found."))
@@ -44,6 +46,14 @@ func DrawWasteTable(accountId string, elasticIpInfo []types.Address, unusedEBSVo
 
 	if len(unusedLoadBalancers) > 0 {
 		drawLoadBalancerTable(unusedLoadBalancers)
+	}
+
+	if len(unusedAMIs) > 0 {
+		drawAMITable(unusedAMIs)
+	}
+
+	if len(orphanedSnapshots) > 0 {
+		drawSnapshotTable(orphanedSnapshots)
 	}
 }
 
@@ -301,6 +311,122 @@ func populateLoadBalancerRows(loadBalancers []elbtypes.LoadBalancer) []table.Row
 			"",
 			name,
 			lbType,
+		})
+	}
+
+	return rows
+}
+
+func drawAMITable(amis []model.AMIWasteInfo) {
+	t := table.NewWriter()
+	t.SetOutputMirror(os.Stdout)
+	t.SetStyle(table.StyleRounded)
+	t.SetTitle("Unused AMI Waste (Verify before delete - may be used by ASGs/Launch Templates)")
+
+	t.AppendHeader(table.Row{"Status", "AMI ID", "Name", "Age (Days)", "Max Savings/Mo"})
+
+	t.SetColumnConfigs([]table.ColumnConfig{
+		{Number: 4, Align: text.AlignRight},
+		{Number: 5, Align: text.AlignRight},
+	})
+
+	rows := populateAMIRows(amis)
+
+	if len(rows) > 0 {
+		halfRow := len(rows) / 2
+		rows[halfRow][0] = text.FgHiYellow.Sprint("Unused*")
+	}
+
+	t.AppendRows(rows)
+	t.Render()
+	fmt.Println(text.FgHiYellow.Sprint(" * Warning: AMIs may be referenced by Auto Scaling Groups or Launch Templates"))
+	fmt.Println()
+}
+
+func populateAMIRows(amis []model.AMIWasteInfo) []table.Row {
+	var rows []table.Row
+
+	for _, ami := range amis {
+		name := ami.Name
+		if len(name) > 30 {
+			name = name[:27] + "..."
+		}
+
+		rows = append(rows, table.Row{
+			"",
+			ami.ImageId,
+			name,
+			fmt.Sprintf("%d days", ami.DaysSinceCreate),
+			fmt.Sprintf("$%.2f", ami.MaxPotentialSaving),
+		})
+	}
+
+	return rows
+}
+
+func drawSnapshotTable(snapshots []model.SnapshotWasteInfo) {
+	t := table.NewWriter()
+	t.SetOutputMirror(os.Stdout)
+	t.SetStyle(table.StyleRounded)
+	t.SetTitle("EBS Snapshot Waste")
+
+	t.AppendHeader(table.Row{"Status", "Snapshot ID", "Reason", "Size (GB)", "Max Savings/MO"})
+
+	t.SetColumnConfigs([]table.ColumnConfig{
+		{Number: 4, Align: text.AlignRight},
+		{Number: 5, Align: text.AlignRight},
+	})
+
+	// Separate orphaned and stale snapshots
+	var orphaned, stale []model.SnapshotWasteInfo
+	for _, snap := range snapshots {
+		if snap.Category == model.SnapshotCategoryOrphaned {
+			orphaned = append(orphaned, snap)
+		} else {
+			stale = append(stale, snap)
+		}
+	}
+
+	var hasPreviousRows bool
+
+	if len(orphaned) > 0 {
+		statusLabel := "Orphaned(Volume Deleted)"
+		rows := populateSnapshotRows(orphaned)
+
+		halfRow := len(rows) / 2
+		rows[halfRow][0] = text.FgHiRed.Sprint(statusLabel)
+
+		t.AppendRows(rows)
+		hasPreviousRows = true
+	}
+
+	if len(stale) > 0 {
+		if hasPreviousRows {
+			t.AppendSeparator()
+		}
+		statusLabel := "Stale(Old Backup > 90 days)"
+		rows := populateSnapshotRows(stale)
+
+		halfRow := len(rows) / 2
+		rows[halfRow][0] = text.FgHiYellow.Sprint(statusLabel)
+
+		t.AppendRows(rows)
+	}
+
+	t.Render()
+	fmt.Println()
+}
+
+func populateSnapshotRows(snapshots []model.SnapshotWasteInfo) []table.Row {
+	var rows []table.Row
+
+	for _, snap := range snapshots {
+		rows = append(rows, table.Row{
+			"",
+			snap.SnapshotId,
+			snap.Reason,
+			fmt.Sprintf("%d GB", snap.SizeGB),
+			fmt.Sprintf("$%.2f/mo", snap.MaxPotentialSavings),
 		})
 	}
 

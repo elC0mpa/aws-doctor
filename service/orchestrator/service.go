@@ -111,6 +111,8 @@ func (s *service) wasteWorkflow(outputFormat string) error {
 	var attachedToStoppedInstancesEBSVolumesInfo []types.Volume
 	var expireReservedInstancesInfo []model.RiExpirationInfo
 	var unusedLoadBalancers []elbtypes.LoadBalancer
+	var unusedAMIs []model.AMIWasteInfo
+	var orphanedSnapshots []model.SnapshotWasteInfo
 	var stsResult *sts.GetCallerIdentityOutput
 
 	// Fetch unused Elastic IPs concurrently
@@ -155,6 +157,20 @@ func (s *service) wasteWorkflow(outputFormat string) error {
 		return err
 	})
 
+	// Fetch unused AMIs concurrently
+	g.Go(func() error {
+		var err error
+		unusedAMIs, err = s.ec2Service.GetUnusedAMIs(ctx, 90)
+		return err
+	})
+
+	// Fetch orphaned EBS snapshots concurrently
+	g.Go(func() error {
+		var err error
+		orphanedSnapshots, err = s.ec2Service.GetOrphanedSnapshots(ctx, 90)
+		return err
+	})
+
 	// Wait for all goroutines to complete
 	if err := g.Wait(); err != nil {
 		return err
@@ -171,10 +187,12 @@ func (s *service) wasteWorkflow(outputFormat string) error {
 			expireReservedInstancesInfo,
 			stoppedInstancesMoreThan30Days,
 			unusedLoadBalancers,
+			unusedAMIs,
+			orphanedSnapshots,
 		)
 	}
 
-	utils.DrawWasteTable(*stsResult.Account, elasticIpInfo, availableEBSVolumesInfo, attachedToStoppedInstancesEBSVolumesInfo, expireReservedInstancesInfo, stoppedInstancesMoreThan30Days, unusedLoadBalancers)
+	utils.DrawWasteTable(*stsResult.Account, elasticIpInfo, availableEBSVolumesInfo, attachedToStoppedInstancesEBSVolumesInfo, expireReservedInstancesInfo, stoppedInstancesMoreThan30Days, unusedLoadBalancers, unusedAMIs, orphanedSnapshots)
 
 	return nil
 }

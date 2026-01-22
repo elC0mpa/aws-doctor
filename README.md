@@ -1,5 +1,6 @@
 # aws-doctor
 
+[![CI](https://github.com/elC0mpa/aws-doctor/actions/workflows/ci.yml/badge.svg)](https://github.com/elC0mpa/aws-doctor/actions/workflows/ci.yml)
 [![Go Report Card](https://goreportcard.com/badge/github.com/elC0mpa/aws-doctor)](https://goreportcard.com/report/github.com/elC0mpa/aws-doctor)
 [![Go Reference](https://pkg.go.dev/badge/github.com/elC0mpa/aws-doctor.svg)](https://pkg.go.dev/github.com/elC0mpa/aws-doctor)
 [![Go Version](https://img.shields.io/github/go-mod/go-version/elC0mpa/aws-doctor)](https://github.com/elC0mpa/aws-doctor/blob/main/go.mod)
@@ -71,6 +72,9 @@ Available platforms:
   - [x] EC2 reserved instance that are scheduled to expire in the next 30 days or have expired in the preceding 30 days.
   - [x] EC2 instance stopped for more than 30 days.
   - [x] Load Balancers with no attached target groups.
+  - [x] Unused AMIs (not associated with any running or stopped instance and created more than 90 days ago).
+  - [x] Orphaned EBS Snapshots (source volume deleted and not used by any AMI).
+  - [x] Stale EBS Snapshots (created more than 90 days ago, source volume exists and not used by any AMI).
   - [ ] Inactive VPC interface endpoints.
   - [ ] Inactive NAT Gateways.
   - [ ] Idle Load Balancers.

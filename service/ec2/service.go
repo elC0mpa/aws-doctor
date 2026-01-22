@@ -2,6 +2,7 @@ package awscostexplorer
 
 import (
 	"context"
+	"fmt"
 	"strings"
 	"time"
 
@@ -11,6 +12,8 @@ import (
 	"github.com/elC0mpa/aws-doctor/model"
 	"github.com/elC0mpa/aws-doctor/utils"
 )
+
+const ebsSnapshotCostPerGBMonth = 0.05
 
 func NewService(awsconfig aws.Config) *service {
 	client := ec2.NewFromConfig(awsconfig)
@@ -215,6 +218,227 @@ func (s *service) GetReservedInstanceExpiringOrExpired30DaysWaste(ctx context.Co
 				DaysUntilExpiry:    daysDiff,
 				State:              string(ri.State),
 				Status:             "RECENTLY EXPIRED",
+			})
+		}
+	}
+
+	return results, nil
+}
+
+// GetUnusedAMIs returns AMIs that are not used by any running or stopped instances.
+// It uses pagination for DescribeImages and adds safety warnings about potential
+// ASG/Launch Template usage.
+func (s *service) GetUnusedAMIs(ctx context.Context, staleDays int) ([]model.AMIWasteInfo, error) {
+	var results []model.AMIWasteInfo
+
+	// Get all instances to find which AMIs are in use using pagination
+	amiUsage := make(map[string]int)
+	instancePaginator := ec2.NewDescribeInstancesPaginator(s.client, &ec2.DescribeInstancesInput{})
+	for instancePaginator.HasMorePages() {
+		page, err := instancePaginator.NextPage(ctx)
+		if err != nil {
+			return nil, fmt.Errorf("failed to describe instances: %w", err)
+		}
+		for _, reservation := range page.Reservations {
+			for _, instance := range reservation.Instances {
+				if instance.ImageId != nil {
+					amiUsage[*instance.ImageId]++
+				}
+			}
+		}
+	}
+
+	// Get all owned AMIs using pagination
+	amiPaginator := ec2.NewDescribeImagesPaginator(s.client, &ec2.DescribeImagesInput{
+		Owners: []string{"self"},
+	})
+
+	cutoffTime := time.Now().AddDate(0, 0, -staleDays)
+	now := time.Now()
+
+	for amiPaginator.HasMorePages() {
+		page, err := amiPaginator.NextPage(ctx)
+		if err != nil {
+			return nil, fmt.Errorf("failed to describe images: %w", err)
+		}
+
+		for _, image := range page.Images {
+			imageId := aws.ToString(image.ImageId)
+			usageCount := amiUsage[imageId]
+
+			// Parse creation date with proper error handling
+			var creationDate time.Time
+			if image.CreationDate != nil {
+				parsedDate, err := time.Parse(time.RFC3339, *image.CreationDate)
+				if err != nil {
+					// Log warning but continue processing - use zero time as fallback
+					// This handles gracefully any unexpected date formats
+					creationDate = time.Time{}
+				} else {
+					creationDate = parsedDate
+				}
+			}
+
+			daysSinceCreate := 0
+			if !creationDate.IsZero() {
+				daysSinceCreate = int(now.Sub(creationDate).Hours() / 24)
+			}
+			isStale := !creationDate.IsZero() && creationDate.Before(cutoffTime)
+
+			// Consider unused if not used by any instance AND is stale
+			if usageCount == 0 && isStale {
+				// Collect snapshot IDs and sizes
+				var snapshotIds []string
+				var totalSnapshotSize int64
+
+				for _, bdm := range image.BlockDeviceMappings {
+					if bdm.Ebs != nil && bdm.Ebs.SnapshotId != nil {
+						snapshotIds = append(snapshotIds, *bdm.Ebs.SnapshotId)
+						if bdm.Ebs.VolumeSize != nil {
+							totalSnapshotSize += int64(*bdm.Ebs.VolumeSize)
+						}
+					}
+				}
+
+				// EBS Snapshot pricing: ~$0.05 per GB per month
+				// Note: This is max potential savings - actual snapshot billing is incremental
+				maxPotentialSaving := float64(totalSnapshotSize) * 0.05
+
+				// Safety warning: AMI may be used by ASGs or Launch Templates
+				safetyWarning := "Verify before deleting: AMI may be used by Auto Scaling Groups or Launch Templates not currently running instances"
+
+				results = append(results, model.AMIWasteInfo{
+					ImageId:            imageId,
+					Name:               aws.ToString(image.Name),
+					Description:        aws.ToString(image.Description),
+					CreationDate:       creationDate,
+					DaysSinceCreate:    daysSinceCreate,
+					IsPublic:           aws.ToBool(image.Public),
+					SnapshotIds:        snapshotIds,
+					SnapshotSizeGB:     totalSnapshotSize,
+					UsedByInstances:    usageCount,
+					MaxPotentialSaving: maxPotentialSaving,
+					SafetyWarning:      safetyWarning,
+				})
+			}
+		}
+	}
+
+	return results, nil
+}
+
+// GetOrphanedSnapshots returns EBS snapshots that are potentially orphaned
+// (source volume deleted, not used by any AMI, or older than staleDays)
+func (s *service) GetOrphanedSnapshots(ctx context.Context, staleDays int) ([]model.SnapshotWasteInfo, error) {
+	var results []model.SnapshotWasteInfo
+
+	// Collect all snapshots owned by this account using pagination
+	var allSnapshots []types.Snapshot
+	snapshotPaginator := ec2.NewDescribeSnapshotsPaginator(s.client, &ec2.DescribeSnapshotsInput{
+		OwnerIds: []string{"self"},
+	})
+	for snapshotPaginator.HasMorePages() {
+		page, err := snapshotPaginator.NextPage(ctx)
+		if err != nil {
+			return nil, fmt.Errorf("failed to describe snapshots: %w", err)
+		}
+		allSnapshots = append(allSnapshots, page.Snapshots...)
+	}
+
+	// Build a set of existing volume IDs using pagination
+	existingVolumes := make(map[string]bool)
+	volumePaginator := ec2.NewDescribeVolumesPaginator(s.client, &ec2.DescribeVolumesInput{})
+	for volumePaginator.HasMorePages() {
+		page, err := volumePaginator.NextPage(ctx)
+		if err != nil {
+			return nil, fmt.Errorf("failed to describe volumes: %w", err)
+		}
+		for _, vol := range page.Volumes {
+			existingVolumes[aws.ToString(vol.VolumeId)] = true
+		}
+	}
+
+	// Build a map of snapshot IDs used by AMIs (with pagination)
+	snapshotToAMI := make(map[string]string)
+	imagePaginator := ec2.NewDescribeImagesPaginator(s.client, &ec2.DescribeImagesInput{
+		Owners: []string{"self"},
+	})
+	for imagePaginator.HasMorePages() {
+		page, err := imagePaginator.NextPage(ctx)
+		if err != nil {
+			return nil, fmt.Errorf("failed to describe images: %w", err)
+		}
+		for _, image := range page.Images {
+			for _, bdm := range image.BlockDeviceMappings {
+				if bdm.Ebs != nil && bdm.Ebs.SnapshotId != nil {
+					snapshotToAMI[*bdm.Ebs.SnapshotId] = aws.ToString(image.ImageId)
+				}
+			}
+		}
+	}
+
+	cutoffTime := time.Now().AddDate(0, 0, -staleDays)
+	now := time.Now()
+
+	for _, snapshot := range allSnapshots {
+		volumeId := aws.ToString(snapshot.VolumeId)
+		snapshotId := aws.ToString(snapshot.SnapshotId)
+		volumeExists := existingVolumes[volumeId]
+		amiId, usedByAMI := snapshotToAMI[snapshotId]
+
+		startTime := time.Time{}
+		if snapshot.StartTime != nil {
+			startTime = *snapshot.StartTime
+		}
+
+		daysSinceCreate := int(now.Sub(startTime).Hours() / 24)
+
+		// Skip snapshots used by AMIs - they are not waste
+		if usedByAMI {
+			continue
+		}
+
+		sizeGB := int32(0)
+		if snapshot.VolumeSize != nil {
+			sizeGB = *snapshot.VolumeSize
+		}
+
+		// EBS Snapshot pricing: ~$0.05 per GB per month
+		// Note: Actual savings may be lower due to incremental storage
+		maxPotentialSavings := float64(sizeGB) * ebsSnapshotCostPerGBMonth
+
+		// Categorize based on whether source volume exists
+		if !volumeExists {
+			// Orphaned: Volume no longer exists - safe to delete (high confidence)
+			results = append(results, model.SnapshotWasteInfo{
+				SnapshotId:          snapshotId,
+				VolumeId:            volumeId,
+				VolumeExists:        volumeExists,
+				UsedByAMI:           usedByAMI,
+				AMIId:               amiId,
+				SizeGB:              sizeGB,
+				StartTime:           startTime,
+				DaysSinceCreate:     daysSinceCreate,
+				Description:         aws.ToString(snapshot.Description),
+				Category:            model.SnapshotCategoryOrphaned,
+				Reason:              "Volume Deleted",
+				MaxPotentialSavings: maxPotentialSavings,
+			})
+		} else if startTime.Before(cutoffTime) {
+			// Stale: Volume exists but snapshot is old - needs review (low confidence)
+			results = append(results, model.SnapshotWasteInfo{
+				SnapshotId:          snapshotId,
+				VolumeId:            volumeId,
+				VolumeExists:        volumeExists,
+				UsedByAMI:           usedByAMI,
+				AMIId:               amiId,
+				SizeGB:              sizeGB,
+				StartTime:           startTime,
+				DaysSinceCreate:     daysSinceCreate,
+				Description:         aws.ToString(snapshot.Description),
+				Category:            model.SnapshotCategoryStale,
+				Reason:              "Old Backup",
+				MaxPotentialSavings: maxPotentialSavings,
 			})
 		}
 	}

@@ -493,7 +493,7 @@ func captureWasteOutput(f func()) string {
 
 func TestDrawWasteTable_NoWaste(t *testing.T) {
 	output := captureWasteOutput(func() {
-		DrawWasteTable("123456789012", nil, nil, nil, nil, nil, nil)
+		DrawWasteTable("123456789012", nil, nil, nil, nil, nil, nil, nil, nil)
 	})
 
 	if !strings.Contains(output, "AWS DOCTOR CHECKUP") {
@@ -515,7 +515,7 @@ func TestDrawWasteTable_WithElasticIPs(t *testing.T) {
 	}
 
 	output := captureWasteOutput(func() {
-		DrawWasteTable("123456789012", elasticIPs, nil, nil, nil, nil, nil)
+		DrawWasteTable("123456789012", elasticIPs, nil, nil, nil, nil, nil, nil, nil)
 	})
 
 	if !strings.Contains(output, "Elastic IP") {
@@ -529,7 +529,7 @@ func TestDrawWasteTable_WithEBSVolumes(t *testing.T) {
 	}
 
 	output := captureWasteOutput(func() {
-		DrawWasteTable("123456789012", nil, unusedVolumes, nil, nil, nil, nil)
+		DrawWasteTable("123456789012", nil, unusedVolumes, nil, nil, nil, nil, nil, nil)
 	})
 
 	if !strings.Contains(output, "EBS") {
@@ -546,7 +546,7 @@ func TestDrawWasteTable_WithStoppedInstances(t *testing.T) {
 	}
 
 	output := captureWasteOutput(func() {
-		DrawWasteTable("123456789012", nil, nil, nil, nil, stoppedInstances, nil)
+		DrawWasteTable("123456789012", nil, nil, nil, nil, stoppedInstances, nil, nil, nil)
 	})
 
 	if !strings.Contains(output, "EC2") || !strings.Contains(output, "Reserved Instance") {
@@ -564,7 +564,7 @@ func TestDrawWasteTable_WithReservedInstances(t *testing.T) {
 	}
 
 	output := captureWasteOutput(func() {
-		DrawWasteTable("123456789012", nil, nil, nil, ris, nil, nil)
+		DrawWasteTable("123456789012", nil, nil, nil, ris, nil, nil, nil, nil)
 	})
 
 	if !strings.Contains(output, "Reserved Instance") {
@@ -581,7 +581,7 @@ func TestDrawWasteTable_WithLoadBalancers(t *testing.T) {
 	}
 
 	output := captureWasteOutput(func() {
-		DrawWasteTable("123456789012", nil, nil, nil, nil, nil, loadBalancers)
+		DrawWasteTable("123456789012", nil, nil, nil, nil, nil, loadBalancers, nil, nil)
 	})
 
 	if !strings.Contains(output, "Load Balancer") {
@@ -610,7 +610,7 @@ func TestDrawWasteTable_AllWasteTypes(t *testing.T) {
 	}
 
 	output := captureWasteOutput(func() {
-		DrawWasteTable("123456789012", elasticIPs, unusedVolumes, stoppedVolumes, ris, stoppedInstances, loadBalancers)
+		DrawWasteTable("123456789012", elasticIPs, unusedVolumes, stoppedVolumes, ris, stoppedInstances, loadBalancers, nil, nil)
 	})
 
 	// Should have all sections
@@ -785,6 +785,216 @@ func TestDrawLoadBalancerTable(t *testing.T) {
 	}
 }
 
+func TestPopulateAMIRows(t *testing.T) {
+	tests := []struct {
+		name    string
+		amis    []model.AMIWasteInfo
+		wantLen int
+	}{
+		{
+			name:    "empty_amis",
+			amis:    []model.AMIWasteInfo{},
+			wantLen: 0,
+		},
+		{
+			name: "single_ami",
+			amis: []model.AMIWasteInfo{
+				{
+					ImageId:            "ami-12345",
+					Name:               "my-ami",
+					DaysSinceCreate:    90,
+					MaxPotentialSaving: 5.00,
+				},
+			},
+			wantLen: 1,
+		},
+		{
+			name: "multiple_amis",
+			amis: []model.AMIWasteInfo{
+				{ImageId: "ami-111", Name: "ami-one", DaysSinceCreate: 30, MaxPotentialSaving: 2.50},
+				{ImageId: "ami-222", Name: "ami-two", DaysSinceCreate: 60, MaxPotentialSaving: 5.00},
+				{ImageId: "ami-333", Name: "ami-three", DaysSinceCreate: 90, MaxPotentialSaving: 7.50},
+			},
+			wantLen: 3,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			rows := populateAMIRows(tt.amis)
+
+			if len(rows) != tt.wantLen {
+				t.Errorf("populateAMIRows() returned %d rows, want %d", len(rows), tt.wantLen)
+				return
+			}
+
+			// Verify each row has 5 columns (Status, AMI ID, Name, Age, Max Savings)
+			for i, row := range rows {
+				if len(row) != 5 {
+					t.Errorf("Row %d has %d columns, want 5", i, len(row))
+				}
+			}
+
+			// Verify AMI IDs are in the rows
+			for i, ami := range tt.amis {
+				if rows[i][1] != ami.ImageId {
+					t.Errorf("Row %d AMI ID = %v, want %v", i, rows[i][1], ami.ImageId)
+				}
+			}
+		})
+	}
+}
+
+func TestPopulateAMIRows_LongNameTruncation(t *testing.T) {
+	amis := []model.AMIWasteInfo{
+		{
+			ImageId:            "ami-truncate",
+			Name:               "this-is-a-very-long-ami-name-that-should-be-truncated",
+			DaysSinceCreate:    45,
+			MaxPotentialSaving: 3.00,
+		},
+	}
+
+	rows := populateAMIRows(amis)
+
+	if len(rows) != 1 {
+		t.Fatalf("Expected 1 row, got %d", len(rows))
+	}
+
+	name := rows[0][2].(string)
+	// Name should be truncated to 30 chars (27 + "...")
+	if len(name) > 30 {
+		t.Errorf("Name was not truncated, got %d chars: %s", len(name), name)
+	}
+	if !strings.HasSuffix(name, "...") {
+		t.Errorf("Truncated name should end with '...', got: %s", name)
+	}
+}
+
+func TestPopulateAMIRows_Values(t *testing.T) {
+	amis := []model.AMIWasteInfo{
+		{
+			ImageId:            "ami-test123",
+			Name:               "test-ami",
+			DaysSinceCreate:    45,
+			MaxPotentialSaving: 2.50,
+		},
+	}
+
+	rows := populateAMIRows(amis)
+
+	if len(rows) != 1 {
+		t.Fatalf("Expected 1 row, got %d", len(rows))
+	}
+
+	// Column 0 is status placeholder (empty)
+	if rows[0][0] != "" {
+		t.Errorf("Column 0 should be empty, got %v", rows[0][0])
+	}
+
+	// Column 1 is AMI ID
+	if rows[0][1] != "ami-test123" {
+		t.Errorf("Column 1 = %v, want 'ami-test123'", rows[0][1])
+	}
+
+	// Column 2 is Name
+	if rows[0][2] != "test-ami" {
+		t.Errorf("Column 2 = %v, want 'test-ami'", rows[0][2])
+	}
+
+	// Column 3 is Age (days)
+	if rows[0][3] != "45 days" {
+		t.Errorf("Column 3 = %v, want '45 days'", rows[0][3])
+	}
+
+	// Column 4 is Max Savings
+	if rows[0][4] != "$2.50" {
+		t.Errorf("Column 4 = %v, want '$2.50'", rows[0][4])
+	}
+}
+
+func TestDrawAMITable(t *testing.T) {
+	amis := []model.AMIWasteInfo{
+		{
+			ImageId:            "ami-12345",
+			Name:               "my-test-ami",
+			DaysSinceCreate:    60,
+			MaxPotentialSaving: 5.00,
+			SafetyWarning:      "Verify before deleting",
+		},
+		{
+			ImageId:            "ami-67890",
+			Name:               "another-ami",
+			DaysSinceCreate:    90,
+			MaxPotentialSaving: 7.50,
+			SafetyWarning:      "Verify before deleting",
+		},
+	}
+
+	output := captureWasteOutput(func() {
+		drawAMITable(amis)
+	})
+
+	// Check for table title
+	if !strings.Contains(output, "Unused AMI Waste") {
+		t.Error("drawAMITable() missing title")
+	}
+
+	// Check for AMI IDs
+	if !strings.Contains(output, "ami-12345") {
+		t.Error("drawAMITable() missing first AMI ID")
+	}
+	if !strings.Contains(output, "ami-67890") {
+		t.Error("drawAMITable() missing second AMI ID")
+	}
+
+	// Check for warning message
+	if !strings.Contains(output, "Warning") || !strings.Contains(output, "Auto Scaling") {
+		t.Error("drawAMITable() missing safety warning footer")
+	}
+}
+
+func TestDrawWasteTable_WithUnusedAMIs(t *testing.T) {
+	unusedAMIs := []model.AMIWasteInfo{
+		{
+			ImageId:            "ami-waste123",
+			Name:               "unused-ami",
+			DaysSinceCreate:    120,
+			MaxPotentialSaving: 10.00,
+			SafetyWarning:      "Verify before deleting",
+		},
+	}
+
+	output := captureWasteOutput(func() {
+		DrawWasteTable("123456789012", nil, nil, nil, nil, nil, nil, unusedAMIs, nil)
+	})
+
+	if !strings.Contains(output, "Unused AMI") {
+		t.Error("DrawWasteTable() with unused AMIs missing AMI section")
+	}
+
+	if !strings.Contains(output, "ami-waste123") {
+		t.Error("DrawWasteTable() with unused AMIs missing AMI ID")
+	}
+}
+
+func BenchmarkPopulateAMIRows(b *testing.B) {
+	amis := make([]model.AMIWasteInfo, 50)
+	for i := 0; i < 50; i++ {
+		amis[i] = model.AMIWasteInfo{
+			ImageId:            "ami-" + string(rune('a'+i%26)),
+			Name:               "test-ami-" + string(rune('a'+i%26)),
+			DaysSinceCreate:    30 + i,
+			MaxPotentialSaving: float64(i) * 0.5,
+		}
+	}
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		populateAMIRows(amis)
+	}
+}
+
 func BenchmarkDrawWasteTable(b *testing.B) {
 	elasticIPs := []types.Address{
 		{PublicIp: aws.String("1.2.3.4"), AllocationId: aws.String("eipalloc-123")},
@@ -800,6 +1010,6 @@ func BenchmarkDrawWasteTable(b *testing.B) {
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		DrawWasteTable("123456789012", elasticIPs, unusedVolumes, nil, nil, nil, nil)
+		DrawWasteTable("123456789012", elasticIPs, unusedVolumes, nil, nil, nil, nil, nil, nil)
 	}
 }
