@@ -2,9 +2,11 @@ package awsconfig
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
+	"github.com/aws/aws-sdk-go-v2/credentials/stscreds"
 )
 
 func NewService() *service {
@@ -25,5 +27,16 @@ func (s *service) GetAWSCfg(ctx context.Context, region, profile string) (aws.Co
 		opts = append(opts, config.WithSharedConfigProfile(profile))
 	}
 
-	return config.LoadDefaultConfig(ctx, opts...)
+	// Provide MFA token provider for profiles that use assume role with MFA.
+	// This prompts the user to enter their MFA code when required.
+	opts = append(opts, config.WithAssumeRoleCredentialOptions(func(options *stscreds.AssumeRoleOptions) {
+		options.TokenProvider = stscreds.StdinTokenProvider
+	}))
+
+	cfg, err := config.LoadDefaultConfig(ctx, opts...)
+	if err != nil {
+		return aws.Config{}, fmt.Errorf("unable to load AWS config: %w", err)
+	}
+
+	return cfg, nil
 }
