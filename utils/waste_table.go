@@ -13,7 +13,7 @@ import (
 	"github.com/jedib0t/go-pretty/v6/text"
 )
 
-func DrawWasteTable(accountId string, elasticIpInfo []types.Address, unusedEBSVolumeInfo []types.Volume, attachedToStoppedInstancesEBSVolumeInfo []types.Volume, expireReservedInstancesInfo []model.RiExpirationInfo, instancesStoppedMoreThan30Days []types.Instance, unusedLoadBalancers []elbtypes.LoadBalancer) {
+func DrawWasteTable(accountId string, elasticIpInfo []types.Address, unusedEBSVolumeInfo []types.Volume, attachedToStoppedInstancesEBSVolumeInfo []types.Volume, expireReservedInstancesInfo []model.RiExpirationInfo, instancesStoppedMoreThan30Days []types.Instance, unusedLoadBalancers []elbtypes.LoadBalancer, unusedAMIs []model.AMIWasteInfo) {
 	fmt.Printf("\n%s\n", text.FgHiWhite.Sprint(" 🏥 AWS DOCTOR CHECKUP"))
 	fmt.Printf(" Account ID: %s\n", text.FgBlue.Sprint(accountId))
 	fmt.Println(text.FgHiBlue.Sprint(" ------------------------------------------------"))
@@ -23,7 +23,8 @@ func DrawWasteTable(accountId string, elasticIpInfo []types.Address, unusedEBSVo
 		len(attachedToStoppedInstancesEBSVolumeInfo) > 0 ||
 		len(instancesStoppedMoreThan30Days) > 0 ||
 		len(expireReservedInstancesInfo) > 0 ||
-		len(unusedLoadBalancers) > 0
+		len(unusedLoadBalancers) > 0 ||
+		len(unusedAMIs) > 0
 
 	if !hasWaste {
 		fmt.Println("\n" + text.FgHiGreen.Sprint(" ✅  Your account is healthy! No waste found."))
@@ -44,6 +45,10 @@ func DrawWasteTable(accountId string, elasticIpInfo []types.Address, unusedEBSVo
 
 	if len(unusedLoadBalancers) > 0 {
 		drawLoadBalancerTable(unusedLoadBalancers)
+	}
+
+	if len(unusedAMIs) > 0 {
+		drawAMITable(unusedAMIs)
 	}
 }
 
@@ -301,6 +306,52 @@ func populateLoadBalancerRows(loadBalancers []elbtypes.LoadBalancer) []table.Row
 			"",
 			name,
 			lbType,
+		})
+	}
+
+	return rows
+}
+
+func drawAMITable(amis []model.AMIWasteInfo) {
+	t := table.NewWriter()
+	t.SetOutputMirror(os.Stdout)
+	t.SetStyle(table.StyleRounded)
+	t.SetTitle("Unused AMI Waste")
+
+	t.AppendHeader(table.Row{"Status", "AMI ID", "Name", "Age (Days)", "Est. Cost/Mo"})
+
+	t.SetColumnConfigs([]table.ColumnConfig{
+		{Number: 4, Align: text.AlignRight},
+		{Number: 5, Align: text.AlignRight},
+	})
+
+	rows := populateAMIRows(amis)
+
+	if len(rows) > 0 {
+		halfRow := len(rows) / 2
+		rows[halfRow][0] = text.FgHiRed.Sprint("Unused")
+	}
+
+	t.AppendRows(rows)
+	t.Render()
+	fmt.Println()
+}
+
+func populateAMIRows(amis []model.AMIWasteInfo) []table.Row {
+	var rows []table.Row
+
+	for _, ami := range amis {
+		name := ami.Name
+		if len(name) > 30 {
+			name = name[:27] + "..."
+		}
+
+		rows = append(rows, table.Row{
+			"",
+			ami.ImageId,
+			name,
+			fmt.Sprintf("%d days", ami.DaysSinceCreate),
+			fmt.Sprintf("$%.2f", ami.EstimatedCost),
 		})
 	}
 

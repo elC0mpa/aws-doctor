@@ -2,6 +2,7 @@ package awscostexplorer
 
 import (
 	"context"
+	"fmt"
 	"strings"
 	"time"
 
@@ -215,6 +216,88 @@ func (s *service) GetReservedInstanceExpiringOrExpired30DaysWaste(ctx context.Co
 				DaysUntilExpiry:    daysDiff,
 				State:              string(ri.State),
 				Status:             "RECENTLY EXPIRED",
+			})
+		}
+	}
+
+	return results, nil
+}
+
+// GetUnusedAMIs returns AMIs that are not used by any running or stopped instances
+func (s *service) GetUnusedAMIs(ctx context.Context, staleDays int) ([]model.AMIWasteInfo, error) {
+	var results []model.AMIWasteInfo
+
+	// Get all instances to find which AMIs are in use using pagination
+	amiUsage := make(map[string]int)
+	instancePaginator := ec2.NewDescribeInstancesPaginator(s.client, &ec2.DescribeInstancesInput{})
+	for instancePaginator.HasMorePages() {
+		page, err := instancePaginator.NextPage(ctx)
+		if err != nil {
+			return nil, fmt.Errorf("failed to describe instances: %w", err)
+		}
+		for _, reservation := range page.Reservations {
+			for _, instance := range reservation.Instances {
+				if instance.ImageId != nil {
+					amiUsage[*instance.ImageId]++
+				}
+			}
+		}
+	}
+
+	// Get all owned AMIs
+	// Note: DescribeImages doesn't have a paginator, but typically returns all at once
+	amiOutput, err := s.client.DescribeImages(ctx, &ec2.DescribeImagesInput{
+		Owners: []string{"self"},
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to describe images: %w", err)
+	}
+
+	cutoffTime := time.Now().AddDate(0, 0, -staleDays)
+	now := time.Now()
+
+	for _, image := range amiOutput.Images {
+		imageId := aws.ToString(image.ImageId)
+		usageCount := amiUsage[imageId]
+
+		// Parse creation date
+		creationDate := time.Time{}
+		if image.CreationDate != nil {
+			creationDate, _ = time.Parse(time.RFC3339, *image.CreationDate)
+		}
+
+		daysSinceCreate := int(now.Sub(creationDate).Hours() / 24)
+		isStale := creationDate.Before(cutoffTime)
+
+		// Consider unused if not used by any instance AND is stale
+		if usageCount == 0 && isStale {
+			// Collect snapshot IDs and sizes
+			var snapshotIds []string
+			var totalSnapshotSize int64
+
+			for _, bdm := range image.BlockDeviceMappings {
+				if bdm.Ebs != nil && bdm.Ebs.SnapshotId != nil {
+					snapshotIds = append(snapshotIds, *bdm.Ebs.SnapshotId)
+					if bdm.Ebs.VolumeSize != nil {
+						totalSnapshotSize += int64(*bdm.Ebs.VolumeSize)
+					}
+				}
+			}
+
+			// EBS Snapshot pricing: ~$0.05 per GB per month
+			estimatedCost := float64(totalSnapshotSize) * 0.05
+
+			results = append(results, model.AMIWasteInfo{
+				ImageId:         imageId,
+				Name:            aws.ToString(image.Name),
+				Description:     aws.ToString(image.Description),
+				CreationDate:    creationDate,
+				DaysSinceCreate: daysSinceCreate,
+				IsPublic:        aws.ToBool(image.Public),
+				SnapshotIds:     snapshotIds,
+				SnapshotSizeGB:  totalSnapshotSize,
+				UsedByInstances: usageCount,
+				EstimatedCost:   estimatedCost,
 			})
 		}
 	}

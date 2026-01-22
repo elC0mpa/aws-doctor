@@ -69,7 +69,7 @@ func OutputTrendJSON(accountID string, costInfo []model.CostInfo) error {
 }
 
 // OutputWasteJSON outputs waste detection data as JSON
-func OutputWasteJSON(accountID string, elasticIPs []types.Address, unusedVolumes []types.Volume, stoppedVolumes []types.Volume, ris []model.RiExpirationInfo, stoppedInstances []types.Instance, loadBalancers []elbtypes.LoadBalancer) error {
+func OutputWasteJSON(accountID string, elasticIPs []types.Address, unusedVolumes []types.Volume, stoppedVolumes []types.Volume, ris []model.RiExpirationInfo, stoppedInstances []types.Instance, loadBalancers []elbtypes.LoadBalancer, unusedAMIs []model.AMIWasteInfo) error {
 	output := model.WasteReportJSON{
 		AccountID:           accountID,
 		GeneratedAt:         time.Now().UTC().Format(time.RFC3339),
@@ -79,6 +79,7 @@ func OutputWasteJSON(accountID string, elasticIPs []types.Address, unusedVolumes
 		StoppedInstances:    []model.StoppedInstanceJSON{},
 		ReservedInstances:   []model.ReservedInstanceJSON{},
 		UnusedLoadBalancers: []model.LoadBalancerJSON{},
+		UnusedAMIs:          []model.AMIJSON{},
 	}
 
 	// Unused Elastic IPs
@@ -143,12 +144,28 @@ func OutputWasteJSON(accountID string, elasticIPs []types.Address, unusedVolumes
 		})
 	}
 
+	// Unused AMIs
+	for _, ami := range unusedAMIs {
+		output.UnusedAMIs = append(output.UnusedAMIs, model.AMIJSON{
+			ImageID:         ami.ImageId,
+			Name:            ami.Name,
+			Description:     ami.Description,
+			CreationDate:    ami.CreationDate.Format(time.RFC3339),
+			DaysSinceCreate: ami.DaysSinceCreate,
+			IsPublic:        ami.IsPublic,
+			SnapshotIDs:     ami.SnapshotIds,
+			SnapshotSizeGB:  ami.SnapshotSizeGB,
+			EstimatedCost:   ami.EstimatedCost,
+		})
+	}
+
 	output.HasWaste = len(output.UnusedElasticIPs) > 0 ||
 		len(output.UnusedEBSVolumes) > 0 ||
 		len(output.StoppedVolumes) > 0 ||
 		len(output.StoppedInstances) > 0 ||
 		len(output.ReservedInstances) > 0 ||
-		len(output.UnusedLoadBalancers) > 0
+		len(output.UnusedLoadBalancers) > 0 ||
+		len(output.UnusedAMIs) > 0
 
 	return printJSON(output)
 }

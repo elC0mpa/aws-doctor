@@ -18,4 +18,5 @@ type EC2Service interface {
 	GetUnusedEBSVolumes(ctx context.Context) ([]types.Volume, error)
 	GetStoppedInstancesInfo(ctx context.Context) ([]types.Instance, []types.Volume, error)
 	GetReservedInstanceExpiringOrExpired30DaysWaste(ctx context.Context) ([]model.RiExpirationInfo, error)
+	GetUnusedAMIs(ctx context.Context, staleDays int) ([]model.AMIWasteInfo, error)
 }
