@@ -372,35 +372,26 @@ func TestOutputWasteJSON_InstanceWithInvalidTransitionReason(t *testing.T) {
 	}
 }
 
-func TestOutputWasteJSON_WithSnapshots(t *testing.T) {
-	snapshots := []model.SnapshotWasteInfo{
+func TestOutputWasteJSON_WithUnusedAMIs(t *testing.T) {
+	unusedAMIs := []model.AMIWasteInfo{
 		{
-			SnapshotId:          "snap-orphan123",
-			VolumeId:            "vol-deleted",
-			VolumeExists:        false,
-			SizeGB:              100,
-			StartTime:           time.Now().Add(-60 * 24 * time.Hour),
-			Description:         "Daily backup",
-			Category:            model.SnapshotCategoryOrphaned,
-			Reason:              "Volume Deleted",
-			MaxPotentialSavings: 5.0,
-		},
-		{
-			SnapshotId:          "snap-stale456",
-			VolumeId:            "vol-exists",
-			VolumeExists:        true,
-			SizeGB:              200,
-			StartTime:           time.Now().Add(-90 * 24 * time.Hour),
-			Description:         "Weekly backup",
-			Category:            model.SnapshotCategoryStale,
-			Reason:              "Old Backup",
-			MaxPotentialSavings: 10.0,
+			ImageId:            "ami-12345",
+			Name:               "my-test-ami",
+			Description:        "Test AMI for unit tests",
+			CreationDate:       time.Now().AddDate(0, -3, 0), // 3 months ago
+			DaysSinceCreate:    90,
+			IsPublic:           false,
+			SnapshotIds:        []string{"snap-111", "snap-222"},
+			SnapshotSizeGB:     100,
+			UsedByInstances:    0,
+			MaxPotentialSaving: 5.00,
+			SafetyWarning:      "Verify before deleting: AMI may be used by Auto Scaling Groups",
 		},
 	}
 
 	var err error
 	output := captureStdout(func() {
-		err = OutputWasteJSON("123456789012", nil, nil, nil, nil, nil, nil, nil, snapshots)
+		err = OutputWasteJSON("123456789012", nil, nil, nil, nil, nil, nil, unusedAMIs, nil)
 	})
 
 	if err != nil {
@@ -413,60 +404,50 @@ func TestOutputWasteJSON_WithSnapshots(t *testing.T) {
 	}
 
 	if !result.HasWaste {
-		t.Error("HasWaste should be true when snapshots exist")
+		t.Error("HasWaste should be true when AMIs exist")
 	}
 
-	if len(result.OrphanedSnapshots) != 1 {
-		t.Errorf("OrphanedSnapshots has %d items, want 1", len(result.OrphanedSnapshots))
+	if len(result.UnusedAMIs) != 1 {
+		t.Fatalf("UnusedAMIs has %d items, want 1", len(result.UnusedAMIs))
 	}
 
-	if len(result.StaleSnapshots) != 1 {
-		t.Errorf("StaleSnapshots has %d items, want 1", len(result.StaleSnapshots))
+	ami := result.UnusedAMIs[0]
+	if ami.ImageID != "ami-12345" {
+		t.Errorf("AMI ImageID = %v, want 'ami-12345'", ami.ImageID)
 	}
-
-	// Verify orphaned snapshot details
-	if result.OrphanedSnapshots[0].SnapshotID != "snap-orphan123" {
-		t.Errorf("OrphanedSnapshots[0].SnapshotID = %v, want snap-orphan123", result.OrphanedSnapshots[0].SnapshotID)
+	if ami.Name != "my-test-ami" {
+		t.Errorf("AMI Name = %v, want 'my-test-ami'", ami.Name)
 	}
-	if result.OrphanedSnapshots[0].Category != "orphaned" {
-		t.Errorf("OrphanedSnapshots[0].Category = %v, want orphaned", result.OrphanedSnapshots[0].Category)
+	if ami.DaysSinceCreate != 90 {
+		t.Errorf("AMI DaysSinceCreate = %v, want 90", ami.DaysSinceCreate)
 	}
-	if result.OrphanedSnapshots[0].Reason != "Volume Deleted" {
-		t.Errorf("OrphanedSnapshots[0].Reason = %v, want 'Volume Deleted'", result.OrphanedSnapshots[0].Reason)
+	if ami.MaxPotentialSaving != 5.00 {
+		t.Errorf("AMI MaxPotentialSaving = %v, want 5.00", ami.MaxPotentialSaving)
 	}
-	if result.OrphanedSnapshots[0].MaxPotentialSavings != 5.0 {
-		t.Errorf("OrphanedSnapshots[0].MaxPotentialSavings = %v, want 5.0", result.OrphanedSnapshots[0].MaxPotentialSavings)
+	if ami.SafetyWarning == "" {
+		t.Error("AMI SafetyWarning should not be empty")
 	}
-
-	// Verify stale snapshot details
-	if result.StaleSnapshots[0].SnapshotID != "snap-stale456" {
-		t.Errorf("StaleSnapshots[0].SnapshotID = %v, want snap-stale456", result.StaleSnapshots[0].SnapshotID)
-	}
-	if result.StaleSnapshots[0].Category != "stale" {
-		t.Errorf("StaleSnapshots[0].Category = %v, want stale", result.StaleSnapshots[0].Category)
-	}
-	if result.StaleSnapshots[0].Reason != "Old Backup" {
-		t.Errorf("StaleSnapshots[0].Reason = %v, want 'Old Backup'", result.StaleSnapshots[0].Reason)
+	if len(ami.SnapshotIDs) != 2 {
+		t.Errorf("AMI SnapshotIDs has %d items, want 2", len(ami.SnapshotIDs))
 	}
 }
 
-func TestOutputWasteJSON_OnlyOrphanedSnapshots(t *testing.T) {
-	snapshots := []model.SnapshotWasteInfo{
+func TestOutputWasteJSON_AMIWithEmptySnapshots(t *testing.T) {
+	unusedAMIs := []model.AMIWasteInfo{
 		{
-			SnapshotId:          "snap-orphan1",
-			VolumeId:            "vol-deleted1",
-			VolumeExists:        false,
-			SizeGB:              100,
-			StartTime:           time.Now().Add(-60 * 24 * time.Hour),
-			Category:            model.SnapshotCategoryOrphaned,
-			Reason:              "Volume Deleted",
-			MaxPotentialSavings: 5.0,
+			ImageId:            "ami-nosnapshots",
+			Name:               "ami-without-snapshots",
+			DaysSinceCreate:    45,
+			SnapshotIds:        []string{}, // Empty snapshots
+			SnapshotSizeGB:     0,
+			MaxPotentialSaving: 0.00,
+			SafetyWarning:      "Verify before deleting",
 		},
 	}
 
 	var err error
 	output := captureStdout(func() {
-		err = OutputWasteJSON("123456789012", nil, nil, nil, nil, nil, nil, nil, snapshots)
+		err = OutputWasteJSON("123456789012", nil, nil, nil, nil, nil, nil, unusedAMIs, nil)
 	})
 
 	if err != nil {
@@ -478,49 +459,16 @@ func TestOutputWasteJSON_OnlyOrphanedSnapshots(t *testing.T) {
 		t.Fatalf("Failed to parse output JSON: %v", jsonErr)
 	}
 
-	if len(result.OrphanedSnapshots) != 1 {
-		t.Errorf("OrphanedSnapshots has %d items, want 1", len(result.OrphanedSnapshots))
+	if len(result.UnusedAMIs) != 1 {
+		t.Fatalf("UnusedAMIs has %d items, want 1", len(result.UnusedAMIs))
 	}
 
-	if len(result.StaleSnapshots) != 0 {
-		t.Errorf("StaleSnapshots has %d items, want 0", len(result.StaleSnapshots))
+	ami := result.UnusedAMIs[0]
+	if ami.SnapshotSizeGB != 0 {
+		t.Errorf("AMI SnapshotSizeGB = %v, want 0", ami.SnapshotSizeGB)
 	}
-}
-
-func TestOutputWasteJSON_OnlyStaleSnapshots(t *testing.T) {
-	snapshots := []model.SnapshotWasteInfo{
-		{
-			SnapshotId:          "snap-stale1",
-			VolumeId:            "vol-exists",
-			VolumeExists:        true,
-			SizeGB:              150,
-			StartTime:           time.Now().Add(-45 * 24 * time.Hour),
-			Category:            model.SnapshotCategoryStale,
-			Reason:              "Old Backup",
-			MaxPotentialSavings: 7.5,
-		},
-	}
-
-	var err error
-	output := captureStdout(func() {
-		err = OutputWasteJSON("123456789012", nil, nil, nil, nil, nil, nil, nil, snapshots)
-	})
-
-	if err != nil {
-		t.Fatalf("OutputWasteJSON() error = %v", err)
-	}
-
-	var result model.WasteReportJSON
-	if jsonErr := json.Unmarshal([]byte(strings.TrimSpace(output)), &result); jsonErr != nil {
-		t.Fatalf("Failed to parse output JSON: %v", jsonErr)
-	}
-
-	if len(result.OrphanedSnapshots) != 0 {
-		t.Errorf("OrphanedSnapshots has %d items, want 0", len(result.OrphanedSnapshots))
-	}
-
-	if len(result.StaleSnapshots) != 1 {
-		t.Errorf("StaleSnapshots has %d items, want 1", len(result.StaleSnapshots))
+	if ami.MaxPotentialSaving != 0.00 {
+		t.Errorf("AMI MaxPotentialSaving = %v, want 0.00", ami.MaxPotentialSaving)
 	}
 }
 

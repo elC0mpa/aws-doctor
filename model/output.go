@@ -96,15 +96,16 @@ type LoadBalancerJSON struct {
 
 // AMIJSON represents an unused AMI
 type AMIJSON struct {
-	ImageID         string   `json:"image_id"`
-	Name            string   `json:"name"`
-	Description     string   `json:"description,omitempty"`
-	CreationDate    string   `json:"creation_date"`
-	DaysSinceCreate int      `json:"days_since_create"`
-	IsPublic        bool     `json:"is_public"`
-	SnapshotIDs     []string `json:"snapshot_ids"`
-	SnapshotSizeGB  int64    `json:"snapshot_size_gb"`
-	EstimatedCost   float64  `json:"estimated_monthly_cost"`
+	ImageID            string   `json:"image_id"`
+	Name               string   `json:"name"`
+	Description        string   `json:"description,omitempty"`
+	CreationDate       string   `json:"creation_date"`
+	DaysSinceCreate    int      `json:"days_since_create"`
+	IsPublic           bool     `json:"is_public"`
+	SnapshotIDs        []string `json:"snapshot_ids"`
+	SnapshotSizeGB     int64    `json:"snapshot_size_gb"`
+	MaxPotentialSaving float64  `json:"max_potential_saving_monthly"`
+	SafetyWarning      string   `json:"safety_warning"`
 }
 
 // SnapshotJSON represents an orphaned or stale EBS snapshot

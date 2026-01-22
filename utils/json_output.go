@@ -149,15 +149,16 @@ func OutputWasteJSON(accountID string, elasticIPs []types.Address, unusedVolumes
 	// Unused AMIs
 	for _, ami := range unusedAMIs {
 		output.UnusedAMIs = append(output.UnusedAMIs, model.AMIJSON{
-			ImageID:         ami.ImageId,
-			Name:            ami.Name,
-			Description:     ami.Description,
-			CreationDate:    ami.CreationDate.Format(time.RFC3339),
-			DaysSinceCreate: ami.DaysSinceCreate,
-			IsPublic:        ami.IsPublic,
-			SnapshotIDs:     ami.SnapshotIds,
-			SnapshotSizeGB:  ami.SnapshotSizeGB,
-			EstimatedCost:   ami.EstimatedCost,
+			ImageID:            ami.ImageId,
+			Name:               ami.Name,
+			Description:        ami.Description,
+			CreationDate:       ami.CreationDate.Format(time.RFC3339),
+			DaysSinceCreate:    ami.DaysSinceCreate,
+			IsPublic:           ami.IsPublic,
+			SnapshotIDs:        ami.SnapshotIds,
+			SnapshotSizeGB:     ami.SnapshotSizeGB,
+			MaxPotentialSaving: ami.MaxPotentialSaving,
+			SafetyWarning:      ami.SafetyWarning,
 		})
 	}
 
