@@ -65,3 +65,11 @@ func (m *MockEC2Service) GetUnusedAMIs(ctx context.Context, staleDays int) ([]mo
 	}
 	return args.Get(0).([]model.AMIWasteInfo), args.Error(1)
 }
+
+func (m *MockEC2Service) GetOrphanedSnapshots(ctx context.Context, staleDays int) ([]model.SnapshotWasteInfo, error) {
+	args := m.Called(ctx, staleDays)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).([]model.SnapshotWasteInfo), args.Error(1)
+}
