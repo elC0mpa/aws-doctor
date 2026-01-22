@@ -16,5 +16,7 @@ func StartSpinner() {
 }
 
 func StopSpinner() {
-	loader.Stop()
+	if loader != nil {
+		loader.Stop()
+	}
 }
