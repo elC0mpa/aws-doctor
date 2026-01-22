@@ -69,7 +69,7 @@ func OutputTrendJSON(accountID string, costInfo []model.CostInfo) error {
 }
 
 // OutputWasteJSON outputs waste detection data as JSON
-func OutputWasteJSON(accountID string, elasticIPs []types.Address, unusedVolumes []types.Volume, stoppedVolumes []types.Volume, ris []model.RiExpirationInfo, stoppedInstances []types.Instance, loadBalancers []elbtypes.LoadBalancer, unusedAMIs []model.AMIWasteInfo) error {
+func OutputWasteJSON(accountID string, elasticIPs []types.Address, unusedVolumes []types.Volume, stoppedVolumes []types.Volume, ris []model.RiExpirationInfo, stoppedInstances []types.Instance, loadBalancers []elbtypes.LoadBalancer, unusedAMIs []model.AMIWasteInfo, orphanedSnapshots []model.SnapshotWasteInfo) error {
 	output := model.WasteReportJSON{
 		AccountID:           accountID,
 		GeneratedAt:         time.Now().UTC().Format(time.RFC3339),
@@ -80,6 +80,7 @@ func OutputWasteJSON(accountID string, elasticIPs []types.Address, unusedVolumes
 		ReservedInstances:   []model.ReservedInstanceJSON{},
 		UnusedLoadBalancers: []model.LoadBalancerJSON{},
 		UnusedAMIs:          []model.AMIJSON{},
+		OrphanedSnapshots:   []model.SnapshotJSON{},
 	}
 
 	// Unused Elastic IPs
@@ -159,13 +160,30 @@ func OutputWasteJSON(accountID string, elasticIPs []types.Address, unusedVolumes
 		})
 	}
 
+	// Orphaned snapshots
+	for _, snap := range orphanedSnapshots {
+		output.OrphanedSnapshots = append(output.OrphanedSnapshots, model.SnapshotJSON{
+			SnapshotID:      snap.SnapshotId,
+			VolumeID:        snap.VolumeId,
+			VolumeExists:    snap.VolumeExists,
+			UsedByAMI:       snap.UsedByAMI,
+			AMIID:           snap.AMIId,
+			SizeGB:          snap.SizeGB,
+			StartTime:       snap.StartTime.Format(time.RFC3339),
+			DaysSinceCreate: snap.DaysSinceCreate,
+			Description:     snap.Description,
+			EstimatedCost:   snap.EstimatedCost,
+		})
+	}
+
 	output.HasWaste = len(output.UnusedElasticIPs) > 0 ||
 		len(output.UnusedEBSVolumes) > 0 ||
 		len(output.StoppedVolumes) > 0 ||
 		len(output.StoppedInstances) > 0 ||
 		len(output.ReservedInstances) > 0 ||
 		len(output.UnusedLoadBalancers) > 0 ||
-		len(output.UnusedAMIs) > 0
+		len(output.UnusedAMIs) > 0 ||
+		len(output.OrphanedSnapshots) > 0
 
 	return printJSON(output)
 }

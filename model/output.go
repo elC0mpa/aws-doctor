@@ -53,6 +53,7 @@ type WasteReportJSON struct {
 	ReservedInstances   []ReservedInstanceJSON `json:"reserved_instances"`
 	UnusedLoadBalancers []LoadBalancerJSON     `json:"unused_load_balancers"`
 	UnusedAMIs          []AMIJSON              `json:"unused_amis"`
+	OrphanedSnapshots   []SnapshotJSON         `json:"orphaned_snapshots"`
 }
 
 // ElasticIPJSON represents an unused Elastic IP
@@ -103,4 +104,18 @@ type AMIJSON struct {
 	SnapshotIDs     []string `json:"snapshot_ids"`
 	SnapshotSizeGB  int64    `json:"snapshot_size_gb"`
 	EstimatedCost   float64  `json:"estimated_monthly_cost"`
+}
+
+// SnapshotJSON represents an orphaned EBS snapshot
+type SnapshotJSON struct {
+	SnapshotID      string  `json:"snapshot_id"`
+	VolumeID        string  `json:"volume_id,omitempty"`
+	VolumeExists    bool    `json:"volume_exists"`
+	UsedByAMI       bool    `json:"used_by_ami"`
+	AMIID           string  `json:"ami_id,omitempty"`
+	SizeGB          int32   `json:"size_gb"`
+	StartTime       string  `json:"start_time"`
+	DaysSinceCreate int     `json:"days_since_create"`
+	Description     string  `json:"description,omitempty"`
+	EstimatedCost   float64 `json:"estimated_monthly_cost"`
 }

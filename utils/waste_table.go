@@ -13,7 +13,7 @@ import (
 	"github.com/jedib0t/go-pretty/v6/text"
 )
 
-func DrawWasteTable(accountId string, elasticIpInfo []types.Address, unusedEBSVolumeInfo []types.Volume, attachedToStoppedInstancesEBSVolumeInfo []types.Volume, expireReservedInstancesInfo []model.RiExpirationInfo, instancesStoppedMoreThan30Days []types.Instance, unusedLoadBalancers []elbtypes.LoadBalancer, unusedAMIs []model.AMIWasteInfo) {
+func DrawWasteTable(accountId string, elasticIpInfo []types.Address, unusedEBSVolumeInfo []types.Volume, attachedToStoppedInstancesEBSVolumeInfo []types.Volume, expireReservedInstancesInfo []model.RiExpirationInfo, instancesStoppedMoreThan30Days []types.Instance, unusedLoadBalancers []elbtypes.LoadBalancer, unusedAMIs []model.AMIWasteInfo, orphanedSnapshots []model.SnapshotWasteInfo) {
 	fmt.Printf("\n%s\n", text.FgHiWhite.Sprint(" 🏥 AWS DOCTOR CHECKUP"))
 	fmt.Printf(" Account ID: %s\n", text.FgBlue.Sprint(accountId))
 	fmt.Println(text.FgHiBlue.Sprint(" ------------------------------------------------"))
@@ -24,7 +24,8 @@ func DrawWasteTable(accountId string, elasticIpInfo []types.Address, unusedEBSVo
 		len(instancesStoppedMoreThan30Days) > 0 ||
 		len(expireReservedInstancesInfo) > 0 ||
 		len(unusedLoadBalancers) > 0 ||
-		len(unusedAMIs) > 0
+		len(unusedAMIs) > 0 ||
+		len(orphanedSnapshots) > 0
 
 	if !hasWaste {
 		fmt.Println("\n" + text.FgHiGreen.Sprint(" ✅  Your account is healthy! No waste found."))
@@ -49,6 +50,10 @@ func DrawWasteTable(accountId string, elasticIpInfo []types.Address, unusedEBSVo
 
 	if len(unusedAMIs) > 0 {
 		drawAMITable(unusedAMIs)
+	}
+
+	if len(orphanedSnapshots) > 0 {
+		drawSnapshotTable(orphanedSnapshots)
 	}
 }
 
@@ -352,6 +357,48 @@ func populateAMIRows(amis []model.AMIWasteInfo) []table.Row {
 			name,
 			fmt.Sprintf("%d days", ami.DaysSinceCreate),
 			fmt.Sprintf("$%.2f", ami.EstimatedCost),
+		})
+	}
+
+	return rows
+}
+
+func drawSnapshotTable(snapshots []model.SnapshotWasteInfo) {
+	t := table.NewWriter()
+	t.SetOutputMirror(os.Stdout)
+	t.SetStyle(table.StyleRounded)
+	t.SetTitle("Orphaned EBS Snapshots")
+
+	t.AppendHeader(table.Row{"Status", "Snapshot ID", "Size (GB)", "Age (Days)", "Est. Cost/Mo"})
+
+	t.SetColumnConfigs([]table.ColumnConfig{
+		{Number: 3, Align: text.AlignRight},
+		{Number: 4, Align: text.AlignRight},
+		{Number: 5, Align: text.AlignRight},
+	})
+
+	rows := populateSnapshotRows(snapshots)
+
+	if len(rows) > 0 {
+		halfRow := len(rows) / 2
+		rows[halfRow][0] = text.FgHiRed.Sprint("Orphaned")
+	}
+
+	t.AppendRows(rows)
+	t.Render()
+	fmt.Println()
+}
+
+func populateSnapshotRows(snapshots []model.SnapshotWasteInfo) []table.Row {
+	var rows []table.Row
+
+	for _, snap := range snapshots {
+		rows = append(rows, table.Row{
+			"",
+			snap.SnapshotId,
+			fmt.Sprintf("%d GB", snap.SizeGB),
+			fmt.Sprintf("%d days", snap.DaysSinceCreate),
+			fmt.Sprintf("$%.2f", snap.EstimatedCost),
 		})
 	}
 
