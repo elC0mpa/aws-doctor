@@ -72,6 +72,9 @@ Available platforms:
   - [x] EC2 reserved instance that are scheduled to expire in the next 30 days or have expired in the preceding 30 days.
   - [x] EC2 instance stopped for more than 30 days.
   - [x] Load Balancers with no attached target groups.
+  - [x] Unused AMIs (not associated with any running or stopped instance and created more than 90 days ago).
+  - [x] Orphaned EBS Snapshots (source volume deleted and not used by any AMI).
+  - [x] Stale EBS Snapshots (created more than 90 days ago, source volume exists and not used by any AMI).
   - [ ] Inactive VPC interface endpoints.
   - [ ] Inactive NAT Gateways.
   - [ ] Idle Load Balancers.

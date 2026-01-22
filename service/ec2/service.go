@@ -13,6 +13,8 @@ import (
 	"github.com/elC0mpa/aws-doctor/utils"
 )
 
+const ebsSnapshotCostPerGBMonth = 0.05
+
 func NewService(awsconfig aws.Config) *service {
 	client := ec2.NewFromConfig(awsconfig)
 	return &service{
@@ -403,7 +405,7 @@ func (s *service) GetOrphanedSnapshots(ctx context.Context, staleDays int) ([]mo
 
 		// EBS Snapshot pricing: ~$0.05 per GB per month
 		// Note: Actual savings may be lower due to incremental storage
-		maxPotentialSavings := float64(sizeGB) * 0.05
+		maxPotentialSavings := float64(sizeGB) * ebsSnapshotCostPerGBMonth
 
 		// Categorize based on whether source volume exists
 		if !volumeExists {

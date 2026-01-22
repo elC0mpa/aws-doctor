@@ -370,7 +370,7 @@ func drawSnapshotTable(snapshots []model.SnapshotWasteInfo) {
 	t.SetStyle(table.StyleRounded)
 	t.SetTitle("EBS Snapshot Waste")
 
-	t.AppendHeader(table.Row{"Status", "Snapshot ID", "Reason", "Size (GB)", "Max Savings*"})
+	t.AppendHeader(table.Row{"Status", "Snapshot ID", "Reason", "Size (GB)", "Max Savings/MO"})
 
 	t.SetColumnConfigs([]table.ColumnConfig{
 		{Number: 4, Align: text.AlignRight},
@@ -390,7 +390,7 @@ func drawSnapshotTable(snapshots []model.SnapshotWasteInfo) {
 	var hasPreviousRows bool
 
 	if len(orphaned) > 0 {
-		statusLabel := "Orphaned\n(Volume Deleted)"
+		statusLabel := "Orphaned(Volume Deleted)"
 		rows := populateSnapshotRows(orphaned)
 
 		halfRow := len(rows) / 2
@@ -404,7 +404,7 @@ func drawSnapshotTable(snapshots []model.SnapshotWasteInfo) {
 		if hasPreviousRows {
 			t.AppendSeparator()
 		}
-		statusLabel := "Stale\n(Old Backup)"
+		statusLabel := "Stale(Old Backup > 90 days)"
 		rows := populateSnapshotRows(stale)
 
 		halfRow := len(rows) / 2
@@ -414,7 +414,6 @@ func drawSnapshotTable(snapshots []model.SnapshotWasteInfo) {
 	}
 
 	t.Render()
-	fmt.Println(text.FgHiBlue.Sprint(" * Max Potential Savings: Actual savings may be lower due to incremental storage"))
 	fmt.Println()
 }
 
