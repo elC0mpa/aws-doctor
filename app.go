@@ -11,6 +11,7 @@ import (
 	"github.com/elC0mpa/aws-doctor/service/elb"
 	"github.com/elC0mpa/aws-doctor/service/flag"
 	"github.com/elC0mpa/aws-doctor/service/orchestrator"
+	"github.com/elC0mpa/aws-doctor/service/output"
 	awssts "github.com/elC0mpa/aws-doctor/service/sts"
 	"github.com/elC0mpa/aws-doctor/utils"
 )
@@ -58,8 +59,9 @@ func run() error {
 	stsService := awssts.NewService(awsCfg)
 	ec2Service := awsec2.NewService(awsCfg)
 	elbService := elb.NewService(awsCfg)
+	outputService := output.NewService(flags.Output)
 
-	orchestratorService := orchestrator.NewService(stsService, costService, ec2Service, elbService)
+	orchestratorService := orchestrator.NewService(stsService, costService, ec2Service, elbService, outputService)
 
 	if err := orchestratorService.Orchestrate(flags); err != nil {
 		return fmt.Errorf("orchestration failed: %w", err)
