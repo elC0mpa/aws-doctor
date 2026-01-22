@@ -367,25 +367,53 @@ func drawSnapshotTable(snapshots []model.SnapshotWasteInfo) {
 	t := table.NewWriter()
 	t.SetOutputMirror(os.Stdout)
 	t.SetStyle(table.StyleRounded)
-	t.SetTitle("Orphaned EBS Snapshots")
+	t.SetTitle("EBS Snapshot Waste")
 
-	t.AppendHeader(table.Row{"Status", "Snapshot ID", "Size (GB)", "Age (Days)", "Est. Cost/Mo"})
+	t.AppendHeader(table.Row{"Status", "Snapshot ID", "Reason", "Size (GB)", "Max Savings*"})
 
 	t.SetColumnConfigs([]table.ColumnConfig{
-		{Number: 3, Align: text.AlignRight},
 		{Number: 4, Align: text.AlignRight},
 		{Number: 5, Align: text.AlignRight},
 	})
 
-	rows := populateSnapshotRows(snapshots)
-
-	if len(rows) > 0 {
-		halfRow := len(rows) / 2
-		rows[halfRow][0] = text.FgHiRed.Sprint("Orphaned")
+	// Separate orphaned and stale snapshots
+	var orphaned, stale []model.SnapshotWasteInfo
+	for _, snap := range snapshots {
+		if snap.Category == model.SnapshotCategoryOrphaned {
+			orphaned = append(orphaned, snap)
+		} else {
+			stale = append(stale, snap)
+		}
 	}
 
-	t.AppendRows(rows)
+	var hasPreviousRows bool
+
+	if len(orphaned) > 0 {
+		statusLabel := "Orphaned\n(Volume Deleted)"
+		rows := populateSnapshotRows(orphaned)
+
+		halfRow := len(rows) / 2
+		rows[halfRow][0] = text.FgHiRed.Sprint(statusLabel)
+
+		t.AppendRows(rows)
+		hasPreviousRows = true
+	}
+
+	if len(stale) > 0 {
+		if hasPreviousRows {
+			t.AppendSeparator()
+		}
+		statusLabel := "Stale\n(Old Backup)"
+		rows := populateSnapshotRows(stale)
+
+		halfRow := len(rows) / 2
+		rows[halfRow][0] = text.FgHiYellow.Sprint(statusLabel)
+
+		t.AppendRows(rows)
+	}
+
 	t.Render()
+	fmt.Println(text.FgHiBlue.Sprint(" * Max Potential Savings: Actual savings may be lower due to incremental storage"))
 	fmt.Println()
 }
 
@@ -396,9 +424,9 @@ func populateSnapshotRows(snapshots []model.SnapshotWasteInfo) []table.Row {
 		rows = append(rows, table.Row{
 			"",
 			snap.SnapshotId,
+			snap.Reason,
 			fmt.Sprintf("%d GB", snap.SizeGB),
-			fmt.Sprintf("%d days", snap.DaysSinceCreate),
-			fmt.Sprintf("$%.2f", snap.EstimatedCost),
+			fmt.Sprintf("$%.2f/mo", snap.MaxPotentialSavings),
 		})
 	}
 

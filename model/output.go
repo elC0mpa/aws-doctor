@@ -54,6 +54,7 @@ type WasteReportJSON struct {
 	UnusedLoadBalancers []LoadBalancerJSON     `json:"unused_load_balancers"`
 	UnusedAMIs          []AMIJSON              `json:"unused_amis"`
 	OrphanedSnapshots   []SnapshotJSON         `json:"orphaned_snapshots"`
+	StaleSnapshots      []SnapshotJSON         `json:"stale_snapshots"`
 }
 
 // ElasticIPJSON represents an unused Elastic IP
@@ -106,16 +107,18 @@ type AMIJSON struct {
 	EstimatedCost   float64  `json:"estimated_monthly_cost"`
 }
 
-// SnapshotJSON represents an orphaned EBS snapshot
+// SnapshotJSON represents an orphaned or stale EBS snapshot
 type SnapshotJSON struct {
-	SnapshotID      string  `json:"snapshot_id"`
-	VolumeID        string  `json:"volume_id,omitempty"`
-	VolumeExists    bool    `json:"volume_exists"`
-	UsedByAMI       bool    `json:"used_by_ami"`
-	AMIID           string  `json:"ami_id,omitempty"`
-	SizeGB          int32   `json:"size_gb"`
-	StartTime       string  `json:"start_time"`
-	DaysSinceCreate int     `json:"days_since_create"`
-	Description     string  `json:"description,omitempty"`
-	EstimatedCost   float64 `json:"estimated_monthly_cost"`
+	SnapshotID          string  `json:"snapshot_id"`
+	VolumeID            string  `json:"volume_id,omitempty"`
+	VolumeExists        bool    `json:"volume_exists"`
+	UsedByAMI           bool    `json:"used_by_ami"`
+	AMIID               string  `json:"ami_id,omitempty"`
+	SizeGB              int32   `json:"size_gb"`
+	StartTime           string  `json:"start_time"`
+	DaysSinceCreate     int     `json:"days_since_create"`
+	Description         string  `json:"description,omitempty"`
+	Category            string  `json:"category"`                // "orphaned" or "stale"
+	Reason              string  `json:"reason"`                  // Human-readable reason
+	MaxPotentialSavings float64 `json:"max_potential_savings"`   // Actual savings may be lower due to incremental storage
 }
