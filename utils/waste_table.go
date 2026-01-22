@@ -321,9 +321,9 @@ func drawAMITable(amis []model.AMIWasteInfo) {
 	t := table.NewWriter()
 	t.SetOutputMirror(os.Stdout)
 	t.SetStyle(table.StyleRounded)
-	t.SetTitle("Unused AMI Waste")
+	t.SetTitle("Unused AMI Waste (Verify before delete - may be used by ASGs/Launch Templates)")
 
-	t.AppendHeader(table.Row{"Status", "AMI ID", "Name", "Age (Days)", "Est. Cost/Mo"})
+	t.AppendHeader(table.Row{"Status", "AMI ID", "Name", "Age (Days)", "Max Savings/Mo"})
 
 	t.SetColumnConfigs([]table.ColumnConfig{
 		{Number: 4, Align: text.AlignRight},
@@ -334,11 +334,12 @@ func drawAMITable(amis []model.AMIWasteInfo) {
 
 	if len(rows) > 0 {
 		halfRow := len(rows) / 2
-		rows[halfRow][0] = text.FgHiRed.Sprint("Unused")
+		rows[halfRow][0] = text.FgHiYellow.Sprint("Unused*")
 	}
 
 	t.AppendRows(rows)
 	t.Render()
+	fmt.Println(text.FgHiYellow.Sprint(" * Warning: AMIs may be referenced by Auto Scaling Groups or Launch Templates"))
 	fmt.Println()
 }
 
@@ -356,7 +357,7 @@ func populateAMIRows(amis []model.AMIWasteInfo) []table.Row {
 			ami.ImageId,
 			name,
 			fmt.Sprintf("%d days", ami.DaysSinceCreate),
-			fmt.Sprintf("$%.2f", ami.EstimatedCost),
+			fmt.Sprintf("$%.2f", ami.MaxPotentialSaving),
 		})
 	}
 

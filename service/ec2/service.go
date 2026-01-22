@@ -223,7 +223,9 @@ func (s *service) GetReservedInstanceExpiringOrExpired30DaysWaste(ctx context.Co
 	return results, nil
 }
 
-// GetUnusedAMIs returns AMIs that are not used by any running or stopped instances
+// GetUnusedAMIs returns AMIs that are not used by any running or stopped instances.
+// It uses pagination for DescribeImages and adds safety warnings about potential
+// ASG/Launch Template usage.
 func (s *service) GetUnusedAMIs(ctx context.Context, staleDays int) ([]model.AMIWasteInfo, error) {
 	var results []model.AMIWasteInfo
 
@@ -244,61 +246,79 @@ func (s *service) GetUnusedAMIs(ctx context.Context, staleDays int) ([]model.AMI
 		}
 	}
 
-	// Get all owned AMIs
-	// Note: DescribeImages doesn't have a paginator, but typically returns all at once
-	amiOutput, err := s.client.DescribeImages(ctx, &ec2.DescribeImagesInput{
+	// Get all owned AMIs using pagination
+	amiPaginator := ec2.NewDescribeImagesPaginator(s.client, &ec2.DescribeImagesInput{
 		Owners: []string{"self"},
 	})
-	if err != nil {
-		return nil, fmt.Errorf("failed to describe images: %w", err)
-	}
 
 	cutoffTime := time.Now().AddDate(0, 0, -staleDays)
 	now := time.Now()
 
-	for _, image := range amiOutput.Images {
-		imageId := aws.ToString(image.ImageId)
-		usageCount := amiUsage[imageId]
-
-		// Parse creation date
-		creationDate := time.Time{}
-		if image.CreationDate != nil {
-			creationDate, _ = time.Parse(time.RFC3339, *image.CreationDate)
+	for amiPaginator.HasMorePages() {
+		page, err := amiPaginator.NextPage(ctx)
+		if err != nil {
+			return nil, fmt.Errorf("failed to describe images: %w", err)
 		}
 
-		daysSinceCreate := int(now.Sub(creationDate).Hours() / 24)
-		isStale := creationDate.Before(cutoffTime)
+		for _, image := range page.Images {
+			imageId := aws.ToString(image.ImageId)
+			usageCount := amiUsage[imageId]
 
-		// Consider unused if not used by any instance AND is stale
-		if usageCount == 0 && isStale {
-			// Collect snapshot IDs and sizes
-			var snapshotIds []string
-			var totalSnapshotSize int64
-
-			for _, bdm := range image.BlockDeviceMappings {
-				if bdm.Ebs != nil && bdm.Ebs.SnapshotId != nil {
-					snapshotIds = append(snapshotIds, *bdm.Ebs.SnapshotId)
-					if bdm.Ebs.VolumeSize != nil {
-						totalSnapshotSize += int64(*bdm.Ebs.VolumeSize)
-					}
+			// Parse creation date with proper error handling
+			var creationDate time.Time
+			if image.CreationDate != nil {
+				parsedDate, err := time.Parse(time.RFC3339, *image.CreationDate)
+				if err != nil {
+					// Log warning but continue processing - use zero time as fallback
+					// This handles gracefully any unexpected date formats
+					creationDate = time.Time{}
+				} else {
+					creationDate = parsedDate
 				}
 			}
 
-			// EBS Snapshot pricing: ~$0.05 per GB per month
-			estimatedCost := float64(totalSnapshotSize) * 0.05
+			daysSinceCreate := 0
+			if !creationDate.IsZero() {
+				daysSinceCreate = int(now.Sub(creationDate).Hours() / 24)
+			}
+			isStale := !creationDate.IsZero() && creationDate.Before(cutoffTime)
 
-			results = append(results, model.AMIWasteInfo{
-				ImageId:         imageId,
-				Name:            aws.ToString(image.Name),
-				Description:     aws.ToString(image.Description),
-				CreationDate:    creationDate,
-				DaysSinceCreate: daysSinceCreate,
-				IsPublic:        aws.ToBool(image.Public),
-				SnapshotIds:     snapshotIds,
-				SnapshotSizeGB:  totalSnapshotSize,
-				UsedByInstances: usageCount,
-				EstimatedCost:   estimatedCost,
-			})
+			// Consider unused if not used by any instance AND is stale
+			if usageCount == 0 && isStale {
+				// Collect snapshot IDs and sizes
+				var snapshotIds []string
+				var totalSnapshotSize int64
+
+				for _, bdm := range image.BlockDeviceMappings {
+					if bdm.Ebs != nil && bdm.Ebs.SnapshotId != nil {
+						snapshotIds = append(snapshotIds, *bdm.Ebs.SnapshotId)
+						if bdm.Ebs.VolumeSize != nil {
+							totalSnapshotSize += int64(*bdm.Ebs.VolumeSize)
+						}
+					}
+				}
+
+				// EBS Snapshot pricing: ~$0.05 per GB per month
+				// Note: This is max potential savings - actual snapshot billing is incremental
+				maxPotentialSaving := float64(totalSnapshotSize) * 0.05
+
+				// Safety warning: AMI may be used by ASGs or Launch Templates
+				safetyWarning := "Verify before deleting: AMI may be used by Auto Scaling Groups or Launch Templates not currently running instances"
+
+				results = append(results, model.AMIWasteInfo{
+					ImageId:            imageId,
+					Name:               aws.ToString(image.Name),
+					Description:        aws.ToString(image.Description),
+					CreationDate:       creationDate,
+					DaysSinceCreate:    daysSinceCreate,
+					IsPublic:           aws.ToBool(image.Public),
+					SnapshotIds:        snapshotIds,
+					SnapshotSizeGB:     totalSnapshotSize,
+					UsedByInstances:    usageCount,
+					MaxPotentialSaving: maxPotentialSaving,
+					SafetyWarning:      safetyWarning,
+				})
+			}
 		}
 	}
 

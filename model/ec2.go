@@ -24,16 +24,17 @@ type RiExpirationInfo struct {
 
 // AMIWasteInfo contains information about potentially unused AMIs
 type AMIWasteInfo struct {
-	ImageId         string
-	Name            string
-	Description     string
-	CreationDate    time.Time
-	DaysSinceCreate int
-	IsPublic        bool
-	SnapshotIds     []string  // Associated EBS snapshots
-	SnapshotSizeGB  int64     // Total size of associated snapshots
-	UsedByInstances int       // Number of instances using this AMI
-	EstimatedCost   float64   // Monthly storage cost of associated snapshots
+	ImageId            string
+	Name               string
+	Description        string
+	CreationDate       time.Time
+	DaysSinceCreate    int
+	IsPublic           bool
+	SnapshotIds        []string // Associated EBS snapshots
+	SnapshotSizeGB     int64    // Total size of associated snapshots
+	UsedByInstances    int      // Number of instances using this AMI
+	MaxPotentialSaving float64  // Max potential monthly savings (snapshot storage cost)
+	SafetyWarning      string   // Warning about potential ASG/Launch Template usage
 }
 
 // SnapshotCategory indicates whether a snapshot is orphaned or stale

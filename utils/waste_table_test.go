@@ -785,51 +785,35 @@ func TestDrawLoadBalancerTable(t *testing.T) {
 	}
 }
 
-func TestPopulateSnapshotRows(t *testing.T) {
+func TestPopulateAMIRows(t *testing.T) {
 	tests := []struct {
-		name      string
-		snapshots []model.SnapshotWasteInfo
-		wantLen   int
+		name    string
+		amis    []model.AMIWasteInfo
+		wantLen int
 	}{
 		{
-			name:      "empty_snapshots",
-			snapshots: []model.SnapshotWasteInfo{},
-			wantLen:   0,
+			name:    "empty_amis",
+			amis:    []model.AMIWasteInfo{},
+			wantLen: 0,
 		},
 		{
-			name: "single_orphaned_snapshot",
-			snapshots: []model.SnapshotWasteInfo{
+			name: "single_ami",
+			amis: []model.AMIWasteInfo{
 				{
-					SnapshotId:          "snap-12345",
-					VolumeId:            "vol-deleted",
-					SizeGB:              100,
-					Category:            model.SnapshotCategoryOrphaned,
-					Reason:              "Volume Deleted",
-					MaxPotentialSavings: 5.0,
+					ImageId:            "ami-12345",
+					Name:               "my-ami",
+					DaysSinceCreate:    90,
+					MaxPotentialSaving: 5.00,
 				},
 			},
 			wantLen: 1,
 		},
 		{
-			name: "single_stale_snapshot",
-			snapshots: []model.SnapshotWasteInfo{
-				{
-					SnapshotId:          "snap-67890",
-					VolumeId:            "vol-exists",
-					SizeGB:              200,
-					Category:            model.SnapshotCategoryStale,
-					Reason:              "Old Backup",
-					MaxPotentialSavings: 10.0,
-				},
-			},
-			wantLen: 1,
-		},
-		{
-			name: "multiple_snapshots",
-			snapshots: []model.SnapshotWasteInfo{
-				{SnapshotId: "snap-111", SizeGB: 50, Reason: "Volume Deleted", MaxPotentialSavings: 2.5},
-				{SnapshotId: "snap-222", SizeGB: 100, Reason: "Old Backup", MaxPotentialSavings: 5.0},
-				{SnapshotId: "snap-333", SizeGB: 200, Reason: "Volume Deleted", MaxPotentialSavings: 10.0},
+			name: "multiple_amis",
+			amis: []model.AMIWasteInfo{
+				{ImageId: "ami-111", Name: "ami-one", DaysSinceCreate: 30, MaxPotentialSaving: 2.50},
+				{ImageId: "ami-222", Name: "ami-two", DaysSinceCreate: 60, MaxPotentialSaving: 5.00},
+				{ImageId: "ami-333", Name: "ami-three", DaysSinceCreate: 90, MaxPotentialSaving: 7.50},
 			},
 			wantLen: 3,
 		},
@@ -837,139 +821,177 @@ func TestPopulateSnapshotRows(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			rows := populateSnapshotRows(tt.snapshots)
+			rows := populateAMIRows(tt.amis)
 
 			if len(rows) != tt.wantLen {
-				t.Errorf("populateSnapshotRows() returned %d rows, want %d", len(rows), tt.wantLen)
+				t.Errorf("populateAMIRows() returned %d rows, want %d", len(rows), tt.wantLen)
 				return
 			}
 
-			// Verify each row has 5 columns (Status, Snapshot ID, Reason, Size, Max Savings)
+			// Verify each row has 5 columns (Status, AMI ID, Name, Age, Max Savings)
 			for i, row := range rows {
 				if len(row) != 5 {
 					t.Errorf("Row %d has %d columns, want 5", i, len(row))
 				}
 			}
 
-			// Verify snapshot IDs are in the rows
-			for i, snap := range tt.snapshots {
-				if rows[i][1] != snap.SnapshotId {
-					t.Errorf("Row %d SnapshotID = %v, want %v", i, rows[i][1], snap.SnapshotId)
-				}
-				if rows[i][2] != snap.Reason {
-					t.Errorf("Row %d Reason = %v, want %v", i, rows[i][2], snap.Reason)
+			// Verify AMI IDs are in the rows
+			for i, ami := range tt.amis {
+				if rows[i][1] != ami.ImageId {
+					t.Errorf("Row %d AMI ID = %v, want %v", i, rows[i][1], ami.ImageId)
 				}
 			}
 		})
 	}
 }
 
-func TestDrawSnapshotTable(t *testing.T) {
-	orphanedSnapshot := model.SnapshotWasteInfo{
-		SnapshotId:          "snap-orphan1",
-		VolumeId:            "vol-deleted",
-		SizeGB:              100,
-		Category:            model.SnapshotCategoryOrphaned,
-		Reason:              "Volume Deleted",
-		MaxPotentialSavings: 5.0,
-	}
-	staleSnapshot := model.SnapshotWasteInfo{
-		SnapshotId:          "snap-stale1",
-		VolumeId:            "vol-exists",
-		SizeGB:              200,
-		Category:            model.SnapshotCategoryStale,
-		Reason:              "Old Backup",
-		MaxPotentialSavings: 10.0,
+func TestPopulateAMIRows_LongNameTruncation(t *testing.T) {
+	amis := []model.AMIWasteInfo{
+		{
+			ImageId:            "ami-truncate",
+			Name:               "this-is-a-very-long-ami-name-that-should-be-truncated",
+			DaysSinceCreate:    45,
+			MaxPotentialSaving: 3.00,
+		},
 	}
 
-	allSnapshots := []model.SnapshotWasteInfo{orphanedSnapshot, staleSnapshot}
+	rows := populateAMIRows(amis)
 
-	output := captureWasteOutput(func() {
-		drawSnapshotTable(allSnapshots)
-	})
-
-	if !strings.Contains(output, "EBS Snapshot Waste") {
-		t.Error("drawSnapshotTable() missing title")
+	if len(rows) != 1 {
+		t.Fatalf("Expected 1 row, got %d", len(rows))
 	}
 
-	if !strings.Contains(output, "snap-orphan1") {
-		t.Error("drawSnapshotTable() missing orphaned snapshot ID")
+	name := rows[0][2].(string)
+	// Name should be truncated to 30 chars (27 + "...")
+	if len(name) > 30 {
+		t.Errorf("Name was not truncated, got %d chars: %s", len(name), name)
 	}
-
-	if !strings.Contains(output, "snap-stale1") {
-		t.Error("drawSnapshotTable() missing stale snapshot ID")
-	}
-
-	if !strings.Contains(output, "Volume Deleted") {
-		t.Error("drawSnapshotTable() missing 'Volume Deleted' reason")
-	}
-
-	if !strings.Contains(output, "Old Backup") {
-		t.Error("drawSnapshotTable() missing 'Old Backup' reason")
-	}
-
-	if !strings.Contains(output, "Max Potential Savings") {
-		t.Error("drawSnapshotTable() missing savings disclaimer")
+	if !strings.HasSuffix(name, "...") {
+		t.Errorf("Truncated name should end with '...', got: %s", name)
 	}
 }
 
-func TestDrawSnapshotTable_OnlyOrphaned(t *testing.T) {
-	snapshots := []model.SnapshotWasteInfo{
+func TestPopulateAMIRows_Values(t *testing.T) {
+	amis := []model.AMIWasteInfo{
 		{
-			SnapshotId:          "snap-orphan1",
-			SizeGB:              100,
-			Category:            model.SnapshotCategoryOrphaned,
-			Reason:              "Volume Deleted",
-			MaxPotentialSavings: 5.0,
+			ImageId:            "ami-test123",
+			Name:               "test-ami",
+			DaysSinceCreate:    45,
+			MaxPotentialSaving: 2.50,
+		},
+	}
+
+	rows := populateAMIRows(amis)
+
+	if len(rows) != 1 {
+		t.Fatalf("Expected 1 row, got %d", len(rows))
+	}
+
+	// Column 0 is status placeholder (empty)
+	if rows[0][0] != "" {
+		t.Errorf("Column 0 should be empty, got %v", rows[0][0])
+	}
+
+	// Column 1 is AMI ID
+	if rows[0][1] != "ami-test123" {
+		t.Errorf("Column 1 = %v, want 'ami-test123'", rows[0][1])
+	}
+
+	// Column 2 is Name
+	if rows[0][2] != "test-ami" {
+		t.Errorf("Column 2 = %v, want 'test-ami'", rows[0][2])
+	}
+
+	// Column 3 is Age (days)
+	if rows[0][3] != "45 days" {
+		t.Errorf("Column 3 = %v, want '45 days'", rows[0][3])
+	}
+
+	// Column 4 is Max Savings
+	if rows[0][4] != "$2.50" {
+		t.Errorf("Column 4 = %v, want '$2.50'", rows[0][4])
+	}
+}
+
+func TestDrawAMITable(t *testing.T) {
+	amis := []model.AMIWasteInfo{
+		{
+			ImageId:            "ami-12345",
+			Name:               "my-test-ami",
+			DaysSinceCreate:    60,
+			MaxPotentialSaving: 5.00,
+			SafetyWarning:      "Verify before deleting",
+		},
+		{
+			ImageId:            "ami-67890",
+			Name:               "another-ami",
+			DaysSinceCreate:    90,
+			MaxPotentialSaving: 7.50,
+			SafetyWarning:      "Verify before deleting",
 		},
 	}
 
 	output := captureWasteOutput(func() {
-		drawSnapshotTable(snapshots)
+		drawAMITable(amis)
 	})
 
-	if !strings.Contains(output, "Orphaned") {
-		t.Error("drawSnapshotTable() with only orphaned snapshots missing Orphaned status")
+	// Check for table title
+	if !strings.Contains(output, "Unused AMI Waste") {
+		t.Error("drawAMITable() missing title")
+	}
+
+	// Check for AMI IDs
+	if !strings.Contains(output, "ami-12345") {
+		t.Error("drawAMITable() missing first AMI ID")
+	}
+	if !strings.Contains(output, "ami-67890") {
+		t.Error("drawAMITable() missing second AMI ID")
+	}
+
+	// Check for warning message
+	if !strings.Contains(output, "Warning") || !strings.Contains(output, "Auto Scaling") {
+		t.Error("drawAMITable() missing safety warning footer")
 	}
 }
 
-func TestDrawSnapshotTable_OnlyStale(t *testing.T) {
-	snapshots := []model.SnapshotWasteInfo{
+func TestDrawWasteTable_WithUnusedAMIs(t *testing.T) {
+	unusedAMIs := []model.AMIWasteInfo{
 		{
-			SnapshotId:          "snap-stale1",
-			SizeGB:              200,
-			Category:            model.SnapshotCategoryStale,
-			Reason:              "Old Backup",
-			MaxPotentialSavings: 10.0,
+			ImageId:            "ami-waste123",
+			Name:               "unused-ami",
+			DaysSinceCreate:    120,
+			MaxPotentialSaving: 10.00,
+			SafetyWarning:      "Verify before deleting",
 		},
 	}
 
 	output := captureWasteOutput(func() {
-		drawSnapshotTable(snapshots)
+		DrawWasteTable("123456789012", nil, nil, nil, nil, nil, nil, unusedAMIs, nil)
 	})
 
-	if !strings.Contains(output, "Stale") {
-		t.Error("drawSnapshotTable() with only stale snapshots missing Stale status")
+	if !strings.Contains(output, "Unused AMI") {
+		t.Error("DrawWasteTable() with unused AMIs missing AMI section")
+	}
+
+	if !strings.Contains(output, "ami-waste123") {
+		t.Error("DrawWasteTable() with unused AMIs missing AMI ID")
 	}
 }
 
-func TestDrawWasteTable_WithSnapshots(t *testing.T) {
-	snapshots := []model.SnapshotWasteInfo{
-		{
-			SnapshotId:          "snap-12345",
-			SizeGB:              100,
-			Category:            model.SnapshotCategoryOrphaned,
-			Reason:              "Volume Deleted",
-			MaxPotentialSavings: 5.0,
-		},
+func BenchmarkPopulateAMIRows(b *testing.B) {
+	amis := make([]model.AMIWasteInfo, 50)
+	for i := 0; i < 50; i++ {
+		amis[i] = model.AMIWasteInfo{
+			ImageId:            "ami-" + string(rune('a'+i%26)),
+			Name:               "test-ami-" + string(rune('a'+i%26)),
+			DaysSinceCreate:    30 + i,
+			MaxPotentialSaving: float64(i) * 0.5,
+		}
 	}
 
-	output := captureWasteOutput(func() {
-		DrawWasteTable("123456789012", nil, nil, nil, nil, nil, nil, nil, snapshots)
-	})
-
-	if !strings.Contains(output, "EBS Snapshot") {
-		t.Error("DrawWasteTable() with snapshots missing Snapshot section")
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		populateAMIRows(amis)
 	}
 }
 
