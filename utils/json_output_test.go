@@ -372,6 +372,158 @@ func TestOutputWasteJSON_InstanceWithInvalidTransitionReason(t *testing.T) {
 	}
 }
 
+func TestOutputWasteJSON_WithSnapshots(t *testing.T) {
+	snapshots := []model.SnapshotWasteInfo{
+		{
+			SnapshotId:          "snap-orphan123",
+			VolumeId:            "vol-deleted",
+			VolumeExists:        false,
+			SizeGB:              100,
+			StartTime:           time.Now().Add(-60 * 24 * time.Hour),
+			Description:         "Daily backup",
+			Category:            model.SnapshotCategoryOrphaned,
+			Reason:              "Volume Deleted",
+			MaxPotentialSavings: 5.0,
+		},
+		{
+			SnapshotId:          "snap-stale456",
+			VolumeId:            "vol-exists",
+			VolumeExists:        true,
+			SizeGB:              200,
+			StartTime:           time.Now().Add(-90 * 24 * time.Hour),
+			Description:         "Weekly backup",
+			Category:            model.SnapshotCategoryStale,
+			Reason:              "Old Backup",
+			MaxPotentialSavings: 10.0,
+		},
+	}
+
+	var err error
+	output := captureStdout(func() {
+		err = OutputWasteJSON("123456789012", nil, nil, nil, nil, nil, nil, nil, snapshots)
+	})
+
+	if err != nil {
+		t.Fatalf("OutputWasteJSON() error = %v", err)
+	}
+
+	var result model.WasteReportJSON
+	if jsonErr := json.Unmarshal([]byte(strings.TrimSpace(output)), &result); jsonErr != nil {
+		t.Fatalf("Failed to parse output JSON: %v", jsonErr)
+	}
+
+	if !result.HasWaste {
+		t.Error("HasWaste should be true when snapshots exist")
+	}
+
+	if len(result.OrphanedSnapshots) != 1 {
+		t.Errorf("OrphanedSnapshots has %d items, want 1", len(result.OrphanedSnapshots))
+	}
+
+	if len(result.StaleSnapshots) != 1 {
+		t.Errorf("StaleSnapshots has %d items, want 1", len(result.StaleSnapshots))
+	}
+
+	// Verify orphaned snapshot details
+	if result.OrphanedSnapshots[0].SnapshotID != "snap-orphan123" {
+		t.Errorf("OrphanedSnapshots[0].SnapshotID = %v, want snap-orphan123", result.OrphanedSnapshots[0].SnapshotID)
+	}
+	if result.OrphanedSnapshots[0].Category != "orphaned" {
+		t.Errorf("OrphanedSnapshots[0].Category = %v, want orphaned", result.OrphanedSnapshots[0].Category)
+	}
+	if result.OrphanedSnapshots[0].Reason != "Volume Deleted" {
+		t.Errorf("OrphanedSnapshots[0].Reason = %v, want 'Volume Deleted'", result.OrphanedSnapshots[0].Reason)
+	}
+	if result.OrphanedSnapshots[0].MaxPotentialSavings != 5.0 {
+		t.Errorf("OrphanedSnapshots[0].MaxPotentialSavings = %v, want 5.0", result.OrphanedSnapshots[0].MaxPotentialSavings)
+	}
+
+	// Verify stale snapshot details
+	if result.StaleSnapshots[0].SnapshotID != "snap-stale456" {
+		t.Errorf("StaleSnapshots[0].SnapshotID = %v, want snap-stale456", result.StaleSnapshots[0].SnapshotID)
+	}
+	if result.StaleSnapshots[0].Category != "stale" {
+		t.Errorf("StaleSnapshots[0].Category = %v, want stale", result.StaleSnapshots[0].Category)
+	}
+	if result.StaleSnapshots[0].Reason != "Old Backup" {
+		t.Errorf("StaleSnapshots[0].Reason = %v, want 'Old Backup'", result.StaleSnapshots[0].Reason)
+	}
+}
+
+func TestOutputWasteJSON_OnlyOrphanedSnapshots(t *testing.T) {
+	snapshots := []model.SnapshotWasteInfo{
+		{
+			SnapshotId:          "snap-orphan1",
+			VolumeId:            "vol-deleted1",
+			VolumeExists:        false,
+			SizeGB:              100,
+			StartTime:           time.Now().Add(-60 * 24 * time.Hour),
+			Category:            model.SnapshotCategoryOrphaned,
+			Reason:              "Volume Deleted",
+			MaxPotentialSavings: 5.0,
+		},
+	}
+
+	var err error
+	output := captureStdout(func() {
+		err = OutputWasteJSON("123456789012", nil, nil, nil, nil, nil, nil, nil, snapshots)
+	})
+
+	if err != nil {
+		t.Fatalf("OutputWasteJSON() error = %v", err)
+	}
+
+	var result model.WasteReportJSON
+	if jsonErr := json.Unmarshal([]byte(strings.TrimSpace(output)), &result); jsonErr != nil {
+		t.Fatalf("Failed to parse output JSON: %v", jsonErr)
+	}
+
+	if len(result.OrphanedSnapshots) != 1 {
+		t.Errorf("OrphanedSnapshots has %d items, want 1", len(result.OrphanedSnapshots))
+	}
+
+	if len(result.StaleSnapshots) != 0 {
+		t.Errorf("StaleSnapshots has %d items, want 0", len(result.StaleSnapshots))
+	}
+}
+
+func TestOutputWasteJSON_OnlyStaleSnapshots(t *testing.T) {
+	snapshots := []model.SnapshotWasteInfo{
+		{
+			SnapshotId:          "snap-stale1",
+			VolumeId:            "vol-exists",
+			VolumeExists:        true,
+			SizeGB:              150,
+			StartTime:           time.Now().Add(-45 * 24 * time.Hour),
+			Category:            model.SnapshotCategoryStale,
+			Reason:              "Old Backup",
+			MaxPotentialSavings: 7.5,
+		},
+	}
+
+	var err error
+	output := captureStdout(func() {
+		err = OutputWasteJSON("123456789012", nil, nil, nil, nil, nil, nil, nil, snapshots)
+	})
+
+	if err != nil {
+		t.Fatalf("OutputWasteJSON() error = %v", err)
+	}
+
+	var result model.WasteReportJSON
+	if jsonErr := json.Unmarshal([]byte(strings.TrimSpace(output)), &result); jsonErr != nil {
+		t.Fatalf("Failed to parse output JSON: %v", jsonErr)
+	}
+
+	if len(result.OrphanedSnapshots) != 0 {
+		t.Errorf("OrphanedSnapshots has %d items, want 0", len(result.OrphanedSnapshots))
+	}
+
+	if len(result.StaleSnapshots) != 1 {
+		t.Errorf("StaleSnapshots has %d items, want 1", len(result.StaleSnapshots))
+	}
+}
+
 func BenchmarkOutputWasteJSON(b *testing.B) {
 	elasticIPs := make([]types.Address, 10)
 	for i := 0; i < 10; i++ {

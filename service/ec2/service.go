@@ -336,20 +336,21 @@ func (s *service) GetOrphanedSnapshots(ctx context.Context, staleDays int) ([]mo
 		}
 	}
 
-	// Build a map of snapshot IDs used by AMIs
-	// Note: DescribeImages doesn't have a paginator, but typically returns all at once
-	amiOutput, err := s.client.DescribeImages(ctx, &ec2.DescribeImagesInput{
+	// Build a map of snapshot IDs used by AMIs (with pagination)
+	snapshotToAMI := make(map[string]string)
+	imagePaginator := ec2.NewDescribeImagesPaginator(s.client, &ec2.DescribeImagesInput{
 		Owners: []string{"self"},
 	})
-	if err != nil {
-		return nil, fmt.Errorf("failed to describe images: %w", err)
-	}
-
-	snapshotToAMI := make(map[string]string)
-	for _, image := range amiOutput.Images {
-		for _, bdm := range image.BlockDeviceMappings {
-			if bdm.Ebs != nil && bdm.Ebs.SnapshotId != nil {
-				snapshotToAMI[*bdm.Ebs.SnapshotId] = aws.ToString(image.ImageId)
+	for imagePaginator.HasMorePages() {
+		page, err := imagePaginator.NextPage(ctx)
+		if err != nil {
+			return nil, fmt.Errorf("failed to describe images: %w", err)
+		}
+		for _, image := range page.Images {
+			for _, bdm := range image.BlockDeviceMappings {
+				if bdm.Ebs != nil && bdm.Ebs.SnapshotId != nil {
+					snapshotToAMI[*bdm.Ebs.SnapshotId] = aws.ToString(image.ImageId)
+				}
 			}
 		}
 	}
@@ -370,31 +371,52 @@ func (s *service) GetOrphanedSnapshots(ctx context.Context, staleDays int) ([]mo
 
 		daysSinceCreate := int(now.Sub(startTime).Hours() / 24)
 
-		// Consider orphaned if:
-		// 1. Source volume doesn't exist AND not used by AMI, OR
-		// 2. Older than staleDays AND not used by AMI
-		isOrphaned := (!volumeExists && !usedByAMI) || (startTime.Before(cutoffTime) && !usedByAMI)
+		// Skip snapshots used by AMIs - they are not waste
+		if usedByAMI {
+			continue
+		}
 
-		if isOrphaned {
-			sizeGB := int32(0)
-			if snapshot.VolumeSize != nil {
-				sizeGB = *snapshot.VolumeSize
-			}
+		sizeGB := int32(0)
+		if snapshot.VolumeSize != nil {
+			sizeGB = *snapshot.VolumeSize
+		}
 
-			// EBS Snapshot pricing: ~$0.05 per GB per month
-			estimatedCost := float64(sizeGB) * 0.05
+		// EBS Snapshot pricing: ~$0.05 per GB per month
+		// Note: Actual savings may be lower due to incremental storage
+		maxPotentialSavings := float64(sizeGB) * 0.05
 
+		// Categorize based on whether source volume exists
+		if !volumeExists {
+			// Orphaned: Volume no longer exists - safe to delete (high confidence)
 			results = append(results, model.SnapshotWasteInfo{
-				SnapshotId:      snapshotId,
-				VolumeId:        volumeId,
-				VolumeExists:    volumeExists,
-				UsedByAMI:       usedByAMI,
-				AMIId:           amiId,
-				SizeGB:          sizeGB,
-				StartTime:       startTime,
-				DaysSinceCreate: daysSinceCreate,
-				Description:     aws.ToString(snapshot.Description),
-				EstimatedCost:   estimatedCost,
+				SnapshotId:          snapshotId,
+				VolumeId:            volumeId,
+				VolumeExists:        volumeExists,
+				UsedByAMI:           usedByAMI,
+				AMIId:               amiId,
+				SizeGB:              sizeGB,
+				StartTime:           startTime,
+				DaysSinceCreate:     daysSinceCreate,
+				Description:         aws.ToString(snapshot.Description),
+				Category:            model.SnapshotCategoryOrphaned,
+				Reason:              "Volume Deleted",
+				MaxPotentialSavings: maxPotentialSavings,
+			})
+		} else if startTime.Before(cutoffTime) {
+			// Stale: Volume exists but snapshot is old - needs review (low confidence)
+			results = append(results, model.SnapshotWasteInfo{
+				SnapshotId:          snapshotId,
+				VolumeId:            volumeId,
+				VolumeExists:        volumeExists,
+				UsedByAMI:           usedByAMI,
+				AMIId:               amiId,
+				SizeGB:              sizeGB,
+				StartTime:           startTime,
+				DaysSinceCreate:     daysSinceCreate,
+				Description:         aws.ToString(snapshot.Description),
+				Category:            model.SnapshotCategoryStale,
+				Reason:              "Old Backup",
+				MaxPotentialSavings: maxPotentialSavings,
 			})
 		}
 	}

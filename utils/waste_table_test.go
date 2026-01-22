@@ -785,6 +785,194 @@ func TestDrawLoadBalancerTable(t *testing.T) {
 	}
 }
 
+func TestPopulateSnapshotRows(t *testing.T) {
+	tests := []struct {
+		name      string
+		snapshots []model.SnapshotWasteInfo
+		wantLen   int
+	}{
+		{
+			name:      "empty_snapshots",
+			snapshots: []model.SnapshotWasteInfo{},
+			wantLen:   0,
+		},
+		{
+			name: "single_orphaned_snapshot",
+			snapshots: []model.SnapshotWasteInfo{
+				{
+					SnapshotId:          "snap-12345",
+					VolumeId:            "vol-deleted",
+					SizeGB:              100,
+					Category:            model.SnapshotCategoryOrphaned,
+					Reason:              "Volume Deleted",
+					MaxPotentialSavings: 5.0,
+				},
+			},
+			wantLen: 1,
+		},
+		{
+			name: "single_stale_snapshot",
+			snapshots: []model.SnapshotWasteInfo{
+				{
+					SnapshotId:          "snap-67890",
+					VolumeId:            "vol-exists",
+					SizeGB:              200,
+					Category:            model.SnapshotCategoryStale,
+					Reason:              "Old Backup",
+					MaxPotentialSavings: 10.0,
+				},
+			},
+			wantLen: 1,
+		},
+		{
+			name: "multiple_snapshots",
+			snapshots: []model.SnapshotWasteInfo{
+				{SnapshotId: "snap-111", SizeGB: 50, Reason: "Volume Deleted", MaxPotentialSavings: 2.5},
+				{SnapshotId: "snap-222", SizeGB: 100, Reason: "Old Backup", MaxPotentialSavings: 5.0},
+				{SnapshotId: "snap-333", SizeGB: 200, Reason: "Volume Deleted", MaxPotentialSavings: 10.0},
+			},
+			wantLen: 3,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			rows := populateSnapshotRows(tt.snapshots)
+
+			if len(rows) != tt.wantLen {
+				t.Errorf("populateSnapshotRows() returned %d rows, want %d", len(rows), tt.wantLen)
+				return
+			}
+
+			// Verify each row has 5 columns (Status, Snapshot ID, Reason, Size, Max Savings)
+			for i, row := range rows {
+				if len(row) != 5 {
+					t.Errorf("Row %d has %d columns, want 5", i, len(row))
+				}
+			}
+
+			// Verify snapshot IDs are in the rows
+			for i, snap := range tt.snapshots {
+				if rows[i][1] != snap.SnapshotId {
+					t.Errorf("Row %d SnapshotID = %v, want %v", i, rows[i][1], snap.SnapshotId)
+				}
+				if rows[i][2] != snap.Reason {
+					t.Errorf("Row %d Reason = %v, want %v", i, rows[i][2], snap.Reason)
+				}
+			}
+		})
+	}
+}
+
+func TestDrawSnapshotTable(t *testing.T) {
+	orphanedSnapshot := model.SnapshotWasteInfo{
+		SnapshotId:          "snap-orphan1",
+		VolumeId:            "vol-deleted",
+		SizeGB:              100,
+		Category:            model.SnapshotCategoryOrphaned,
+		Reason:              "Volume Deleted",
+		MaxPotentialSavings: 5.0,
+	}
+	staleSnapshot := model.SnapshotWasteInfo{
+		SnapshotId:          "snap-stale1",
+		VolumeId:            "vol-exists",
+		SizeGB:              200,
+		Category:            model.SnapshotCategoryStale,
+		Reason:              "Old Backup",
+		MaxPotentialSavings: 10.0,
+	}
+
+	allSnapshots := []model.SnapshotWasteInfo{orphanedSnapshot, staleSnapshot}
+
+	output := captureWasteOutput(func() {
+		drawSnapshotTable(allSnapshots)
+	})
+
+	if !strings.Contains(output, "EBS Snapshot Waste") {
+		t.Error("drawSnapshotTable() missing title")
+	}
+
+	if !strings.Contains(output, "snap-orphan1") {
+		t.Error("drawSnapshotTable() missing orphaned snapshot ID")
+	}
+
+	if !strings.Contains(output, "snap-stale1") {
+		t.Error("drawSnapshotTable() missing stale snapshot ID")
+	}
+
+	if !strings.Contains(output, "Volume Deleted") {
+		t.Error("drawSnapshotTable() missing 'Volume Deleted' reason")
+	}
+
+	if !strings.Contains(output, "Old Backup") {
+		t.Error("drawSnapshotTable() missing 'Old Backup' reason")
+	}
+
+	if !strings.Contains(output, "Max Potential Savings") {
+		t.Error("drawSnapshotTable() missing savings disclaimer")
+	}
+}
+
+func TestDrawSnapshotTable_OnlyOrphaned(t *testing.T) {
+	snapshots := []model.SnapshotWasteInfo{
+		{
+			SnapshotId:          "snap-orphan1",
+			SizeGB:              100,
+			Category:            model.SnapshotCategoryOrphaned,
+			Reason:              "Volume Deleted",
+			MaxPotentialSavings: 5.0,
+		},
+	}
+
+	output := captureWasteOutput(func() {
+		drawSnapshotTable(snapshots)
+	})
+
+	if !strings.Contains(output, "Orphaned") {
+		t.Error("drawSnapshotTable() with only orphaned snapshots missing Orphaned status")
+	}
+}
+
+func TestDrawSnapshotTable_OnlyStale(t *testing.T) {
+	snapshots := []model.SnapshotWasteInfo{
+		{
+			SnapshotId:          "snap-stale1",
+			SizeGB:              200,
+			Category:            model.SnapshotCategoryStale,
+			Reason:              "Old Backup",
+			MaxPotentialSavings: 10.0,
+		},
+	}
+
+	output := captureWasteOutput(func() {
+		drawSnapshotTable(snapshots)
+	})
+
+	if !strings.Contains(output, "Stale") {
+		t.Error("drawSnapshotTable() with only stale snapshots missing Stale status")
+	}
+}
+
+func TestDrawWasteTable_WithSnapshots(t *testing.T) {
+	snapshots := []model.SnapshotWasteInfo{
+		{
+			SnapshotId:          "snap-12345",
+			SizeGB:              100,
+			Category:            model.SnapshotCategoryOrphaned,
+			Reason:              "Volume Deleted",
+			MaxPotentialSavings: 5.0,
+		},
+	}
+
+	output := captureWasteOutput(func() {
+		DrawWasteTable("123456789012", nil, nil, nil, nil, nil, nil, nil, snapshots)
+	})
+
+	if !strings.Contains(output, "EBS Snapshot") {
+		t.Error("DrawWasteTable() with snapshots missing Snapshot section")
+	}
+}
+
 func BenchmarkDrawWasteTable(b *testing.B) {
 	elasticIPs := []types.Address{
 		{PublicIp: aws.String("1.2.3.4"), AllocationId: aws.String("eipalloc-123")},
