@@ -16,6 +16,7 @@ const (
 	unblendedCost = "UnblendedCost"
 )
 
+// NewService creates a new Cost Explorer service.
 func NewService(awsconfig aws.Config) *service {
 	client := costexplorer.NewFromConfig(awsconfig)
 	return &service{

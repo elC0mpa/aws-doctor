@@ -8,6 +8,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/elasticloadbalancingv2/types"
 )
 
+// NewService creates a new ELB service.
 func NewService(awsconfig aws.Config) *service {
 	client := elb.NewFromConfig(awsconfig)
 	return &service{

@@ -12,6 +12,7 @@ type MockELBService struct {
 	mock.Mock
 }
 
+// GetUnusedLoadBalancers mocks the GetUnusedLoadBalancers method.
 func (m *MockELBService) GetUnusedLoadBalancers(ctx context.Context) ([]elbtypes.LoadBalancer, error) {
 	args := m.Called(ctx)
 	if args.Get(0) == nil {

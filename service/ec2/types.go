@@ -12,6 +12,7 @@ type service struct {
 	client *ec2.Client
 }
 
+// EC2Service is the interface for AWS EC2 service.
 type EC2Service interface {
 	GetElasticIPAddressesInfo(ctx context.Context) (*model.ElasticIPInfo, error)
 	GetUnusedElasticIPAddressesInfo(ctx context.Context) ([]types.Address, error)

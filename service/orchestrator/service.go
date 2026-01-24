@@ -15,7 +15,8 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
-func NewService(stsService awssts.STSService, costService awscostexplorer.CostService, ec2Service awsec2.EC2Service, elbService elb.ELBService, outputService output.Service) *service {
+// NewService creates a new orchestrator service.
+func NewService(stsService awssts.Service, costService awscostexplorer.CostService, ec2Service awsec2.EC2Service, elbService elb.Service, outputService output.Service) *service {
 	return &service{
 		stsService:    stsService,
 		costService:   costService,

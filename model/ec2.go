@@ -2,17 +2,20 @@ package model
 
 import "time"
 
+// ElasticIPInfo holds information about unused and used Elastic IPs.
 type ElasticIPInfo struct {
 	UnusedElasticIPAddresses []string
 	UsedElasticIPAddresses   []AttachedIPInfo
 }
 
+// AttachedIPInfo holds information about an IP address attached to a resource.
 type AttachedIPInfo struct {
 	IPAddress    string
 	AllocationID string
 	ResourceType string
 }
 
+// RiExpirationInfo holds information about Reserved Instance expirations.
 type RiExpirationInfo struct {
 	ReservedInstanceID string
 	InstanceType       string

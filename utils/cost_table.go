@@ -12,6 +12,7 @@ import (
 	"github.com/jedib0t/go-pretty/v6/text"
 )
 
+// DrawCostTable renders a table comparing costs between months.
 func DrawCostTable(accountID string, lastTotalCost, currenttotalCost string, lastMonthGroups, currentMonthGroups *model.CostInfo, _ string) {
 	fmt.Printf("\n%s\n", text.FgHiWhite.Sprint(" 💰 AWS COST DIAGNOSIS"))
 	fmt.Printf(" Account ID: %s\n", text.FgBlue.Sprint(accountID))

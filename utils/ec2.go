@@ -8,6 +8,7 @@ import (
 
 var transitionReasonRegex = regexp.MustCompile(`\(([^)]+)\)`)
 
+// ParseTransitionDate parses the date from the state transition reason string.
 func ParseTransitionDate(reason string) (time.Time, error) {
 	matches := transitionReasonRegex.FindStringSubmatch(reason)
 	if len(matches) < 2 {

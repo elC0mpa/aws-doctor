@@ -6,6 +6,7 @@ import (
 	"github.com/elC0mpa/aws-doctor/model"
 )
 
+// NewService creates a new Flag service.
 func NewService() *service {
 	return &service{}
 }

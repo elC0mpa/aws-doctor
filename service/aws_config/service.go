@@ -7,6 +7,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/config"
 )
 
+// NewService creates a new AWS configuration service.
 func NewService() *service {
 	return &service{}
 }

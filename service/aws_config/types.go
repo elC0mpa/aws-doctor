@@ -8,6 +8,7 @@ import (
 
 type service struct{}
 
+// ConfigService is the interface for AWS configuration service.
 type ConfigService interface {
-	GetAWSCfg(ctx context.Context, region, profile string) (aws.Config, error)
+	LoadDefaultConfig(ctx context.Context, region string, profile string) (aws.Config, error)
 }

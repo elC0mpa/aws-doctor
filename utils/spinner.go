@@ -8,6 +8,7 @@ import (
 
 var loader *spinner.Spinner
 
+// StartSpinner starts the CLI loading spinner.
 func StartSpinner() {
 	loader = spinner.New(spinner.CharSets[11], 100*time.Millisecond)
 	loader.Color("yellow") //nolint:errcheck
@@ -15,6 +16,7 @@ func StartSpinner() {
 	loader.Start()
 }
 
+// StopSpinner stops the CLI loading spinner.
 func StopSpinner() {
 	if loader != nil {
 		loader.Stop()

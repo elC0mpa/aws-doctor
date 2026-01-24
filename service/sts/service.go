@@ -7,6 +7,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/sts"
 )
 
+// NewService creates a new STS service.
 func NewService(awsconfig aws.Config) *service {
 	client := sts.NewFromConfig(awsconfig)
 	return &service{
