@@ -75,8 +75,8 @@ Available platforms:
   - [x] Unused AMIs (not associated with any running or stopped instance and created more than 90 days ago).
   - [x] Orphaned EBS Snapshots (source volume deleted and not used by any AMI).
   - [x] Stale EBS Snapshots (created more than 90 days ago, source volume exists and not used by any AMI).
-  - [ ] Inactive VPC interface endpoints.
-  - [ ] Inactive NAT Gateways.
+  - [x] VPC interface endpoints (lists for review).
+  - [x] NAT Gateways (lists for review).
   - [ ] Idle Load Balancers.
   - [ ] RDS Idle DB Instances.
 

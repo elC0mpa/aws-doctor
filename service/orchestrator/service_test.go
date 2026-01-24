@@ -95,6 +95,8 @@ func TestOrchestrate_RouteToWasteWorkflow(t *testing.T) {
 	mockEC2.On("GetReservedInstanceExpiringOrExpired30DaysWaste", mock.Anything).Return([]model.RiExpirationInfo{}, nil)
 	mockEC2.On("GetUnusedAMIs", mock.Anything, mock.Anything).Return([]model.AMIWasteInfo{}, nil)
 	mockEC2.On("GetOrphanedSnapshots", mock.Anything, mock.Anything).Return([]model.SnapshotWasteInfo{}, nil)
+	mockEC2.On("GetNatGateways", mock.Anything).Return([]types.NatGateway{}, nil)
+	mockEC2.On("GetVpcEndpoints", mock.Anything).Return([]types.VpcEndpoint{}, nil)
 	mockELB.On("GetUnusedLoadBalancers", mock.Anything).Return([]elbtypes.LoadBalancer{}, nil)
 	mockSTS.On("GetCallerIdentity", mock.Anything).Return(&sts.GetCallerIdentityOutput{
 		Account: aws.String("123456789012"),
@@ -132,6 +134,8 @@ func TestOrchestrate_WasteTakesPrecedenceOverTrend(t *testing.T) {
 	mockEC2.On("GetReservedInstanceExpiringOrExpired30DaysWaste", mock.Anything).Return([]model.RiExpirationInfo{}, nil)
 	mockEC2.On("GetUnusedAMIs", mock.Anything, mock.Anything).Return([]model.AMIWasteInfo{}, nil)
 	mockEC2.On("GetOrphanedSnapshots", mock.Anything, mock.Anything).Return([]model.SnapshotWasteInfo{}, nil)
+	mockEC2.On("GetNatGateways", mock.Anything).Return([]types.NatGateway{}, nil)
+	mockEC2.On("GetVpcEndpoints", mock.Anything).Return([]types.VpcEndpoint{}, nil)
 	mockELB.On("GetUnusedLoadBalancers", mock.Anything).Return([]elbtypes.LoadBalancer{}, nil)
 	mockSTS.On("GetCallerIdentity", mock.Anything).Return(&sts.GetCallerIdentityOutput{
 		Account: aws.String("123456789012"),
@@ -281,6 +285,8 @@ func TestWasteWorkflow_Error(t *testing.T) {
 				mockEC2.On("GetReservedInstanceExpiringOrExpired30DaysWaste", mock.Anything).Return([]model.RiExpirationInfo{}, nil)
 				mockEC2.On("GetUnusedAMIs", mock.Anything, mock.Anything).Return([]model.AMIWasteInfo{}, nil)
 				mockEC2.On("GetOrphanedSnapshots", mock.Anything, mock.Anything).Return([]model.SnapshotWasteInfo{}, nil)
+				mockEC2.On("GetNatGateways", mock.Anything).Return([]types.NatGateway{}, nil)
+				mockEC2.On("GetVpcEndpoints", mock.Anything).Return([]types.VpcEndpoint{}, nil)
 				mockELB.On("GetUnusedLoadBalancers", mock.Anything).Return([]elbtypes.LoadBalancer{}, nil)
 				mockSTS.On("GetCallerIdentity", mock.Anything).Return(&sts.GetCallerIdentityOutput{
 					Account: aws.String("123456789012"),
@@ -297,6 +303,8 @@ func TestWasteWorkflow_Error(t *testing.T) {
 				mockEC2.On("GetReservedInstanceExpiringOrExpired30DaysWaste", mock.Anything).Return([]model.RiExpirationInfo{}, nil)
 				mockEC2.On("GetUnusedAMIs", mock.Anything, mock.Anything).Return([]model.AMIWasteInfo{}, nil)
 				mockEC2.On("GetOrphanedSnapshots", mock.Anything, mock.Anything).Return([]model.SnapshotWasteInfo{}, nil)
+				mockEC2.On("GetNatGateways", mock.Anything).Return([]types.NatGateway{}, nil)
+				mockEC2.On("GetVpcEndpoints", mock.Anything).Return([]types.VpcEndpoint{}, nil)
 				mockELB.On("GetUnusedLoadBalancers", mock.Anything).Return([]elbtypes.LoadBalancer{}, nil)
 				mockSTS.On("GetCallerIdentity", mock.Anything).Return(&sts.GetCallerIdentityOutput{
 					Account: aws.String("123456789012"),
@@ -313,6 +321,8 @@ func TestWasteWorkflow_Error(t *testing.T) {
 				mockEC2.On("GetReservedInstanceExpiringOrExpired30DaysWaste", mock.Anything).Return([]model.RiExpirationInfo{}, nil)
 				mockEC2.On("GetUnusedAMIs", mock.Anything, mock.Anything).Return([]model.AMIWasteInfo{}, nil)
 				mockEC2.On("GetOrphanedSnapshots", mock.Anything, mock.Anything).Return([]model.SnapshotWasteInfo{}, nil)
+				mockEC2.On("GetNatGateways", mock.Anything).Return([]types.NatGateway{}, nil)
+				mockEC2.On("GetVpcEndpoints", mock.Anything).Return([]types.VpcEndpoint{}, nil)
 				mockELB.On("GetUnusedLoadBalancers", mock.Anything).Return(nil, errors.New("ELB error"))
 				mockSTS.On("GetCallerIdentity", mock.Anything).Return(&sts.GetCallerIdentityOutput{
 					Account: aws.String("123456789012"),

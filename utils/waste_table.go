@@ -13,7 +13,7 @@ import (
 	"github.com/jedib0t/go-pretty/v6/text"
 )
 
-func DrawWasteTable(accountId string, elasticIpInfo []types.Address, unusedEBSVolumeInfo []types.Volume, attachedToStoppedInstancesEBSVolumeInfo []types.Volume, expireReservedInstancesInfo []model.RiExpirationInfo, instancesStoppedMoreThan30Days []types.Instance, unusedLoadBalancers []elbtypes.LoadBalancer, unusedAMIs []model.AMIWasteInfo, orphanedSnapshots []model.SnapshotWasteInfo) {
+func DrawWasteTable(accountId string, elasticIpInfo []types.Address, unusedEBSVolumeInfo []types.Volume, attachedToStoppedInstancesEBSVolumeInfo []types.Volume, expireReservedInstancesInfo []model.RiExpirationInfo, instancesStoppedMoreThan30Days []types.Instance, unusedLoadBalancers []elbtypes.LoadBalancer, unusedAMIs []model.AMIWasteInfo, orphanedSnapshots []model.SnapshotWasteInfo, natGateways []types.NatGateway, vpcEndpoints []types.VpcEndpoint) {
 	fmt.Printf("\n%s\n", text.FgHiWhite.Sprint(" 🏥 AWS DOCTOR CHECKUP"))
 	fmt.Printf(" Account ID: %s\n", text.FgBlue.Sprint(accountId))
 	fmt.Println(text.FgHiBlue.Sprint(" ------------------------------------------------"))
@@ -25,7 +25,9 @@ func DrawWasteTable(accountId string, elasticIpInfo []types.Address, unusedEBSVo
 		len(expireReservedInstancesInfo) > 0 ||
 		len(unusedLoadBalancers) > 0 ||
 		len(unusedAMIs) > 0 ||
-		len(orphanedSnapshots) > 0
+		len(orphanedSnapshots) > 0 ||
+		len(natGateways) > 0 ||
+		len(vpcEndpoints) > 0
 
 	if !hasWaste {
 		fmt.Println("\n" + text.FgHiGreen.Sprint(" ✅  Your account is healthy! No waste found."))
@@ -54,6 +56,14 @@ func DrawWasteTable(accountId string, elasticIpInfo []types.Address, unusedEBSVo
 
 	if len(orphanedSnapshots) > 0 {
 		drawSnapshotTable(orphanedSnapshots)
+	}
+
+	if len(natGateways) > 0 {
+		drawNatGatewayTable(natGateways)
+	}
+
+	if len(vpcEndpoints) > 0 {
+		drawVpcEndpointTable(vpcEndpoints)
 	}
 }
 
@@ -427,6 +437,96 @@ func populateSnapshotRows(snapshots []model.SnapshotWasteInfo) []table.Row {
 			snap.Reason,
 			fmt.Sprintf("%d GB", snap.SizeGB),
 			fmt.Sprintf("$%.2f/mo", snap.MaxPotentialSavings),
+		})
+	}
+
+	return rows
+}
+
+func drawNatGatewayTable(natGateways []types.NatGateway) {
+	t := table.NewWriter()
+	t.SetOutputMirror(os.Stdout)
+	t.SetStyle(table.StyleRounded)
+	t.SetTitle("NAT Gateway Review")
+
+	t.AppendHeader(table.Row{"Status", "NAT Gateway ID", "Subnet ID"})
+
+	statusLabel := "Review Usage"
+	rows := populateNatGatewayRows(natGateways)
+
+	if len(rows) > 0 {
+		halfRow := len(rows) / 2
+		rows[halfRow][0] = text.FgHiYellow.Sprint(statusLabel)
+	}
+
+	t.AppendRows(rows)
+	t.Render()
+	fmt.Println()
+}
+
+func populateNatGatewayRows(natGateways []types.NatGateway) []table.Row {
+	var rows []table.Row
+
+	for _, ng := range natGateways {
+		natGatewayId := ""
+		if ng.NatGatewayId != nil {
+			natGatewayId = *ng.NatGatewayId
+		}
+
+		subnetId := ""
+		if ng.SubnetId != nil {
+			subnetId = *ng.SubnetId
+		}
+
+		rows = append(rows, table.Row{
+			"",
+			natGatewayId,
+			subnetId,
+		})
+	}
+
+	return rows
+}
+
+func drawVpcEndpointTable(vpcEndpoints []types.VpcEndpoint) {
+	t := table.NewWriter()
+	t.SetOutputMirror(os.Stdout)
+	t.SetStyle(table.StyleRounded)
+	t.SetTitle("VPC Endpoint Review")
+
+	t.AppendHeader(table.Row{"Status", "Endpoint ID", "Service Name"})
+
+	statusLabel := "Review Usage"
+	rows := populateVpcEndpointRows(vpcEndpoints)
+
+	if len(rows) > 0 {
+		halfRow := len(rows) / 2
+		rows[halfRow][0] = text.FgHiYellow.Sprint(statusLabel)
+	}
+
+	t.AppendRows(rows)
+	t.Render()
+	fmt.Println()
+}
+
+func populateVpcEndpointRows(vpcEndpoints []types.VpcEndpoint) []table.Row {
+	var rows []table.Row
+
+	for _, ep := range vpcEndpoints {
+		endpointId := ""
+		if ep.VpcEndpointId != nil {
+			endpointId = *ep.VpcEndpointId
+		}
+
+		serviceName := ""
+		if ep.ServiceName != nil {
+			serviceName = *ep.ServiceName
+		}
+
+		rows = append(rows, table.Row{
+			"",
+			endpointId,
+			serviceName,
 		})
 	}
 

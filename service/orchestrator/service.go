@@ -10,34 +10,33 @@ import (
 	awscostexplorer "github.com/elC0mpa/aws-doctor/service/costexplorer"
 	awsec2 "github.com/elC0mpa/aws-doctor/service/ec2"
 	"github.com/elC0mpa/aws-doctor/service/elb"
-	"github.com/elC0mpa/aws-doctor/service/output"
 	awssts "github.com/elC0mpa/aws-doctor/service/sts"
+	"github.com/elC0mpa/aws-doctor/utils"
 	"golang.org/x/sync/errgroup"
 )
 
-func NewService(stsService awssts.STSService, costService awscostexplorer.CostService, ec2Service awsec2.EC2Service, elbService elb.ELBService, outputService output.Service) *service {
+func NewService(stsService awssts.STSService, costService awscostexplorer.CostService, ec2Service awsec2.EC2Service, elbService elb.ELBService) *service {
 	return &service{
-		stsService:    stsService,
-		costService:   costService,
-		ec2Service:    ec2Service,
-		elbService:    elbService,
-		outputService: outputService,
+		stsService:  stsService,
+		costService: costService,
+		ec2Service:  ec2Service,
+		elbService:  elbService,
 	}
 }
 
 func (s *service) Orchestrate(flags model.Flags) error {
 	if flags.Waste {
-		return s.wasteWorkflow()
+		return s.wasteWorkflow(flags.Output)
 	}
 
 	if flags.Trend {
-		return s.trendWorkflow()
+		return s.trendWorkflow(flags.Output)
 	}
 
-	return s.defaultWorkflow()
+	return s.defaultWorkflow(flags.Output)
 }
 
-func (s *service) defaultWorkflow() error {
+func (s *service) defaultWorkflow(outputFormat string) error {
 	currentMonthData, err := s.costService.GetCurrentMonthCostsByService(context.Background())
 	if err != nil {
 		return err
@@ -63,12 +62,23 @@ func (s *service) defaultWorkflow() error {
 		return err
 	}
 
-	s.outputService.StopSpinner()
+	utils.StopSpinner()
 
-	return s.outputService.RenderCostComparison(*stsResult.Account, *lastTotalCost, *currentTotalCost, lastMonthData, currentMonthData)
+	if outputFormat == "json" {
+		return utils.OutputCostComparisonJSON(
+			*stsResult.Account,
+			utils.ParseCostString(*lastTotalCost),
+			utils.ParseCostString(*currentTotalCost),
+			lastMonthData,
+			currentMonthData,
+		)
+	}
+
+	utils.DrawCostTable(*stsResult.Account, *lastTotalCost, *currentTotalCost, lastMonthData, currentMonthData, "UnblendedCost")
+	return nil
 }
 
-func (s *service) trendWorkflow() error {
+func (s *service) trendWorkflow(outputFormat string) error {
 	costInfo, err := s.costService.GetLastSixMonthsCosts(context.Background())
 	if err != nil {
 		return err
@@ -79,12 +89,18 @@ func (s *service) trendWorkflow() error {
 		return err
 	}
 
-	s.outputService.StopSpinner()
+	utils.StopSpinner()
 
-	return s.outputService.RenderTrend(*stsResult.Account, costInfo)
+	if outputFormat == "json" {
+		return utils.OutputTrendJSON(*stsResult.Account, costInfo)
+	}
+
+	utils.DrawTrendChart(*stsResult.Account, costInfo)
+
+	return nil
 }
 
-func (s *service) wasteWorkflow() error {
+func (s *service) wasteWorkflow(outputFormat string) error {
 	ctx := context.Background()
 	g, ctx := errgroup.WithContext(ctx)
 
@@ -97,6 +113,8 @@ func (s *service) wasteWorkflow() error {
 	var unusedLoadBalancers []elbtypes.LoadBalancer
 	var unusedAMIs []model.AMIWasteInfo
 	var orphanedSnapshots []model.SnapshotWasteInfo
+	var natGateways []types.NatGateway
+	var vpcEndpoints []types.VpcEndpoint
 	var stsResult *sts.GetCallerIdentityOutput
 
 	// Fetch unused Elastic IPs concurrently
@@ -134,6 +152,20 @@ func (s *service) wasteWorkflow() error {
 		return err
 	})
 
+	// Fetch NAT Gateways concurrently
+	g.Go(func() error {
+		var err error
+		natGateways, err = s.ec2Service.GetNatGateways(ctx)
+		return err
+	})
+
+	// Fetch VPC Endpoints concurrently
+	g.Go(func() error {
+		var err error
+		vpcEndpoints, err = s.ec2Service.GetVpcEndpoints(ctx)
+		return err
+	})
+
 	// Fetch caller identity concurrently
 	g.Go(func() error {
 		var err error
@@ -160,17 +192,25 @@ func (s *service) wasteWorkflow() error {
 		return err
 	}
 
-	s.outputService.StopSpinner()
+	utils.StopSpinner()
 
-	return s.outputService.RenderWaste(
-		*stsResult.Account,
-		elasticIpInfo,
-		availableEBSVolumesInfo,
-		attachedToStoppedInstancesEBSVolumesInfo,
-		expireReservedInstancesInfo,
-		stoppedInstancesMoreThan30Days,
-		unusedLoadBalancers,
-		unusedAMIs,
-		orphanedSnapshots,
-	)
+	if outputFormat == "json" {
+		return utils.OutputWasteJSON(
+			*stsResult.Account,
+			elasticIpInfo,
+			availableEBSVolumesInfo,
+			attachedToStoppedInstancesEBSVolumesInfo,
+			expireReservedInstancesInfo,
+			stoppedInstancesMoreThan30Days,
+			unusedLoadBalancers,
+			unusedAMIs,
+			orphanedSnapshots,
+			natGateways,
+			vpcEndpoints,
+		)
+	}
+
+	utils.DrawWasteTable(*stsResult.Account, elasticIpInfo, availableEBSVolumesInfo, attachedToStoppedInstancesEBSVolumesInfo, expireReservedInstancesInfo, stoppedInstancesMoreThan30Days, unusedLoadBalancers, unusedAMIs, orphanedSnapshots, natGateways, vpcEndpoints)
+
+	return nil
 }
