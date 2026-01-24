@@ -15,6 +15,7 @@ func (s *service) GetParsedFlags() (model.Flags, error) {
 	profile := flag.String("profile", "", "AWS profile configuration")
 	trend := flag.Bool("trend", false, "Display a trend report for the last 6 months")
 	waste := flag.Bool("waste", false, "Display AWS waste report")
+	daily := flag.Bool("daily", false, "Display daily cost analysis for the last 30 days with day-of-week patterns")
 	output := flag.String("output", "table", "Output format: table or json")
 	flag.Bool("version", false, "Display version information")
 
@@ -25,6 +26,7 @@ func (s *service) GetParsedFlags() (model.Flags, error) {
 		Profile: *profile,
 		Trend:   *trend,
 		Waste:   *waste,
+		Daily:   *daily,
 		Output:  *output,
 	}, nil
 }
