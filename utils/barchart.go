@@ -1,4 +1,4 @@
-package utils
+package utils //nolint:revive
 
 import (
 	"fmt"
@@ -24,9 +24,9 @@ var defaultStyle = lipgloss.NewStyle().
 	BorderStyle(lipgloss.NormalBorder()).
 	BorderForeground(lipgloss.Color("#F4D060"))
 
-func DrawTrendChart(accountId string, monthlyCosts []model.CostInfo) {
+func DrawTrendChart(accountID string, monthlyCosts []model.CostInfo) {
 	fmt.Printf("\n%s\n", text.FgHiWhite.Sprint(" 📈 AWS DOCTOR TREND"))
-	fmt.Printf(" Account ID: %s\n", text.FgBlue.Sprint(accountId))
+	fmt.Printf(" Account ID: %s\n", text.FgBlue.Sprint(accountID))
 	fmt.Println(text.FgHiBlue.Sprint(" ------------------------------------------------"))
 
 	bc := barchart.New(130, 20)

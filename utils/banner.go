@@ -1,4 +1,4 @@
-package utils
+package utils //nolint:revive
 
 import "github.com/common-nighthawk/go-figure"
 

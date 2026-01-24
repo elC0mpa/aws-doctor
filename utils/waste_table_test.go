@@ -1,4 +1,4 @@
-package utils
+package utils //nolint:revive
 
 import (
 	"bytes"
@@ -72,7 +72,7 @@ func TestPopulateEBSRows(t *testing.T) {
 	}
 }
 
-func TestPopulateElasticIpRows(t *testing.T) {
+func TestPopulateElasticIPRows(t *testing.T) {
 	tests := []struct {
 		name    string
 		ips     []types.Address
@@ -119,10 +119,10 @@ func TestPopulateElasticIpRows(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			rows := populateElasticIpRows(tt.ips)
+			rows := populateElasticIPRows(tt.ips)
 
 			if len(rows) != tt.wantLen {
-				t.Errorf("populateElasticIpRows() returned %d rows, want %d", len(rows), tt.wantLen)
+				t.Errorf("populateElasticIPRows() returned %d rows, want %d", len(rows), tt.wantLen)
 				return
 			}
 
@@ -739,26 +739,26 @@ func TestDrawEC2Table_OnlyRIs(t *testing.T) {
 	}
 }
 
-func TestDrawElasticIpTable(t *testing.T) {
+func TestDrawElasticIPTable(t *testing.T) {
 	elasticIPs := []types.Address{
 		{PublicIp: aws.String("1.2.3.4"), AllocationId: aws.String("eipalloc-123")},
 		{PublicIp: aws.String("5.6.7.8"), AllocationId: aws.String("eipalloc-456")},
 	}
 
 	output := captureWasteOutput(func() {
-		drawElasticIpTable(elasticIPs)
+		drawElasticIPTable(elasticIPs)
 	})
 
 	if !strings.Contains(output, "Elastic IP Waste") {
-		t.Error("drawElasticIpTable() missing title")
+		t.Error("drawElasticIPTable() missing title")
 	}
 
 	if !strings.Contains(output, "1.2.3.4") {
-		t.Error("drawElasticIpTable() missing IP address")
+		t.Error("drawElasticIPTable() missing IP address")
 	}
 
 	if !strings.Contains(output, "eipalloc-123") {
-		t.Error("drawElasticIpTable() missing allocation ID")
+		t.Error("drawElasticIPTable() missing allocation ID")
 	}
 }
 

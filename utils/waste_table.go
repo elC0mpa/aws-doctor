@@ -1,4 +1,4 @@
-package utils
+package utils //nolint:revive
 
 import (
 	"fmt"
@@ -13,12 +13,12 @@ import (
 	"github.com/jedib0t/go-pretty/v6/text"
 )
 
-func DrawWasteTable(accountId string, elasticIpInfo []types.Address, unusedEBSVolumeInfo []types.Volume, attachedToStoppedInstancesEBSVolumeInfo []types.Volume, expireReservedInstancesInfo []model.RiExpirationInfo, instancesStoppedMoreThan30Days []types.Instance, unusedLoadBalancers []elbtypes.LoadBalancer, unusedAMIs []model.AMIWasteInfo, orphanedSnapshots []model.SnapshotWasteInfo) {
+func DrawWasteTable(accountID string, elasticIPInfo []types.Address, unusedEBSVolumeInfo []types.Volume, attachedToStoppedInstancesEBSVolumeInfo []types.Volume, expireReservedInstancesInfo []model.RiExpirationInfo, instancesStoppedMoreThan30Days []types.Instance, unusedLoadBalancers []elbtypes.LoadBalancer, unusedAMIs []model.AMIWasteInfo, orphanedSnapshots []model.SnapshotWasteInfo) {
 	fmt.Printf("\n%s\n", text.FgHiWhite.Sprint(" 🏥 AWS DOCTOR CHECKUP"))
-	fmt.Printf(" Account ID: %s\n", text.FgBlue.Sprint(accountId))
+	fmt.Printf(" Account ID: %s\n", text.FgBlue.Sprint(accountID))
 	fmt.Println(text.FgHiBlue.Sprint(" ------------------------------------------------"))
 
-	hasWaste := len(elasticIpInfo) > 0 ||
+	hasWaste := len(elasticIPInfo) > 0 ||
 		len(unusedEBSVolumeInfo) > 0 ||
 		len(attachedToStoppedInstancesEBSVolumeInfo) > 0 ||
 		len(instancesStoppedMoreThan30Days) > 0 ||
@@ -36,8 +36,8 @@ func DrawWasteTable(accountId string, elasticIpInfo []types.Address, unusedEBSVo
 		drawEBSTable(unusedEBSVolumeInfo, attachedToStoppedInstancesEBSVolumeInfo)
 	}
 
-	if len(elasticIpInfo) > 0 {
-		drawElasticIpTable(elasticIpInfo)
+	if len(elasticIPInfo) > 0 {
+		drawElasticIPTable(elasticIPInfo)
 	}
 
 	if len(instancesStoppedMoreThan30Days) > 0 || len(expireReservedInstancesInfo) > 0 {
@@ -169,7 +169,7 @@ func drawEC2Table(instances []types.Instance, ris []model.RiExpirationInfo) {
 	fmt.Println()
 }
 
-func drawElasticIpTable(elasticIpInfo []types.Address) {
+func drawElasticIPTable(elasticIPInfo []types.Address) {
 	t := table.NewWriter()
 	t.SetOutputMirror(os.Stdout)
 	t.SetStyle(table.StyleRounded)
@@ -178,7 +178,7 @@ func drawElasticIpTable(elasticIpInfo []types.Address) {
 	t.AppendHeader(table.Row{"Status", "IP Address", "Allocation ID"})
 
 	statusUnused := "Unassociated"
-	rows := populateElasticIpRows(elasticIpInfo)
+	rows := populateElasticIPRows(elasticIPInfo)
 
 	if len(rows) > 0 {
 		halfRow := len(rows) / 2
@@ -204,24 +204,24 @@ func populateEBSRows(volumes []types.Volume) []table.Row {
 	return rows
 }
 
-func populateElasticIpRows(ips []types.Address) []table.Row {
+func populateElasticIPRows(ips []types.Address) []table.Row {
 	var rows []table.Row
 
 	for _, ip := range ips {
-		publicIp := ""
+		publicIP := ""
 		if ip.PublicIp != nil {
-			publicIp = *ip.PublicIp
+			publicIP = *ip.PublicIp
 		}
 
-		allocationId := ""
+		allocationID := ""
 		if ip.AllocationId != nil {
-			allocationId = *ip.AllocationId
+			allocationID = *ip.AllocationId
 		}
 
 		rows = append(rows, table.Row{
 			"",
-			publicIp,
-			allocationId,
+			publicIP,
+			allocationID,
 		})
 	}
 
@@ -246,14 +246,14 @@ func populateInstanceRows(instances []types.Instance) []table.Row {
 			timeInfo = fmt.Sprintf("%d days ago", days)
 		}
 
-		instanceId := ""
+		instanceID := ""
 		if instance.InstanceId != nil {
-			instanceId = *instance.InstanceId
+			instanceID = *instance.InstanceId
 		}
 
 		rows = append(rows, table.Row{
 			"", // Placeholder for Status
-			instanceId,
+			instanceID,
 			timeInfo,
 		})
 	}

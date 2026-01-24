@@ -89,7 +89,7 @@ func (s *service) wasteWorkflow() error {
 	g, ctx := errgroup.WithContext(ctx)
 
 	// Results from concurrent API calls
-	var elasticIpInfo []types.Address
+	var elasticIPInfo []types.Address
 	var availableEBSVolumesInfo []types.Volume
 	var stoppedInstancesMoreThan30Days []types.Instance
 	var attachedToStoppedInstancesEBSVolumesInfo []types.Volume
@@ -102,7 +102,7 @@ func (s *service) wasteWorkflow() error {
 	// Fetch unused Elastic IPs concurrently
 	g.Go(func() error {
 		var err error
-		elasticIpInfo, err = s.ec2Service.GetUnusedElasticIPAddressesInfo(ctx)
+		elasticIPInfo, err = s.ec2Service.GetUnusedElasticIPAddressesInfo(ctx)
 		return err
 	})
 
@@ -164,7 +164,7 @@ func (s *service) wasteWorkflow() error {
 
 	return s.outputService.RenderWaste(
 		*stsResult.Account,
-		elasticIpInfo,
+		elasticIPInfo,
 		availableEBSVolumesInfo,
 		attachedToStoppedInstancesEBSVolumesInfo,
 		expireReservedInstancesInfo,

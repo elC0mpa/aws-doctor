@@ -263,8 +263,8 @@ func (s *service) GetUnusedAMIs(ctx context.Context, staleDays int) ([]model.AMI
 		}
 
 		for _, image := range page.Images {
-			imageId := aws.ToString(image.ImageId)
-			usageCount := amiUsage[imageId]
+			imageID := aws.ToString(image.ImageId)
+			usageCount := amiUsage[imageID]
 
 			// Parse creation date with proper error handling
 			var creationDate time.Time
@@ -288,12 +288,12 @@ func (s *service) GetUnusedAMIs(ctx context.Context, staleDays int) ([]model.AMI
 			// Consider unused if not used by any instance AND is stale
 			if usageCount == 0 && isStale {
 				// Collect snapshot IDs and sizes
-				var snapshotIds []string
+				var snapshotIDs []string
 				var totalSnapshotSize int64
 
 				for _, bdm := range image.BlockDeviceMappings {
 					if bdm.Ebs != nil && bdm.Ebs.SnapshotId != nil {
-						snapshotIds = append(snapshotIds, *bdm.Ebs.SnapshotId)
+						snapshotIDs = append(snapshotIDs, *bdm.Ebs.SnapshotId)
 						if bdm.Ebs.VolumeSize != nil {
 							totalSnapshotSize += int64(*bdm.Ebs.VolumeSize)
 						}
@@ -308,13 +308,13 @@ func (s *service) GetUnusedAMIs(ctx context.Context, staleDays int) ([]model.AMI
 				safetyWarning := "Verify before deleting: AMI may be used by Auto Scaling Groups or Launch Templates not currently running instances"
 
 				results = append(results, model.AMIWasteInfo{
-					ImageID:            imageId,
+					ImageID:            imageID,
 					Name:               aws.ToString(image.Name),
 					Description:        aws.ToString(image.Description),
 					CreationDate:       creationDate,
 					DaysSinceCreate:    daysSinceCreate,
 					IsPublic:           aws.ToBool(image.Public),
-					SnapshotIDs:        snapshotIds,
+					SnapshotIDs:        snapshotIDs,
 					SnapshotSizeGB:     totalSnapshotSize,
 					UsedByInstances:    usageCount,
 					MaxPotentialSaving: maxPotentialSaving,
@@ -381,10 +381,10 @@ func (s *service) GetOrphanedSnapshots(ctx context.Context, staleDays int) ([]mo
 	now := time.Now()
 
 	for _, snapshot := range allSnapshots {
-		volumeId := aws.ToString(snapshot.VolumeId)
-		snapshotId := aws.ToString(snapshot.SnapshotId)
-		volumeExists := existingVolumes[volumeId]
-		amiId, usedByAMI := snapshotToAMI[snapshotId]
+		volumeID := aws.ToString(snapshot.VolumeId)
+		snapshotID := aws.ToString(snapshot.SnapshotId)
+		volumeExists := existingVolumes[volumeID]
+		amiID, usedByAMI := snapshotToAMI[snapshotID]
 
 		startTime := time.Time{}
 		if snapshot.StartTime != nil {
@@ -411,11 +411,11 @@ func (s *service) GetOrphanedSnapshots(ctx context.Context, staleDays int) ([]mo
 		if !volumeExists {
 			// Orphaned: Volume no longer exists - safe to delete (high confidence)
 			results = append(results, model.SnapshotWasteInfo{
-				SnapshotID:          snapshotId,
-				VolumeID:            volumeId,
+				SnapshotID:          snapshotID,
+				VolumeID:            volumeID,
 				VolumeExists:        volumeExists,
 				UsedByAMI:           usedByAMI,
-				AMIID:               amiId,
+				AMIID:               amiID,
 				SizeGB:              sizeGB,
 				StartTime:           startTime,
 				DaysSinceCreate:     daysSinceCreate,
@@ -427,11 +427,11 @@ func (s *service) GetOrphanedSnapshots(ctx context.Context, staleDays int) ([]mo
 		} else if startTime.Before(cutoffTime) {
 			// Stale: Volume exists but snapshot is old - needs review (low confidence)
 			results = append(results, model.SnapshotWasteInfo{
-				SnapshotID:          snapshotId,
-				VolumeID:            volumeId,
+				SnapshotID:          snapshotID,
+				VolumeID:            volumeID,
 				VolumeExists:        volumeExists,
 				UsedByAMI:           usedByAMI,
-				AMIID:               amiId,
+				AMIID:               amiID,
 				SizeGB:              sizeGB,
 				StartTime:           startTime,
 				DaysSinceCreate:     daysSinceCreate,

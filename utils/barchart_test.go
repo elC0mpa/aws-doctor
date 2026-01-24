@@ -1,4 +1,4 @@
-package utils
+package utils //nolint:revive
 
 import (
 	"bytes"
@@ -124,7 +124,7 @@ func TestAssignRankedColors(t *testing.T) {
 			name:    "empty_costs",
 			costs:   []model.CostInfo{},
 			wantLen: 0,
-			validate: func(t *testing.T, colors []string, costs []model.CostInfo) {
+			validate: func(_ *testing.T, _ []string, _ []model.CostInfo) {
 				// No validation needed for empty
 			},
 		},
@@ -134,7 +134,7 @@ func TestAssignRankedColors(t *testing.T) {
 				{CostGroup: model.CostGroup{"Total": {Amount: 100.0, Unit: "USD"}}},
 			},
 			wantLen: 1,
-			validate: func(t *testing.T, colors []string, costs []model.CostInfo) {
+			validate: func(t *testing.T, colors []string, _ []model.CostInfo) {
 				// Single item should get rank 1 color (highest = red)
 				if colors[0] != ColorRank1 {
 					t.Errorf("Single item should get ColorRank1, got %s", colors[0])
@@ -148,7 +148,7 @@ func TestAssignRankedColors(t *testing.T) {
 				{CostGroup: model.CostGroup{"Total": {Amount: 100.0, Unit: "USD"}}},
 			},
 			wantLen: 2,
-			validate: func(t *testing.T, colors []string, costs []model.CostInfo) {
+			validate: func(t *testing.T, colors []string, _ []model.CostInfo) {
 				// First (higher) should be rank 1, second (lower) should be rank 2
 				if colors[0] != ColorRank1 {
 					t.Errorf("Higher cost should get ColorRank1, got %s", colors[0])
@@ -165,7 +165,7 @@ func TestAssignRankedColors(t *testing.T) {
 				{CostGroup: model.CostGroup{"Total": {Amount: 200.0, Unit: "USD"}}},
 			},
 			wantLen: 2,
-			validate: func(t *testing.T, colors []string, costs []model.CostInfo) {
+			validate: func(t *testing.T, colors []string, _ []model.CostInfo) {
 				// Second (higher) should be rank 1, first (lower) should be rank 2
 				if colors[0] != ColorRank2 {
 					t.Errorf("Lower cost at index 0 should get ColorRank2, got %s", colors[0])
@@ -204,7 +204,7 @@ func TestAssignRankedColors(t *testing.T) {
 				{CostGroup: model.CostGroup{"Total": {Amount: 100.0, Unit: "USD"}}},
 			},
 			wantLen: 3,
-			validate: func(t *testing.T, colors []string, costs []model.CostInfo) {
+			validate: func(t *testing.T, colors []string, _ []model.CostInfo) {
 				// All colors should be assigned (order depends on sort stability)
 				for i, c := range colors {
 					if c == "" {

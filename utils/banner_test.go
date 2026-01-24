@@ -1,4 +1,4 @@
-package utils
+package utils //nolint:revive
 
 import (
 	"bytes"
@@ -32,7 +32,7 @@ func TestDrawBanner(t *testing.T) {
 	// Note: ASCII art fonts may vary, so we just check for non-empty output
 }
 
-func TestDrawBanner_MultipleCallsNoPanic(t *testing.T) {
+func TestDrawBanner_MultipleCallsNoPanic(_ *testing.T) {
 	// Redirect stdout to discard
 	old := os.Stdout
 	os.Stdout, _ = os.Open(os.DevNull)
