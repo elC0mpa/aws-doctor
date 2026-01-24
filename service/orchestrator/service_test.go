@@ -20,9 +20,10 @@ func TestOrchestrate_RouteToDefaultWorkflow(t *testing.T) {
 	mockCost := new(mocks.MockCostService)
 	mockEC2 := new(mocks.MockEC2Service)
 	mockELB := new(mocks.MockELBService)
+	mockOutput := new(mocks.MockOutputService)
 
 	// Create service
-	svc := NewService(mockSTS, mockCost, mockEC2, mockELB)
+	svc := NewService(mockSTS, mockCost, mockEC2, mockELB, mockOutput)
 
 	// Setup expectations for default workflow
 	mockCost.On("GetCurrentMonthCostsByService", mock.Anything).Return(&model.CostInfo{}, nil)
@@ -32,8 +33,10 @@ func TestOrchestrate_RouteToDefaultWorkflow(t *testing.T) {
 	mockSTS.On("GetCallerIdentity", mock.Anything).Return(&sts.GetCallerIdentityOutput{
 		Account: aws.String("123456789012"),
 	}, nil)
+	mockOutput.On("StopSpinner").Return()
+	mockOutput.On("RenderCostComparison", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil)
 
-	// Execute with JSON output (avoids terminal output issues)
+	// Execute
 	flags := model.Flags{Output: "json"}
 	err := svc.Orchestrate(flags)
 
@@ -41,6 +44,7 @@ func TestOrchestrate_RouteToDefaultWorkflow(t *testing.T) {
 	assert.NoError(t, err)
 	mockCost.AssertExpectations(t)
 	mockSTS.AssertExpectations(t)
+	mockOutput.AssertExpectations(t)
 }
 
 func TestOrchestrate_RouteToTrendWorkflow(t *testing.T) {
@@ -49,17 +53,20 @@ func TestOrchestrate_RouteToTrendWorkflow(t *testing.T) {
 	mockCost := new(mocks.MockCostService)
 	mockEC2 := new(mocks.MockEC2Service)
 	mockELB := new(mocks.MockELBService)
+	mockOutput := new(mocks.MockOutputService)
 
 	// Create service
-	svc := NewService(mockSTS, mockCost, mockEC2, mockELB)
+	svc := NewService(mockSTS, mockCost, mockEC2, mockELB, mockOutput)
 
 	// Setup expectations for trend workflow
 	mockCost.On("GetLastSixMonthsCosts", mock.Anything).Return([]model.CostInfo{}, nil)
 	mockSTS.On("GetCallerIdentity", mock.Anything).Return(&sts.GetCallerIdentityOutput{
 		Account: aws.String("123456789012"),
 	}, nil)
+	mockOutput.On("StopSpinner").Return()
+	mockOutput.On("RenderTrend", mock.Anything, mock.Anything).Return(nil)
 
-	// Execute with Trend flag and JSON output
+	// Execute with Trend flag
 	flags := model.Flags{Trend: true, Output: "json"}
 	err := svc.Orchestrate(flags)
 
@@ -67,6 +74,7 @@ func TestOrchestrate_RouteToTrendWorkflow(t *testing.T) {
 	assert.NoError(t, err)
 	mockCost.AssertExpectations(t)
 	mockSTS.AssertExpectations(t)
+	mockOutput.AssertExpectations(t)
 }
 
 func TestOrchestrate_RouteToWasteWorkflow(t *testing.T) {
@@ -75,9 +83,10 @@ func TestOrchestrate_RouteToWasteWorkflow(t *testing.T) {
 	mockCost := new(mocks.MockCostService)
 	mockEC2 := new(mocks.MockEC2Service)
 	mockELB := new(mocks.MockELBService)
+	mockOutput := new(mocks.MockOutputService)
 
 	// Create service
-	svc := NewService(mockSTS, mockCost, mockEC2, mockELB)
+	svc := NewService(mockSTS, mockCost, mockEC2, mockELB, mockOutput)
 
 	// Setup expectations for waste workflow
 	mockEC2.On("GetUnusedElasticIpAddressesInfo", mock.Anything).Return([]types.Address{}, nil)
@@ -90,8 +99,10 @@ func TestOrchestrate_RouteToWasteWorkflow(t *testing.T) {
 	mockSTS.On("GetCallerIdentity", mock.Anything).Return(&sts.GetCallerIdentityOutput{
 		Account: aws.String("123456789012"),
 	}, nil)
+	mockOutput.On("StopSpinner").Return()
+	mockOutput.On("RenderWaste", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil)
 
-	// Execute with Waste flag and JSON output
+	// Execute with Waste flag
 	flags := model.Flags{Waste: true, Output: "json"}
 	err := svc.Orchestrate(flags)
 
@@ -100,6 +111,7 @@ func TestOrchestrate_RouteToWasteWorkflow(t *testing.T) {
 	mockEC2.AssertExpectations(t)
 	mockELB.AssertExpectations(t)
 	mockSTS.AssertExpectations(t)
+	mockOutput.AssertExpectations(t)
 }
 
 func TestOrchestrate_WasteTakesPrecedenceOverTrend(t *testing.T) {
@@ -108,9 +120,10 @@ func TestOrchestrate_WasteTakesPrecedenceOverTrend(t *testing.T) {
 	mockCost := new(mocks.MockCostService)
 	mockEC2 := new(mocks.MockEC2Service)
 	mockELB := new(mocks.MockELBService)
+	mockOutput := new(mocks.MockOutputService)
 
 	// Create service
-	svc := NewService(mockSTS, mockCost, mockEC2, mockELB)
+	svc := NewService(mockSTS, mockCost, mockEC2, mockELB, mockOutput)
 
 	// Setup expectations for waste workflow (should be called, not trend)
 	mockEC2.On("GetUnusedElasticIpAddressesInfo", mock.Anything).Return([]types.Address{}, nil)
@@ -123,6 +136,8 @@ func TestOrchestrate_WasteTakesPrecedenceOverTrend(t *testing.T) {
 	mockSTS.On("GetCallerIdentity", mock.Anything).Return(&sts.GetCallerIdentityOutput{
 		Account: aws.String("123456789012"),
 	}, nil)
+	mockOutput.On("StopSpinner").Return()
+	mockOutput.On("RenderWaste", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil)
 
 	// Execute with both flags - Waste should take precedence
 	flags := model.Flags{Waste: true, Trend: true, Output: "json"}
@@ -192,10 +207,13 @@ func TestDefaultWorkflow_CostServiceError(t *testing.T) {
 			mockCost := new(mocks.MockCostService)
 			mockEC2 := new(mocks.MockEC2Service)
 			mockELB := new(mocks.MockELBService)
+			mockOutput := new(mocks.MockOutputService)
 
 			tt.setupMocks(mockCost, mockSTS)
+			mockOutput.On("StopSpinner").Return().Maybe()
+			mockOutput.On("RenderCostComparison", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil).Maybe()
 
-			svc := NewService(mockSTS, mockCost, mockEC2, mockELB)
+			svc := NewService(mockSTS, mockCost, mockEC2, mockELB, mockOutput)
 			err := svc.Orchestrate(model.Flags{Output: "json"})
 
 			assert.Error(t, err)
@@ -233,10 +251,13 @@ func TestTrendWorkflow_Error(t *testing.T) {
 			mockCost := new(mocks.MockCostService)
 			mockEC2 := new(mocks.MockEC2Service)
 			mockELB := new(mocks.MockELBService)
+			mockOutput := new(mocks.MockOutputService)
 
 			tt.setupMocks(mockCost, mockSTS)
+			mockOutput.On("StopSpinner").Return().Maybe()
+			mockOutput.On("RenderTrend", mock.Anything, mock.Anything).Return(nil).Maybe()
 
-			svc := NewService(mockSTS, mockCost, mockEC2, mockELB)
+			svc := NewService(mockSTS, mockCost, mockEC2, mockELB, mockOutput)
 			err := svc.Orchestrate(model.Flags{Trend: true, Output: "json"})
 
 			assert.Error(t, err)
@@ -307,10 +328,13 @@ func TestWasteWorkflow_Error(t *testing.T) {
 			mockCost := new(mocks.MockCostService)
 			mockEC2 := new(mocks.MockEC2Service)
 			mockELB := new(mocks.MockELBService)
+			mockOutput := new(mocks.MockOutputService)
 
 			tt.setupMocks(mockEC2, mockELB, mockSTS)
+			mockOutput.On("StopSpinner").Return().Maybe()
+			mockOutput.On("RenderWaste", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil).Maybe()
 
-			svc := NewService(mockSTS, mockCost, mockEC2, mockELB)
+			svc := NewService(mockSTS, mockCost, mockEC2, mockELB, mockOutput)
 			err := svc.Orchestrate(model.Flags{Waste: true, Output: "json"})
 
 			assert.Error(t, err)
