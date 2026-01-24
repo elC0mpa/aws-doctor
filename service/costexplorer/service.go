@@ -12,6 +12,10 @@ import (
 	"github.com/elC0mpa/aws-doctor/model"
 )
 
+const (
+	unblendedCost = "UnblendedCost"
+)
+
 func NewService(awsconfig aws.Config) *service {
 	client := costexplorer.NewFromConfig(awsconfig)
 	return &service{
@@ -31,7 +35,6 @@ func (s *service) GetLastMonthCostsByService(ctx context.Context) (*model.CostIn
 func (s *service) GetMonthCostsByService(ctx context.Context, endDate time.Time) (*model.CostInfo, error) {
 	firstOfMonth := s.getFirstDayOfMonth(endDate)
 	firstOfMonthStr := firstOfMonth.Format("2006-01-02")
-	costsAggregation := "UnblendedCost"
 
 	input := &costexplorer.GetCostAndUsageInput{
 		Granularity: types.GranularityMonthly,
@@ -39,7 +42,7 @@ func (s *service) GetMonthCostsByService(ctx context.Context, endDate time.Time)
 			Start: aws.String(firstOfMonthStr),
 			End:   aws.String(endDate.Format("2006-01-02")),
 		},
-		Metrics: []string{costsAggregation},
+		Metrics: []string{unblendedCost},
 		GroupBy: []types.GroupDefinition{
 			{
 				Key:  aws.String("SERVICE"),
@@ -54,7 +57,7 @@ func (s *service) GetMonthCostsByService(ctx context.Context, endDate time.Time)
 	}
 
 	return &model.CostInfo{
-		CostGroup:    s.filterGroups(output.ResultsByTime[0].Groups, costsAggregation),
+		CostGroup:    s.filterGroups(output.ResultsByTime[0].Groups, unblendedCost),
 		DateInterval: *output.ResultsByTime[0].TimePeriod,
 	}, nil
 }
@@ -70,7 +73,6 @@ func (s *service) GetLastMonthTotalCosts(ctx context.Context) (*string, error) {
 func (s *service) GetLastSixMonthsCosts(ctx context.Context) ([]model.CostInfo, error) {
 	firstOfMonth := s.getFirstDayOfMonth(time.Now().AddDate(0, -6, 0))
 	firstOfMonthStr := firstOfMonth.Format("2006-01-02")
-	costsAggregation := "UnblendedCost"
 
 	input := &costexplorer.GetCostAndUsageInput{
 		Granularity: types.GranularityMonthly,
@@ -78,7 +80,7 @@ func (s *service) GetLastSixMonthsCosts(ctx context.Context) ([]model.CostInfo, 
 			Start: aws.String(firstOfMonthStr),
 			End:   aws.String(s.getFirstDayOfMonth(time.Now()).Format("2006-01-02")),
 		},
-		Metrics: []string{costsAggregation},
+		Metrics: []string{unblendedCost},
 	}
 
 	output, err := s.client.GetCostAndUsage(ctx, input)
@@ -89,7 +91,7 @@ func (s *service) GetLastSixMonthsCosts(ctx context.Context) ([]model.CostInfo, 
 	monthlyCosts := make([]model.CostInfo, 0, len(output.ResultsByTime))
 
 	for _, timeResult := range output.ResultsByTime {
-		amount, _ := strconv.ParseFloat(*timeResult.Total[costsAggregation].Amount, 64)
+		amount, _ := strconv.ParseFloat(*timeResult.Total[unblendedCost].Amount, 64)
 		costGroups := make(map[string]struct {
 			Amount float64
 			Unit   string
@@ -100,10 +102,10 @@ func (s *service) GetLastSixMonthsCosts(ctx context.Context) ([]model.CostInfo, 
 			Unit   string
 		}{
 			Amount: amount,
-			Unit:   *timeResult.Total[costsAggregation].Unit,
+			Unit:   *timeResult.Total[unblendedCost].Unit,
 		}
 
-		var monthlyCost model.CostInfo = model.CostInfo{
+		monthlyCost := model.CostInfo{
 			DateInterval: *timeResult.TimePeriod,
 			CostGroup:    costGroups,
 		}
@@ -116,7 +118,6 @@ func (s *service) GetLastSixMonthsCosts(ctx context.Context) ([]model.CostInfo, 
 func (s *service) GetMonthTotalCosts(ctx context.Context, endDate time.Time) (*string, error) {
 	firstOfMonth := s.getFirstDayOfMonth(endDate)
 	firstOfMonthStr := firstOfMonth.Format("2006-01-02")
-	costsAggregation := "UnblendedCost"
 
 	input := &costexplorer.GetCostAndUsageInput{
 		Granularity: types.GranularityMonthly,
@@ -124,7 +125,7 @@ func (s *service) GetMonthTotalCosts(ctx context.Context, endDate time.Time) (*s
 			Start: aws.String(firstOfMonthStr),
 			End:   aws.String(endDate.Format("2006-01-02")),
 		},
-		Metrics: []string{costsAggregation},
+		Metrics: []string{unblendedCost},
 	}
 
 	output, err := s.client.GetCostAndUsage(ctx, input)
@@ -136,9 +137,9 @@ func (s *service) GetMonthTotalCosts(ctx context.Context, endDate time.Time) (*s
 		return nil, fmt.Errorf("no cost data returned for the specified time period")
 	}
 
-	totalInfo, ok := output.ResultsByTime[0].Total[costsAggregation]
+	totalInfo, ok := output.ResultsByTime[0].Total[unblendedCost]
 	if !ok || totalInfo.Amount == nil {
-		return nil, fmt.Errorf("cost data missing %s metric", costsAggregation)
+		return nil, fmt.Errorf("cost data missing %s metric", unblendedCost)
 	}
 
 	amount, err := strconv.ParseFloat(*totalInfo.Amount, 64)
