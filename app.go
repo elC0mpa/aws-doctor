@@ -23,7 +23,6 @@ var (
 
 func main() {
 	if err := run(); err != nil {
-		utils.StopSpinner()
 		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
 		os.Exit(1)
 	}
@@ -40,13 +39,15 @@ func run() error {
 	}
 
 	utils.DrawBanner()
-	utils.StartSpinner()
 
 	flagService := flag.NewService()
 	flags, err := flagService.GetParsedFlags()
 	if err != nil {
 		return fmt.Errorf("failed to parse flags: %w", err)
 	}
+
+	utils.StartSpinner()
+	defer utils.StopSpinner()
 
 	cfgService := awsconfig.NewService()
 	awsCfg, err := cfgService.GetAWSCfg(context.Background(), flags.Region, flags.Profile)
