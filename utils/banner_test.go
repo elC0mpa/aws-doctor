@@ -16,11 +16,11 @@ func TestDrawBanner(t *testing.T) {
 	// Should not panic
 	DrawBanner()
 
-	w.Close()
+	_ = w.Close()
 	os.Stdout = old
 
 	var buf bytes.Buffer
-	io.Copy(&buf, r)
+	_, _ = io.Copy(&buf, r)
 	output := buf.String()
 
 	// Verify some output was produced (ASCII art banner)

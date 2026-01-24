@@ -23,11 +23,11 @@ func captureStdout(f func()) string {
 
 	f()
 
-	w.Close()
+	_ = w.Close()
 	os.Stdout = old
 
 	var buf bytes.Buffer
-	io.Copy(&buf, r)
+	_, _ = io.Copy(&buf, r)
 	return buf.String()
 }
 
@@ -488,6 +488,6 @@ func BenchmarkOutputWasteJSON(b *testing.B) {
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		OutputWasteJSON("123456789012", elasticIPs, nil, nil, nil, nil, nil, nil, nil)
+		_ = OutputWasteJSON("123456789012", elasticIPs, nil, nil, nil, nil, nil, nil, nil)
 	}
 }
