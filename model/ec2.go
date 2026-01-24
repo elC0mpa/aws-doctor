@@ -50,13 +50,13 @@ const (
 // SnapshotWasteInfo contains information about potentially orphaned EBS snapshots
 type SnapshotWasteInfo struct {
 	SnapshotId          string
-	VolumeId            string           // Source volume ID (may no longer exist)
-	VolumeExists        bool             // Whether the source volume still exists
-	UsedByAMI           bool             // Whether snapshot is used by an AMI
-	AMIId               string           // AMI ID if used
-	SizeGB              int32            // Snapshot size in GB
-	StartTime           time.Time        // When snapshot was created
-	DaysSinceCreate     int              // Days since creation
+	VolumeId            string    // Source volume ID (may no longer exist)
+	VolumeExists        bool      // Whether the source volume still exists
+	UsedByAMI           bool      // Whether snapshot is used by an AMI
+	AMIId               string    // AMI ID if used
+	SizeGB              int32     // Snapshot size in GB
+	StartTime           time.Time // When snapshot was created
+	DaysSinceCreate     int       // Days since creation
 	Description         string
 	Category            SnapshotCategory // "orphaned" or "stale"
 	Reason              string           // Human-readable reason (e.g., "Volume Deleted", "Old Backup")

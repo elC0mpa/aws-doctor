@@ -43,7 +43,7 @@ func DrawCostTable(accountId string, lastTotalCost, currenttotalCost string, las
 
 	tw.AppendRows(rows)
 	tw.SetStyle(table.StyleRounded)
-	
+
 	tw.SetColumnConfigs([]table.ColumnConfig{
 		{
 			Number:       1,

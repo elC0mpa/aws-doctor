@@ -353,7 +353,7 @@ func BenchmarkFilterGroups(b *testing.B) {
 
 	// Create a realistic set of groups
 	groups := make([]types.Group, 50)
-	for i := 0; i < 50; i++ {
+	for i := range 50 {
 		amount := "0.00"
 		if i%3 != 0 { // 2/3 have non-zero cost
 			amount = "100.50"
