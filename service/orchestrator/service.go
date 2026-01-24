@@ -11,17 +11,19 @@ import (
 	awsec2 "github.com/elC0mpa/aws-doctor/service/ec2"
 	"github.com/elC0mpa/aws-doctor/service/elb"
 	"github.com/elC0mpa/aws-doctor/service/output"
+	"github.com/elC0mpa/aws-doctor/service/route53"
 	awssts "github.com/elC0mpa/aws-doctor/service/sts"
 	"golang.org/x/sync/errgroup"
 )
 
-func NewService(stsService awssts.STSService, costService awscostexplorer.CostService, ec2Service awsec2.EC2Service, elbService elb.ELBService, outputService output.Service) *service {
+func NewService(stsService awssts.STSService, costService awscostexplorer.CostService, ec2Service awsec2.EC2Service, elbService elb.ELBService, route53Service route53.Route53Service, outputService output.Service) *service {
 	return &service{
-		stsService:    stsService,
-		costService:   costService,
-		ec2Service:    ec2Service,
-		elbService:    elbService,
-		outputService: outputService,
+		stsService:     stsService,
+		costService:    costService,
+		ec2Service:     ec2Service,
+		elbService:     elbService,
+		route53Service: route53Service,
+		outputService:  outputService,
 	}
 }
 
@@ -97,6 +99,7 @@ func (s *service) wasteWorkflow() error {
 	var unusedLoadBalancers []elbtypes.LoadBalancer
 	var unusedAMIs []model.AMIWasteInfo
 	var orphanedSnapshots []model.SnapshotWasteInfo
+	var emptyHostedZones []model.HostedZoneWasteInfo
 	var stsResult *sts.GetCallerIdentityOutput
 
 	// Fetch unused Elastic IPs concurrently
@@ -155,6 +158,13 @@ func (s *service) wasteWorkflow() error {
 		return err
 	})
 
+	// Fetch empty Route 53 hosted zones concurrently
+	g.Go(func() error {
+		var err error
+		emptyHostedZones, err = s.route53Service.GetEmptyHostedZones(ctx)
+		return err
+	})
+
 	// Wait for all goroutines to complete
 	if err := g.Wait(); err != nil {
 		return err
@@ -172,5 +182,6 @@ func (s *service) wasteWorkflow() error {
 		unusedLoadBalancers,
 		unusedAMIs,
 		orphanedSnapshots,
+		emptyHostedZones,
 	)
 }

@@ -55,6 +55,7 @@ type WasteReportJSON struct {
 	UnusedAMIs          []AMIJSON              `json:"unused_amis"`
 	OrphanedSnapshots   []SnapshotJSON         `json:"orphaned_snapshots"`
 	StaleSnapshots      []SnapshotJSON         `json:"stale_snapshots"`
+	EmptyHostedZones    []HostedZoneJSON       `json:"empty_hosted_zones"`
 }
 
 // ElasticIPJSON represents an unused Elastic IP
@@ -122,4 +123,14 @@ type SnapshotJSON struct {
 	Category            string  `json:"category"`                // "orphaned" or "stale"
 	Reason              string  `json:"reason"`                  // Human-readable reason
 	MaxPotentialSavings float64 `json:"max_potential_savings"`   // Actual savings may be lower due to incremental storage
+}
+
+// HostedZoneJSON represents an empty Route 53 hosted zone
+type HostedZoneJSON struct {
+	HostedZoneID   string  `json:"hosted_zone_id"`
+	Name           string  `json:"name"`
+	RecordSetCount int64   `json:"record_set_count"`
+	IsPrivate      bool    `json:"is_private"`
+	Comment        string  `json:"comment,omitempty"`
+	MonthlyCost    float64 `json:"monthly_cost"`
 }
