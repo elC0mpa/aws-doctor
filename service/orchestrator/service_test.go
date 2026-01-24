@@ -89,7 +89,7 @@ func TestOrchestrate_RouteToWasteWorkflow(t *testing.T) {
 	svc := NewService(mockSTS, mockCost, mockEC2, mockELB, mockOutput)
 
 	// Setup expectations for waste workflow
-	mockEC2.On("GetUnusedElasticIpAddressesInfo", mock.Anything).Return([]types.Address{}, nil)
+	mockEC2.On("GetUnusedElasticIPAddressesInfo", mock.Anything).Return([]types.Address{}, nil)
 	mockEC2.On("GetUnusedEBSVolumes", mock.Anything).Return([]types.Volume{}, nil)
 	mockEC2.On("GetStoppedInstancesInfo", mock.Anything).Return([]types.Instance{}, []types.Volume{}, nil)
 	mockEC2.On("GetReservedInstanceExpiringOrExpired30DaysWaste", mock.Anything).Return([]model.RiExpirationInfo{}, nil)
@@ -126,7 +126,7 @@ func TestOrchestrate_WasteTakesPrecedenceOverTrend(t *testing.T) {
 	svc := NewService(mockSTS, mockCost, mockEC2, mockELB, mockOutput)
 
 	// Setup expectations for waste workflow (should be called, not trend)
-	mockEC2.On("GetUnusedElasticIpAddressesInfo", mock.Anything).Return([]types.Address{}, nil)
+	mockEC2.On("GetUnusedElasticIPAddressesInfo", mock.Anything).Return([]types.Address{}, nil)
 	mockEC2.On("GetUnusedEBSVolumes", mock.Anything).Return([]types.Volume{}, nil)
 	mockEC2.On("GetStoppedInstancesInfo", mock.Anything).Return([]types.Instance{}, []types.Volume{}, nil)
 	mockEC2.On("GetReservedInstanceExpiringOrExpired30DaysWaste", mock.Anything).Return([]model.RiExpirationInfo{}, nil)
@@ -275,7 +275,7 @@ func TestWasteWorkflow_Error(t *testing.T) {
 		{
 			name: "GetUnusedElasticIpAddressesInfo_fails",
 			setupMocks: func(mockEC2 *mocks.MockEC2Service, mockELB *mocks.MockELBService, mockSTS *mocks.MockSTSService) {
-				mockEC2.On("GetUnusedElasticIpAddressesInfo", mock.Anything).Return(nil, errors.New("EIP error"))
+				mockEC2.On("GetUnusedElasticIPAddressesInfo", mock.Anything).Return(nil, errors.New("EIP error"))
 				mockEC2.On("GetUnusedEBSVolumes", mock.Anything).Return([]types.Volume{}, nil)
 				mockEC2.On("GetStoppedInstancesInfo", mock.Anything).Return([]types.Instance{}, []types.Volume{}, nil)
 				mockEC2.On("GetReservedInstanceExpiringOrExpired30DaysWaste", mock.Anything).Return([]model.RiExpirationInfo{}, nil)
@@ -291,7 +291,7 @@ func TestWasteWorkflow_Error(t *testing.T) {
 		{
 			name: "GetUnusedEBSVolumes_fails",
 			setupMocks: func(mockEC2 *mocks.MockEC2Service, mockELB *mocks.MockELBService, mockSTS *mocks.MockSTSService) {
-				mockEC2.On("GetUnusedElasticIpAddressesInfo", mock.Anything).Return([]types.Address{}, nil)
+				mockEC2.On("GetUnusedElasticIPAddressesInfo", mock.Anything).Return([]types.Address{}, nil)
 				mockEC2.On("GetUnusedEBSVolumes", mock.Anything).Return(nil, errors.New("EBS error"))
 				mockEC2.On("GetStoppedInstancesInfo", mock.Anything).Return([]types.Instance{}, []types.Volume{}, nil)
 				mockEC2.On("GetReservedInstanceExpiringOrExpired30DaysWaste", mock.Anything).Return([]model.RiExpirationInfo{}, nil)
@@ -307,7 +307,7 @@ func TestWasteWorkflow_Error(t *testing.T) {
 		{
 			name: "GetUnusedLoadBalancers_fails",
 			setupMocks: func(mockEC2 *mocks.MockEC2Service, mockELB *mocks.MockELBService, mockSTS *mocks.MockSTSService) {
-				mockEC2.On("GetUnusedElasticIpAddressesInfo", mock.Anything).Return([]types.Address{}, nil)
+				mockEC2.On("GetUnusedElasticIPAddressesInfo", mock.Anything).Return([]types.Address{}, nil)
 				mockEC2.On("GetUnusedEBSVolumes", mock.Anything).Return([]types.Volume{}, nil)
 				mockEC2.On("GetStoppedInstancesInfo", mock.Anything).Return([]types.Instance{}, []types.Volume{}, nil)
 				mockEC2.On("GetReservedInstanceExpiringOrExpired30DaysWaste", mock.Anything).Return([]model.RiExpirationInfo{}, nil)

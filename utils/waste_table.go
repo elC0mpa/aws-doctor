@@ -272,7 +272,7 @@ func populateRiRows(ris []model.RiExpirationInfo) []table.Row {
 
 		rows = append(rows, table.Row{
 			"",
-			ri.ReservedInstanceId,
+			ri.ReservedInstanceID,
 			timeInfo,
 		})
 	}
@@ -354,7 +354,7 @@ func populateAMIRows(amis []model.AMIWasteInfo) []table.Row {
 
 		rows = append(rows, table.Row{
 			"",
-			ami.ImageId,
+			ami.ImageID,
 			name,
 			fmt.Sprintf("%d days", ami.DaysSinceCreate),
 			fmt.Sprintf("$%.2f", ami.MaxPotentialSaving),
@@ -423,7 +423,7 @@ func populateSnapshotRows(snapshots []model.SnapshotWasteInfo) []table.Row {
 	for _, snap := range snapshots {
 		rows = append(rows, table.Row{
 			"",
-			snap.SnapshotId,
+			snap.SnapshotID,
 			snap.Reason,
 			fmt.Sprintf("%d GB", snap.SizeGB),
 			fmt.Sprintf("$%.2f/mo", snap.MaxPotentialSavings),

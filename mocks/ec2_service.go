@@ -13,15 +13,15 @@ type MockEC2Service struct {
 	mock.Mock
 }
 
-func (m *MockEC2Service) GetElasticIpAddressesInfo(ctx context.Context) (*model.ElasticIpInfo, error) {
+func (m *MockEC2Service) GetElasticIPAddressesInfo(ctx context.Context) (*model.ElasticIPInfo, error) {
 	args := m.Called(ctx)
 	if args.Get(0) == nil {
 		return nil, args.Error(1)
 	}
-	return args.Get(0).(*model.ElasticIpInfo), args.Error(1)
+	return args.Get(0).(*model.ElasticIPInfo), args.Error(1)
 }
 
-func (m *MockEC2Service) GetUnusedElasticIpAddressesInfo(ctx context.Context) ([]types.Address, error) {
+func (m *MockEC2Service) GetUnusedElasticIPAddressesInfo(ctx context.Context) ([]types.Address, error) {
 	args := m.Called(ctx)
 	if args.Get(0) == nil {
 		return nil, args.Error(1)

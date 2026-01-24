@@ -102,7 +102,7 @@ func (s *service) wasteWorkflow() error {
 	// Fetch unused Elastic IPs concurrently
 	g.Go(func() error {
 		var err error
-		elasticIpInfo, err = s.ec2Service.GetUnusedElasticIpAddressesInfo(ctx)
+		elasticIpInfo, err = s.ec2Service.GetUnusedElasticIPAddressesInfo(ctx)
 		return err
 	})
 

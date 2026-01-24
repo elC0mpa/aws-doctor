@@ -128,7 +128,7 @@ func OutputWasteJSON(accountID string, elasticIPs []types.Address, unusedVolumes
 	// Reserved instances
 	for _, ri := range ris {
 		output.ReservedInstances = append(output.ReservedInstances, model.ReservedInstanceJSON{
-			ReservedInstanceID: ri.ReservedInstanceId,
+			ReservedInstanceID: ri.ReservedInstanceID,
 			InstanceType:       ri.InstanceType,
 			ExpirationDate:     ri.ExpirationDate.Format(time.RFC3339),
 			DaysUntilExpiry:    ri.DaysUntilExpiry,
@@ -149,13 +149,13 @@ func OutputWasteJSON(accountID string, elasticIPs []types.Address, unusedVolumes
 	// Unused AMIs
 	for _, ami := range unusedAMIs {
 		output.UnusedAMIs = append(output.UnusedAMIs, model.AMIJSON{
-			ImageID:            ami.ImageId,
+			ImageID:            ami.ImageID,
 			Name:               ami.Name,
 			Description:        ami.Description,
 			CreationDate:       ami.CreationDate.Format(time.RFC3339),
 			DaysSinceCreate:    ami.DaysSinceCreate,
 			IsPublic:           ami.IsPublic,
-			SnapshotIDs:        ami.SnapshotIds,
+			SnapshotIDs:        ami.SnapshotIDs,
 			SnapshotSizeGB:     ami.SnapshotSizeGB,
 			MaxPotentialSaving: ami.MaxPotentialSaving,
 			SafetyWarning:      ami.SafetyWarning,
@@ -165,11 +165,11 @@ func OutputWasteJSON(accountID string, elasticIPs []types.Address, unusedVolumes
 	// Snapshots (split by category: orphaned vs stale)
 	for _, snap := range orphanedSnapshots {
 		snapshotJSON := model.SnapshotJSON{
-			SnapshotID:          snap.SnapshotId,
-			VolumeID:            snap.VolumeId,
+			SnapshotID:          snap.SnapshotID,
+			VolumeID:            snap.VolumeID,
 			VolumeExists:        snap.VolumeExists,
 			UsedByAMI:           snap.UsedByAMI,
-			AMIID:               snap.AMIId,
+			AMIID:               snap.AMIID,
 			SizeGB:              snap.SizeGB,
 			StartTime:           snap.StartTime.Format(time.RFC3339),
 			DaysSinceCreate:     snap.DaysSinceCreate,

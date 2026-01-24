@@ -227,7 +227,7 @@ func TestOutputWasteJSON(t *testing.T) {
 
 	ris := []model.RiExpirationInfo{
 		{
-			ReservedInstanceId: "ri-123",
+			ReservedInstanceID: "ri-123",
 			InstanceType:       "t3.medium",
 			ExpirationDate:     time.Now().Add(30 * 24 * time.Hour),
 			DaysUntilExpiry:    30,
@@ -375,13 +375,13 @@ func TestOutputWasteJSON_InstanceWithInvalidTransitionReason(t *testing.T) {
 func TestOutputWasteJSON_WithUnusedAMIs(t *testing.T) {
 	unusedAMIs := []model.AMIWasteInfo{
 		{
-			ImageId:            "ami-12345",
+			ImageID:            "ami-12345",
 			Name:               "my-test-ami",
 			Description:        "Test AMI for unit tests",
 			CreationDate:       time.Now().AddDate(0, -3, 0), // 3 months ago
 			DaysSinceCreate:    90,
 			IsPublic:           false,
-			SnapshotIds:        []string{"snap-111", "snap-222"},
+			SnapshotIDs:        []string{"snap-111", "snap-222"},
 			SnapshotSizeGB:     100,
 			UsedByInstances:    0,
 			MaxPotentialSaving: 5.00,
@@ -435,10 +435,10 @@ func TestOutputWasteJSON_WithUnusedAMIs(t *testing.T) {
 func TestOutputWasteJSON_AMIWithEmptySnapshots(t *testing.T) {
 	unusedAMIs := []model.AMIWasteInfo{
 		{
-			ImageId:            "ami-nosnapshots",
+			ImageID:            "ami-nosnapshots",
 			Name:               "ami-without-snapshots",
 			DaysSinceCreate:    45,
-			SnapshotIds:        []string{}, // Empty snapshots
+			SnapshotIDs:        []string{}, // Empty snapshots
 			SnapshotSizeGB:     0,
 			MaxPotentialSaving: 0.00,
 			SafetyWarning:      "Verify before deleting",

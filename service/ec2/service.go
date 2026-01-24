@@ -22,22 +22,22 @@ func NewService(awsconfig aws.Config) *service {
 	}
 }
 
-func (s *service) GetElasticIpAddressesInfo(ctx context.Context) (*model.ElasticIpInfo, error) {
+func (s *service) GetElasticIPAddressesInfo(ctx context.Context) (*model.ElasticIPInfo, error) {
 	output, err := s.client.DescribeAddresses(ctx, nil)
 	if err != nil {
 		return nil, err
 	}
 
-	var unusedEips []string
-	var attachedEips []model.AttachedIpInfo
+	var unusedEIPs []string
+	var attachedEIPs []model.AttachedIPInfo
 	for _, address := range output.Addresses {
 		if address.AssociationId == nil {
-			unusedEips = append(unusedEips, aws.ToString(address.AllocationId))
+			unusedEIPs = append(unusedEIPs, aws.ToString(address.AllocationId))
 		}
 
-		attachedIp := model.AttachedIpInfo{
-			IpAddress:    aws.ToString(address.PublicIp),
-			AllocationId: aws.ToString(address.AllocationId),
+		attachedIP := model.AttachedIPInfo{
+			IPAddress:    aws.ToString(address.PublicIp),
+			AllocationID: aws.ToString(address.AllocationId),
 			ResourceType: "ec2",
 		}
 
@@ -54,33 +54,33 @@ func (s *service) GetElasticIpAddressesInfo(ctx context.Context) (*model.Elastic
 				interfaceType = s.getResourceTypeFromDescription(aws.ToString(networkInterface.NetworkInterfaces[0].Description))
 			}
 
-			attachedIp.ResourceType = string(interfaceType)
+			attachedIP.ResourceType = string(interfaceType)
 		}
 
-		attachedEips = append(attachedEips, attachedIp)
+		attachedEIPs = append(attachedEIPs, attachedIP)
 	}
 
-	return &model.ElasticIpInfo{
-		UnusedElasticIpAddresses: unusedEips,
-		UsedElasticIpAddresses:   attachedEips,
+	return &model.ElasticIPInfo{
+		UnusedElasticIPAddresses: unusedEIPs,
+		UsedElasticIPAddresses:   attachedEIPs,
 	}, nil
 }
 
-func (s *service) GetUnusedElasticIpAddressesInfo(ctx context.Context) ([]types.Address, error) {
+func (s *service) GetUnusedElasticIPAddressesInfo(ctx context.Context) ([]types.Address, error) {
 	output, err := s.client.DescribeAddresses(ctx, nil)
 	if err != nil {
 		return nil, err
 	}
 
-	var unusedEips []types.Address
+	var unusedEIPs []types.Address
 
 	for _, address := range output.Addresses {
 		if address.AssociationId == nil {
-			unusedEips = append(unusedEips, address)
+			unusedEIPs = append(unusedEIPs, address)
 		}
 	}
 
-	return unusedEips, nil
+	return unusedEIPs, nil
 }
 
 func (s *service) GetUnusedEBSVolumes(ctx context.Context) ([]types.Volume, error) {
@@ -201,7 +201,7 @@ func (s *service) GetReservedInstanceExpiringOrExpired30DaysWaste(ctx context.Co
 
 		if ri.State == types.ReservedInstanceStateActive && endTime.Before(next30Days) {
 			results = append(results, model.RiExpirationInfo{
-				ReservedInstanceId: aws.ToString(ri.ReservedInstancesId),
+				ReservedInstanceID: aws.ToString(ri.ReservedInstancesId),
 				InstanceType:       string(ri.InstanceType),
 				ExpirationDate:     endTime,
 				DaysUntilExpiry:    daysDiff,
@@ -212,7 +212,7 @@ func (s *service) GetReservedInstanceExpiringOrExpired30DaysWaste(ctx context.Co
 
 		if endTime.After(prev30Days) && endTime.Before(now) {
 			results = append(results, model.RiExpirationInfo{
-				ReservedInstanceId: aws.ToString(ri.ReservedInstancesId),
+				ReservedInstanceID: aws.ToString(ri.ReservedInstancesId),
 				InstanceType:       string(ri.InstanceType),
 				ExpirationDate:     endTime,
 				DaysUntilExpiry:    daysDiff,
@@ -308,13 +308,13 @@ func (s *service) GetUnusedAMIs(ctx context.Context, staleDays int) ([]model.AMI
 				safetyWarning := "Verify before deleting: AMI may be used by Auto Scaling Groups or Launch Templates not currently running instances"
 
 				results = append(results, model.AMIWasteInfo{
-					ImageId:            imageId,
+					ImageID:            imageId,
 					Name:               aws.ToString(image.Name),
 					Description:        aws.ToString(image.Description),
 					CreationDate:       creationDate,
 					DaysSinceCreate:    daysSinceCreate,
 					IsPublic:           aws.ToBool(image.Public),
-					SnapshotIds:        snapshotIds,
+					SnapshotIDs:        snapshotIds,
 					SnapshotSizeGB:     totalSnapshotSize,
 					UsedByInstances:    usageCount,
 					MaxPotentialSaving: maxPotentialSaving,
@@ -411,11 +411,11 @@ func (s *service) GetOrphanedSnapshots(ctx context.Context, staleDays int) ([]mo
 		if !volumeExists {
 			// Orphaned: Volume no longer exists - safe to delete (high confidence)
 			results = append(results, model.SnapshotWasteInfo{
-				SnapshotId:          snapshotId,
-				VolumeId:            volumeId,
+				SnapshotID:          snapshotId,
+				VolumeID:            volumeId,
 				VolumeExists:        volumeExists,
 				UsedByAMI:           usedByAMI,
-				AMIId:               amiId,
+				AMIID:               amiId,
 				SizeGB:              sizeGB,
 				StartTime:           startTime,
 				DaysSinceCreate:     daysSinceCreate,
@@ -427,11 +427,11 @@ func (s *service) GetOrphanedSnapshots(ctx context.Context, staleDays int) ([]mo
 		} else if startTime.Before(cutoffTime) {
 			// Stale: Volume exists but snapshot is old - needs review (low confidence)
 			results = append(results, model.SnapshotWasteInfo{
-				SnapshotId:          snapshotId,
-				VolumeId:            volumeId,
+				SnapshotID:          snapshotId,
+				VolumeID:            volumeId,
 				VolumeExists:        volumeExists,
 				UsedByAMI:           usedByAMI,
-				AMIId:               amiId,
+				AMIID:               amiId,
 				SizeGB:              sizeGB,
 				StartTime:           startTime,
 				DaysSinceCreate:     daysSinceCreate,
