@@ -9,6 +9,8 @@
 
 A terminal-based tool that acts as a comprehensive health check for your AWS accounts. Built with Golang, **aws-doctor** diagnoses cost anomalies, detects idle resources, and provides a proactive analysis of your cloud infrastructure—effectively giving you the insights of AWS Trusted Advisor without the need for a Business or Enterprise support plan.
 
+![](https://github.com/elC0mpa/aws-cost-billing/blob/main/assets/logo.webp)
+
 ## Demo
 
 ### Basic usage
