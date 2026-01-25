@@ -11,7 +11,7 @@ type service struct {
 	client *elb.Client
 }
 
-// ELBService defines the interface for ELB service operations.
-type ELBService interface {
+// Service defines the interface for AWS ELB service.
+type Service interface {
 	GetUnusedLoadBalancers(ctx context.Context) ([]types.LoadBalancer, error)
 }

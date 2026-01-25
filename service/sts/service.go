@@ -1,3 +1,4 @@
+// Package awssts provides a service for interacting with AWS STS.
 package awssts
 
 import (
@@ -7,8 +8,10 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/sts"
 )
 
-func NewService(awsconfig aws.Config) *service {
+// NewService creates a new STS service.
+func NewService(awsconfig aws.Config) Service {
 	client := sts.NewFromConfig(awsconfig)
+
 	return &service{
 		client: client,
 	}

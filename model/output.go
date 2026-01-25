@@ -119,7 +119,7 @@ type SnapshotJSON struct {
 	StartTime           string  `json:"start_time"`
 	DaysSinceCreate     int     `json:"days_since_create"`
 	Description         string  `json:"description,omitempty"`
-	Category            string  `json:"category"`                // "orphaned" or "stale"
-	Reason              string  `json:"reason"`                  // Human-readable reason
-	MaxPotentialSavings float64 `json:"max_potential_savings"`   // Actual savings may be lower due to incremental storage
+	Category            string  `json:"category"`              // "orphaned" or "stale"
+	Reason              string  `json:"reason"`                // Human-readable reason
+	MaxPotentialSavings float64 `json:"max_potential_savings"` // Actual savings may be lower due to incremental storage
 }

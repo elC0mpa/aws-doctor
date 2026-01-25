@@ -1,4 +1,4 @@
-package utils
+package utils //nolint:revive
 
 import (
 	"bytes"
@@ -124,7 +124,7 @@ func TestAssignRankedColors(t *testing.T) {
 			name:    "empty_costs",
 			costs:   []model.CostInfo{},
 			wantLen: 0,
-			validate: func(t *testing.T, colors []string, costs []model.CostInfo) {
+			validate: func(_ *testing.T, _ []string, _ []model.CostInfo) {
 				// No validation needed for empty
 			},
 		},
@@ -134,7 +134,7 @@ func TestAssignRankedColors(t *testing.T) {
 				{CostGroup: model.CostGroup{"Total": {Amount: 100.0, Unit: "USD"}}},
 			},
 			wantLen: 1,
-			validate: func(t *testing.T, colors []string, costs []model.CostInfo) {
+			validate: func(t *testing.T, colors []string, _ []model.CostInfo) {
 				// Single item should get rank 1 color (highest = red)
 				if colors[0] != ColorRank1 {
 					t.Errorf("Single item should get ColorRank1, got %s", colors[0])
@@ -148,11 +148,12 @@ func TestAssignRankedColors(t *testing.T) {
 				{CostGroup: model.CostGroup{"Total": {Amount: 100.0, Unit: "USD"}}},
 			},
 			wantLen: 2,
-			validate: func(t *testing.T, colors []string, costs []model.CostInfo) {
+			validate: func(t *testing.T, colors []string, _ []model.CostInfo) {
 				// First (higher) should be rank 1, second (lower) should be rank 2
 				if colors[0] != ColorRank1 {
 					t.Errorf("Higher cost should get ColorRank1, got %s", colors[0])
 				}
+
 				if colors[1] != ColorRank2 {
 					t.Errorf("Lower cost should get ColorRank2, got %s", colors[1])
 				}
@@ -165,11 +166,12 @@ func TestAssignRankedColors(t *testing.T) {
 				{CostGroup: model.CostGroup{"Total": {Amount: 200.0, Unit: "USD"}}},
 			},
 			wantLen: 2,
-			validate: func(t *testing.T, colors []string, costs []model.CostInfo) {
+			validate: func(t *testing.T, colors []string, _ []model.CostInfo) {
 				// Second (higher) should be rank 1, first (lower) should be rank 2
 				if colors[0] != ColorRank2 {
 					t.Errorf("Lower cost at index 0 should get ColorRank2, got %s", colors[0])
 				}
+
 				if colors[1] != ColorRank1 {
 					t.Errorf("Higher cost at index 1 should get ColorRank1, got %s", colors[1])
 				}
@@ -204,7 +206,7 @@ func TestAssignRankedColors(t *testing.T) {
 				{CostGroup: model.CostGroup{"Total": {Amount: 100.0, Unit: "USD"}}},
 			},
 			wantLen: 3,
-			validate: func(t *testing.T, colors []string, costs []model.CostInfo) {
+			validate: func(t *testing.T, colors []string, _ []model.CostInfo) {
 				// All colors should be assigned (order depends on sort stability)
 				for i, c := range colors {
 					if c == "" {
@@ -248,6 +250,7 @@ func TestAssignRankedColors_MoreThanSixItems(t *testing.T) {
 
 	// Count non-empty colors (should be 6, as that's the palette size)
 	nonEmpty := 0
+
 	for _, c := range colors {
 		if c != "" {
 			nonEmpty++
@@ -270,6 +273,7 @@ func BenchmarkAssignRankedColors(b *testing.B) {
 	}
 
 	b.ResetTimer()
+
 	for i := 0; i < b.N; i++ {
 		assignRankedColors(costs)
 	}
@@ -283,11 +287,13 @@ func captureOutput(f func()) string {
 
 	f()
 
-	w.Close()
+	_ = w.Close()
 	os.Stdout = old
 
 	var buf bytes.Buffer
-	io.Copy(&buf, r)
+
+	_, _ = io.Copy(&buf, r)
+
 	return buf.String()
 }
 
@@ -370,9 +376,11 @@ func BenchmarkDrawTrendChart(b *testing.B) {
 	// Redirect stdout to discard
 	old := os.Stdout
 	os.Stdout, _ = os.Open(os.DevNull)
+
 	defer func() { os.Stdout = old }()
 
 	b.ResetTimer()
+
 	for i := 0; i < b.N; i++ {
 		DrawTrendChart("123456789012", monthlyCosts)
 	}

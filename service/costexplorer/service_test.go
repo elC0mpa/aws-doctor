@@ -8,6 +8,8 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/costexplorer/types"
 )
 
+const costsAggregation = "UnblendedCost"
+
 func TestGetFirstDayOfMonth(t *testing.T) {
 	s := &service{}
 
@@ -136,7 +138,6 @@ func TestGetLastDayOfMonth(t *testing.T) {
 
 func TestFilterGroups(t *testing.T) {
 	s := &service{}
-	costsAggregation := "UnblendedCost"
 
 	tests := []struct {
 		name   string
@@ -349,15 +350,16 @@ func TestFilterGroups(t *testing.T) {
 
 func BenchmarkFilterGroups(b *testing.B) {
 	s := &service{}
-	costsAggregation := "UnblendedCost"
 
 	// Create a realistic set of groups
 	groups := make([]types.Group, 50)
-	for i := 0; i < 50; i++ {
+
+	for i := range 50 {
 		amount := "0.00"
 		if i%3 != 0 { // 2/3 have non-zero cost
 			amount = "100.50"
 		}
+
 		groups[i] = types.Group{
 			Keys: []string{"Service " + string(rune('A'+i%26))},
 			Metrics: map[string]types.MetricValue{
@@ -370,6 +372,7 @@ func BenchmarkFilterGroups(b *testing.B) {
 	}
 
 	b.ResetTimer()
+
 	for i := 0; i < b.N; i++ {
 		s.filterGroups(groups, costsAggregation)
 	}

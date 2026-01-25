@@ -1,4 +1,4 @@
-package utils
+package utils //nolint:revive
 
 import (
 	"fmt"
@@ -11,6 +11,7 @@ import (
 	"github.com/jedib0t/go-pretty/v6/text"
 )
 
+// ColorRank1 is the color for the highest ranked cost.
 const (
 	ColorRank1 = "#d73027"
 	ColorRank2 = "#f46d43"
@@ -24,9 +25,10 @@ var defaultStyle = lipgloss.NewStyle().
 	BorderStyle(lipgloss.NormalBorder()).
 	BorderForeground(lipgloss.Color("#F4D060"))
 
-func DrawTrendChart(accountId string, monthlyCosts []model.CostInfo) {
+// DrawTrendChart draws a bar chart of monthly costs.
+func DrawTrendChart(accountID string, monthlyCosts []model.CostInfo) {
 	fmt.Printf("\n%s\n", text.FgHiWhite.Sprint(" 📈 AWS DOCTOR TREND"))
-	fmt.Printf(" Account ID: %s\n", text.FgBlue.Sprint(accountId))
+	fmt.Printf(" Account ID: %s\n", text.FgBlue.Sprint(accountID))
 	fmt.Println(text.FgHiBlue.Sprint(" ------------------------------------------------"))
 
 	bc := barchart.New(130, 20)
@@ -88,6 +90,7 @@ func assignRankedColors(allCosts []model.CostInfo) []string {
 	})
 
 	resultColors := make([]string, len(allCosts))
+
 	for rank, sortedCost := range costsToSort {
 		originalIndex := sortedCost.index
 		if rank < len(palette) {

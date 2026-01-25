@@ -148,9 +148,9 @@ for paginator.HasMorePages() {
 - Wrap errors with context using `fmt.Errorf("context: %w", err)`
 - Check for nil pointers before dereferencing AWS response fields
 
-### Staticcheck Compliance
+### Linting Compliance
 
-The CI runs staticcheck. Common issues to avoid:
+The CI runs golangci-lint. Common issues to avoid:
 - **S1017**: Use `strings.TrimPrefix(s, prefix)` directly instead of `if strings.HasPrefix(s, prefix) { s = strings.TrimPrefix(s, prefix) }`
 - Remove unused imports (the build will fail)
 
@@ -218,7 +218,7 @@ Before submitting:
 
 After pushing:
 - [ ] CI passes (build, lint, tests on Go 1.23 and 1.24)
-- [ ] Address any staticcheck warnings
+- [ ] Address any golangci-lint warnings
 
 ## PR Best Practices
 

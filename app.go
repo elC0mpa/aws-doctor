@@ -1,3 +1,4 @@
+// Package main is the entry point for the aws-doctor application.
 package main
 
 import (
@@ -11,8 +12,10 @@ import (
 	"github.com/elC0mpa/aws-doctor/service/elb"
 	"github.com/elC0mpa/aws-doctor/service/flag"
 	"github.com/elC0mpa/aws-doctor/service/orchestrator"
+	"github.com/elC0mpa/aws-doctor/service/output"
 	awssts "github.com/elC0mpa/aws-doctor/service/sts"
 	"github.com/elC0mpa/aws-doctor/utils"
+	"github.com/elC0mpa/aws-doctor/model"
 )
 
 var (
@@ -23,32 +26,39 @@ var (
 
 func main() {
 	if err := run(); err != nil {
-		utils.StopSpinner()
 		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
 		os.Exit(1)
 	}
 }
 
 func run() error {
-	for _, arg := range os.Args[1:] {
-		if arg == "--version" || arg == "-version" {
-			fmt.Printf("aws-doctor version %s\n", version)
-			fmt.Printf("commit: %s\n", commit)
-			fmt.Printf("built at: %s\n", date)
-			return nil
-		}
-	}
-
-	utils.DrawBanner()
-	utils.StartSpinner()
-
 	flagService := flag.NewService()
+
 	flags, err := flagService.GetParsedFlags()
 	if err != nil {
 		return fmt.Errorf("failed to parse flags: %w", err)
 	}
 
+	versionInfo := model.VersionInfo{
+		Version: version,
+		Commit:  commit,
+		Date:    date,
+	}
+
+	if flags.Version {
+		outputService := output.NewService(flags.Output)
+		orchestratorService := orchestrator.NewService(nil, nil, nil, nil, outputService, versionInfo)
+
+		return orchestratorService.Orchestrate(flags)
+	}
+
+	utils.DrawBanner()
+	utils.StartSpinner()
+
+	defer utils.StopSpinner()
+
 	cfgService := awsconfig.NewService()
+
 	awsCfg, err := cfgService.GetAWSCfg(context.Background(), flags.Region, flags.Profile)
 	if err != nil {
 		return fmt.Errorf("failed to load AWS config: %w", err)
@@ -58,8 +68,9 @@ func run() error {
 	stsService := awssts.NewService(awsCfg)
 	ec2Service := awsec2.NewService(awsCfg)
 	elbService := elb.NewService(awsCfg)
+	outputService := output.NewService(flags.Output)
 
-	orchestratorService := orchestrator.NewService(stsService, costService, ec2Service, elbService)
+	orchestratorService := orchestrator.NewService(stsService, costService, ec2Service, elbService, outputService, versionInfo)
 
 	if err := orchestratorService.Orchestrate(flags); err != nil {
 		return fmt.Errorf("orchestration failed: %w", err)

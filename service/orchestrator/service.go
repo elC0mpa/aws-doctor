@@ -1,7 +1,9 @@
+// Package orchestrator coordinates the execution of various AWS service checks.
 package orchestrator
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/aws/aws-sdk-go-v2/service/ec2/types"
 	elbtypes "github.com/aws/aws-sdk-go-v2/service/elasticloadbalancingv2/types"
@@ -10,33 +12,50 @@ import (
 	awscostexplorer "github.com/elC0mpa/aws-doctor/service/costexplorer"
 	awsec2 "github.com/elC0mpa/aws-doctor/service/ec2"
 	"github.com/elC0mpa/aws-doctor/service/elb"
+	"github.com/elC0mpa/aws-doctor/service/output"
 	awssts "github.com/elC0mpa/aws-doctor/service/sts"
-	"github.com/elC0mpa/aws-doctor/utils"
 	"golang.org/x/sync/errgroup"
 )
 
-func NewService(stsService awssts.STSService, costService awscostexplorer.CostService, ec2Service awsec2.EC2Service, elbService elb.ELBService) *service {
+// NewService creates a new orchestrator service.
+func NewService(stsService awssts.Service, costService awscostexplorer.Service, ec2Service awsec2.Service, elbService elb.Service, outputService output.Service, versionInfo model.VersionInfo) Service {
 	return &service{
-		stsService:  stsService,
-		costService: costService,
-		ec2Service:  ec2Service,
-		elbService:  elbService,
+		stsService:    stsService,
+		costService:   costService,
+		ec2Service:    ec2Service,
+		elbService:    elbService,
+		outputService: outputService,
+		versionInfo:   versionInfo,
 	}
 }
 
 func (s *service) Orchestrate(flags model.Flags) error {
+	if flags.Version {
+		return s.versionWorkflow()
+	}
+
 	if flags.Waste {
-		return s.wasteWorkflow(flags.Output)
+		return s.wasteWorkflow()
 	}
 
 	if flags.Trend {
-		return s.trendWorkflow(flags.Output)
+		return s.trendWorkflow()
 	}
 
-	return s.defaultWorkflow(flags.Output)
+	return s.defaultWorkflow()
 }
 
-func (s *service) defaultWorkflow(outputFormat string) error {
+func (s *service) versionWorkflow() error {
+	s.outputService.StopSpinner()
+
+	fmt.Printf("aws-doctor version %s\n", s.versionInfo.Version)
+	fmt.Printf("commit: %s\n", s.versionInfo.Commit)
+	fmt.Printf("built at: %s\n", s.versionInfo.Date)
+
+	return nil
+}
+
+func (s *service) defaultWorkflow() error {
 	currentMonthData, err := s.costService.GetCurrentMonthCostsByService(context.Background())
 	if err != nil {
 		return err
@@ -62,23 +81,12 @@ func (s *service) defaultWorkflow(outputFormat string) error {
 		return err
 	}
 
-	utils.StopSpinner()
+	s.outputService.StopSpinner()
 
-	if outputFormat == "json" {
-		return utils.OutputCostComparisonJSON(
-			*stsResult.Account,
-			utils.ParseCostString(*lastTotalCost),
-			utils.ParseCostString(*currentTotalCost),
-			lastMonthData,
-			currentMonthData,
-		)
-	}
-
-	utils.DrawCostTable(*stsResult.Account, *lastTotalCost, *currentTotalCost, lastMonthData, currentMonthData, "UnblendedCost")
-	return nil
+	return s.outputService.RenderCostComparison(*stsResult.Account, *lastTotalCost, *currentTotalCost, lastMonthData, currentMonthData)
 }
 
-func (s *service) trendWorkflow(outputFormat string) error {
+func (s *service) trendWorkflow() error {
 	costInfo, err := s.costService.GetLastSixMonthsCosts(context.Background())
 	if err != nil {
 		return err
@@ -89,85 +97,98 @@ func (s *service) trendWorkflow(outputFormat string) error {
 		return err
 	}
 
-	utils.StopSpinner()
+	s.outputService.StopSpinner()
 
-	if outputFormat == "json" {
-		return utils.OutputTrendJSON(*stsResult.Account, costInfo)
-	}
-
-	utils.DrawTrendChart(*stsResult.Account, costInfo)
-
-	return nil
+	return s.outputService.RenderTrend(*stsResult.Account, costInfo)
 }
 
-func (s *service) wasteWorkflow(outputFormat string) error {
+func (s *service) wasteWorkflow() error {
 	ctx := context.Background()
 	g, ctx := errgroup.WithContext(ctx)
 
 	// Results from concurrent API calls
-	var elasticIpInfo []types.Address
-	var availableEBSVolumesInfo []types.Volume
-	var stoppedInstancesMoreThan30Days []types.Instance
-	var attachedToStoppedInstancesEBSVolumesInfo []types.Volume
-	var expireReservedInstancesInfo []model.RiExpirationInfo
-	var unusedLoadBalancers []elbtypes.LoadBalancer
-	var unusedAMIs []model.AMIWasteInfo
-	var orphanedSnapshots []model.SnapshotWasteInfo
-	var stsResult *sts.GetCallerIdentityOutput
+	var (
+		elasticIPInfo                            []types.Address
+		availableEBSVolumesInfo                  []types.Volume
+		stoppedInstancesMoreThan30Days           []types.Instance
+		attachedToStoppedInstancesEBSVolumesInfo []types.Volume
+		expireReservedInstancesInfo              []model.RiExpirationInfo
+		unusedLoadBalancers                      []elbtypes.LoadBalancer
+		unusedAMIs                               []model.AMIWasteInfo
+		orphanedSnapshots                        []model.SnapshotWasteInfo
+		stsResult                                *sts.GetCallerIdentityOutput
+	)
 
 	// Fetch unused Elastic IPs concurrently
+
 	g.Go(func() error {
 		var err error
-		elasticIpInfo, err = s.ec2Service.GetUnusedElasticIpAddressesInfo(ctx)
+
+		elasticIPInfo, err = s.ec2Service.GetUnusedElasticIPAddressesInfo(ctx)
+
 		return err
 	})
 
 	// Fetch unused EBS volumes concurrently
 	g.Go(func() error {
 		var err error
+
 		availableEBSVolumesInfo, err = s.ec2Service.GetUnusedEBSVolumes(ctx)
+
 		return err
 	})
 
 	// Fetch stopped instances info concurrently
 	g.Go(func() error {
 		var err error
+
 		stoppedInstancesMoreThan30Days, attachedToStoppedInstancesEBSVolumesInfo, err = s.ec2Service.GetStoppedInstancesInfo(ctx)
+
 		return err
 	})
 
 	// Fetch reserved instance expiration info concurrently
 	g.Go(func() error {
 		var err error
+
 		expireReservedInstancesInfo, err = s.ec2Service.GetReservedInstanceExpiringOrExpired30DaysWaste(ctx)
+
 		return err
 	})
 
 	// Fetch unused Load Balancers concurrently
 	g.Go(func() error {
 		var err error
+
 		unusedLoadBalancers, err = s.elbService.GetUnusedLoadBalancers(ctx)
+
 		return err
 	})
 
 	// Fetch caller identity concurrently
 	g.Go(func() error {
 		var err error
+
 		stsResult, err = s.stsService.GetCallerIdentity(ctx)
+
 		return err
 	})
 
 	// Fetch unused AMIs concurrently
 	g.Go(func() error {
 		var err error
+
 		unusedAMIs, err = s.ec2Service.GetUnusedAMIs(ctx, 90)
+
 		return err
 	})
 
 	// Fetch orphaned EBS snapshots concurrently
 	g.Go(func() error {
 		var err error
+
 		orphanedSnapshots, err = s.ec2Service.GetOrphanedSnapshots(ctx, 90)
+
 		return err
 	})
 
@@ -176,23 +197,17 @@ func (s *service) wasteWorkflow(outputFormat string) error {
 		return err
 	}
 
-	utils.StopSpinner()
+	s.outputService.StopSpinner()
 
-	if outputFormat == "json" {
-		return utils.OutputWasteJSON(
-			*stsResult.Account,
-			elasticIpInfo,
-			availableEBSVolumesInfo,
-			attachedToStoppedInstancesEBSVolumesInfo,
-			expireReservedInstancesInfo,
-			stoppedInstancesMoreThan30Days,
-			unusedLoadBalancers,
-			unusedAMIs,
-			orphanedSnapshots,
-		)
-	}
-
-	utils.DrawWasteTable(*stsResult.Account, elasticIpInfo, availableEBSVolumesInfo, attachedToStoppedInstancesEBSVolumesInfo, expireReservedInstancesInfo, stoppedInstancesMoreThan30Days, unusedLoadBalancers, unusedAMIs, orphanedSnapshots)
-
-	return nil
+	return s.outputService.RenderWaste(
+		*stsResult.Account,
+		elasticIPInfo,
+		availableEBSVolumesInfo,
+		attachedToStoppedInstancesEBSVolumesInfo,
+		expireReservedInstancesInfo,
+		stoppedInstancesMoreThan30Days,
+		unusedLoadBalancers,
+		unusedAMIs,
+		orphanedSnapshots,
+	)
 }

@@ -14,9 +14,11 @@ func TestVersionVariablesHaveDefaults(t *testing.T) {
 	if version == "" {
 		t.Error("version variable should have a default value")
 	}
+
 	if commit == "" {
 		t.Error("commit variable should have a default value")
 	}
+
 	if date == "" {
 		t.Error("date variable should have a default value")
 	}
@@ -25,6 +27,7 @@ func TestVersionVariablesHaveDefaults(t *testing.T) {
 func TestVersionOutput(t *testing.T) {
 	// Build the binary
 	tmpBinary := t.TempDir() + "/aws-doctor-test"
+
 	cmd := exec.Command("go", "build", "-o", tmpBinary, "./app.go")
 	if err := cmd.Run(); err != nil {
 		t.Fatalf("Failed to build binary: %v", err)
@@ -41,7 +44,9 @@ func TestVersionOutput(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			cmd := exec.Command(tmpBinary, tt.flag)
+
 			var stdout bytes.Buffer
+
 			cmd.Stdout = &stdout
 
 			err := cmd.Run()
@@ -55,9 +60,11 @@ func TestVersionOutput(t *testing.T) {
 			if !strings.Contains(output, "aws-doctor version") {
 				t.Errorf("Output should contain 'aws-doctor version', got: %s", output)
 			}
+
 			if !strings.Contains(output, "commit:") {
 				t.Errorf("Output should contain 'commit:', got: %s", output)
 			}
+
 			if !strings.Contains(output, "built at:") {
 				t.Errorf("Output should contain 'built at:', got: %s", output)
 			}
@@ -82,7 +89,9 @@ func TestVersionWithLdflags(t *testing.T) {
 
 	// Run with --version
 	cmd = exec.Command(tmpBinary, "--version")
+
 	var stdout bytes.Buffer
+
 	cmd.Stdout = &stdout
 
 	err := cmd.Run()
@@ -96,9 +105,11 @@ func TestVersionWithLdflags(t *testing.T) {
 	if !strings.Contains(output, testVersion) {
 		t.Errorf("Output should contain version '%s', got: %s", testVersion, output)
 	}
+
 	if !strings.Contains(output, testCommit) {
 		t.Errorf("Output should contain commit '%s', got: %s", testCommit, output)
 	}
+
 	if !strings.Contains(output, testDate) {
 		t.Errorf("Output should contain date '%s', got: %s", testDate, output)
 	}
@@ -107,6 +118,7 @@ func TestVersionWithLdflags(t *testing.T) {
 func TestVersionExitsCleanly(t *testing.T) {
 	// Build the binary
 	tmpBinary := t.TempDir() + "/aws-doctor-test"
+
 	cmd := exec.Command("go", "build", "-o", tmpBinary, "./app.go")
 	if err := cmd.Run(); err != nil {
 		t.Fatalf("Failed to build binary: %v", err)
@@ -125,6 +137,7 @@ func TestVersionExitsCleanly(t *testing.T) {
 func TestVersionDoesNotShowBanner(t *testing.T) {
 	// Build the binary
 	tmpBinary := t.TempDir() + "/aws-doctor-test"
+
 	cmd := exec.Command("go", "build", "-o", tmpBinary, "./app.go")
 	if err := cmd.Run(); err != nil {
 		t.Fatalf("Failed to build binary: %v", err)
@@ -132,7 +145,9 @@ func TestVersionDoesNotShowBanner(t *testing.T) {
 
 	// Run with --version
 	cmd = exec.Command(tmpBinary, "--version")
+
 	var stdout bytes.Buffer
+
 	cmd.Stdout = &stdout
 
 	err := cmd.Run()
