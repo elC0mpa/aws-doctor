@@ -8,7 +8,7 @@ import (
 )
 
 // NewService creates a new Flag service.
-func NewService() *service {
+func NewService() Service {
 	return &service{}
 }
 

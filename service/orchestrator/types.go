@@ -11,8 +11,8 @@ import (
 
 type service struct {
 	stsService    awssts.Service
-	costService   awscostexplorer.CostService
-	ec2Service    awsec2.EC2Service
+	costService   awscostexplorer.Service
+	ec2Service    awsec2.Service
 	elbService    elb.Service
 	outputService output.Service
 }

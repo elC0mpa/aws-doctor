@@ -18,7 +18,7 @@ const (
 )
 
 // NewService creates a new Cost Explorer service.
-func NewService(awsconfig aws.Config) *service {
+func NewService(awsconfig aws.Config) Service {
 	client := costexplorer.NewFromConfig(awsconfig)
 	return &service{
 		client: client,

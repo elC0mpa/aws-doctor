@@ -9,7 +9,7 @@ import (
 )
 
 // NewService creates a new AWS configuration service.
-func NewService() *service {
+func NewService() Service {
 	return &service{}
 }
 

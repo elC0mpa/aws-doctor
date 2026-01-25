@@ -17,7 +17,7 @@ import (
 )
 
 // NewService creates a new orchestrator service.
-func NewService(stsService awssts.Service, costService awscostexplorer.CostService, ec2Service awsec2.EC2Service, elbService elb.Service, outputService output.Service) *service {
+func NewService(stsService awssts.Service, costService awscostexplorer.Service, ec2Service awsec2.Service, elbService elb.Service, outputService output.Service) Service {
 	return &service{
 		stsService:    stsService,
 		costService:   costService,

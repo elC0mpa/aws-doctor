@@ -10,7 +10,7 @@ import (
 )
 
 // NewService creates a new ELB service.
-func NewService(awsconfig aws.Config) *service {
+func NewService(awsconfig aws.Config) Service {
 	client := elb.NewFromConfig(awsconfig)
 	return &service{
 		client: client,

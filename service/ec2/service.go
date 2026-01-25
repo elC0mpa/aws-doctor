@@ -17,7 +17,7 @@ import (
 const ebsSnapshotCostPerGBMonth = 0.05
 
 // NewService creates a new EC2 service.
-func NewService(awsconfig aws.Config) *service {
+func NewService(awsconfig aws.Config) Service {
 	client := ec2.NewFromConfig(awsconfig)
 	return &service{
 		client: client,
