@@ -15,6 +15,7 @@ type service struct {
 	ec2Service    awsec2.Service
 	elbService    elb.Service
 	outputService output.Service
+	versionInfo   model.VersionInfo
 }
 
 // Service is the interface for orchestrator service.

@@ -3,6 +3,7 @@ package orchestrator
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/aws/aws-sdk-go-v2/service/ec2/types"
 	elbtypes "github.com/aws/aws-sdk-go-v2/service/elasticloadbalancingv2/types"
@@ -17,17 +18,22 @@ import (
 )
 
 // NewService creates a new orchestrator service.
-func NewService(stsService awssts.Service, costService awscostexplorer.Service, ec2Service awsec2.Service, elbService elb.Service, outputService output.Service) Service {
+func NewService(stsService awssts.Service, costService awscostexplorer.Service, ec2Service awsec2.Service, elbService elb.Service, outputService output.Service, versionInfo model.VersionInfo) Service {
 	return &service{
 		stsService:    stsService,
 		costService:   costService,
 		ec2Service:    ec2Service,
 		elbService:    elbService,
 		outputService: outputService,
+		versionInfo:   versionInfo,
 	}
 }
 
 func (s *service) Orchestrate(flags model.Flags) error {
+	if flags.Version {
+		return s.versionWorkflow()
+	}
+
 	if flags.Waste {
 		return s.wasteWorkflow()
 	}
@@ -37,6 +43,16 @@ func (s *service) Orchestrate(flags model.Flags) error {
 	}
 
 	return s.defaultWorkflow()
+}
+
+func (s *service) versionWorkflow() error {
+	s.outputService.StopSpinner()
+
+	fmt.Printf("aws-doctor version %s\n", s.versionInfo.Version)
+	fmt.Printf("commit: %s\n", s.versionInfo.Commit)
+	fmt.Printf("built at: %s\n", s.versionInfo.Date)
+
+	return nil
 }
 
 func (s *service) defaultWorkflow() error {

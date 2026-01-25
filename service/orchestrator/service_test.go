@@ -23,7 +23,7 @@ func TestOrchestrate_RouteToDefaultWorkflow(t *testing.T) {
 	mockOutput := new(mocks.MockOutputService)
 
 	// Create service
-	svc := NewService(mockSTS, mockCost, mockEC2, mockELB, mockOutput)
+	svc := NewService(mockSTS, mockCost, mockEC2, mockELB, mockOutput, model.VersionInfo{Version: "dev", Commit: "none", Date: "unknown"})
 
 	// Setup expectations for default workflow
 	mockCost.On("GetCurrentMonthCostsByService", mock.Anything).Return(&model.CostInfo{}, nil)
@@ -56,7 +56,7 @@ func TestOrchestrate_RouteToTrendWorkflow(t *testing.T) {
 	mockOutput := new(mocks.MockOutputService)
 
 	// Create service
-	svc := NewService(mockSTS, mockCost, mockEC2, mockELB, mockOutput)
+	svc := NewService(mockSTS, mockCost, mockEC2, mockELB, mockOutput, model.VersionInfo{Version: "dev", Commit: "none", Date: "unknown"})
 
 	// Setup expectations for trend workflow
 	mockCost.On("GetLastSixMonthsCosts", mock.Anything).Return([]model.CostInfo{}, nil)
@@ -86,7 +86,7 @@ func TestOrchestrate_RouteToWasteWorkflow(t *testing.T) {
 	mockOutput := new(mocks.MockOutputService)
 
 	// Create service
-	svc := NewService(mockSTS, mockCost, mockEC2, mockELB, mockOutput)
+	svc := NewService(mockSTS, mockCost, mockEC2, mockELB, mockOutput, model.VersionInfo{Version: "dev", Commit: "none", Date: "unknown"})
 
 	// Setup expectations for waste workflow
 	mockEC2.On("GetUnusedElasticIPAddressesInfo", mock.Anything).Return([]types.Address{}, nil)
@@ -123,7 +123,7 @@ func TestOrchestrate_WasteTakesPrecedenceOverTrend(t *testing.T) {
 	mockOutput := new(mocks.MockOutputService)
 
 	// Create service
-	svc := NewService(mockSTS, mockCost, mockEC2, mockELB, mockOutput)
+	svc := NewService(mockSTS, mockCost, mockEC2, mockELB, mockOutput, model.VersionInfo{Version: "dev", Commit: "none", Date: "unknown"})
 
 	// Setup expectations for waste workflow (should be called, not trend)
 	mockEC2.On("GetUnusedElasticIPAddressesInfo", mock.Anything).Return([]types.Address{}, nil)
@@ -213,7 +213,7 @@ func TestDefaultWorkflow_CostServiceError(t *testing.T) {
 			mockOutput.On("StopSpinner").Return().Maybe()
 			mockOutput.On("RenderCostComparison", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil).Maybe()
 
-			svc := NewService(mockSTS, mockCost, mockEC2, mockELB, mockOutput)
+			svc := NewService(mockSTS, mockCost, mockEC2, mockELB, mockOutput, model.VersionInfo{Version: "dev", Commit: "none", Date: "unknown"})
 			err := svc.Orchestrate(model.Flags{Output: "json"})
 
 			assert.Error(t, err)
@@ -257,7 +257,7 @@ func TestTrendWorkflow_Error(t *testing.T) {
 			mockOutput.On("StopSpinner").Return().Maybe()
 			mockOutput.On("RenderTrend", mock.Anything, mock.Anything).Return(nil).Maybe()
 
-			svc := NewService(mockSTS, mockCost, mockEC2, mockELB, mockOutput)
+			svc := NewService(mockSTS, mockCost, mockEC2, mockELB, mockOutput, model.VersionInfo{Version: "dev", Commit: "none", Date: "unknown"})
 			err := svc.Orchestrate(model.Flags{Trend: true, Output: "json"})
 
 			assert.Error(t, err)
@@ -334,7 +334,7 @@ func TestWasteWorkflow_Error(t *testing.T) {
 			mockOutput.On("StopSpinner").Return().Maybe()
 			mockOutput.On("RenderWaste", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil).Maybe()
 
-			svc := NewService(mockSTS, mockCost, mockEC2, mockELB, mockOutput)
+			svc := NewService(mockSTS, mockCost, mockEC2, mockELB, mockOutput, model.VersionInfo{Version: "dev", Commit: "none", Date: "unknown"})
 			err := svc.Orchestrate(model.Flags{Waste: true, Output: "json"})
 
 			assert.Error(t, err)
