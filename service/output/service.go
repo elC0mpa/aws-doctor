@@ -1,3 +1,4 @@
+// Package output provides a service for rendering results to the console.
 package output
 
 import (

@@ -1,3 +1,4 @@
+// Package elb provides a service for interacting with AWS Elastic Load Balancing.
 package elb
 
 import (

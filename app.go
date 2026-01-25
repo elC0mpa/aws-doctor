@@ -1,3 +1,4 @@
+// Package main is the entry point for the aws-doctor application.
 package main
 
 import (

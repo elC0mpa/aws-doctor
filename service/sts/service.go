@@ -1,3 +1,4 @@
+// Package awssts provides a service for interacting with AWS STS.
 package awssts
 
 import (

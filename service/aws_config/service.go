@@ -1,3 +1,4 @@
+// Package awsconfig provides a service for loading AWS configuration.
 package awsconfig
 
 import (

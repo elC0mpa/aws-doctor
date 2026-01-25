@@ -1,3 +1,4 @@
+// Package orchestrator coordinates the execution of various AWS service checks.
 package orchestrator
 
 import (

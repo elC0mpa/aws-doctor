@@ -1,3 +1,4 @@
+// Package flag provides a service for parsing CLI flags.
 package flag
 
 import (

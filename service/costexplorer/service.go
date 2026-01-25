@@ -1,3 +1,4 @@
+// Package awscostexplorer provides a service for interacting with AWS Cost Explorer.
 package awscostexplorer
 
 import (

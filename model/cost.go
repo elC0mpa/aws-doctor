@@ -1,3 +1,4 @@
+// Package model defines the data structures used throughout the application.
 package model
 
 import "github.com/aws/aws-sdk-go-v2/service/costexplorer/types"
