@@ -6,5 +6,6 @@ type Flags struct {
 	Profile string
 	Trend   bool
 	Waste   bool
+	Version bool
 	Output  string // Output format: "table" (default) or "json"
 }

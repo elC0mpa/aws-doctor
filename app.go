@@ -15,6 +15,7 @@ import (
 	"github.com/elC0mpa/aws-doctor/service/output"
 	awssts "github.com/elC0mpa/aws-doctor/service/sts"
 	"github.com/elC0mpa/aws-doctor/utils"
+	"github.com/elC0mpa/aws-doctor/model"
 )
 
 var (
@@ -31,18 +32,6 @@ func main() {
 }
 
 func run() error {
-	for _, arg := range os.Args[1:] {
-		if arg == "--version" || arg == "-version" {
-			fmt.Printf("aws-doctor version %s\n", version)
-			fmt.Printf("commit: %s\n", commit)
-			fmt.Printf("built at: %s\n", date)
-
-			return nil
-		}
-	}
-
-	utils.DrawBanner()
-
 	flagService := flag.NewService()
 
 	flags, err := flagService.GetParsedFlags()
@@ -50,6 +39,20 @@ func run() error {
 		return fmt.Errorf("failed to parse flags: %w", err)
 	}
 
+	versionInfo := model.VersionInfo{
+		Version: version,
+		Commit:  commit,
+		Date:    date,
+	}
+
+	if flags.Version {
+		outputService := output.NewService(flags.Output)
+		orchestratorService := orchestrator.NewService(nil, nil, nil, nil, outputService, versionInfo)
+
+		return orchestratorService.Orchestrate(flags)
+	}
+
+	utils.DrawBanner()
 	utils.StartSpinner()
 
 	defer utils.StopSpinner()
@@ -67,7 +70,7 @@ func run() error {
 	elbService := elb.NewService(awsCfg)
 	outputService := output.NewService(flags.Output)
 
-	orchestratorService := orchestrator.NewService(stsService, costService, ec2Service, elbService, outputService)
+	orchestratorService := orchestrator.NewService(stsService, costService, ec2Service, elbService, outputService, versionInfo)
 
 	if err := orchestratorService.Orchestrate(flags); err != nil {
 		return fmt.Errorf("orchestration failed: %w", err)
