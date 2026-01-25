@@ -7,5 +7,6 @@ type Flags struct {
 	Trend   bool
 	Waste   bool
 	Version bool
+	Update  bool
 	Output  string // Output format: "table" (default) or "json"
 }

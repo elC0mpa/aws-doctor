@@ -14,22 +14,28 @@ import (
 	"github.com/elC0mpa/aws-doctor/service/elb"
 	"github.com/elC0mpa/aws-doctor/service/output"
 	awssts "github.com/elC0mpa/aws-doctor/service/sts"
+	"github.com/elC0mpa/aws-doctor/service/update"
 	"golang.org/x/sync/errgroup"
 )
 
 // NewService creates a new orchestrator service.
-func NewService(stsService awssts.Service, costService awscostexplorer.Service, ec2Service awsec2.Service, elbService elb.Service, outputService output.Service, versionInfo model.VersionInfo) Service {
+func NewService(stsService awssts.Service, costService awscostexplorer.Service, ec2Service awsec2.Service, elbService elb.Service, outputService output.Service, updateService update.Service, versionInfo model.VersionInfo) Service {
 	return &service{
 		stsService:    stsService,
 		costService:   costService,
 		ec2Service:    ec2Service,
 		elbService:    elbService,
 		outputService: outputService,
+		updateService: updateService,
 		versionInfo:   versionInfo,
 	}
 }
 
 func (s *service) Orchestrate(flags model.Flags) error {
+	if flags.Update {
+		return s.updateWorkflow()
+	}
+
 	if flags.Version {
 		return s.versionWorkflow()
 	}
@@ -53,6 +59,12 @@ func (s *service) versionWorkflow() error {
 	fmt.Printf("built at: %s\n", s.versionInfo.Date)
 
 	return nil
+}
+
+func (s *service) updateWorkflow() error {
+	s.outputService.StopSpinner()
+
+	return s.updateService.Update()
 }
 
 func (s *service) defaultWorkflow() error {

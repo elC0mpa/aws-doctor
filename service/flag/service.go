@@ -19,6 +19,7 @@ func (s *service) GetParsedFlags() (model.Flags, error) {
 	waste := flag.Bool("waste", false, "Display AWS waste report")
 	output := flag.String("output", "table", "Output format: table or json")
 	version := flag.Bool("version", false, "Display version information")
+	update := flag.Bool("update", false, "Update aws-doctor to the latest version")
 
 	flag.Parse()
 
@@ -29,5 +30,6 @@ func (s *service) GetParsedFlags() (model.Flags, error) {
 		Waste:   *waste,
 		Output:  *output,
 		Version: *version,
+		Update:  *update,
 	}, nil
 }
