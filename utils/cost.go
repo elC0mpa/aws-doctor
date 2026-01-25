@@ -11,6 +11,8 @@ func ParseCostString(costStr string) float64 {
 	if len(parts) == 0 {
 		return 0
 	}
+
 	amount, _ := strconv.ParseFloat(parts[0], 64)
+
 	return amount
 }

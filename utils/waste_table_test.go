@@ -455,6 +455,7 @@ func BenchmarkPopulateEBSRows(b *testing.B) {
 	}
 
 	b.ResetTimer()
+
 	for i := 0; i < b.N; i++ {
 		populateEBSRows(volumes)
 	}
@@ -470,6 +471,7 @@ func BenchmarkPopulateInstanceRows(b *testing.B) {
 	}
 
 	b.ResetTimer()
+
 	for i := 0; i < b.N; i++ {
 		populateInstanceRows(instances)
 	}
@@ -487,7 +489,9 @@ func captureWasteOutput(f func()) string {
 	os.Stdout = old
 
 	var buf bytes.Buffer
+
 	_, _ = io.Copy(&buf, r)
+
 	return buf.String()
 }
 
@@ -617,12 +621,15 @@ func TestDrawWasteTable_AllWasteTypes(t *testing.T) {
 	if !strings.Contains(output, "EBS") {
 		t.Error("Missing EBS section")
 	}
+
 	if !strings.Contains(output, "Elastic IP") {
 		t.Error("Missing Elastic IP section")
 	}
+
 	if !strings.Contains(output, "EC2") {
 		t.Error("Missing EC2 section")
 	}
+
 	if !strings.Contains(output, "Load Balancer") {
 		t.Error("Missing Load Balancer section")
 	}
@@ -866,6 +873,7 @@ func TestPopulateAMIRows_LongNameTruncation(t *testing.T) {
 	if len(name) > 30 {
 		t.Errorf("Name was not truncated, got %d chars: %s", len(name), name)
 	}
+
 	if !strings.HasSuffix(name, "...") {
 		t.Errorf("Truncated name should end with '...', got: %s", name)
 	}
@@ -944,6 +952,7 @@ func TestDrawAMITable(t *testing.T) {
 	if !strings.Contains(output, "ami-12345") {
 		t.Error("drawAMITable() missing first AMI ID")
 	}
+
 	if !strings.Contains(output, "ami-67890") {
 		t.Error("drawAMITable() missing second AMI ID")
 	}
@@ -990,6 +999,7 @@ func BenchmarkPopulateAMIRows(b *testing.B) {
 	}
 
 	b.ResetTimer()
+
 	for i := 0; i < b.N; i++ {
 		populateAMIRows(amis)
 	}
@@ -1006,9 +1016,11 @@ func BenchmarkDrawWasteTable(b *testing.B) {
 	// Redirect stdout to discard
 	old := os.Stdout
 	os.Stdout, _ = os.Open(os.DevNull)
+
 	defer func() { os.Stdout = old }()
 
 	b.ResetTimer()
+
 	for i := 0; i < b.N; i++ {
 		DrawWasteTable("123456789012", elasticIPs, unusedVolumes, nil, nil, nil, nil, nil, nil)
 	}

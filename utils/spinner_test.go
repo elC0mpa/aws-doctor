@@ -30,6 +30,7 @@ func TestSpinnerSequence(_ *testing.T) {
 func TestStartSpinner_InitializesLoader(t *testing.T) {
 	// After calling StartSpinner, the global loader should be non-nil
 	StartSpinner()
+
 	defer StopSpinner()
 
 	if loader == nil {

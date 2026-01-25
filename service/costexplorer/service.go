@@ -20,6 +20,7 @@ const (
 // NewService creates a new Cost Explorer service.
 func NewService(awsconfig aws.Config) Service {
 	client := costexplorer.NewFromConfig(awsconfig)
+
 	return &service{
 		client: client,
 	}
@@ -150,6 +151,7 @@ func (s *service) GetMonthTotalCosts(ctx context.Context, endDate time.Time) (*s
 	}
 
 	total := fmt.Sprintf("%.2f %s", amount, *totalInfo.Unit)
+
 	return &total, nil
 }
 
@@ -169,10 +171,12 @@ func (s *service) filterGroups(results []types.Group, costsAggregation string) m
 		if metric, ok := g.Metrics[costsAggregation]; ok && metric.Amount != nil {
 			amountStr = *metric.Amount
 		}
+
 		amount, err := strconv.ParseFloat(amountStr, 64)
 		if err != nil || amount == 0 {
 			continue
 		}
+
 		filtered = append(filtered, g)
 	}
 

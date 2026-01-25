@@ -91,69 +91,88 @@ func (s *service) wasteWorkflow() error {
 	g, ctx := errgroup.WithContext(ctx)
 
 	// Results from concurrent API calls
-	var elasticIPInfo []types.Address
-	var availableEBSVolumesInfo []types.Volume
-	var stoppedInstancesMoreThan30Days []types.Instance
-	var attachedToStoppedInstancesEBSVolumesInfo []types.Volume
-	var expireReservedInstancesInfo []model.RiExpirationInfo
-	var unusedLoadBalancers []elbtypes.LoadBalancer
-	var unusedAMIs []model.AMIWasteInfo
-	var orphanedSnapshots []model.SnapshotWasteInfo
-	var stsResult *sts.GetCallerIdentityOutput
+	var (
+		elasticIPInfo                            []types.Address
+		availableEBSVolumesInfo                  []types.Volume
+		stoppedInstancesMoreThan30Days           []types.Instance
+		attachedToStoppedInstancesEBSVolumesInfo []types.Volume
+		expireReservedInstancesInfo              []model.RiExpirationInfo
+		unusedLoadBalancers                      []elbtypes.LoadBalancer
+		unusedAMIs                               []model.AMIWasteInfo
+		orphanedSnapshots                        []model.SnapshotWasteInfo
+		stsResult                                *sts.GetCallerIdentityOutput
+	)
 
 	// Fetch unused Elastic IPs concurrently
+
 	g.Go(func() error {
 		var err error
+
 		elasticIPInfo, err = s.ec2Service.GetUnusedElasticIPAddressesInfo(ctx)
+
 		return err
 	})
 
 	// Fetch unused EBS volumes concurrently
 	g.Go(func() error {
 		var err error
+
 		availableEBSVolumesInfo, err = s.ec2Service.GetUnusedEBSVolumes(ctx)
+
 		return err
 	})
 
 	// Fetch stopped instances info concurrently
 	g.Go(func() error {
 		var err error
+
 		stoppedInstancesMoreThan30Days, attachedToStoppedInstancesEBSVolumesInfo, err = s.ec2Service.GetStoppedInstancesInfo(ctx)
+
 		return err
 	})
 
 	// Fetch reserved instance expiration info concurrently
 	g.Go(func() error {
 		var err error
+
 		expireReservedInstancesInfo, err = s.ec2Service.GetReservedInstanceExpiringOrExpired30DaysWaste(ctx)
+
 		return err
 	})
 
 	// Fetch unused Load Balancers concurrently
 	g.Go(func() error {
 		var err error
+
 		unusedLoadBalancers, err = s.elbService.GetUnusedLoadBalancers(ctx)
+
 		return err
 	})
 
 	// Fetch caller identity concurrently
 	g.Go(func() error {
 		var err error
+
 		stsResult, err = s.stsService.GetCallerIdentity(ctx)
+
 		return err
 	})
 
 	// Fetch unused AMIs concurrently
 	g.Go(func() error {
 		var err error
+
 		unusedAMIs, err = s.ec2Service.GetUnusedAMIs(ctx, 90)
+
 		return err
 	})
 
 	// Fetch orphaned EBS snapshots concurrently
 	g.Go(func() error {
 		var err error
+
 		orphanedSnapshots, err = s.ec2Service.GetOrphanedSnapshots(ctx, 90)
+
 		return err
 	})
 

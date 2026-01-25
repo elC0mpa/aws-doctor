@@ -21,5 +21,6 @@ func (m *MockSTSService) GetCallerIdentity(ctx context.Context) (*sts.GetCallerI
 	if args.Get(0) == nil {
 		return nil, args.Error(1)
 	}
+
 	return args.Get(0).(*sts.GetCallerIdentityOutput), args.Error(1)
 }

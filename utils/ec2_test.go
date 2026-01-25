@@ -108,9 +108,11 @@ func TestParseTransitionDate(t *testing.T) {
 					t.Errorf("ParseTransitionDate() expected error containing %q, got nil", tt.errSubstr)
 					return
 				}
+
 				if tt.errSubstr != "" && !contains(err.Error(), tt.errSubstr) {
 					t.Errorf("ParseTransitionDate() error = %v, want error containing %q", err, tt.errSubstr)
 				}
+
 				return
 			}
 
@@ -133,6 +135,7 @@ func contains(s, substr string) bool {
 			return true
 		}
 	}
+
 	return false
 }
 

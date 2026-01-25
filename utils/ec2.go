@@ -18,5 +18,6 @@ func ParseTransitionDate(reason string) (time.Time, error) {
 	dateStr := matches[1]
 
 	layout := "2006-01-02 15:04:05 MST"
+
 	return time.Parse(layout, dateStr)
 }

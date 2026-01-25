@@ -90,6 +90,7 @@ func assignRankedColors(allCosts []model.CostInfo) []string {
 	})
 
 	resultColors := make([]string, len(allCosts))
+
 	for rank, sortedCost := range costsToSort {
 		originalIndex := sortedCost.index
 		if rank < len(palette) {

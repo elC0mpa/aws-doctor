@@ -19,6 +19,7 @@ func (m *MockEC2Service) GetElasticIPAddressesInfo(ctx context.Context) (*model.
 	if args.Get(0) == nil {
 		return nil, args.Error(1)
 	}
+
 	return args.Get(0).(*model.ElasticIPInfo), args.Error(1)
 }
 
@@ -28,6 +29,7 @@ func (m *MockEC2Service) GetUnusedElasticIPAddressesInfo(ctx context.Context) ([
 	if args.Get(0) == nil {
 		return nil, args.Error(1)
 	}
+
 	return args.Get(0).([]types.Address), args.Error(1)
 }
 
@@ -37,20 +39,27 @@ func (m *MockEC2Service) GetUnusedEBSVolumes(ctx context.Context) ([]types.Volum
 	if args.Get(0) == nil {
 		return nil, args.Error(1)
 	}
+
 	return args.Get(0).([]types.Volume), args.Error(1)
 }
 
 // GetStoppedInstancesInfo mocks the GetStoppedInstancesInfo method.
 func (m *MockEC2Service) GetStoppedInstancesInfo(ctx context.Context) ([]types.Instance, []types.Volume, error) {
 	args := m.Called(ctx)
-	var instances []types.Instance
-	var volumes []types.Volume
+
+	var (
+		instances []types.Instance
+		volumes   []types.Volume
+	)
+
 	if args.Get(0) != nil {
 		instances = args.Get(0).([]types.Instance)
 	}
+
 	if args.Get(1) != nil {
 		volumes = args.Get(1).([]types.Volume)
 	}
+
 	return instances, volumes, args.Error(2)
 }
 
@@ -60,6 +69,7 @@ func (m *MockEC2Service) GetReservedInstanceExpiringOrExpired30DaysWaste(ctx con
 	if args.Get(0) == nil {
 		return nil, args.Error(1)
 	}
+
 	return args.Get(0).([]model.RiExpirationInfo), args.Error(1)
 }
 
@@ -69,6 +79,7 @@ func (m *MockEC2Service) GetUnusedAMIs(ctx context.Context, staleDays int) ([]mo
 	if args.Get(0) == nil {
 		return nil, args.Error(1)
 	}
+
 	return args.Get(0).([]model.AMIWasteInfo), args.Error(1)
 }
 
@@ -78,5 +89,6 @@ func (m *MockEC2Service) GetOrphanedSnapshots(ctx context.Context, staleDays int
 	if args.Get(0) == nil {
 		return nil, args.Error(1)
 	}
+
 	return args.Get(0).([]model.SnapshotWasteInfo), args.Error(1)
 }

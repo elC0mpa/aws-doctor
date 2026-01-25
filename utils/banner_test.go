@@ -20,6 +20,7 @@ func TestDrawBanner(t *testing.T) {
 	os.Stdout = old
 
 	var buf bytes.Buffer
+
 	_, _ = io.Copy(&buf, r)
 	output := buf.String()
 
@@ -36,6 +37,7 @@ func TestDrawBanner_MultipleCallsNoPanic(_ *testing.T) {
 	// Redirect stdout to discard
 	old := os.Stdout
 	os.Stdout, _ = os.Open(os.DevNull)
+
 	defer func() { os.Stdout = old }()
 
 	// Multiple calls should not panic
@@ -48,9 +50,11 @@ func BenchmarkDrawBanner(b *testing.B) {
 	// Redirect stdout to discard
 	old := os.Stdout
 	os.Stdout, _ = os.Open(os.DevNull)
+
 	defer func() { os.Stdout = old }()
 
 	b.ResetTimer()
+
 	for i := 0; i < b.N; i++ {
 		DrawBanner()
 	}

@@ -18,6 +18,7 @@ func (s *service) GetParsedFlags() (model.Flags, error) {
 	trend := flag.Bool("trend", false, "Display a trend report for the last 6 months")
 	waste := flag.Bool("waste", false, "Display AWS waste report")
 	output := flag.String("output", "table", "Output format: table or json")
+
 	flag.Bool("version", false, "Display version information")
 
 	flag.Parse()

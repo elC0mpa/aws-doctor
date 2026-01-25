@@ -112,6 +112,7 @@ func OutputWasteJSON(accountID string, elasticIPs []types.Address, unusedVolumes
 
 	// Stopped instances
 	now := time.Now()
+
 	for _, instance := range stoppedInstances {
 		si := model.StoppedInstanceJSON{
 			InstanceID: aws.ToString(instance.InstanceId),
@@ -122,6 +123,7 @@ func OutputWasteJSON(accountID string, elasticIPs []types.Address, unusedVolumes
 				si.DaysAgo = int(now.Sub(stoppedAt).Hours() / 24)
 			}
 		}
+
 		output.StoppedInstances = append(output.StoppedInstances, si)
 	}
 
@@ -203,6 +205,8 @@ func printJSON(v interface{}) error {
 	if err != nil {
 		return err
 	}
+
 	fmt.Println(string(data))
+
 	return nil
 }

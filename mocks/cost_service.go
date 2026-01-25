@@ -20,6 +20,7 @@ func (m *MockCostService) GetCurrentMonthCostsByService(ctx context.Context) (*m
 	if args.Get(0) == nil {
 		return nil, args.Error(1)
 	}
+
 	return args.Get(0).(*model.CostInfo), args.Error(1)
 }
 
@@ -29,6 +30,7 @@ func (m *MockCostService) GetLastMonthCostsByService(ctx context.Context) (*mode
 	if args.Get(0) == nil {
 		return nil, args.Error(1)
 	}
+
 	return args.Get(0).(*model.CostInfo), args.Error(1)
 }
 
@@ -38,6 +40,7 @@ func (m *MockCostService) GetMonthCostsByService(ctx context.Context, endDate ti
 	if args.Get(0) == nil {
 		return nil, args.Error(1)
 	}
+
 	return args.Get(0).(*model.CostInfo), args.Error(1)
 }
 
@@ -47,6 +50,7 @@ func (m *MockCostService) GetCurrentMonthTotalCosts(ctx context.Context) (*strin
 	if args.Get(0) == nil {
 		return nil, args.Error(1)
 	}
+
 	return args.Get(0).(*string), args.Error(1)
 }
 
@@ -56,6 +60,7 @@ func (m *MockCostService) GetLastMonthTotalCosts(ctx context.Context) (*string, 
 	if args.Get(0) == nil {
 		return nil, args.Error(1)
 	}
+
 	return args.Get(0).(*string), args.Error(1)
 }
 
@@ -65,5 +70,6 @@ func (m *MockCostService) GetLastSixMonthsCosts(ctx context.Context) ([]model.Co
 	if args.Get(0) == nil {
 		return nil, args.Error(1)
 	}
+
 	return args.Get(0).([]model.CostInfo), args.Error(1)
 }

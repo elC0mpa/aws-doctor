@@ -125,11 +125,13 @@ func drawEC2Table(instances []types.Instance, ris []model.RiExpirationInfo) {
 		rows[halfRow][0] = text.FgHiRed.Sprint(statusLabel)
 
 		t.AppendRows(rows)
+
 		hasPreviousRows = true
 	}
 
 	if len(ris) > 0 {
 		var expiring, expired []model.RiExpirationInfo
+
 		for _, ri := range ris {
 			if ri.Status == "EXPIRING SOON" {
 				expiring = append(expiring, ri)
@@ -142,6 +144,7 @@ func drawEC2Table(instances []types.Instance, ris []model.RiExpirationInfo) {
 			if hasPreviousRows {
 				t.AppendSeparator()
 			}
+
 			statusLabel := "Reserved Instance\n(Expiring Soon)"
 			rows := populateRiRows(expiring)
 
@@ -149,6 +152,7 @@ func drawEC2Table(instances []types.Instance, ris []model.RiExpirationInfo) {
 			rows[halfRow][0] = text.FgHiYellow.Sprint(statusLabel)
 
 			t.AppendRows(rows)
+
 			hasPreviousRows = true
 		}
 
@@ -156,6 +160,7 @@ func drawEC2Table(instances []types.Instance, ris []model.RiExpirationInfo) {
 			if hasPreviousRows {
 				t.AppendSeparator()
 			}
+
 			statusLabel := "Reserved Instance\n(Recently Expired)"
 			rows := populateRiRows(expired)
 
@@ -231,6 +236,7 @@ func populateElasticIPRows(ips []types.Address) []table.Row {
 
 func populateInstanceRows(instances []types.Instance) []table.Row {
 	var rows []table.Row
+
 	now := time.Now()
 
 	for _, instance := range instances {
@@ -241,6 +247,7 @@ func populateInstanceRows(instances []types.Instance) []table.Row {
 		}
 
 		timeInfo := "-"
+
 		stoppedAt, err := ParseTransitionDate(reason)
 		if err == nil {
 			days := int(now.Sub(stoppedAt).Hours() / 24)
@@ -258,11 +265,13 @@ func populateInstanceRows(instances []types.Instance) []table.Row {
 			timeInfo,
 		})
 	}
+
 	return rows
 }
 
 func populateRiRows(ris []model.RiExpirationInfo) []table.Row {
 	var rows []table.Row
+
 	for _, ri := range ris {
 		timeInfo := ""
 		if ri.DaysUntilExpiry >= 0 {
@@ -277,6 +286,7 @@ func populateRiRows(ris []model.RiExpirationInfo) []table.Row {
 			timeInfo,
 		})
 	}
+
 	return rows
 }
 
@@ -380,6 +390,7 @@ func drawSnapshotTable(snapshots []model.SnapshotWasteInfo) {
 
 	// Separate orphaned and stale snapshots
 	var orphaned, stale []model.SnapshotWasteInfo
+
 	for _, snap := range snapshots {
 		if snap.Category == model.SnapshotCategoryOrphaned {
 			orphaned = append(orphaned, snap)
@@ -398,6 +409,7 @@ func drawSnapshotTable(snapshots []model.SnapshotWasteInfo) {
 		rows[halfRow][0] = text.FgHiRed.Sprint(statusLabel)
 
 		t.AppendRows(rows)
+
 		hasPreviousRows = true
 	}
 
@@ -405,6 +417,7 @@ func drawSnapshotTable(snapshots []model.SnapshotWasteInfo) {
 		if hasPreviousRows {
 			t.AppendSeparator()
 		}
+
 		statusLabel := "Stale(Old Backup > 90 days)"
 		rows := populateSnapshotRows(stale)
 

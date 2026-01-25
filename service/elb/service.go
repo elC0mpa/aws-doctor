@@ -12,6 +12,7 @@ import (
 // NewService creates a new ELB service.
 func NewService(awsconfig aws.Config) Service {
 	client := elb.NewFromConfig(awsconfig)
+
 	return &service{
 		client: client,
 	}
@@ -20,6 +21,7 @@ func NewService(awsconfig aws.Config) Service {
 func (s *service) GetUnusedLoadBalancers(ctx context.Context) ([]types.LoadBalancer, error) {
 	// Collect all load balancers using pagination
 	var allLoadBalancers []types.LoadBalancer
+
 	lbPaginator := elb.NewDescribeLoadBalancersPaginator(s.client, &elb.DescribeLoadBalancersInput{})
 
 	for lbPaginator.HasMorePages() {
@@ -27,6 +29,7 @@ func (s *service) GetUnusedLoadBalancers(ctx context.Context) ([]types.LoadBalan
 		if err != nil {
 			return nil, err
 		}
+
 		allLoadBalancers = append(allLoadBalancers, lbOutput.LoadBalancers...)
 	}
 
@@ -39,6 +42,7 @@ func (s *service) GetUnusedLoadBalancers(ctx context.Context) ([]types.LoadBalan
 		if err != nil {
 			return nil, err
 		}
+
 		for _, tg := range tgOutput.TargetGroups {
 			for _, lbArn := range tg.LoadBalancerArns {
 				usedLbArns[lbArn] = true

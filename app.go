@@ -36,6 +36,7 @@ func run() error {
 			fmt.Printf("aws-doctor version %s\n", version)
 			fmt.Printf("commit: %s\n", commit)
 			fmt.Printf("built at: %s\n", date)
+
 			return nil
 		}
 	}
@@ -43,15 +44,18 @@ func run() error {
 	utils.DrawBanner()
 
 	flagService := flag.NewService()
+
 	flags, err := flagService.GetParsedFlags()
 	if err != nil {
 		return fmt.Errorf("failed to parse flags: %w", err)
 	}
 
 	utils.StartSpinner()
+
 	defer utils.StopSpinner()
 
 	cfgService := awsconfig.NewService()
+
 	awsCfg, err := cfgService.GetAWSCfg(context.Background(), flags.Region, flags.Profile)
 	if err != nil {
 		return fmt.Errorf("failed to load AWS config: %w", err)
