@@ -61,6 +61,9 @@ Available platforms:
 - Linux (amd64 & arm64)
 - Windows (amd64)
 
+> [!TIP]
+> Once installed, you can keep **aws-doctor** up to date by running `aws-doctor --update`.
+
 ## Flags
 
 - `--profile`: Specify the AWS profile to use (default is "").
@@ -81,6 +84,8 @@ Available platforms:
   - [ ] Inactive NAT Gateways.
   - [ ] Idle Load Balancers.
   - [ ] RDS Idle DB Instances.
+- `--version`: Display version information.
+- `--update`: Updates the tool to the latest version.
 
 ## Roadmap
 

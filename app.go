@@ -14,6 +14,7 @@ import (
 	"github.com/elC0mpa/aws-doctor/service/orchestrator"
 	"github.com/elC0mpa/aws-doctor/service/output"
 	awssts "github.com/elC0mpa/aws-doctor/service/sts"
+	"github.com/elC0mpa/aws-doctor/service/update"
 	"github.com/elC0mpa/aws-doctor/utils"
 	"github.com/elC0mpa/aws-doctor/model"
 )
@@ -45,9 +46,10 @@ func run() error {
 		Date:    date,
 	}
 
-	if flags.Version {
+	if flags.Version || flags.Update {
 		outputService := output.NewService(flags.Output)
-		orchestratorService := orchestrator.NewService(nil, nil, nil, nil, outputService, versionInfo)
+		updateService := update.NewService()
+		orchestratorService := orchestrator.NewService(nil, nil, nil, nil, outputService, updateService, versionInfo)
 
 		return orchestratorService.Orchestrate(flags)
 	}
@@ -69,8 +71,9 @@ func run() error {
 	ec2Service := awsec2.NewService(awsCfg)
 	elbService := elb.NewService(awsCfg)
 	outputService := output.NewService(flags.Output)
+	updateService := update.NewService()
 
-	orchestratorService := orchestrator.NewService(stsService, costService, ec2Service, elbService, outputService, versionInfo)
+	orchestratorService := orchestrator.NewService(stsService, costService, ec2Service, elbService, outputService, updateService, versionInfo)
 
 	if err := orchestratorService.Orchestrate(flags); err != nil {
 		return fmt.Errorf("orchestration failed: %w", err)
