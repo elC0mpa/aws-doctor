@@ -7,6 +7,7 @@ import (
 	"github.com/elC0mpa/aws-doctor/service/elb"
 	"github.com/elC0mpa/aws-doctor/service/output"
 	awssts "github.com/elC0mpa/aws-doctor/service/sts"
+	"github.com/elC0mpa/aws-doctor/service/update"
 )
 
 type service struct {
@@ -15,6 +16,7 @@ type service struct {
 	ec2Service    awsec2.Service
 	elbService    elb.Service
 	outputService output.Service
+	updateService update.Service
 	versionInfo   model.VersionInfo
 }
 

@@ -21,9 +21,10 @@ func TestOrchestrate_RouteToDefaultWorkflow(t *testing.T) {
 	mockEC2 := new(mocks.MockEC2Service)
 	mockELB := new(mocks.MockELBService)
 	mockOutput := new(mocks.MockOutputService)
+	mockUpdate := new(mocks.MockUpdateService)
 
 	// Create service
-	svc := NewService(mockSTS, mockCost, mockEC2, mockELB, mockOutput, model.VersionInfo{Version: "dev", Commit: "none", Date: "unknown"})
+	svc := NewService(mockSTS, mockCost, mockEC2, mockELB, mockOutput, mockUpdate, model.VersionInfo{Version: "dev", Commit: "none", Date: "unknown"})
 
 	// Setup expectations for default workflow
 	mockCost.On("GetCurrentMonthCostsByService", mock.Anything).Return(&model.CostInfo{}, nil)
@@ -47,6 +48,32 @@ func TestOrchestrate_RouteToDefaultWorkflow(t *testing.T) {
 	mockOutput.AssertExpectations(t)
 }
 
+func TestOrchestrate_RouteToUpdateWorkflow(t *testing.T) {
+	// Setup mocks
+	mockSTS := new(mocks.MockSTSService)
+	mockCost := new(mocks.MockCostService)
+	mockEC2 := new(mocks.MockEC2Service)
+	mockELB := new(mocks.MockELBService)
+	mockOutput := new(mocks.MockOutputService)
+	mockUpdate := new(mocks.MockUpdateService)
+
+	// Create service
+	svc := NewService(mockSTS, mockCost, mockEC2, mockELB, mockOutput, mockUpdate, model.VersionInfo{Version: "dev", Commit: "none", Date: "unknown"})
+
+	// Setup expectations
+	mockOutput.On("StopSpinner").Return()
+	mockUpdate.On("Update").Return(nil)
+
+	// Execute with Update flag
+	flags := model.Flags{Update: true}
+	err := svc.Orchestrate(flags)
+
+	// Assert
+	assert.NoError(t, err)
+	mockOutput.AssertExpectations(t)
+	mockUpdate.AssertExpectations(t)
+}
+
 func TestOrchestrate_RouteToTrendWorkflow(t *testing.T) {
 	// Setup mocks
 	mockSTS := new(mocks.MockSTSService)
@@ -54,9 +81,10 @@ func TestOrchestrate_RouteToTrendWorkflow(t *testing.T) {
 	mockEC2 := new(mocks.MockEC2Service)
 	mockELB := new(mocks.MockELBService)
 	mockOutput := new(mocks.MockOutputService)
+	mockUpdate := new(mocks.MockUpdateService)
 
 	// Create service
-	svc := NewService(mockSTS, mockCost, mockEC2, mockELB, mockOutput, model.VersionInfo{Version: "dev", Commit: "none", Date: "unknown"})
+	svc := NewService(mockSTS, mockCost, mockEC2, mockELB, mockOutput, mockUpdate, model.VersionInfo{Version: "dev", Commit: "none", Date: "unknown"})
 
 	// Setup expectations for trend workflow
 	mockCost.On("GetLastSixMonthsCosts", mock.Anything).Return([]model.CostInfo{}, nil)
@@ -84,9 +112,10 @@ func TestOrchestrate_RouteToWasteWorkflow(t *testing.T) {
 	mockEC2 := new(mocks.MockEC2Service)
 	mockELB := new(mocks.MockELBService)
 	mockOutput := new(mocks.MockOutputService)
+	mockUpdate := new(mocks.MockUpdateService)
 
 	// Create service
-	svc := NewService(mockSTS, mockCost, mockEC2, mockELB, mockOutput, model.VersionInfo{Version: "dev", Commit: "none", Date: "unknown"})
+	svc := NewService(mockSTS, mockCost, mockEC2, mockELB, mockOutput, mockUpdate, model.VersionInfo{Version: "dev", Commit: "none", Date: "unknown"})
 
 	// Setup expectations for waste workflow
 	mockEC2.On("GetUnusedElasticIPAddressesInfo", mock.Anything).Return([]types.Address{}, nil)
@@ -121,9 +150,10 @@ func TestOrchestrate_WasteTakesPrecedenceOverTrend(t *testing.T) {
 	mockEC2 := new(mocks.MockEC2Service)
 	mockELB := new(mocks.MockELBService)
 	mockOutput := new(mocks.MockOutputService)
+	mockUpdate := new(mocks.MockUpdateService)
 
 	// Create service
-	svc := NewService(mockSTS, mockCost, mockEC2, mockELB, mockOutput, model.VersionInfo{Version: "dev", Commit: "none", Date: "unknown"})
+	svc := NewService(mockSTS, mockCost, mockEC2, mockELB, mockOutput, mockUpdate, model.VersionInfo{Version: "dev", Commit: "none", Date: "unknown"})
 
 	// Setup expectations for waste workflow (should be called, not trend)
 	mockEC2.On("GetUnusedElasticIPAddressesInfo", mock.Anything).Return([]types.Address{}, nil)
@@ -208,12 +238,13 @@ func TestDefaultWorkflow_CostServiceError(t *testing.T) {
 			mockEC2 := new(mocks.MockEC2Service)
 			mockELB := new(mocks.MockELBService)
 			mockOutput := new(mocks.MockOutputService)
+			mockUpdate := new(mocks.MockUpdateService)
 
 			tt.setupMocks(mockCost, mockSTS)
 			mockOutput.On("StopSpinner").Return().Maybe()
 			mockOutput.On("RenderCostComparison", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil).Maybe()
 
-			svc := NewService(mockSTS, mockCost, mockEC2, mockELB, mockOutput, model.VersionInfo{Version: "dev", Commit: "none", Date: "unknown"})
+			svc := NewService(mockSTS, mockCost, mockEC2, mockELB, mockOutput, mockUpdate, model.VersionInfo{Version: "dev", Commit: "none", Date: "unknown"})
 			err := svc.Orchestrate(model.Flags{Output: "json"})
 
 			assert.Error(t, err)
@@ -252,12 +283,13 @@ func TestTrendWorkflow_Error(t *testing.T) {
 			mockEC2 := new(mocks.MockEC2Service)
 			mockELB := new(mocks.MockELBService)
 			mockOutput := new(mocks.MockOutputService)
+			mockUpdate := new(mocks.MockUpdateService)
 
 			tt.setupMocks(mockCost, mockSTS)
 			mockOutput.On("StopSpinner").Return().Maybe()
 			mockOutput.On("RenderTrend", mock.Anything, mock.Anything).Return(nil).Maybe()
 
-			svc := NewService(mockSTS, mockCost, mockEC2, mockELB, mockOutput, model.VersionInfo{Version: "dev", Commit: "none", Date: "unknown"})
+			svc := NewService(mockSTS, mockCost, mockEC2, mockELB, mockOutput, mockUpdate, model.VersionInfo{Version: "dev", Commit: "none", Date: "unknown"})
 			err := svc.Orchestrate(model.Flags{Trend: true, Output: "json"})
 
 			assert.Error(t, err)
@@ -329,12 +361,13 @@ func TestWasteWorkflow_Error(t *testing.T) {
 			mockEC2 := new(mocks.MockEC2Service)
 			mockELB := new(mocks.MockELBService)
 			mockOutput := new(mocks.MockOutputService)
+			mockUpdate := new(mocks.MockUpdateService)
 
 			tt.setupMocks(mockEC2, mockELB, mockSTS)
 			mockOutput.On("StopSpinner").Return().Maybe()
 			mockOutput.On("RenderWaste", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil).Maybe()
 
-			svc := NewService(mockSTS, mockCost, mockEC2, mockELB, mockOutput, model.VersionInfo{Version: "dev", Commit: "none", Date: "unknown"})
+			svc := NewService(mockSTS, mockCost, mockEC2, mockELB, mockOutput, mockUpdate, model.VersionInfo{Version: "dev", Commit: "none", Date: "unknown"})
 			err := svc.Orchestrate(model.Flags{Waste: true, Output: "json"})
 
 			assert.Error(t, err)
