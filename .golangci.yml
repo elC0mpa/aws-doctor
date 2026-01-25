@@ -1,0 +1,37 @@
+version: "2"
+
+run:
+  timeout: 5m
+  modules-download-mode: readonly
+
+linters:
+  enable:
+    - errcheck
+    - govet
+    - ineffassign
+    - staticcheck
+    - unused
+    - revive
+    - goconst
+    - gocritic
+    - gocyclo
+    - misspell
+    - wsl_v5
+  settings:
+    wsl_v5:
+      allow-first-in-block: true
+      allow-whole-block: false
+      branch-max-lines: 2
+    revive:
+      rules:
+        - name: exported
+          disabled: false
+    gocyclo:
+      min-complexity: 20
+    goconst:
+      min-len: 3
+      min-occurrences: 3
+
+issues:
+  max-issues-per-linter: 0
+  max-same-issues: 0

@@ -12,7 +12,8 @@ type service struct {
 	client *costexplorer.Client
 }
 
-type CostService interface {
+// Service is the interface for AWS Cost Explorer service.
+type Service interface {
 	GetCurrentMonthCostsByService(ctx context.Context) (*model.CostInfo, error)
 	GetLastMonthCostsByService(ctx context.Context) (*model.CostInfo, error)
 	GetMonthCostsByService(ctx context.Context, endDate time.Time) (*model.CostInfo, error)

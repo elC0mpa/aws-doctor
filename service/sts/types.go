@@ -10,6 +10,7 @@ type service struct {
 	client *sts.Client
 }
 
-type STSService interface {
+// Service is the interface for AWS STS service.
+type Service interface {
 	GetCallerIdentity(ctx context.Context) (*sts.GetCallerIdentityOutput, error)
 }

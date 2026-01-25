@@ -1,4 +1,4 @@
-package utils
+package utils //nolint:revive
 
 import (
 	"bytes"
@@ -23,11 +23,13 @@ func captureStdout(f func()) string {
 
 	f()
 
-	w.Close()
+	_ = w.Close()
 	os.Stdout = old
 
 	var buf bytes.Buffer
-	io.Copy(&buf, r)
+
+	_, _ = io.Copy(&buf, r)
+
 	return buf.String()
 }
 
@@ -62,6 +64,7 @@ func TestPrintJSON(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			var err error
+
 			output := captureStdout(func() {
 				err = printJSON(tt.input)
 			})
@@ -102,6 +105,7 @@ func TestOutputCostComparisonJSON(t *testing.T) {
 	currentMonth.End = aws.String("2024-02-29")
 
 	var err error
+
 	output := captureStdout(func() {
 		err = OutputCostComparisonJSON("123456789012", 150.0, 165.0, lastMonth, currentMonth)
 	})
@@ -151,6 +155,7 @@ func TestOutputTrendJSON(t *testing.T) {
 	costInfo[2].End = aws.String("2024-03-31")
 
 	var err error
+
 	output := captureStdout(func() {
 		err = OutputTrendJSON("123456789012", costInfo)
 	})
@@ -186,6 +191,7 @@ func TestOutputTrendJSON_SkipsNonTotal(t *testing.T) {
 	costInfo[1].End = aws.String("2024-02-29")
 
 	var err error
+
 	output := captureStdout(func() {
 		err = OutputTrendJSON("123456789012", costInfo)
 	})
@@ -227,7 +233,7 @@ func TestOutputWasteJSON(t *testing.T) {
 
 	ris := []model.RiExpirationInfo{
 		{
-			ReservedInstanceId: "ri-123",
+			ReservedInstanceID: "ri-123",
 			InstanceType:       "t3.medium",
 			ExpirationDate:     time.Now().Add(30 * 24 * time.Hour),
 			DaysUntilExpiry:    30,
@@ -245,6 +251,7 @@ func TestOutputWasteJSON(t *testing.T) {
 	}
 
 	var err error
+
 	output := captureStdout(func() {
 		err = OutputWasteJSON("123456789012", elasticIPs, unusedVolumes, stoppedVolumes, ris, stoppedInstances, loadBalancers, nil, nil)
 	})
@@ -294,6 +301,7 @@ func TestOutputWasteJSON(t *testing.T) {
 
 func TestOutputWasteJSON_NoWaste(t *testing.T) {
 	var err error
+
 	output := captureStdout(func() {
 		err = OutputWasteJSON("123456789012", nil, nil, nil, nil, nil, nil, nil, nil)
 	})
@@ -321,6 +329,7 @@ func TestOutputWasteJSON_InstanceWithoutTransitionReason(t *testing.T) {
 	}
 
 	var err error
+
 	output := captureStdout(func() {
 		err = OutputWasteJSON("123456789012", nil, nil, nil, nil, stoppedInstances, nil, nil, nil)
 	})
@@ -353,6 +362,7 @@ func TestOutputWasteJSON_InstanceWithInvalidTransitionReason(t *testing.T) {
 	}
 
 	var err error
+
 	output := captureStdout(func() {
 		err = OutputWasteJSON("123456789012", nil, nil, nil, nil, stoppedInstances, nil, nil, nil)
 	})
@@ -375,13 +385,13 @@ func TestOutputWasteJSON_InstanceWithInvalidTransitionReason(t *testing.T) {
 func TestOutputWasteJSON_WithUnusedAMIs(t *testing.T) {
 	unusedAMIs := []model.AMIWasteInfo{
 		{
-			ImageId:            "ami-12345",
+			ImageID:            "ami-12345",
 			Name:               "my-test-ami",
 			Description:        "Test AMI for unit tests",
 			CreationDate:       time.Now().AddDate(0, -3, 0), // 3 months ago
 			DaysSinceCreate:    90,
 			IsPublic:           false,
-			SnapshotIds:        []string{"snap-111", "snap-222"},
+			SnapshotIDs:        []string{"snap-111", "snap-222"},
 			SnapshotSizeGB:     100,
 			UsedByInstances:    0,
 			MaxPotentialSaving: 5.00,
@@ -390,6 +400,7 @@ func TestOutputWasteJSON_WithUnusedAMIs(t *testing.T) {
 	}
 
 	var err error
+
 	output := captureStdout(func() {
 		err = OutputWasteJSON("123456789012", nil, nil, nil, nil, nil, nil, unusedAMIs, nil)
 	})
@@ -415,18 +426,23 @@ func TestOutputWasteJSON_WithUnusedAMIs(t *testing.T) {
 	if ami.ImageID != "ami-12345" {
 		t.Errorf("AMI ImageID = %v, want 'ami-12345'", ami.ImageID)
 	}
+
 	if ami.Name != "my-test-ami" {
 		t.Errorf("AMI Name = %v, want 'my-test-ami'", ami.Name)
 	}
+
 	if ami.DaysSinceCreate != 90 {
 		t.Errorf("AMI DaysSinceCreate = %v, want 90", ami.DaysSinceCreate)
 	}
+
 	if ami.MaxPotentialSaving != 5.00 {
 		t.Errorf("AMI MaxPotentialSaving = %v, want 5.00", ami.MaxPotentialSaving)
 	}
+
 	if ami.SafetyWarning == "" {
 		t.Error("AMI SafetyWarning should not be empty")
 	}
+
 	if len(ami.SnapshotIDs) != 2 {
 		t.Errorf("AMI SnapshotIDs has %d items, want 2", len(ami.SnapshotIDs))
 	}
@@ -435,10 +451,10 @@ func TestOutputWasteJSON_WithUnusedAMIs(t *testing.T) {
 func TestOutputWasteJSON_AMIWithEmptySnapshots(t *testing.T) {
 	unusedAMIs := []model.AMIWasteInfo{
 		{
-			ImageId:            "ami-nosnapshots",
+			ImageID:            "ami-nosnapshots",
 			Name:               "ami-without-snapshots",
 			DaysSinceCreate:    45,
-			SnapshotIds:        []string{}, // Empty snapshots
+			SnapshotIDs:        []string{}, // Empty snapshots
 			SnapshotSizeGB:     0,
 			MaxPotentialSaving: 0.00,
 			SafetyWarning:      "Verify before deleting",
@@ -446,6 +462,7 @@ func TestOutputWasteJSON_AMIWithEmptySnapshots(t *testing.T) {
 	}
 
 	var err error
+
 	output := captureStdout(func() {
 		err = OutputWasteJSON("123456789012", nil, nil, nil, nil, nil, nil, unusedAMIs, nil)
 	})
@@ -467,6 +484,7 @@ func TestOutputWasteJSON_AMIWithEmptySnapshots(t *testing.T) {
 	if ami.SnapshotSizeGB != 0 {
 		t.Errorf("AMI SnapshotSizeGB = %v, want 0", ami.SnapshotSizeGB)
 	}
+
 	if ami.MaxPotentialSaving != 0.00 {
 		t.Errorf("AMI MaxPotentialSaving = %v, want 0.00", ami.MaxPotentialSaving)
 	}
@@ -484,10 +502,12 @@ func BenchmarkOutputWasteJSON(b *testing.B) {
 	// Redirect stdout to discard during benchmark
 	old := os.Stdout
 	os.Stdout, _ = os.Open(os.DevNull)
+
 	defer func() { os.Stdout = old }()
 
 	b.ResetTimer()
+
 	for i := 0; i < b.N; i++ {
-		OutputWasteJSON("123456789012", elasticIPs, nil, nil, nil, nil, nil, nil, nil)
+		_ = OutputWasteJSON("123456789012", elasticIPs, nil, nil, nil, nil, nil, nil, nil)
 	}
 }

@@ -12,21 +12,25 @@ type MockOutputService struct {
 	mock.Mock
 }
 
+// RenderCostComparison mocks the RenderCostComparison method.
 func (m *MockOutputService) RenderCostComparison(accountID, lastTotalCost, currentTotalCost string, lastMonth, currentMonth *model.CostInfo) error {
 	args := m.Called(accountID, lastTotalCost, currentTotalCost, lastMonth, currentMonth)
 	return args.Error(0)
 }
 
+// RenderTrend mocks the RenderTrend method.
 func (m *MockOutputService) RenderTrend(accountID string, costInfo []model.CostInfo) error {
 	args := m.Called(accountID, costInfo)
 	return args.Error(0)
 }
 
+// RenderWaste mocks the RenderWaste method.
 func (m *MockOutputService) RenderWaste(accountID string, elasticIPs []types.Address, unusedVolumes []types.Volume, stoppedVolumes []types.Volume, ris []model.RiExpirationInfo, stoppedInstances []types.Instance, loadBalancers []elbtypes.LoadBalancer, unusedAMIs []model.AMIWasteInfo, orphanedSnapshots []model.SnapshotWasteInfo) error {
 	args := m.Called(accountID, elasticIPs, unusedVolumes, stoppedVolumes, ris, stoppedInstances, loadBalancers, unusedAMIs, orphanedSnapshots)
 	return args.Error(0)
 }
 
+// StopSpinner mocks the StopSpinner method.
 func (m *MockOutputService) StopSpinner() {
 	m.Called()
 }

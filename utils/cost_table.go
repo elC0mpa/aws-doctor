@@ -1,4 +1,4 @@
-package utils
+package utils //nolint:revive
 
 import (
 	"fmt"
@@ -12,9 +12,10 @@ import (
 	"github.com/jedib0t/go-pretty/v6/text"
 )
 
-func DrawCostTable(accountId string, lastTotalCost, currenttotalCost string, lastMonthGroups, currentMonthGroups *model.CostInfo, costAggregation string) {
+// DrawCostTable renders a table comparing costs between months.
+func DrawCostTable(accountID string, lastTotalCost, currenttotalCost string, lastMonthGroups, currentMonthGroups *model.CostInfo, _ string) {
 	fmt.Printf("\n%s\n", text.FgHiWhite.Sprint(" 💰 AWS COST DIAGNOSIS"))
-	fmt.Printf(" Account ID: %s\n", text.FgBlue.Sprint(accountId))
+	fmt.Printf(" Account ID: %s\n", text.FgBlue.Sprint(accountID))
 	fmt.Println(text.FgHiBlue.Sprint(" ------------------------------------------------"))
 
 	currentMonthHeader := fmt.Sprintf("Current Month\n(%s\n%s)", *currentMonthGroups.Start, *currentMonthGroups.End)
@@ -43,7 +44,7 @@ func DrawCostTable(accountId string, lastTotalCost, currenttotalCost string, las
 
 	tw.AppendRows(rows)
 	tw.SetStyle(table.StyleRounded)
-	
+
 	tw.SetColumnConfigs([]table.ColumnConfig{
 		{
 			Number:       1,

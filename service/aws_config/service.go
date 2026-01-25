@@ -1,3 +1,4 @@
+// Package awsconfig provides a service for loading AWS configuration.
 package awsconfig
 
 import (
@@ -7,7 +8,8 @@ import (
 	"github.com/aws/aws-sdk-go-v2/config"
 )
 
-func NewService() *service {
+// NewService creates a new AWS configuration service.
+func NewService() Service {
 	return &service{}
 }
 

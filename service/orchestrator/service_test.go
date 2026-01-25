@@ -89,7 +89,7 @@ func TestOrchestrate_RouteToWasteWorkflow(t *testing.T) {
 	svc := NewService(mockSTS, mockCost, mockEC2, mockELB, mockOutput)
 
 	// Setup expectations for waste workflow
-	mockEC2.On("GetUnusedElasticIpAddressesInfo", mock.Anything).Return([]types.Address{}, nil)
+	mockEC2.On("GetUnusedElasticIPAddressesInfo", mock.Anything).Return([]types.Address{}, nil)
 	mockEC2.On("GetUnusedEBSVolumes", mock.Anything).Return([]types.Volume{}, nil)
 	mockEC2.On("GetStoppedInstancesInfo", mock.Anything).Return([]types.Instance{}, []types.Volume{}, nil)
 	mockEC2.On("GetReservedInstanceExpiringOrExpired30DaysWaste", mock.Anything).Return([]model.RiExpirationInfo{}, nil)
@@ -126,7 +126,7 @@ func TestOrchestrate_WasteTakesPrecedenceOverTrend(t *testing.T) {
 	svc := NewService(mockSTS, mockCost, mockEC2, mockELB, mockOutput)
 
 	// Setup expectations for waste workflow (should be called, not trend)
-	mockEC2.On("GetUnusedElasticIpAddressesInfo", mock.Anything).Return([]types.Address{}, nil)
+	mockEC2.On("GetUnusedElasticIPAddressesInfo", mock.Anything).Return([]types.Address{}, nil)
 	mockEC2.On("GetUnusedEBSVolumes", mock.Anything).Return([]types.Volume{}, nil)
 	mockEC2.On("GetStoppedInstancesInfo", mock.Anything).Return([]types.Instance{}, []types.Volume{}, nil)
 	mockEC2.On("GetReservedInstanceExpiringOrExpired30DaysWaste", mock.Anything).Return([]model.RiExpirationInfo{}, nil)
@@ -156,35 +156,35 @@ func TestDefaultWorkflow_CostServiceError(t *testing.T) {
 	}{
 		{
 			name: "GetCurrentMonthCostsByService_fails",
-			setupMocks: func(mockCost *mocks.MockCostService, mockSTS *mocks.MockSTSService) {
-				mockCost.On("GetCurrentMonthCostsByService", mock.Anything).Return(nil, errors.New("cost API error"))
+			setupMocks: func(mockCost *mocks.MockCostService, _ *mocks.MockSTSService) {
+				mockCost.On("GetCurrentMonthCostsByService", mock.Anything).Return((*model.CostInfo)(nil), errors.New("cost API error"))
 			},
 			expectedErr: "cost API error",
 		},
 		{
 			name: "GetLastMonthCostsByService_fails",
-			setupMocks: func(mockCost *mocks.MockCostService, mockSTS *mocks.MockSTSService) {
+			setupMocks: func(mockCost *mocks.MockCostService, _ *mocks.MockSTSService) {
 				mockCost.On("GetCurrentMonthCostsByService", mock.Anything).Return(&model.CostInfo{}, nil)
-				mockCost.On("GetLastMonthCostsByService", mock.Anything).Return(nil, errors.New("last month error"))
+				mockCost.On("GetLastMonthCostsByService", mock.Anything).Return((*model.CostInfo)(nil), errors.New("last month error"))
 			},
 			expectedErr: "last month error",
 		},
 		{
 			name: "GetCurrentMonthTotalCosts_fails",
-			setupMocks: func(mockCost *mocks.MockCostService, mockSTS *mocks.MockSTSService) {
+			setupMocks: func(mockCost *mocks.MockCostService, _ *mocks.MockSTSService) {
 				mockCost.On("GetCurrentMonthCostsByService", mock.Anything).Return(&model.CostInfo{}, nil)
 				mockCost.On("GetLastMonthCostsByService", mock.Anything).Return(&model.CostInfo{}, nil)
-				mockCost.On("GetCurrentMonthTotalCosts", mock.Anything).Return(nil, errors.New("total cost error"))
+				mockCost.On("GetCurrentMonthTotalCosts", mock.Anything).Return((*string)(nil), errors.New("total cost error"))
 			},
 			expectedErr: "total cost error",
 		},
 		{
 			name: "GetLastMonthTotalCosts_fails",
-			setupMocks: func(mockCost *mocks.MockCostService, mockSTS *mocks.MockSTSService) {
+			setupMocks: func(mockCost *mocks.MockCostService, _ *mocks.MockSTSService) {
 				mockCost.On("GetCurrentMonthCostsByService", mock.Anything).Return(&model.CostInfo{}, nil)
 				mockCost.On("GetLastMonthCostsByService", mock.Anything).Return(&model.CostInfo{}, nil)
 				mockCost.On("GetCurrentMonthTotalCosts", mock.Anything).Return(aws.String("100.00"), nil)
-				mockCost.On("GetLastMonthTotalCosts", mock.Anything).Return(nil, errors.New("last total error"))
+				mockCost.On("GetLastMonthTotalCosts", mock.Anything).Return((*string)(nil), errors.New("last total error"))
 			},
 			expectedErr: "last total error",
 		},
@@ -195,7 +195,7 @@ func TestDefaultWorkflow_CostServiceError(t *testing.T) {
 				mockCost.On("GetLastMonthCostsByService", mock.Anything).Return(&model.CostInfo{}, nil)
 				mockCost.On("GetCurrentMonthTotalCosts", mock.Anything).Return(aws.String("100.00"), nil)
 				mockCost.On("GetLastMonthTotalCosts", mock.Anything).Return(aws.String("90.00"), nil)
-				mockSTS.On("GetCallerIdentity", mock.Anything).Return(nil, errors.New("STS error"))
+				mockSTS.On("GetCallerIdentity", mock.Anything).Return((*sts.GetCallerIdentityOutput)(nil), errors.New("STS error"))
 			},
 			expectedErr: "STS error",
 		},
@@ -230,8 +230,8 @@ func TestTrendWorkflow_Error(t *testing.T) {
 	}{
 		{
 			name: "GetLastSixMonthsCosts_fails",
-			setupMocks: func(mockCost *mocks.MockCostService, mockSTS *mocks.MockSTSService) {
-				mockCost.On("GetLastSixMonthsCosts", mock.Anything).Return(nil, errors.New("trend API error"))
+			setupMocks: func(mockCost *mocks.MockCostService, _ *mocks.MockSTSService) {
+				mockCost.On("GetLastSixMonthsCosts", mock.Anything).Return(([]model.CostInfo)(nil), errors.New("trend API error"))
 			},
 			expectedErr: "trend API error",
 		},
@@ -239,7 +239,7 @@ func TestTrendWorkflow_Error(t *testing.T) {
 			name: "GetCallerIdentity_fails",
 			setupMocks: func(mockCost *mocks.MockCostService, mockSTS *mocks.MockSTSService) {
 				mockCost.On("GetLastSixMonthsCosts", mock.Anything).Return([]model.CostInfo{}, nil)
-				mockSTS.On("GetCallerIdentity", mock.Anything).Return(nil, errors.New("STS error"))
+				mockSTS.On("GetCallerIdentity", mock.Anything).Return((*sts.GetCallerIdentityOutput)(nil), errors.New("STS error"))
 			},
 			expectedErr: "STS error",
 		},
@@ -275,7 +275,7 @@ func TestWasteWorkflow_Error(t *testing.T) {
 		{
 			name: "GetUnusedElasticIpAddressesInfo_fails",
 			setupMocks: func(mockEC2 *mocks.MockEC2Service, mockELB *mocks.MockELBService, mockSTS *mocks.MockSTSService) {
-				mockEC2.On("GetUnusedElasticIpAddressesInfo", mock.Anything).Return(nil, errors.New("EIP error"))
+				mockEC2.On("GetUnusedElasticIPAddressesInfo", mock.Anything).Return(([]types.Address)(nil), errors.New("EIP error"))
 				mockEC2.On("GetUnusedEBSVolumes", mock.Anything).Return([]types.Volume{}, nil)
 				mockEC2.On("GetStoppedInstancesInfo", mock.Anything).Return([]types.Instance{}, []types.Volume{}, nil)
 				mockEC2.On("GetReservedInstanceExpiringOrExpired30DaysWaste", mock.Anything).Return([]model.RiExpirationInfo{}, nil)
@@ -291,8 +291,8 @@ func TestWasteWorkflow_Error(t *testing.T) {
 		{
 			name: "GetUnusedEBSVolumes_fails",
 			setupMocks: func(mockEC2 *mocks.MockEC2Service, mockELB *mocks.MockELBService, mockSTS *mocks.MockSTSService) {
-				mockEC2.On("GetUnusedElasticIpAddressesInfo", mock.Anything).Return([]types.Address{}, nil)
-				mockEC2.On("GetUnusedEBSVolumes", mock.Anything).Return(nil, errors.New("EBS error"))
+				mockEC2.On("GetUnusedElasticIPAddressesInfo", mock.Anything).Return([]types.Address{}, nil)
+				mockEC2.On("GetUnusedEBSVolumes", mock.Anything).Return(([]types.Volume)(nil), errors.New("EBS error"))
 				mockEC2.On("GetStoppedInstancesInfo", mock.Anything).Return([]types.Instance{}, []types.Volume{}, nil)
 				mockEC2.On("GetReservedInstanceExpiringOrExpired30DaysWaste", mock.Anything).Return([]model.RiExpirationInfo{}, nil)
 				mockEC2.On("GetUnusedAMIs", mock.Anything, mock.Anything).Return([]model.AMIWasteInfo{}, nil)
@@ -307,13 +307,13 @@ func TestWasteWorkflow_Error(t *testing.T) {
 		{
 			name: "GetUnusedLoadBalancers_fails",
 			setupMocks: func(mockEC2 *mocks.MockEC2Service, mockELB *mocks.MockELBService, mockSTS *mocks.MockSTSService) {
-				mockEC2.On("GetUnusedElasticIpAddressesInfo", mock.Anything).Return([]types.Address{}, nil)
+				mockEC2.On("GetUnusedElasticIPAddressesInfo", mock.Anything).Return([]types.Address{}, nil)
 				mockEC2.On("GetUnusedEBSVolumes", mock.Anything).Return([]types.Volume{}, nil)
 				mockEC2.On("GetStoppedInstancesInfo", mock.Anything).Return([]types.Instance{}, []types.Volume{}, nil)
 				mockEC2.On("GetReservedInstanceExpiringOrExpired30DaysWaste", mock.Anything).Return([]model.RiExpirationInfo{}, nil)
 				mockEC2.On("GetUnusedAMIs", mock.Anything, mock.Anything).Return([]model.AMIWasteInfo{}, nil)
 				mockEC2.On("GetOrphanedSnapshots", mock.Anything, mock.Anything).Return([]model.SnapshotWasteInfo{}, nil)
-				mockELB.On("GetUnusedLoadBalancers", mock.Anything).Return(nil, errors.New("ELB error"))
+				mockELB.On("GetUnusedLoadBalancers", mock.Anything).Return(([]elbtypes.LoadBalancer)(nil), errors.New("ELB error"))
 				mockSTS.On("GetCallerIdentity", mock.Anything).Return(&sts.GetCallerIdentityOutput{
 					Account: aws.String("123456789012"),
 				}, nil)

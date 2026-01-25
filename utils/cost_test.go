@@ -1,4 +1,4 @@
-package utils
+package utils //nolint:revive
 
 import (
 	"testing"
@@ -6,9 +6,9 @@ import (
 
 func TestParseCostString(t *testing.T) {
 	tests := []struct {
-		name    string
-		input   string
-		want    float64
+		name  string
+		input string
+		want  float64
 	}{
 		{
 			name:  "standard_format_with_usd",
@@ -95,6 +95,7 @@ func BenchmarkParseCostString(b *testing.B) {
 	}
 
 	b.ResetTimer()
+
 	for i := 0; i < b.N; i++ {
 		for _, input := range inputs {
 			ParseCostString(input)

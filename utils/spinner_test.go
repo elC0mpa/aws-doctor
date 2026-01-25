@@ -1,33 +1,36 @@
-package utils
+package utils //nolint:revive
 
 import (
 	"testing"
 	"time"
 )
 
-func TestStartAndStopSpinner(t *testing.T) {
-	// Start spinner
+func TestStartAndStopSpinner(_ *testing.T) {
+	// Simple test to ensure it doesn't panic
+	// Note: We can't easily verify output since it writes to stdout/stderr directly
+	// and uses ANSI codes.
 	StartSpinner()
-
-	// Give it a moment to actually start
-	time.Sleep(50 * time.Millisecond)
-
-	// Stop spinner - should not panic
+	time.Sleep(100 * time.Millisecond)
 	StopSpinner()
 }
 
-func TestSpinnerSequence(t *testing.T) {
-	// Test multiple start/stop cycles
-	for i := 0; i < 3; i++ {
-		StartSpinner()
-		time.Sleep(10 * time.Millisecond)
-		StopSpinner()
-	}
+func TestSpinnerSequence(_ *testing.T) {
+	// Test sequence of start, stop, start, stop
+	StartSpinner()
+	time.Sleep(50 * time.Millisecond)
+	StopSpinner()
+
+	time.Sleep(50 * time.Millisecond)
+
+	StartSpinner()
+	time.Sleep(50 * time.Millisecond)
+	StopSpinner()
 }
 
 func TestStartSpinner_InitializesLoader(t *testing.T) {
 	// After calling StartSpinner, the global loader should be non-nil
 	StartSpinner()
+
 	defer StopSpinner()
 
 	if loader == nil {

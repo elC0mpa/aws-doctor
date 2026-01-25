@@ -1,3 +1,4 @@
+// Package elb provides a service for interacting with AWS Elastic Load Balancing.
 package elb
 
 import (
@@ -8,8 +9,10 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/elasticloadbalancingv2/types"
 )
 
-func NewService(awsconfig aws.Config) *service {
+// NewService creates a new ELB service.
+func NewService(awsconfig aws.Config) Service {
 	client := elb.NewFromConfig(awsconfig)
+
 	return &service{
 		client: client,
 	}
@@ -18,6 +21,7 @@ func NewService(awsconfig aws.Config) *service {
 func (s *service) GetUnusedLoadBalancers(ctx context.Context) ([]types.LoadBalancer, error) {
 	// Collect all load balancers using pagination
 	var allLoadBalancers []types.LoadBalancer
+
 	lbPaginator := elb.NewDescribeLoadBalancersPaginator(s.client, &elb.DescribeLoadBalancersInput{})
 
 	for lbPaginator.HasMorePages() {
@@ -25,6 +29,7 @@ func (s *service) GetUnusedLoadBalancers(ctx context.Context) ([]types.LoadBalan
 		if err != nil {
 			return nil, err
 		}
+
 		allLoadBalancers = append(allLoadBalancers, lbOutput.LoadBalancers...)
 	}
 
@@ -37,6 +42,7 @@ func (s *service) GetUnusedLoadBalancers(ctx context.Context) ([]types.LoadBalan
 		if err != nil {
 			return nil, err
 		}
+
 		for _, tg := range tgOutput.TargetGroups {
 			for _, lbArn := range tg.LoadBalancerArns {
 				usedLbArns[lbArn] = true

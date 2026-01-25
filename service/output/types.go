@@ -9,6 +9,7 @@ import (
 // Format represents the output format type
 type Format string
 
+// FormatTable represents the table output format.
 const (
 	FormatTable Format = "table"
 	FormatJSON  Format = "json"

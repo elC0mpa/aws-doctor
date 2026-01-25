@@ -10,13 +10,14 @@ import (
 )
 
 type service struct {
-	stsService    awssts.STSService
-	costService   awscostexplorer.CostService
-	ec2Service    awsec2.EC2Service
-	elbService    elb.ELBService
+	stsService    awssts.Service
+	costService   awscostexplorer.Service
+	ec2Service    awsec2.Service
+	elbService    elb.Service
 	outputService output.Service
 }
 
-type OrchestratorService interface {
-	Orchestrate(model.Flags) error
+// Service is the interface for orchestrator service.
+type Service interface {
+	Orchestrate(flags model.Flags) error
 }

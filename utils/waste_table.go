@@ -1,4 +1,4 @@
-package utils
+package utils //nolint:revive
 
 import (
 	"fmt"
@@ -13,12 +13,13 @@ import (
 	"github.com/jedib0t/go-pretty/v6/text"
 )
 
-func DrawWasteTable(accountId string, elasticIpInfo []types.Address, unusedEBSVolumeInfo []types.Volume, attachedToStoppedInstancesEBSVolumeInfo []types.Volume, expireReservedInstancesInfo []model.RiExpirationInfo, instancesStoppedMoreThan30Days []types.Instance, unusedLoadBalancers []elbtypes.LoadBalancer, unusedAMIs []model.AMIWasteInfo, orphanedSnapshots []model.SnapshotWasteInfo) {
+// DrawWasteTable renders a table containing detected AWS waste.
+func DrawWasteTable(accountID string, elasticIPInfo []types.Address, unusedEBSVolumeInfo []types.Volume, attachedToStoppedInstancesEBSVolumeInfo []types.Volume, expireReservedInstancesInfo []model.RiExpirationInfo, instancesStoppedMoreThan30Days []types.Instance, unusedLoadBalancers []elbtypes.LoadBalancer, unusedAMIs []model.AMIWasteInfo, orphanedSnapshots []model.SnapshotWasteInfo) {
 	fmt.Printf("\n%s\n", text.FgHiWhite.Sprint(" 🏥 AWS DOCTOR CHECKUP"))
-	fmt.Printf(" Account ID: %s\n", text.FgBlue.Sprint(accountId))
+	fmt.Printf(" Account ID: %s\n", text.FgBlue.Sprint(accountID))
 	fmt.Println(text.FgHiBlue.Sprint(" ------------------------------------------------"))
 
-	hasWaste := len(elasticIpInfo) > 0 ||
+	hasWaste := len(elasticIPInfo) > 0 ||
 		len(unusedEBSVolumeInfo) > 0 ||
 		len(attachedToStoppedInstancesEBSVolumeInfo) > 0 ||
 		len(instancesStoppedMoreThan30Days) > 0 ||
@@ -36,8 +37,8 @@ func DrawWasteTable(accountId string, elasticIpInfo []types.Address, unusedEBSVo
 		drawEBSTable(unusedEBSVolumeInfo, attachedToStoppedInstancesEBSVolumeInfo)
 	}
 
-	if len(elasticIpInfo) > 0 {
-		drawElasticIpTable(elasticIpInfo)
+	if len(elasticIPInfo) > 0 {
+		drawElasticIPTable(elasticIPInfo)
 	}
 
 	if len(instancesStoppedMoreThan30Days) > 0 || len(expireReservedInstancesInfo) > 0 {
@@ -124,11 +125,13 @@ func drawEC2Table(instances []types.Instance, ris []model.RiExpirationInfo) {
 		rows[halfRow][0] = text.FgHiRed.Sprint(statusLabel)
 
 		t.AppendRows(rows)
+
 		hasPreviousRows = true
 	}
 
 	if len(ris) > 0 {
 		var expiring, expired []model.RiExpirationInfo
+
 		for _, ri := range ris {
 			if ri.Status == "EXPIRING SOON" {
 				expiring = append(expiring, ri)
@@ -141,6 +144,7 @@ func drawEC2Table(instances []types.Instance, ris []model.RiExpirationInfo) {
 			if hasPreviousRows {
 				t.AppendSeparator()
 			}
+
 			statusLabel := "Reserved Instance\n(Expiring Soon)"
 			rows := populateRiRows(expiring)
 
@@ -148,6 +152,7 @@ func drawEC2Table(instances []types.Instance, ris []model.RiExpirationInfo) {
 			rows[halfRow][0] = text.FgHiYellow.Sprint(statusLabel)
 
 			t.AppendRows(rows)
+
 			hasPreviousRows = true
 		}
 
@@ -155,6 +160,7 @@ func drawEC2Table(instances []types.Instance, ris []model.RiExpirationInfo) {
 			if hasPreviousRows {
 				t.AppendSeparator()
 			}
+
 			statusLabel := "Reserved Instance\n(Recently Expired)"
 			rows := populateRiRows(expired)
 
@@ -169,7 +175,7 @@ func drawEC2Table(instances []types.Instance, ris []model.RiExpirationInfo) {
 	fmt.Println()
 }
 
-func drawElasticIpTable(elasticIpInfo []types.Address) {
+func drawElasticIPTable(elasticIPInfo []types.Address) {
 	t := table.NewWriter()
 	t.SetOutputMirror(os.Stdout)
 	t.SetStyle(table.StyleRounded)
@@ -178,7 +184,7 @@ func drawElasticIpTable(elasticIpInfo []types.Address) {
 	t.AppendHeader(table.Row{"Status", "IP Address", "Allocation ID"})
 
 	statusUnused := "Unassociated"
-	rows := populateElasticIpRows(elasticIpInfo)
+	rows := populateElasticIPRows(elasticIPInfo)
 
 	if len(rows) > 0 {
 		halfRow := len(rows) / 2
@@ -204,24 +210,24 @@ func populateEBSRows(volumes []types.Volume) []table.Row {
 	return rows
 }
 
-func populateElasticIpRows(ips []types.Address) []table.Row {
+func populateElasticIPRows(ips []types.Address) []table.Row {
 	var rows []table.Row
 
 	for _, ip := range ips {
-		publicIp := ""
+		publicIP := ""
 		if ip.PublicIp != nil {
-			publicIp = *ip.PublicIp
+			publicIP = *ip.PublicIp
 		}
 
-		allocationId := ""
+		allocationID := ""
 		if ip.AllocationId != nil {
-			allocationId = *ip.AllocationId
+			allocationID = *ip.AllocationId
 		}
 
 		rows = append(rows, table.Row{
 			"",
-			publicIp,
-			allocationId,
+			publicIP,
+			allocationID,
 		})
 	}
 
@@ -230,6 +236,7 @@ func populateElasticIpRows(ips []types.Address) []table.Row {
 
 func populateInstanceRows(instances []types.Instance) []table.Row {
 	var rows []table.Row
+
 	now := time.Now()
 
 	for _, instance := range instances {
@@ -240,28 +247,31 @@ func populateInstanceRows(instances []types.Instance) []table.Row {
 		}
 
 		timeInfo := "-"
+
 		stoppedAt, err := ParseTransitionDate(reason)
 		if err == nil {
 			days := int(now.Sub(stoppedAt).Hours() / 24)
 			timeInfo = fmt.Sprintf("%d days ago", days)
 		}
 
-		instanceId := ""
+		instanceID := ""
 		if instance.InstanceId != nil {
-			instanceId = *instance.InstanceId
+			instanceID = *instance.InstanceId
 		}
 
 		rows = append(rows, table.Row{
 			"", // Placeholder for Status
-			instanceId,
+			instanceID,
 			timeInfo,
 		})
 	}
+
 	return rows
 }
 
 func populateRiRows(ris []model.RiExpirationInfo) []table.Row {
 	var rows []table.Row
+
 	for _, ri := range ris {
 		timeInfo := ""
 		if ri.DaysUntilExpiry >= 0 {
@@ -272,10 +282,11 @@ func populateRiRows(ris []model.RiExpirationInfo) []table.Row {
 
 		rows = append(rows, table.Row{
 			"",
-			ri.ReservedInstanceId,
+			ri.ReservedInstanceID,
 			timeInfo,
 		})
 	}
+
 	return rows
 }
 
@@ -354,7 +365,7 @@ func populateAMIRows(amis []model.AMIWasteInfo) []table.Row {
 
 		rows = append(rows, table.Row{
 			"",
-			ami.ImageId,
+			ami.ImageID,
 			name,
 			fmt.Sprintf("%d days", ami.DaysSinceCreate),
 			fmt.Sprintf("$%.2f", ami.MaxPotentialSaving),
@@ -379,6 +390,7 @@ func drawSnapshotTable(snapshots []model.SnapshotWasteInfo) {
 
 	// Separate orphaned and stale snapshots
 	var orphaned, stale []model.SnapshotWasteInfo
+
 	for _, snap := range snapshots {
 		if snap.Category == model.SnapshotCategoryOrphaned {
 			orphaned = append(orphaned, snap)
@@ -397,6 +409,7 @@ func drawSnapshotTable(snapshots []model.SnapshotWasteInfo) {
 		rows[halfRow][0] = text.FgHiRed.Sprint(statusLabel)
 
 		t.AppendRows(rows)
+
 		hasPreviousRows = true
 	}
 
@@ -404,6 +417,7 @@ func drawSnapshotTable(snapshots []model.SnapshotWasteInfo) {
 		if hasPreviousRows {
 			t.AppendSeparator()
 		}
+
 		statusLabel := "Stale(Old Backup > 90 days)"
 		rows := populateSnapshotRows(stale)
 
@@ -423,7 +437,7 @@ func populateSnapshotRows(snapshots []model.SnapshotWasteInfo) []table.Row {
 	for _, snap := range snapshots {
 		rows = append(rows, table.Row{
 			"",
-			snap.SnapshotId,
+			snap.SnapshotID,
 			snap.Reason,
 			fmt.Sprintf("%d GB", snap.SizeGB),
 			fmt.Sprintf("$%.2f/mo", snap.MaxPotentialSavings),

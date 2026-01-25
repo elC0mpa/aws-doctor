@@ -1,3 +1,4 @@
+// Package output provides a service for rendering results to the console.
 package output
 
 import (
@@ -13,6 +14,7 @@ func NewService(format string) Service {
 	if format == "json" {
 		f = FormatJSON
 	}
+
 	return &service{format: f}
 }
 
@@ -28,6 +30,7 @@ func (s *service) RenderCostComparison(accountID, lastTotalCost, currentTotalCos
 	}
 
 	utils.DrawCostTable(accountID, lastTotalCost, currentTotalCost, lastMonth, currentMonth, "UnblendedCost")
+
 	return nil
 }
 
@@ -37,6 +40,7 @@ func (s *service) RenderTrend(accountID string, costInfo []model.CostInfo) error
 	}
 
 	utils.DrawTrendChart(accountID, costInfo)
+
 	return nil
 }
 
@@ -46,6 +50,7 @@ func (s *service) RenderWaste(accountID string, elasticIPs []types.Address, unus
 	}
 
 	utils.DrawWasteTable(accountID, elasticIPs, unusedVolumes, stoppedVolumes, ris, stoppedInstances, loadBalancers, unusedAMIs, orphanedSnapshots)
+
 	return nil
 }
 

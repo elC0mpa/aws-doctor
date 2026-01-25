@@ -12,9 +12,10 @@ type service struct {
 	client *ec2.Client
 }
 
-type EC2Service interface {
-	GetElasticIpAddressesInfo(ctx context.Context) (*model.ElasticIpInfo, error)
-	GetUnusedElasticIpAddressesInfo(ctx context.Context) ([]types.Address, error)
+// Service is the interface for AWS EC2 service.
+type Service interface {
+	GetElasticIPAddressesInfo(ctx context.Context) (*model.ElasticIPInfo, error)
+	GetUnusedElasticIPAddressesInfo(ctx context.Context) ([]types.Address, error)
 	GetUnusedEBSVolumes(ctx context.Context) ([]types.Volume, error)
 	GetStoppedInstancesInfo(ctx context.Context) ([]types.Instance, []types.Volume, error)
 	GetReservedInstanceExpiringOrExpired30DaysWaste(ctx context.Context) ([]model.RiExpirationInfo, error)

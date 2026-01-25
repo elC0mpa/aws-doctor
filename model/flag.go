@@ -1,5 +1,6 @@
 package model
 
+// Flags represents the command-line flags for the application.
 type Flags struct {
 	Region  string
 	Profile string

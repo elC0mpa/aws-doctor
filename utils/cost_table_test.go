@@ -1,4 +1,4 @@
-package utils
+package utils //nolint:revive
 
 import (
 	"bytes"
@@ -113,6 +113,7 @@ func TestOrderCostServices(t *testing.T) {
 				if service.Amount != original.Amount {
 					t.Errorf("Amount mismatch for %s: got %v, want %v", service.Name, service.Amount, original.Amount)
 				}
+
 				if service.Unit != original.Unit {
 					t.Errorf("Unit mismatch for %s: got %v, want %v", service.Name, service.Unit, original.Unit)
 				}
@@ -296,6 +297,7 @@ func BenchmarkOrderCostServices(b *testing.B) {
 	}
 
 	b.ResetTimer()
+
 	for i := 0; i < b.N; i++ {
 		orderCostServices(&costGroups)
 	}
@@ -309,11 +311,13 @@ func captureTableOutput(f func()) string {
 
 	f()
 
-	w.Close()
+	_ = w.Close()
 	os.Stdout = old
 
 	var buf bytes.Buffer
-	io.Copy(&buf, r)
+
+	_, _ = io.Copy(&buf, r)
+
 	return buf.String()
 }
 
@@ -461,9 +465,11 @@ func BenchmarkDrawCostTable(b *testing.B) {
 	// Redirect stdout to discard
 	old := os.Stdout
 	os.Stdout, _ = os.Open(os.DevNull)
+
 	defer func() { os.Stdout = old }()
 
 	b.ResetTimer()
+
 	for i := 0; i < b.N; i++ {
 		DrawCostTable("123456789012", "175.00 USD", "195.00 USD", lastMonthGroups, currentMonthGroups, "UnblendedCost")
 	}

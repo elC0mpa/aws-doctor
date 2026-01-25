@@ -1,4 +1,4 @@
-package utils
+package utils //nolint:revive
 
 import (
 	"bytes"
@@ -72,7 +72,7 @@ func TestPopulateEBSRows(t *testing.T) {
 	}
 }
 
-func TestPopulateElasticIpRows(t *testing.T) {
+func TestPopulateElasticIPRows(t *testing.T) {
 	tests := []struct {
 		name    string
 		ips     []types.Address
@@ -119,10 +119,10 @@ func TestPopulateElasticIpRows(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			rows := populateElasticIpRows(tt.ips)
+			rows := populateElasticIPRows(tt.ips)
 
 			if len(rows) != tt.wantLen {
-				t.Errorf("populateElasticIpRows() returned %d rows, want %d", len(rows), tt.wantLen)
+				t.Errorf("populateElasticIPRows() returned %d rows, want %d", len(rows), tt.wantLen)
 				return
 			}
 
@@ -257,7 +257,7 @@ func TestPopulateRiRows(t *testing.T) {
 			name: "single_ri_expiring_soon",
 			ris: []model.RiExpirationInfo{
 				{
-					ReservedInstanceId: "ri-12345",
+					ReservedInstanceID: "ri-12345",
 					DaysUntilExpiry:    15,
 					Status:             "EXPIRING SOON",
 				},
@@ -268,7 +268,7 @@ func TestPopulateRiRows(t *testing.T) {
 			name: "single_ri_expired",
 			ris: []model.RiExpirationInfo{
 				{
-					ReservedInstanceId: "ri-67890",
+					ReservedInstanceID: "ri-67890",
 					DaysUntilExpiry:    -10,
 					Status:             "EXPIRED",
 				},
@@ -278,9 +278,9 @@ func TestPopulateRiRows(t *testing.T) {
 		{
 			name: "multiple_ris",
 			ris: []model.RiExpirationInfo{
-				{ReservedInstanceId: "ri-111", DaysUntilExpiry: 30},
-				{ReservedInstanceId: "ri-222", DaysUntilExpiry: 0},
-				{ReservedInstanceId: "ri-333", DaysUntilExpiry: -5},
+				{ReservedInstanceID: "ri-111", DaysUntilExpiry: 30},
+				{ReservedInstanceID: "ri-222", DaysUntilExpiry: 0},
+				{ReservedInstanceID: "ri-333", DaysUntilExpiry: -5},
 			},
 			wantLen: 3,
 		},
@@ -331,7 +331,7 @@ func TestPopulateRiRows_TimeInfo(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			ris := []model.RiExpirationInfo{
-				{ReservedInstanceId: "ri-test", DaysUntilExpiry: tt.daysUntilExpiry},
+				{ReservedInstanceID: "ri-test", DaysUntilExpiry: tt.daysUntilExpiry},
 			}
 
 			rows := populateRiRows(ris)
@@ -455,6 +455,7 @@ func BenchmarkPopulateEBSRows(b *testing.B) {
 	}
 
 	b.ResetTimer()
+
 	for i := 0; i < b.N; i++ {
 		populateEBSRows(volumes)
 	}
@@ -470,6 +471,7 @@ func BenchmarkPopulateInstanceRows(b *testing.B) {
 	}
 
 	b.ResetTimer()
+
 	for i := 0; i < b.N; i++ {
 		populateInstanceRows(instances)
 	}
@@ -483,11 +485,13 @@ func captureWasteOutput(f func()) string {
 
 	f()
 
-	w.Close()
+	_ = w.Close()
 	os.Stdout = old
 
 	var buf bytes.Buffer
-	io.Copy(&buf, r)
+
+	_, _ = io.Copy(&buf, r)
+
 	return buf.String()
 }
 
@@ -557,7 +561,7 @@ func TestDrawWasteTable_WithStoppedInstances(t *testing.T) {
 func TestDrawWasteTable_WithReservedInstances(t *testing.T) {
 	ris := []model.RiExpirationInfo{
 		{
-			ReservedInstanceId: "ri-123",
+			ReservedInstanceID: "ri-123",
 			DaysUntilExpiry:    15,
 			Status:             "EXPIRING SOON",
 		},
@@ -600,7 +604,7 @@ func TestDrawWasteTable_AllWasteTypes(t *testing.T) {
 		{VolumeId: aws.String("vol-456"), Size: aws.Int32(200)},
 	}
 	ris := []model.RiExpirationInfo{
-		{ReservedInstanceId: "ri-123", DaysUntilExpiry: 15, Status: "EXPIRING SOON"},
+		{ReservedInstanceID: "ri-123", DaysUntilExpiry: 15, Status: "EXPIRING SOON"},
 	}
 	stoppedInstances := []types.Instance{
 		{InstanceId: aws.String("i-123"), StateTransitionReason: aws.String("User initiated (2024-01-01 00:00:00 UTC)")},
@@ -617,12 +621,15 @@ func TestDrawWasteTable_AllWasteTypes(t *testing.T) {
 	if !strings.Contains(output, "EBS") {
 		t.Error("Missing EBS section")
 	}
+
 	if !strings.Contains(output, "Elastic IP") {
 		t.Error("Missing Elastic IP section")
 	}
+
 	if !strings.Contains(output, "EC2") {
 		t.Error("Missing EC2 section")
 	}
+
 	if !strings.Contains(output, "Load Balancer") {
 		t.Error("Missing Load Balancer section")
 	}
@@ -690,8 +697,8 @@ func TestDrawEC2Table(t *testing.T) {
 		},
 	}
 	ris := []model.RiExpirationInfo{
-		{ReservedInstanceId: "ri-123", DaysUntilExpiry: 15, Status: "EXPIRING SOON"},
-		{ReservedInstanceId: "ri-456", DaysUntilExpiry: -5, Status: "EXPIRED"},
+		{ReservedInstanceID: "ri-123", DaysUntilExpiry: 15, Status: "EXPIRING SOON"},
+		{ReservedInstanceID: "ri-456", DaysUntilExpiry: -5, Status: "EXPIRED"},
 	}
 
 	output := captureWasteOutput(func() {
@@ -727,7 +734,7 @@ func TestDrawEC2Table_OnlyInstances(t *testing.T) {
 
 func TestDrawEC2Table_OnlyRIs(t *testing.T) {
 	ris := []model.RiExpirationInfo{
-		{ReservedInstanceId: "ri-123", DaysUntilExpiry: 15, Status: "EXPIRING SOON"},
+		{ReservedInstanceID: "ri-123", DaysUntilExpiry: 15, Status: "EXPIRING SOON"},
 	}
 
 	output := captureWasteOutput(func() {
@@ -739,26 +746,26 @@ func TestDrawEC2Table_OnlyRIs(t *testing.T) {
 	}
 }
 
-func TestDrawElasticIpTable(t *testing.T) {
+func TestDrawElasticIPTable(t *testing.T) {
 	elasticIPs := []types.Address{
 		{PublicIp: aws.String("1.2.3.4"), AllocationId: aws.String("eipalloc-123")},
 		{PublicIp: aws.String("5.6.7.8"), AllocationId: aws.String("eipalloc-456")},
 	}
 
 	output := captureWasteOutput(func() {
-		drawElasticIpTable(elasticIPs)
+		drawElasticIPTable(elasticIPs)
 	})
 
 	if !strings.Contains(output, "Elastic IP Waste") {
-		t.Error("drawElasticIpTable() missing title")
+		t.Error("drawElasticIPTable() missing title")
 	}
 
 	if !strings.Contains(output, "1.2.3.4") {
-		t.Error("drawElasticIpTable() missing IP address")
+		t.Error("drawElasticIPTable() missing IP address")
 	}
 
 	if !strings.Contains(output, "eipalloc-123") {
-		t.Error("drawElasticIpTable() missing allocation ID")
+		t.Error("drawElasticIPTable() missing allocation ID")
 	}
 }
 
@@ -800,7 +807,7 @@ func TestPopulateAMIRows(t *testing.T) {
 			name: "single_ami",
 			amis: []model.AMIWasteInfo{
 				{
-					ImageId:            "ami-12345",
+					ImageID:            "ami-12345",
 					Name:               "my-ami",
 					DaysSinceCreate:    90,
 					MaxPotentialSaving: 5.00,
@@ -811,9 +818,9 @@ func TestPopulateAMIRows(t *testing.T) {
 		{
 			name: "multiple_amis",
 			amis: []model.AMIWasteInfo{
-				{ImageId: "ami-111", Name: "ami-one", DaysSinceCreate: 30, MaxPotentialSaving: 2.50},
-				{ImageId: "ami-222", Name: "ami-two", DaysSinceCreate: 60, MaxPotentialSaving: 5.00},
-				{ImageId: "ami-333", Name: "ami-three", DaysSinceCreate: 90, MaxPotentialSaving: 7.50},
+				{ImageID: "ami-111", Name: "ami-one", DaysSinceCreate: 30, MaxPotentialSaving: 2.50},
+				{ImageID: "ami-222", Name: "ami-two", DaysSinceCreate: 60, MaxPotentialSaving: 5.00},
+				{ImageID: "ami-333", Name: "ami-three", DaysSinceCreate: 90, MaxPotentialSaving: 7.50},
 			},
 			wantLen: 3,
 		},
@@ -837,8 +844,8 @@ func TestPopulateAMIRows(t *testing.T) {
 
 			// Verify AMI IDs are in the rows
 			for i, ami := range tt.amis {
-				if rows[i][1] != ami.ImageId {
-					t.Errorf("Row %d AMI ID = %v, want %v", i, rows[i][1], ami.ImageId)
+				if rows[i][1] != ami.ImageID {
+					t.Errorf("Row %d AMI ID = %v, want %v", i, rows[i][1], ami.ImageID)
 				}
 			}
 		})
@@ -848,7 +855,7 @@ func TestPopulateAMIRows(t *testing.T) {
 func TestPopulateAMIRows_LongNameTruncation(t *testing.T) {
 	amis := []model.AMIWasteInfo{
 		{
-			ImageId:            "ami-truncate",
+			ImageID:            "ami-truncate",
 			Name:               "this-is-a-very-long-ami-name-that-should-be-truncated",
 			DaysSinceCreate:    45,
 			MaxPotentialSaving: 3.00,
@@ -866,6 +873,7 @@ func TestPopulateAMIRows_LongNameTruncation(t *testing.T) {
 	if len(name) > 30 {
 		t.Errorf("Name was not truncated, got %d chars: %s", len(name), name)
 	}
+
 	if !strings.HasSuffix(name, "...") {
 		t.Errorf("Truncated name should end with '...', got: %s", name)
 	}
@@ -874,7 +882,7 @@ func TestPopulateAMIRows_LongNameTruncation(t *testing.T) {
 func TestPopulateAMIRows_Values(t *testing.T) {
 	amis := []model.AMIWasteInfo{
 		{
-			ImageId:            "ami-test123",
+			ImageID:            "ami-test123",
 			Name:               "test-ami",
 			DaysSinceCreate:    45,
 			MaxPotentialSaving: 2.50,
@@ -916,14 +924,14 @@ func TestPopulateAMIRows_Values(t *testing.T) {
 func TestDrawAMITable(t *testing.T) {
 	amis := []model.AMIWasteInfo{
 		{
-			ImageId:            "ami-12345",
+			ImageID:            "ami-12345",
 			Name:               "my-test-ami",
 			DaysSinceCreate:    60,
 			MaxPotentialSaving: 5.00,
 			SafetyWarning:      "Verify before deleting",
 		},
 		{
-			ImageId:            "ami-67890",
+			ImageID:            "ami-67890",
 			Name:               "another-ami",
 			DaysSinceCreate:    90,
 			MaxPotentialSaving: 7.50,
@@ -944,6 +952,7 @@ func TestDrawAMITable(t *testing.T) {
 	if !strings.Contains(output, "ami-12345") {
 		t.Error("drawAMITable() missing first AMI ID")
 	}
+
 	if !strings.Contains(output, "ami-67890") {
 		t.Error("drawAMITable() missing second AMI ID")
 	}
@@ -957,7 +966,7 @@ func TestDrawAMITable(t *testing.T) {
 func TestDrawWasteTable_WithUnusedAMIs(t *testing.T) {
 	unusedAMIs := []model.AMIWasteInfo{
 		{
-			ImageId:            "ami-waste123",
+			ImageID:            "ami-waste123",
 			Name:               "unused-ami",
 			DaysSinceCreate:    120,
 			MaxPotentialSaving: 10.00,
@@ -982,7 +991,7 @@ func BenchmarkPopulateAMIRows(b *testing.B) {
 	amis := make([]model.AMIWasteInfo, 50)
 	for i := 0; i < 50; i++ {
 		amis[i] = model.AMIWasteInfo{
-			ImageId:            "ami-" + string(rune('a'+i%26)),
+			ImageID:            "ami-" + string(rune('a'+i%26)),
 			Name:               "test-ami-" + string(rune('a'+i%26)),
 			DaysSinceCreate:    30 + i,
 			MaxPotentialSaving: float64(i) * 0.5,
@@ -990,6 +999,7 @@ func BenchmarkPopulateAMIRows(b *testing.B) {
 	}
 
 	b.ResetTimer()
+
 	for i := 0; i < b.N; i++ {
 		populateAMIRows(amis)
 	}
@@ -1006,9 +1016,11 @@ func BenchmarkDrawWasteTable(b *testing.B) {
 	// Redirect stdout to discard
 	old := os.Stdout
 	os.Stdout, _ = os.Open(os.DevNull)
+
 	defer func() { os.Stdout = old }()
 
 	b.ResetTimer()
+
 	for i := 0; i < b.N; i++ {
 		DrawWasteTable("123456789012", elasticIPs, unusedVolumes, nil, nil, nil, nil, nil, nil)
 	}
