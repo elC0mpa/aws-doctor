@@ -196,22 +196,17 @@ func TestFunction(t *testing.T) {
 }
 ```
 
-## Change Log (Required)
-
-Every change must be recorded in `CHANGELOG.md`. Use the helper scripts so entries
-are added consistently under `## [Unreleased]`.
-
-```bash
-# Windows (PowerShell)
-.\scripts\record-change.ps1 -Summary "short description" -Type docs
-
-# macOS/Linux
-./scripts/record-change.sh "short description" docs
-```
-
-Entry types: `feat`, `fix`, `docs`, `refactor`, `test`, `chore`, `perf`, `ci`, `build`.
-
 ## Common Tasks
+
+## Documentation Maintenance (Required)
+
+Any change that affects behavior, flags, outputs, workflows, supported AWS resources, build/test steps, or architecture must be reflected in the documentation. Agents must update the relevant files as part of the same change:
+
+- `AGENTS.md` for agent guidance, architecture, workflows, and contribution rules.
+- `README.md` for user-facing behavior, flags, features, and roadmap/checklists.
+- `CONTRIBUTING.md` and `TESTING.md` for contributor workflow and test guidance.
+
+If a change makes documentation inaccurate or incomplete, treat the documentation update as mandatory and do it in the same patch/PR.
 
 ### Adding a New Waste Detection Type
 
@@ -242,7 +237,6 @@ Before submitting:
 - [ ] `go vet ./...` passes
 - [ ] New features have tests (for testable code)
 - [ ] README.md updated if adding flags/features
-- [ ] `CHANGELOG.md` updated for every user-facing change
 - [ ] PR targets `development` branch (not `main`)
 
 After pushing:
