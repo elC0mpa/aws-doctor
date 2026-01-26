@@ -94,3 +94,15 @@ Available platforms:
 - [x] Export reports to JSON format
 - [ ] Export reports to CSV and PDF formats (medical records for your cloud)
 - [ ] Distribute the CLI via Fedora, Ubuntu, and macOS repositories
+
+## Changelog
+
+See `CHANGELOG.md` for notable changes. Contributors should add entries using:
+
+```bash
+# Windows (PowerShell)
+.\scripts\record-change.ps1 -Summary "short description" -Type docs
+
+# macOS/Linux
+./scripts/record-change.sh "short description" docs
+```

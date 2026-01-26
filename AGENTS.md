@@ -30,18 +30,30 @@ go run . --trend
 
 ```
 aws-doctor/
-├── app.go                 # Main application entry, flag parsing
-├── model/                 # Data structures and types
-├── service/
-│   ├── aws_config/       # AWS configuration loading
-│   ├── costexplorer/     # AWS Cost Explorer service
-│   ├── ec2/              # EC2 service (EIPs, EBS, instances)
-│   ├── elb/              # ELB service (load balancers)
-│   ├── flag/             # CLI flag parsing
-│   ├── orchestrator/     # Workflow coordination
-│   └── sts/              # AWS STS service
-└── utils/                # Utility functions, table rendering
+|-- app.go                 # Main application entry, flag parsing
+|-- model/                 # Data structures and types
+|-- service/
+|   |-- aws_config/       # AWS configuration loading
+|   |-- costexplorer/     # AWS Cost Explorer service
+|   |-- ec2/              # EC2 service (EIPs, EBS, instances)
+|   |-- elb/              # ELB service (load balancers)
+|   |-- flag/             # CLI flag parsing
+|   |-- orchestrator/     # Workflow coordination
+|   |-- output/           # Output rendering (table/json) + spinner control
+|   |-- sts/              # AWS STS service
+|   |-- update/           # Self-update workflow
+|-- utils/                # Utility functions, table rendering
+|-- mocks/                # Test doubles for orchestrator tests
+|-- assets/               # Logos and images
+|-- demo/                 # Demo GIFs
 ```
+
+### Key Flows
+
+- `app.go` builds services, then delegates to `service/orchestrator`.
+- `service/orchestrator` selects a workflow based on flags and calls service methods.
+- `service/output` chooses between table and JSON rendering and owns spinner stop.
+- `service/update` handles `--update`.
 
 ### Service Pattern
 
@@ -184,6 +196,21 @@ func TestFunction(t *testing.T) {
 }
 ```
 
+## Change Log (Required)
+
+Every change must be recorded in `CHANGELOG.md`. Use the helper scripts so entries
+are added consistently under `## [Unreleased]`.
+
+```bash
+# Windows (PowerShell)
+.\scripts\record-change.ps1 -Summary "short description" -Type docs
+
+# macOS/Linux
+./scripts/record-change.sh "short description" docs
+```
+
+Entry types: `feat`, `fix`, `docs`, `refactor`, `test`, `chore`, `perf`, `ci`, `build`.
+
 ## Common Tasks
 
 ### Adding a New Waste Detection Type
@@ -192,11 +219,12 @@ func TestFunction(t *testing.T) {
 2. Add method to `service/ec2/service.go` (or appropriate service)
 3. Update interface in `service/ec2/types.go`
 4. Add concurrent call in `service/orchestrator/service.go` wasteWorkflow
-5. Add display function in `utils/waste_table.go` (update `DrawWasteTable` signature)
-6. Add JSON output type in `model/output.go` and update `utils/json_output.go`
-7. **Update all test calls** when function signatures change (e.g., `DrawWasteTable`, `OutputWasteJSON`)
-8. Update README.md checklist
-9. Add tests for any pure helper functions
+5. Update `service/output/service.go` to pass the new data into `RenderWaste`
+6. Add display function in `utils/waste_table.go` (update `DrawWasteTable` signature)
+7. Add JSON output type in `model/output.go` and update `utils/json_output.go`
+8. **Update all test calls** when function signatures change (e.g., `DrawWasteTable`, `OutputWasteJSON`)
+9. Update README.md checklist
+10. Add tests for any pure helper functions
 
 ### Adding a New CLI Flag
 
@@ -214,6 +242,7 @@ Before submitting:
 - [ ] `go vet ./...` passes
 - [ ] New features have tests (for testable code)
 - [ ] README.md updated if adding flags/features
+- [ ] `CHANGELOG.md` updated for every user-facing change
 - [ ] PR targets `development` branch (not `main`)
 
 After pushing:

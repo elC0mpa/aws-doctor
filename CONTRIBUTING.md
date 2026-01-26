@@ -134,7 +134,23 @@ This approach lets you test multiple features together locally without affecting
 - **One feature per PR** - keep PRs focused and reviewable
 - **Include tests** - new features should have accompanying unit tests
 - **Update documentation** - update README.md if adding new flags or features
+- **Record changes** - update `CHANGELOG.md` for every user-facing change
 - **Follow existing patterns** - match the code style and architecture of existing code
+
+### Change Log Entries
+
+All changes must be recorded in `CHANGELOG.md`. Use the helper scripts to add
+an entry under `## [Unreleased]`:
+
+```bash
+# Windows (PowerShell)
+.\scripts\record-change.ps1 -Summary "short description" -Type docs
+
+# macOS/Linux
+./scripts/record-change.sh "short description" docs
+```
+
+Entry types: `feat`, `fix`, `docs`, `refactor`, `test`, `chore`, `perf`, `ci`, `build`.
 
 ### PR Title Format
 
