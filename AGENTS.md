@@ -198,6 +198,7 @@ func TestFunction(t *testing.T) {
 
 ## Common Tasks
 
+
 ## Documentation Maintenance (Required)
 
 Any change that affects behavior, flags, outputs, workflows, supported AWS resources, build/test steps, or architecture must be reflected in the documentation. Agents must update the relevant files as part of the same change:

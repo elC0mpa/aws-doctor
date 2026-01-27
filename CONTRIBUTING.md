@@ -126,6 +126,7 @@ This approach lets you test multiple features together locally without affecting
 1. **Rebase against `upstream/development`** to ensure your changes are based on the latest code
 2. **Run tests locally:** `go test ./...`
 3. **Build the project:** `go build ./...`
+
 4. **Test your changes manually** with real AWS credentials if applicable
 
 ### PR Requirements
