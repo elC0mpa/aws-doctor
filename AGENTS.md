@@ -30,18 +30,30 @@ go run . --trend
 
 ```
 aws-doctor/
-├── app.go                 # Main application entry, flag parsing
-├── model/                 # Data structures and types
-├── service/
-│   ├── aws_config/       # AWS configuration loading
-│   ├── costexplorer/     # AWS Cost Explorer service
-│   ├── ec2/              # EC2 service (EIPs, EBS, instances)
-│   ├── elb/              # ELB service (load balancers)
-│   ├── flag/             # CLI flag parsing
-│   ├── orchestrator/     # Workflow coordination
-│   └── sts/              # AWS STS service
-└── utils/                # Utility functions, table rendering
+|-- app.go                 # Main application entry, flag parsing
+|-- model/                 # Data structures and types
+|-- service/
+|   |-- aws_config/       # AWS configuration loading
+|   |-- costexplorer/     # AWS Cost Explorer service
+|   |-- ec2/              # EC2 service (EIPs, EBS, instances)
+|   |-- elb/              # ELB service (load balancers)
+|   |-- flag/             # CLI flag parsing
+|   |-- orchestrator/     # Workflow coordination
+|   |-- output/           # Output rendering (table/json) + spinner control
+|   |-- sts/              # AWS STS service
+|   |-- update/           # Self-update workflow
+|-- utils/                # Utility functions, table rendering
+|-- mocks/                # Test doubles for orchestrator tests
+|-- assets/               # Logos and images
+|-- demo/                 # Demo GIFs
 ```
+
+### Key Flows
+
+- `app.go` builds services, then delegates to `service/orchestrator`.
+- `service/orchestrator` selects a workflow based on flags and calls service methods.
+- `service/output` chooses between table and JSON rendering and owns spinner stop.
+- `service/update` handles `--update`.
 
 ### Service Pattern
 
@@ -186,17 +198,28 @@ func TestFunction(t *testing.T) {
 
 ## Common Tasks
 
+## Documentation Maintenance (Required)
+
+Any change that affects behavior, flags, outputs, workflows, supported AWS resources, build/test steps, or architecture must be reflected in the documentation. Agents must update the relevant files as part of the same change:
+
+- `AGENTS.md` for agent guidance, architecture, workflows, and contribution rules.
+- `README.md` for user-facing behavior, flags, features, and roadmap/checklists.
+- `CONTRIBUTING.md` and `TESTING.md` for contributor workflow and test guidance.
+
+If a change makes documentation inaccurate or incomplete, treat the documentation update as mandatory and do it in the same patch/PR.
+
 ### Adding a New Waste Detection Type
 
 1. Add model type in `model/` package (e.g., `model/ec2.go` for `SnapshotWasteInfo`)
 2. Add method to `service/ec2/service.go` (or appropriate service)
 3. Update interface in `service/ec2/types.go`
 4. Add concurrent call in `service/orchestrator/service.go` wasteWorkflow
-5. Add display function in `utils/waste_table.go` (update `DrawWasteTable` signature)
-6. Add JSON output type in `model/output.go` and update `utils/json_output.go`
-7. **Update all test calls** when function signatures change (e.g., `DrawWasteTable`, `OutputWasteJSON`)
-8. Update README.md checklist
-9. Add tests for any pure helper functions
+5. Update `service/output/service.go` to pass the new data into `RenderWaste`
+6. Add display function in `utils/waste_table.go` (update `DrawWasteTable` signature)
+7. Add JSON output type in `model/output.go` and update `utils/json_output.go`
+8. **Update all test calls** when function signatures change (e.g., `DrawWasteTable`, `OutputWasteJSON`)
+9. Update README.md checklist
+10. Add tests for any pure helper functions
 
 ### Adding a New CLI Flag
 
