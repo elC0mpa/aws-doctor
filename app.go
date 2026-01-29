@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/elC0mpa/aws-doctor/model"
 	awsconfig "github.com/elC0mpa/aws-doctor/service/aws_config"
 	awscostexplorer "github.com/elC0mpa/aws-doctor/service/costexplorer"
 	awsec2 "github.com/elC0mpa/aws-doctor/service/ec2"
@@ -16,7 +17,6 @@ import (
 	awssts "github.com/elC0mpa/aws-doctor/service/sts"
 	"github.com/elC0mpa/aws-doctor/service/update"
 	"github.com/elC0mpa/aws-doctor/utils"
-	"github.com/elC0mpa/aws-doctor/model"
 )
 
 var (
@@ -55,9 +55,6 @@ func run() error {
 	}
 
 	utils.DrawBanner()
-	utils.StartSpinner()
-
-	defer utils.StopSpinner()
 
 	cfgService := awsconfig.NewService()
 
@@ -65,6 +62,10 @@ func run() error {
 	if err != nil {
 		return fmt.Errorf("failed to load AWS config: %w", err)
 	}
+
+	utils.StartSpinner()
+
+	defer utils.StopSpinner()
 
 	costService := awscostexplorer.NewService(awsCfg)
 	stsService := awssts.NewService(awsCfg)

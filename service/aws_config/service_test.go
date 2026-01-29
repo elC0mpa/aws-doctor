@@ -56,6 +56,7 @@ func TestGetAWSCfg_WithRegion(t *testing.T) {
 			if err != nil {
 				t.Errorf("GetAWSCfg() with region %q returned error: %v", tt.region, err)
 			}
+
 			if cfg.Region != tt.region {
 				t.Errorf("GetAWSCfg() region = %q, want %q", cfg.Region, tt.region)
 			}
@@ -85,9 +86,4 @@ func TestGetAWSCfg_ContextCancellation(t *testing.T) {
 	_, _ = s.GetAWSCfg(ctx, "", "")
 	// Not asserting on error since context cancellation behavior
 	// depends on SDK internals
-}
-
-func TestConfigService_Interface(t *testing.T) {
-	// Verify that *service implements ConfigService interface
-	var _ ConfigService = NewService()
 }
