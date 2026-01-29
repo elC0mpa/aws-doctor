@@ -3,7 +3,14 @@ set -e
 
 REPO="elC0mpa/aws-doctor"
 BINARY_NAME="aws-doctor"
-INSTALL_DIR="${INSTALL_DIR:-/usr/local/bin}"
+
+if [ -z "$INSTALL_DIR" ]; then
+    if [ "$(id -u)" -eq 0 ]; then
+        INSTALL_DIR="/usr/local/bin"
+    else
+        INSTALL_DIR="$HOME/.local/bin"
+    fi
+fi
 
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -113,14 +120,35 @@ download_and_verify() {
 
 install_binary() {
     BINARY_PATH="$1"
+    TARGET_FILE="${INSTALL_DIR}/${BINARY_NAME}"
+
+    if [ ! -d "$INSTALL_DIR" ]; then
+        mkdir -p "$INSTALL_DIR" || {
+            log_error "Failed to create installation directory: $INSTALL_DIR"
+            exit 1
+        }
+    fi
 
     if [ -w "$INSTALL_DIR" ]; then
-        cp "$BINARY_PATH" "${INSTALL_DIR}/${BINARY_NAME}"
-        chmod +x "${INSTALL_DIR}/${BINARY_NAME}"
+        if [ -f "$TARGET_FILE" ] && [ ! -w "$TARGET_FILE" ]; then
+             log_error "Target file $TARGET_FILE exists and is not writable."
+             log_error "It might be owned by root. Try running: sudo rm $TARGET_FILE"
+             exit 1
+        fi
+        install -m 755 "$BINARY_PATH" "$TARGET_FILE"
     else
-        log_info "Installing to ${INSTALL_DIR} requires elevated permissions..."
-        sudo cp "$BINARY_PATH" "${INSTALL_DIR}/${BINARY_NAME}"
-        sudo chmod +x "${INSTALL_DIR}/${BINARY_NAME}"
+        # If the directory is not writable and is inside $HOME, fail instead of using sudo
+        case "$INSTALL_DIR" in
+            "$HOME"*)
+                log_error "Installation directory $INSTALL_DIR is not writable."
+                log_error "Please check permissions."
+                exit 1
+                ;;
+            *)
+                log_info "Installing to ${INSTALL_DIR} requires elevated permissions..."
+                sudo install -m 755 "$BINARY_PATH" "$TARGET_FILE"
+                ;;
+        esac
     fi
 }
 
@@ -150,6 +178,12 @@ main() {
     install_binary "$BINARY_PATH"
 
     log_info "Successfully installed ${BINARY_NAME} to ${INSTALL_DIR}/${BINARY_NAME}"
+    
+    case ":$PATH:" in
+        *":$INSTALL_DIR:"*) ;;
+        *) log_warn "${INSTALL_DIR} is not in your PATH. Please add it to use ${BINARY_NAME}." ;;
+    esac
+
     log_info ""
     log_info "Run 'aws-doctor --help' to get started"
 }
