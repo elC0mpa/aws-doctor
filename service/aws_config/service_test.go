@@ -13,6 +13,10 @@ func TestNewService(t *testing.T) {
 }
 
 func TestGetAWSCfg_DefaultOptions(t *testing.T) {
+	t.Setenv("AWS_ACCESS_KEY_ID", "test")
+	t.Setenv("AWS_SECRET_ACCESS_KEY", "test")
+	t.Setenv("AWS_REGION", "us-east-1")
+
 	s := NewService()
 
 	// Test with empty region and profile (uses SDK defaults)
@@ -30,6 +34,9 @@ func TestGetAWSCfg_DefaultOptions(t *testing.T) {
 }
 
 func TestGetAWSCfg_WithRegion(t *testing.T) {
+	t.Setenv("AWS_ACCESS_KEY_ID", "test")
+	t.Setenv("AWS_SECRET_ACCESS_KEY", "test")
+
 	s := NewService()
 
 	tests := []struct {
@@ -75,6 +82,10 @@ func TestGetAWSCfg_WithInvalidProfile(t *testing.T) {
 }
 
 func TestGetAWSCfg_ContextCancellation(t *testing.T) {
+	t.Setenv("AWS_ACCESS_KEY_ID", "test")
+	t.Setenv("AWS_SECRET_ACCESS_KEY", "test")
+	t.Setenv("AWS_REGION", "us-east-1")
+
 	s := NewService()
 
 	ctx, cancel := context.WithCancel(context.Background())
