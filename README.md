@@ -30,6 +30,7 @@ A terminal-based tool that acts as a comprehensive health check for your AWS acc
 - **📉 Cost Comparison:** Compares costs between the current and previous month for the exact same period (e.g., comparing Jan 1–15 vs Feb 1–15) to give a fair assessment of spending velocity.
 - **🏥 Waste Detection (The "Checkup"):** Scans your account for "zombie" resources and inefficiencies that are silently inflating your bill.
 - **📊 Trend Analysis:** Visualizes cost history over the last 6 months to spot long-term anomalies.
+- **🔐 MFA Support:** Fully supports AWS profiles that require Multi-Factor Authentication (MFA) to assume roles.
 
 ## Motivation
 
@@ -66,7 +67,7 @@ Available platforms:
 
 ## Flags
 
-- `--profile`: Specify the AWS profile to use (default is "").
+- `--profile`: Specify the AWS profile to use. Supports MFA-protected role assumption.
 - `--region`: Specify the AWS region to use. If not provided, uses `AWS_REGION` or `AWS_DEFAULT_REGION` environment variables, or the region from `~/.aws/config`.
 - `--trend`: Shows a trend analysis for the last 6 months.
 - `--output`: Output format: `table` (default) or `json`.
@@ -86,6 +87,9 @@ Available platforms:
   - [ ] RDS Idle DB Instances.
 - `--version`: Display version information.
 - `--update`: Updates the tool to the latest version.
+
+> [!TIP]
+> If your AWS profile uses `assume_role` with `mfa_serial`, **aws-doctor** will automatically prompt you to enter your MFA token code securely.
 
 ## Roadmap
 
