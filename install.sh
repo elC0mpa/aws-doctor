@@ -5,7 +5,11 @@ REPO="elC0mpa/aws-doctor"
 BINARY_NAME="aws-doctor"
 
 if [ -z "$INSTALL_DIR" ]; then
-    if [ "$(id -u)" -eq 0 ]; then
+    # Try to detect existing installation to update it
+    if command -v "$BINARY_NAME" >/dev/null 2>&1; then
+        EXISTING_BIN="$(command -v "$BINARY_NAME")"
+        INSTALL_DIR="$(dirname "$EXISTING_BIN")"
+    elif [ "$(id -u)" -eq 0 ]; then
         INSTALL_DIR="/usr/local/bin"
     else
         INSTALL_DIR="$HOME/.local/bin"
