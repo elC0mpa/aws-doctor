@@ -17,6 +17,7 @@ linters:
     - gocyclo
     - misspell
     - wsl_v5
+    - unparam
   settings:
     wsl_v5:
       allow-first-in-block: true
@@ -31,6 +32,11 @@ linters:
     goconst:
       min-len: 3
       min-occurrences: 3
+
+formatters:
+  enable:
+    - gofumpt
+    - goimports
 
 issues:
   max-issues-per-linter: 0
