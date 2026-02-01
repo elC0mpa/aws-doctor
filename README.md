@@ -29,8 +29,10 @@ A terminal-based tool that acts as a comprehensive health check for your AWS acc
 ## Features
 
 - **📉 Cost Comparison:** Compares costs between the current and previous month for the exact same period (e.g., comparing Jan 1–15 vs Feb 1–15) to give a fair assessment of spending velocity.
-  > [!IMPORTANT]
-  > This feature is not available on the **1st day of the month** as AWS Cost Explorer requires a minimum 24-hour range (Start date must be before End date).
+
+> [!IMPORTANT]
+> This feature is not available on the **1st day of the month** as AWS Cost Explorer requires a minimum 24-hour range (Start date must be before End date).
+
 - **🏥 Waste Detection (The "Checkup"):** Scans your account for "zombie" resources and inefficiencies that are silently inflating your bill.
 - **📊 Trend Analysis:** Visualizes cost history over the last 6 months to spot long-term anomalies.
 - **🔐 MFA Support:** Fully supports AWS profiles that require Multi-Factor Authentication (MFA) to assume roles.
