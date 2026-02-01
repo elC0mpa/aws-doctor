@@ -36,6 +36,10 @@ func (s *service) GetLastMonthCostsByService(ctx context.Context) (*model.CostIn
 }
 
 func (s *service) GetMonthCostsByService(ctx context.Context, endDate time.Time) (*model.CostInfo, error) {
+	if time.Now().Day() == 1 {
+		return nil, model.ErrFirstDayOfMonth
+	}
+
 	firstOfMonth := s.getFirstDayOfMonth(endDate)
 	firstOfMonthStr := firstOfMonth.Format("2006-01-02")
 
