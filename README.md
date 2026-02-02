@@ -2,6 +2,8 @@
 
 [![CI](https://github.com/elC0mpa/aws-doctor/actions/workflows/ci.yml/badge.svg)](https://github.com/elC0mpa/aws-doctor/actions/workflows/ci.yml)
 [![Go Report Card](https://goreportcard.com/badge/github.com/elC0mpa/aws-doctor)](https://goreportcard.com/report/github.com/elC0mpa/aws-doctor)
+[![Go Coverage](https://github.com/elC0mpa/aws-doctor/wiki/coverage.svg)](https://raw.githack.com/wiki/elC0mpa/aws-doctor/coverage.html)
+
 [![GitHub all releases](https://img.shields.io/github/downloads/elC0mpa/aws-doctor/total?color=blue&label=Downloads)](https://github.com/elC0mpa/aws-doctor/releases)
 [![Go Reference](https://pkg.go.dev/badge/github.com/elC0mpa/aws-doctor.svg)](https://pkg.go.dev/github.com/elC0mpa/aws-doctor)
 [![Go Version](https://img.shields.io/github/go-mod/go-version/elC0mpa/aws-doctor)](https://github.com/elC0mpa/aws-doctor/blob/main/go.mod)
