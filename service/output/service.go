@@ -15,12 +15,15 @@ func NewService(format string) Service {
 		f = FormatJSON
 	}
 
-	return &service{format: f}
+	return &service{
+		format:   f,
+		renderer: &realRenderer{},
+	}
 }
 
 func (s *service) RenderCostComparison(accountID, lastTotalCost, currentTotalCost string, lastMonth, currentMonth *model.CostInfo) error {
 	if s.format == FormatJSON {
-		return utils.OutputCostComparisonJSON(
+		return s.renderer.OutputCostComparisonJSON(
 			accountID,
 			utils.ParseCostString(lastTotalCost),
 			utils.ParseCostString(currentTotalCost),
@@ -29,31 +32,31 @@ func (s *service) RenderCostComparison(accountID, lastTotalCost, currentTotalCos
 		)
 	}
 
-	utils.DrawCostTable(accountID, lastTotalCost, currentTotalCost, lastMonth, currentMonth, "UnblendedCost")
+	s.renderer.DrawCostTable(accountID, lastTotalCost, currentTotalCost, lastMonth, currentMonth, "UnblendedCost")
 
 	return nil
 }
 
 func (s *service) RenderTrend(accountID string, costInfo []model.CostInfo) error {
 	if s.format == FormatJSON {
-		return utils.OutputTrendJSON(accountID, costInfo)
+		return s.renderer.OutputTrendJSON(accountID, costInfo)
 	}
 
-	utils.DrawTrendChart(accountID, costInfo)
+	s.renderer.DrawTrendChart(accountID, costInfo)
 
 	return nil
 }
 
 func (s *service) RenderWaste(accountID string, elasticIPs []types.Address, unusedVolumes []types.Volume, stoppedVolumes []types.Volume, ris []model.RiExpirationInfo, stoppedInstances []types.Instance, loadBalancers []elbtypes.LoadBalancer, unusedAMIs []model.AMIWasteInfo, orphanedSnapshots []model.SnapshotWasteInfo) error {
 	if s.format == FormatJSON {
-		return utils.OutputWasteJSON(accountID, elasticIPs, unusedVolumes, stoppedVolumes, ris, stoppedInstances, loadBalancers, unusedAMIs, orphanedSnapshots)
+		return s.renderer.OutputWasteJSON(accountID, elasticIPs, unusedVolumes, stoppedVolumes, ris, stoppedInstances, loadBalancers, unusedAMIs, orphanedSnapshots)
 	}
 
-	utils.DrawWasteTable(accountID, elasticIPs, unusedVolumes, stoppedVolumes, ris, stoppedInstances, loadBalancers, unusedAMIs, orphanedSnapshots)
+	s.renderer.DrawWasteTable(accountID, elasticIPs, unusedVolumes, stoppedVolumes, ris, stoppedInstances, loadBalancers, unusedAMIs, orphanedSnapshots)
 
 	return nil
 }
 
 func (s *service) StopSpinner() {
-	utils.StopSpinner()
+	s.renderer.StopSpinner()
 }
