@@ -8,6 +8,7 @@ import (
 	"golang.org/x/term"
 )
 
+const bannerTitleColor = "\x1b[38;2;80;160;255m"
 
 var titleLines = []string{
 "  █████╗  ██╗    ██╗ ███████╗        ██████╗   ██████╗   ██████╗ ████████╗  ██████╗  ██████╗ ",
@@ -39,7 +40,7 @@ func DrawBannerTitle() {
 		width = w
 	}
 
-	fmt.Print("\x1b[1;37m")
+	fmt.Print(bannerTitleColor)
 	printCenteredLines(titleLines, width)
 	fmt.Print("\x1b[0m")
 }
