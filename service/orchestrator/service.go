@@ -3,6 +3,7 @@ package orchestrator
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"github.com/aws/aws-sdk-go-v2/service/ec2/types"
@@ -15,6 +16,7 @@ import (
 	"github.com/elC0mpa/aws-doctor/service/output"
 	awssts "github.com/elC0mpa/aws-doctor/service/sts"
 	"github.com/elC0mpa/aws-doctor/service/update"
+	"github.com/jedib0t/go-pretty/v6/text"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -70,12 +72,12 @@ func (s *service) updateWorkflow() error {
 func (s *service) defaultWorkflow() error {
 	currentMonthData, err := s.costService.GetCurrentMonthCostsByService(context.Background())
 	if err != nil {
-		return err
+		return s.handleCostError(err)
 	}
 
 	lastMonthData, err := s.costService.GetLastMonthCostsByService(context.Background())
 	if err != nil {
-		return err
+		return s.handleCostError(err)
 	}
 
 	currentTotalCost, err := s.costService.GetCurrentMonthTotalCosts(context.Background())
@@ -222,4 +224,17 @@ func (s *service) wasteWorkflow() error {
 		unusedAMIs,
 		orphanedSnapshots,
 	)
+}
+
+func (s *service) handleCostError(err error) error {
+	if errors.Is(err, model.ErrFirstDayOfMonth) {
+		s.outputService.StopSpinner()
+
+		fmt.Println()
+		fmt.Println(text.FgRed.Sprint("Cost data is not available on the first day of the month. Please try again tomorrow."))
+
+		return nil
+	}
+
+	return err
 }

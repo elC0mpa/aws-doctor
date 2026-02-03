@@ -7,6 +7,7 @@ This file provides instructions for AI coding agents working on this project. Fo
 aws-doctor is a Go CLI tool that provides AWS cost analysis and waste detection. It acts as a free alternative to AWS Trusted Advisor.
 
 ### Key Features
+
 - Cost comparison between current and previous month
 - 6-month trend analysis
 - Waste detection (unused EIPs, EBS volumes, stopped instances, load balancers, etc.)
@@ -44,7 +45,9 @@ aws-doctor/
 |   |-- sts/              # AWS STS service
 |   |-- update/           # Self-update workflow
 |-- utils/                # Utility functions, table rendering
-|-- mocks/                # Test doubles for orchestrator tests
+|-- mocks/                # Test doubles
+|   |-- services/         # Internal service mocks (for orchestrator tests)
+|   |-- awsinterfaces/    # AWS SDK client mocks (for service tests)
 |-- assets/               # Logos and images
 |-- demo/                 # Demo GIFs
 ```
@@ -58,27 +61,31 @@ aws-doctor/
 
 ### Service Pattern
 
-Each service follows this pattern:
-- `types.go` - Interface definitions and struct types
+Each service follows this pattern to enable Dependency Injection for testing:
+
+- `types.go` - Interface definitions (Service and AWS Client) and struct types
 - `service.go` - Implementation
 
 ```go
 // types.go
-type service struct {
-    client *aws.Client
+// 1. Define interface for AWS client methods used
+type SomeClientAPI interface {
+    SomeMethod(ctx context.Context, params *Input, optFns ...func(*Options)) (*Output, error)
 }
 
+type service struct {
+    client SomeClientAPI // Use interface, not concrete struct
+}
+
+// 2. Define service interface
 type ServiceInterface interface {
     Method(ctx context.Context) (Result, error)
 }
 
 // service.go
-func NewService(cfg aws.Config) *service {
-    return &service{client: aws.NewFromConfig(cfg)}
-}
-
-func (s *service) Method(ctx context.Context) (Result, error) {
-    // implementation
+func NewService(cfg aws.Config) ServiceInterface {
+    client := someclient.NewFromConfig(cfg)
+    return &service{client: client}
 }
 ```
 
@@ -93,6 +100,7 @@ func (s *service) Method(ctx context.Context) (Result, error) {
 ### Remote Setup
 
 Contributors typically have:
+
 - `origin` - their fork
 - `upstream` - the original repo (elC0mpa/aws-doctor)
 
@@ -118,6 +126,7 @@ git push origin feat/feature-name --force
 ### Imports
 
 Use import aliases for AWS SDK packages to avoid conflicts:
+
 ```go
 import (
     elb "github.com/aws/aws-sdk-go-v2/service/elasticloadbalancingv2"
@@ -128,6 +137,7 @@ import (
 ### Concurrency
 
 Use `errgroup` for concurrent AWS API calls:
+
 ```go
 g, ctx := errgroup.WithContext(ctx)
 
@@ -144,6 +154,7 @@ if err := g.Wait(); err != nil {
 ### Pagination
 
 Use AWS SDK v2 paginators for APIs that return paginated results:
+
 ```go
 paginator := elb.NewDescribeLoadBalancersPaginator(s.client, &elb.DescribeLoadBalancersInput{})
 for paginator.HasMorePages() {
@@ -164,6 +175,7 @@ for paginator.HasMorePages() {
 ### Linting Compliance
 
 The CI runs golangci-lint. Common issues to avoid:
+
 - **S1017**: Use `strings.TrimPrefix(s, prefix)` directly instead of `if strings.HasPrefix(s, prefix) { s = strings.TrimPrefix(s, prefix) }`
 - Remove unused imports (the build will fail)
 
@@ -171,14 +183,14 @@ The CI runs golangci-lint. Common issues to avoid:
 
 ### Current Approach
 
-Tests focus on pure functions that don't require AWS mocking:
-- `utils/ec2_test.go` - Date parsing
-- `service/ec2/service_test.go` - Resource type detection
-- `service/costexplorer/service_test.go` - Date helpers, filtering
+- **Pure Unit Tests:** `utils/*_test.go` (no mocking required)
+- **Service Unit Tests:** `service/*package*/service_test.go` (mocks AWS clients via `mocks/awsinterfaces`)
+- **Orchestration Tests:** `service/orchestrator/service_test.go` (mocks internal services via `mocks/services`)
 
 ### Test Style
 
 Use table-driven tests:
+
 ```go
 func TestFunction(t *testing.T) {
     tests := []struct {
@@ -199,7 +211,6 @@ func TestFunction(t *testing.T) {
 
 ## Common Tasks
 
-
 ## Documentation Maintenance (Required)
 
 Any change that affects behavior, flags, outputs, workflows, supported AWS resources, build/test steps, or architecture must be reflected in the documentation. Agents must update the relevant files as part of the same change:
@@ -213,15 +224,18 @@ If a change makes documentation inaccurate or incomplete, treat the documentatio
 ### Adding a New Waste Detection Type
 
 1. Add model type in `model/` package (e.g., `model/ec2.go` for `SnapshotWasteInfo`)
-2. Add method to `service/ec2/service.go` (or appropriate service)
-3. Update interface in `service/ec2/types.go`
-4. Add concurrent call in `service/orchestrator/service.go` wasteWorkflow
-5. Update `service/output/service.go` to pass the new data into `RenderWaste`
-6. Add display function in `utils/waste_table.go` (update `DrawWasteTable` signature)
-7. Add JSON output type in `model/output.go` and update `utils/json_output.go`
-8. **Update all test calls** when function signatures change (e.g., `DrawWasteTable`, `OutputWasteJSON`)
-9. Update README.md checklist
-10. Add tests for any pure helper functions
+2. Define any new AWS client methods needed in `service/ec2/types.go` (ClientAPI interface)
+3. Update mock in `mocks/awsinterfaces/`
+4. Add method to `service/ec2/service.go` (or appropriate service)
+5. Update interface in `service/ec2/types.go` (Service interface)
+6. Update mock in `mocks/services/`
+7. Add concurrent call in `service/orchestrator/service.go` wasteWorkflow
+8. Update `service/output/service.go` to pass the new data into `RenderWaste`
+9. Add display function in `utils/waste_table.go` (update `DrawWasteTable` signature)
+10. Add JSON output type in `model/output.go` and update `utils/json_output.go`
+11. **Update all test calls** when function signatures change (e.g., `DrawWasteTable`, `OutputWasteJSON`)
+12. Update README.md checklist
+13. Add tests for any pure helper functions
 
 ### Adding a New CLI Flag
 
@@ -233,6 +247,7 @@ If a change makes documentation inaccurate or incomplete, treat the documentatio
 ## PR Checklist
 
 Before submitting:
+
 - [ ] Rebased against upstream `development` branch
 - [ ] `go build ./...` succeeds
 - [ ] `go test ./...` passes
@@ -242,6 +257,7 @@ Before submitting:
 - [ ] PR targets `development` branch (not `main`)
 
 After pushing:
+
 - [ ] CI passes (build, lint, tests on Go 1.23 and 1.24)
 - [ ] Address any golangci-lint warnings
 

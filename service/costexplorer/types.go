@@ -8,8 +8,13 @@ import (
 	"github.com/elC0mpa/aws-doctor/model"
 )
 
+// CostExplorerClientAPI is the interface for the AWS Cost Explorer client methods used by the service.
+type CostExplorerClientAPI interface {
+	GetCostAndUsage(ctx context.Context, params *costexplorer.GetCostAndUsageInput, optFns ...func(*costexplorer.Options)) (*costexplorer.GetCostAndUsageOutput, error)
+}
+
 type service struct {
-	client *costexplorer.Client
+	client CostExplorerClientAPI
 }
 
 // Service is the interface for AWS Cost Explorer service.

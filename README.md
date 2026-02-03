@@ -1,9 +1,12 @@
 # aws-doctor
 
-[![CI](https://github.com/elC0mpa/aws-doctor/actions/workflows/ci.yml/badge.svg)](https://github.com/elC0mpa/aws-doctor/actions/workflows/ci.yml)
-[![Go Report Card](https://goreportcard.com/badge/github.com/elC0mpa/aws-doctor)](https://goreportcard.com/report/github.com/elC0mpa/aws-doctor)
-[![Go Reference](https://pkg.go.dev/badge/github.com/elC0mpa/aws-doctor.svg)](https://pkg.go.dev/github.com/elC0mpa/aws-doctor)
 [![Go Version](https://img.shields.io/github/go-mod/go-version/elC0mpa/aws-doctor)](https://github.com/elC0mpa/aws-doctor/blob/main/go.mod)
+[![Go Report Card](https://goreportcard.com/badge/github.com/elC0mpa/aws-doctor)](https://goreportcard.com/report/github.com/elC0mpa/aws-doctor)
+[![Go Coverage](https://github.com/elC0mpa/aws-doctor/wiki/coverage.svg)](https://raw.githack.com/wiki/elC0mpa/aws-doctor/coverage.html)
+[![Go Reference](https://pkg.go.dev/badge/github.com/elC0mpa/aws-doctor.svg)](https://pkg.go.dev/github.com/elC0mpa/aws-doctor)
+
+[![CI](https://github.com/elC0mpa/aws-doctor/actions/workflows/ci.yml/badge.svg)](https://github.com/elC0mpa/aws-doctor/actions/workflows/ci.yml)
+[![GitHub all releases](https://img.shields.io/github/downloads/elC0mpa/aws-doctor/total?color=blue&label=Downloads)](https://github.com/elC0mpa/aws-doctor/releases)
 [![License](https://img.shields.io/github/license/elC0mpa/aws-doctor)](https://github.com/elC0mpa/aws-doctor/blob/main/LICENSE)
 [![Maintained](https://img.shields.io/badge/Maintained-yes-green.svg)](https://github.com/elC0mpa/aws-doctor/commits/main)
 
@@ -28,8 +31,13 @@ A terminal-based tool that acts as a comprehensive health check for your AWS acc
 ## Features
 
 - **📉 Cost Comparison:** Compares costs between the current and previous month for the exact same period (e.g., comparing Jan 1–15 vs Feb 1–15) to give a fair assessment of spending velocity.
+
+> [!IMPORTANT]
+> This feature is not available on the **1st day of the month** as AWS Cost Explorer requires a minimum 24-hour range (Start date must be before End date).
+
 - **🏥 Waste Detection (The "Checkup"):** Scans your account for "zombie" resources and inefficiencies that are silently inflating your bill.
 - **📊 Trend Analysis:** Visualizes cost history over the last 6 months to spot long-term anomalies.
+- **🔐 MFA Support:** Fully supports AWS profiles that require Multi-Factor Authentication (MFA) to assume roles.
 - **Startup Banner:** Renders the aws-doctor logo in ANSI truecolor on launch (skipped for `--version` and `--update`); the title color switches to AmazonOrange when a blue background is detected (Windows console attributes or `COLORFGBG` on Unix-like terminals), otherwise it uses SkypeBlue. Override with `AWS_DOCTOR_BANNER_COLOR` set to a color name like `AmazonOrange` or `SkypeBlue` (case-insensitive) or a full ANSI code like `\x1b[38;2;255;153;0m`.
 
 ## Motivation
@@ -67,7 +75,7 @@ Available platforms:
 
 ## Flags
 
-- `--profile`: Specify the AWS profile to use (default is "").
+- `--profile`: Specify the AWS profile to use. Supports MFA-protected role assumption.
 - `--region`: Specify the AWS region to use. If not provided, uses `AWS_REGION` or `AWS_DEFAULT_REGION` environment variables, or the region from `~/.aws/config`.
 - `--trend`: Shows a trend analysis for the last 6 months.
 - `--output`: Output format: `table` (default) or `json`.
@@ -87,6 +95,9 @@ Available platforms:
   - [ ] RDS Idle DB Instances.
 - `--version`: Display version information.
 - `--update`: Updates the tool to the latest version.
+
+> [!TIP]
+> If your AWS profile uses `assume_role` with `mfa_serial`, **aws-doctor** will automatically prompt you to enter your MFA token code securely.
 
 ## Roadmap
 

@@ -8,7 +8,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/ec2/types"
 	elbtypes "github.com/aws/aws-sdk-go-v2/service/elasticloadbalancingv2/types"
 	"github.com/aws/aws-sdk-go-v2/service/sts"
-	"github.com/elC0mpa/aws-doctor/mocks"
+	"github.com/elC0mpa/aws-doctor/mocks/services"
 	"github.com/elC0mpa/aws-doctor/model"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -16,12 +16,12 @@ import (
 
 func TestOrchestrate_RouteToDefaultWorkflow(t *testing.T) {
 	// Setup mocks
-	mockSTS := new(mocks.MockSTSService)
-	mockCost := new(mocks.MockCostService)
-	mockEC2 := new(mocks.MockEC2Service)
-	mockELB := new(mocks.MockELBService)
-	mockOutput := new(mocks.MockOutputService)
-	mockUpdate := new(mocks.MockUpdateService)
+	mockSTS := new(services.MockSTSService)
+	mockCost := new(services.MockCostService)
+	mockEC2 := new(services.MockEC2Service)
+	mockELB := new(services.MockELBService)
+	mockOutput := new(services.MockOutputService)
+	mockUpdate := new(services.MockUpdateService)
 
 	// Create service
 	svc := NewService(mockSTS, mockCost, mockEC2, mockELB, mockOutput, mockUpdate, model.VersionInfo{Version: "dev", Commit: "none", Date: "unknown"})
@@ -50,12 +50,12 @@ func TestOrchestrate_RouteToDefaultWorkflow(t *testing.T) {
 
 func TestOrchestrate_RouteToUpdateWorkflow(t *testing.T) {
 	// Setup mocks
-	mockSTS := new(mocks.MockSTSService)
-	mockCost := new(mocks.MockCostService)
-	mockEC2 := new(mocks.MockEC2Service)
-	mockELB := new(mocks.MockELBService)
-	mockOutput := new(mocks.MockOutputService)
-	mockUpdate := new(mocks.MockUpdateService)
+	mockSTS := new(services.MockSTSService)
+	mockCost := new(services.MockCostService)
+	mockEC2 := new(services.MockEC2Service)
+	mockELB := new(services.MockELBService)
+	mockOutput := new(services.MockOutputService)
+	mockUpdate := new(services.MockUpdateService)
 
 	// Create service
 	svc := NewService(mockSTS, mockCost, mockEC2, mockELB, mockOutput, mockUpdate, model.VersionInfo{Version: "dev", Commit: "none", Date: "unknown"})
@@ -76,12 +76,12 @@ func TestOrchestrate_RouteToUpdateWorkflow(t *testing.T) {
 
 func TestOrchestrate_RouteToTrendWorkflow(t *testing.T) {
 	// Setup mocks
-	mockSTS := new(mocks.MockSTSService)
-	mockCost := new(mocks.MockCostService)
-	mockEC2 := new(mocks.MockEC2Service)
-	mockELB := new(mocks.MockELBService)
-	mockOutput := new(mocks.MockOutputService)
-	mockUpdate := new(mocks.MockUpdateService)
+	mockSTS := new(services.MockSTSService)
+	mockCost := new(services.MockCostService)
+	mockEC2 := new(services.MockEC2Service)
+	mockELB := new(services.MockELBService)
+	mockOutput := new(services.MockOutputService)
+	mockUpdate := new(services.MockUpdateService)
 
 	// Create service
 	svc := NewService(mockSTS, mockCost, mockEC2, mockELB, mockOutput, mockUpdate, model.VersionInfo{Version: "dev", Commit: "none", Date: "unknown"})
@@ -107,12 +107,12 @@ func TestOrchestrate_RouteToTrendWorkflow(t *testing.T) {
 
 func TestOrchestrate_RouteToWasteWorkflow(t *testing.T) {
 	// Setup mocks
-	mockSTS := new(mocks.MockSTSService)
-	mockCost := new(mocks.MockCostService)
-	mockEC2 := new(mocks.MockEC2Service)
-	mockELB := new(mocks.MockELBService)
-	mockOutput := new(mocks.MockOutputService)
-	mockUpdate := new(mocks.MockUpdateService)
+	mockSTS := new(services.MockSTSService)
+	mockCost := new(services.MockCostService)
+	mockEC2 := new(services.MockEC2Service)
+	mockELB := new(services.MockELBService)
+	mockOutput := new(services.MockOutputService)
+	mockUpdate := new(services.MockUpdateService)
 
 	// Create service
 	svc := NewService(mockSTS, mockCost, mockEC2, mockELB, mockOutput, mockUpdate, model.VersionInfo{Version: "dev", Commit: "none", Date: "unknown"})
@@ -145,12 +145,12 @@ func TestOrchestrate_RouteToWasteWorkflow(t *testing.T) {
 
 func TestOrchestrate_WasteTakesPrecedenceOverTrend(t *testing.T) {
 	// Setup mocks
-	mockSTS := new(mocks.MockSTSService)
-	mockCost := new(mocks.MockCostService)
-	mockEC2 := new(mocks.MockEC2Service)
-	mockELB := new(mocks.MockELBService)
-	mockOutput := new(mocks.MockOutputService)
-	mockUpdate := new(mocks.MockUpdateService)
+	mockSTS := new(services.MockSTSService)
+	mockCost := new(services.MockCostService)
+	mockEC2 := new(services.MockEC2Service)
+	mockELB := new(services.MockELBService)
+	mockOutput := new(services.MockOutputService)
+	mockUpdate := new(services.MockUpdateService)
 
 	// Create service
 	svc := NewService(mockSTS, mockCost, mockEC2, mockELB, mockOutput, mockUpdate, model.VersionInfo{Version: "dev", Commit: "none", Date: "unknown"})
@@ -181,19 +181,19 @@ func TestOrchestrate_WasteTakesPrecedenceOverTrend(t *testing.T) {
 func TestDefaultWorkflow_CostServiceError(t *testing.T) {
 	tests := []struct {
 		name        string
-		setupMocks  func(*mocks.MockCostService, *mocks.MockSTSService)
+		setupMocks  func(*services.MockCostService, *services.MockSTSService)
 		expectedErr string
 	}{
 		{
 			name: "GetCurrentMonthCostsByService_fails",
-			setupMocks: func(mockCost *mocks.MockCostService, _ *mocks.MockSTSService) {
+			setupMocks: func(mockCost *services.MockCostService, _ *services.MockSTSService) {
 				mockCost.On("GetCurrentMonthCostsByService", mock.Anything).Return((*model.CostInfo)(nil), errors.New("cost API error"))
 			},
 			expectedErr: "cost API error",
 		},
 		{
 			name: "GetLastMonthCostsByService_fails",
-			setupMocks: func(mockCost *mocks.MockCostService, _ *mocks.MockSTSService) {
+			setupMocks: func(mockCost *services.MockCostService, _ *services.MockSTSService) {
 				mockCost.On("GetCurrentMonthCostsByService", mock.Anything).Return(&model.CostInfo{}, nil)
 				mockCost.On("GetLastMonthCostsByService", mock.Anything).Return((*model.CostInfo)(nil), errors.New("last month error"))
 			},
@@ -201,7 +201,7 @@ func TestDefaultWorkflow_CostServiceError(t *testing.T) {
 		},
 		{
 			name: "GetCurrentMonthTotalCosts_fails",
-			setupMocks: func(mockCost *mocks.MockCostService, _ *mocks.MockSTSService) {
+			setupMocks: func(mockCost *services.MockCostService, _ *services.MockSTSService) {
 				mockCost.On("GetCurrentMonthCostsByService", mock.Anything).Return(&model.CostInfo{}, nil)
 				mockCost.On("GetLastMonthCostsByService", mock.Anything).Return(&model.CostInfo{}, nil)
 				mockCost.On("GetCurrentMonthTotalCosts", mock.Anything).Return((*string)(nil), errors.New("total cost error"))
@@ -210,7 +210,7 @@ func TestDefaultWorkflow_CostServiceError(t *testing.T) {
 		},
 		{
 			name: "GetLastMonthTotalCosts_fails",
-			setupMocks: func(mockCost *mocks.MockCostService, _ *mocks.MockSTSService) {
+			setupMocks: func(mockCost *services.MockCostService, _ *services.MockSTSService) {
 				mockCost.On("GetCurrentMonthCostsByService", mock.Anything).Return(&model.CostInfo{}, nil)
 				mockCost.On("GetLastMonthCostsByService", mock.Anything).Return(&model.CostInfo{}, nil)
 				mockCost.On("GetCurrentMonthTotalCosts", mock.Anything).Return(aws.String("100.00"), nil)
@@ -220,7 +220,7 @@ func TestDefaultWorkflow_CostServiceError(t *testing.T) {
 		},
 		{
 			name: "GetCallerIdentity_fails",
-			setupMocks: func(mockCost *mocks.MockCostService, mockSTS *mocks.MockSTSService) {
+			setupMocks: func(mockCost *services.MockCostService, mockSTS *services.MockSTSService) {
 				mockCost.On("GetCurrentMonthCostsByService", mock.Anything).Return(&model.CostInfo{}, nil)
 				mockCost.On("GetLastMonthCostsByService", mock.Anything).Return(&model.CostInfo{}, nil)
 				mockCost.On("GetCurrentMonthTotalCosts", mock.Anything).Return(aws.String("100.00"), nil)
@@ -233,12 +233,12 @@ func TestDefaultWorkflow_CostServiceError(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			mockSTS := new(mocks.MockSTSService)
-			mockCost := new(mocks.MockCostService)
-			mockEC2 := new(mocks.MockEC2Service)
-			mockELB := new(mocks.MockELBService)
-			mockOutput := new(mocks.MockOutputService)
-			mockUpdate := new(mocks.MockUpdateService)
+			mockSTS := new(services.MockSTSService)
+			mockCost := new(services.MockCostService)
+			mockEC2 := new(services.MockEC2Service)
+			mockELB := new(services.MockELBService)
+			mockOutput := new(services.MockOutputService)
+			mockUpdate := new(services.MockUpdateService)
 
 			tt.setupMocks(mockCost, mockSTS)
 			mockOutput.On("StopSpinner").Return().Maybe()
@@ -256,19 +256,19 @@ func TestDefaultWorkflow_CostServiceError(t *testing.T) {
 func TestTrendWorkflow_Error(t *testing.T) {
 	tests := []struct {
 		name        string
-		setupMocks  func(*mocks.MockCostService, *mocks.MockSTSService)
+		setupMocks  func(*services.MockCostService, *services.MockSTSService)
 		expectedErr string
 	}{
 		{
 			name: "GetLastSixMonthsCosts_fails",
-			setupMocks: func(mockCost *mocks.MockCostService, _ *mocks.MockSTSService) {
+			setupMocks: func(mockCost *services.MockCostService, _ *services.MockSTSService) {
 				mockCost.On("GetLastSixMonthsCosts", mock.Anything).Return(([]model.CostInfo)(nil), errors.New("trend API error"))
 			},
 			expectedErr: "trend API error",
 		},
 		{
 			name: "GetCallerIdentity_fails",
-			setupMocks: func(mockCost *mocks.MockCostService, mockSTS *mocks.MockSTSService) {
+			setupMocks: func(mockCost *services.MockCostService, mockSTS *services.MockSTSService) {
 				mockCost.On("GetLastSixMonthsCosts", mock.Anything).Return([]model.CostInfo{}, nil)
 				mockSTS.On("GetCallerIdentity", mock.Anything).Return((*sts.GetCallerIdentityOutput)(nil), errors.New("STS error"))
 			},
@@ -278,12 +278,12 @@ func TestTrendWorkflow_Error(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			mockSTS := new(mocks.MockSTSService)
-			mockCost := new(mocks.MockCostService)
-			mockEC2 := new(mocks.MockEC2Service)
-			mockELB := new(mocks.MockELBService)
-			mockOutput := new(mocks.MockOutputService)
-			mockUpdate := new(mocks.MockUpdateService)
+			mockSTS := new(services.MockSTSService)
+			mockCost := new(services.MockCostService)
+			mockEC2 := new(services.MockEC2Service)
+			mockELB := new(services.MockELBService)
+			mockOutput := new(services.MockOutputService)
+			mockUpdate := new(services.MockUpdateService)
 
 			tt.setupMocks(mockCost, mockSTS)
 			mockOutput.On("StopSpinner").Return().Maybe()
@@ -301,12 +301,12 @@ func TestTrendWorkflow_Error(t *testing.T) {
 func TestWasteWorkflow_Error(t *testing.T) {
 	tests := []struct {
 		name        string
-		setupMocks  func(*mocks.MockEC2Service, *mocks.MockELBService, *mocks.MockSTSService)
+		setupMocks  func(*services.MockEC2Service, *services.MockELBService, *services.MockSTSService)
 		expectedErr string
 	}{
 		{
 			name: "GetUnusedElasticIpAddressesInfo_fails",
-			setupMocks: func(mockEC2 *mocks.MockEC2Service, mockELB *mocks.MockELBService, mockSTS *mocks.MockSTSService) {
+			setupMocks: func(mockEC2 *services.MockEC2Service, mockELB *services.MockELBService, mockSTS *services.MockSTSService) {
 				mockEC2.On("GetUnusedElasticIPAddressesInfo", mock.Anything).Return(([]types.Address)(nil), errors.New("EIP error"))
 				mockEC2.On("GetUnusedEBSVolumes", mock.Anything).Return([]types.Volume{}, nil)
 				mockEC2.On("GetStoppedInstancesInfo", mock.Anything).Return([]types.Instance{}, []types.Volume{}, nil)
@@ -322,7 +322,7 @@ func TestWasteWorkflow_Error(t *testing.T) {
 		},
 		{
 			name: "GetUnusedEBSVolumes_fails",
-			setupMocks: func(mockEC2 *mocks.MockEC2Service, mockELB *mocks.MockELBService, mockSTS *mocks.MockSTSService) {
+			setupMocks: func(mockEC2 *services.MockEC2Service, mockELB *services.MockELBService, mockSTS *services.MockSTSService) {
 				mockEC2.On("GetUnusedElasticIPAddressesInfo", mock.Anything).Return([]types.Address{}, nil)
 				mockEC2.On("GetUnusedEBSVolumes", mock.Anything).Return(([]types.Volume)(nil), errors.New("EBS error"))
 				mockEC2.On("GetStoppedInstancesInfo", mock.Anything).Return([]types.Instance{}, []types.Volume{}, nil)
@@ -338,7 +338,7 @@ func TestWasteWorkflow_Error(t *testing.T) {
 		},
 		{
 			name: "GetUnusedLoadBalancers_fails",
-			setupMocks: func(mockEC2 *mocks.MockEC2Service, mockELB *mocks.MockELBService, mockSTS *mocks.MockSTSService) {
+			setupMocks: func(mockEC2 *services.MockEC2Service, mockELB *services.MockELBService, mockSTS *services.MockSTSService) {
 				mockEC2.On("GetUnusedElasticIPAddressesInfo", mock.Anything).Return([]types.Address{}, nil)
 				mockEC2.On("GetUnusedEBSVolumes", mock.Anything).Return([]types.Volume{}, nil)
 				mockEC2.On("GetStoppedInstancesInfo", mock.Anything).Return([]types.Instance{}, []types.Volume{}, nil)
@@ -356,12 +356,12 @@ func TestWasteWorkflow_Error(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			mockSTS := new(mocks.MockSTSService)
-			mockCost := new(mocks.MockCostService)
-			mockEC2 := new(mocks.MockEC2Service)
-			mockELB := new(mocks.MockELBService)
-			mockOutput := new(mocks.MockOutputService)
-			mockUpdate := new(mocks.MockUpdateService)
+			mockSTS := new(services.MockSTSService)
+			mockCost := new(services.MockCostService)
+			mockEC2 := new(services.MockEC2Service)
+			mockELB := new(services.MockELBService)
+			mockOutput := new(services.MockOutputService)
+			mockUpdate := new(services.MockUpdateService)
 
 			tt.setupMocks(mockEC2, mockELB, mockSTS)
 			mockOutput.On("StopSpinner").Return().Maybe()

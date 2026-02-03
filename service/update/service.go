@@ -12,8 +12,6 @@ func NewService() Service {
 }
 
 func (s *service) Update() error {
-	fmt.Println("Updating aws-doctor to the latest version...")
-
 	// Reutilize the install.sh script from the repository
 	cmd := exec.Command("sh", "-c", "curl -sSL https://raw.githubusercontent.com/elC0mpa/aws-doctor/main/install.sh | sh")
 	cmd.Stdout = os.Stdout
