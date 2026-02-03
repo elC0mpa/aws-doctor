@@ -54,7 +54,7 @@ func run() error {
 		return orchestratorService.Orchestrate(flags)
 	}
 
-	utils.DrawBanner()
+	utils.DrawBannerTitle()
 	utils.StartSpinner()
 
 	defer utils.StopSpinner()
