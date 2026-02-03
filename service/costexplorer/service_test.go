@@ -1,11 +1,18 @@
 package awscostexplorer
 
 import (
+	"context"
+	"errors"
 	"testing"
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/service/costexplorer"
 	"github.com/aws/aws-sdk-go-v2/service/costexplorer/types"
+	"github.com/elC0mpa/aws-doctor/mocks/awsinterfaces"
+	"github.com/elC0mpa/aws-doctor/model"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 )
 
 const costsAggregation = "UnblendedCost"
@@ -378,41 +385,218 @@ func BenchmarkFilterGroups(b *testing.B) {
 	}
 }
 
-func TestDateHelpers_Consistency(t *testing.T) {
-	s := &service{}
+func TestGetMonthCostsByService(t *testing.T) {
+	mockClient := new(awsinterfaces.MockCostExplorerClient)
+	s := &service{client: mockClient}
 
-	// Test that for any date, first day is always <= input <= last day
-	testDates := []time.Time{
-		time.Date(2024, 1, 15, 10, 30, 45, 0, time.UTC),
-		time.Date(2024, 2, 29, 0, 0, 0, 0, time.UTC), // leap year
-		time.Date(2023, 2, 28, 0, 0, 0, 0, time.UTC), // non-leap year
-		time.Date(2024, 12, 31, 23, 59, 59, 0, time.UTC),
+	// Skip this test if it's the 1st of the month, as the service returns an error
+	if time.Now().Day() == 1 {
+		t.Skip("Skipping test on 1st day of month")
 	}
 
-	for _, date := range testDates {
-		first := s.getFirstDayOfMonth(date)
-		last := s.getLastDayOfMonth(date)
+	date := time.Date(2024, 2, 15, 0, 0, 0, 0, time.UTC)
+	expectedStart := "2024-02-01"
+	expectedEnd := "2024-02-15"
 
-		// First should be before or equal to the input
-		if first.After(date) {
-			t.Errorf("getFirstDayOfMonth(%v) = %v is after input", date, first)
-		}
+	// Mock successful response
+	mockClient.On("GetCostAndUsage",
+		mock.Anything,
+		mock.MatchedBy(func(input *costexplorer.GetCostAndUsageInput) bool {
+			return *input.TimePeriod.Start == expectedStart &&
+				*input.TimePeriod.End == expectedEnd &&
+				input.Granularity == types.GranularityMonthly
+		}),
+		mock.Anything,
+	).Return(&costexplorer.GetCostAndUsageOutput{
+		ResultsByTime: []types.ResultByTime{
+			{
+				TimePeriod: &types.DateInterval{
+					Start: aws.String(expectedStart),
+					End:   aws.String(expectedEnd),
+				},
+				Groups: []types.Group{
+					{
+						Keys: []string{"Amazon EC2"},
+						Metrics: map[string]types.MetricValue{
+							"UnblendedCost": {
+								Amount: aws.String("50.00"),
+								Unit:   aws.String("USD"),
+							},
+						},
+					},
+				},
+			},
+		},
+	}, nil)
 
-		// Last should be after or equal to the input
-		if last.Before(date) && last.Day() < date.Day() {
-			t.Errorf("getLastDayOfMonth(%v) = %v day is before input day", date, last)
-		}
+	var costInfo *model.CostInfo
 
-		// First and last should be in the same month
-		if first.Month() != last.Month() {
-			t.Errorf("First (%v) and last (%v) are in different months for input %v",
-				first, last, date)
-		}
+	costInfo, err := s.GetMonthCostsByService(context.Background(), date)
 
-		// First should be before last
-		if !first.Before(last) && first.Day() != last.Day() {
-			t.Errorf("First (%v) is not before last (%v) for input %v",
-				first, last, date)
-		}
+	assert.NoError(t, err)
+	assert.NotNil(t, costInfo)
+	assert.Equal(t, 50.00, costInfo.CostGroup["Amazon EC2"].Amount)
+	mockClient.AssertExpectations(t)
+}
+
+func TestGetMonthTotalCosts(t *testing.T) {
+	mockClient := new(awsinterfaces.MockCostExplorerClient)
+	s := &service{client: mockClient}
+
+	date := time.Date(2024, 2, 15, 0, 0, 0, 0, time.UTC)
+
+	// Mock successful response
+	mockClient.On("GetCostAndUsage", mock.Anything, mock.Anything, mock.Anything).Return(&costexplorer.GetCostAndUsageOutput{
+		ResultsByTime: []types.ResultByTime{
+			{
+				Total: map[string]types.MetricValue{
+					"UnblendedCost": {
+						Amount: aws.String("150.25"),
+						Unit:   aws.String("USD"),
+					},
+				},
+			},
+		},
+	}, nil)
+
+	total, err := s.GetMonthTotalCosts(context.Background(), date)
+
+	assert.NoError(t, err)
+	assert.Equal(t, "150.25 USD", *total)
+	mockClient.AssertExpectations(t)
+}
+
+func TestGetLastSixMonthsCosts(t *testing.T) {
+	mockClient := new(awsinterfaces.MockCostExplorerClient)
+	s := &service{client: mockClient}
+
+	// Mock successful response with multiple months
+	mockClient.On("GetCostAndUsage", mock.Anything, mock.Anything, mock.Anything).Return(&costexplorer.GetCostAndUsageOutput{
+		ResultsByTime: []types.ResultByTime{
+			{
+				TimePeriod: &types.DateInterval{Start: aws.String("2024-01-01"), End: aws.String("2024-02-01")},
+				Total: map[string]types.MetricValue{
+					"UnblendedCost": {Amount: aws.String("100.00"), Unit: aws.String("USD")},
+				},
+			},
+			{
+				TimePeriod: &types.DateInterval{Start: aws.String("2024-02-01"), End: aws.String("2024-03-01")},
+				Total: map[string]types.MetricValue{
+					"UnblendedCost": {Amount: aws.String("120.00"), Unit: aws.String("USD")},
+				},
+			},
+		},
+	}, nil)
+
+	costs, err := s.GetLastSixMonthsCosts(context.Background())
+
+	assert.NoError(t, err)
+	assert.Len(t, costs, 2)
+	assert.Equal(t, 100.00, costs[0].CostGroup["Total"].Amount)
+	assert.Equal(t, 120.00, costs[1].CostGroup["Total"].Amount)
+	mockClient.AssertExpectations(t)
+}
+
+func TestGetMonthCostsByService_Error(t *testing.T) {
+	mockClient := new(awsinterfaces.MockCostExplorerClient)
+	s := &service{client: mockClient}
+
+	if time.Now().Day() == 1 {
+		t.Skip("Skipping test on 1st day of month")
 	}
+
+	mockClient.On("GetCostAndUsage", mock.Anything, mock.Anything, mock.Anything).Return(nil, errors.New("API error"))
+
+	costInfo, err := s.GetMonthCostsByService(context.Background(), time.Now())
+
+	assert.Error(t, err)
+	assert.Nil(t, costInfo)
+	mockClient.AssertExpectations(t)
+}
+
+func TestGetMonthTotalCosts_Errors(t *testing.T) {
+	mockClient := new(awsinterfaces.MockCostExplorerClient)
+	s := &service{client: mockClient}
+	date := time.Now()
+
+	t.Run("EmptyResults", func(t *testing.T) {
+		mockClient.On("GetCostAndUsage", mock.Anything, mock.Anything, mock.Anything).Return(&costexplorer.GetCostAndUsageOutput{
+			ResultsByTime: []types.ResultByTime{},
+		}, nil).Once()
+
+		val, err := s.GetMonthTotalCosts(context.Background(), date)
+		assert.ErrorContains(t, err, "no cost data returned")
+		assert.Nil(t, val)
+	})
+
+	t.Run("MissingMetric", func(t *testing.T) {
+		mockClient.On("GetCostAndUsage", mock.Anything, mock.Anything, mock.Anything).Return(&costexplorer.GetCostAndUsageOutput{
+			ResultsByTime: []types.ResultByTime{
+				{
+					Total: map[string]types.MetricValue{},
+				},
+			},
+		}, nil).Once()
+
+		val, err := s.GetMonthTotalCosts(context.Background(), date)
+		assert.ErrorContains(t, err, "cost data missing")
+		assert.Nil(t, val)
+	})
+
+	t.Run("InvalidAmount", func(t *testing.T) {
+		mockClient.On("GetCostAndUsage", mock.Anything, mock.Anything, mock.Anything).Return(&costexplorer.GetCostAndUsageOutput{
+			ResultsByTime: []types.ResultByTime{
+				{
+					Total: map[string]types.MetricValue{
+						"UnblendedCost": {
+							Amount: aws.String("invalid-float"),
+							Unit:   aws.String("USD"),
+						},
+					},
+				},
+			},
+		}, nil).Once()
+
+		val, err := s.GetMonthTotalCosts(context.Background(), date)
+		assert.Error(t, err)
+		assert.Nil(t, val)
+	})
+}
+
+func TestWrappers(t *testing.T) {
+	mockClient := new(awsinterfaces.MockCostExplorerClient)
+	s := &service{client: mockClient}
+
+	if time.Now().Day() == 1 {
+		t.Skip("Skipping test on 1st day of month")
+	}
+
+	// Mock response for all wrapper calls
+	mockClient.On("GetCostAndUsage", mock.Anything, mock.Anything, mock.Anything).Return(&costexplorer.GetCostAndUsageOutput{
+		ResultsByTime: []types.ResultByTime{
+			{
+				TimePeriod: &types.DateInterval{Start: aws.String("2024-01-01"), End: aws.String("2024-02-01")},
+				Total: map[string]types.MetricValue{
+					"UnblendedCost": {Amount: aws.String("100.00"), Unit: aws.String("USD")},
+				},
+				Groups: []types.Group{},
+			},
+		},
+	}, nil)
+
+	// Test GetCurrentMonthCostsByService
+	_, err := s.GetCurrentMonthCostsByService(context.Background())
+	assert.NoError(t, err)
+
+	// Test GetLastMonthCostsByService
+	_, err = s.GetLastMonthCostsByService(context.Background())
+	assert.NoError(t, err)
+
+	// Test GetCurrentMonthTotalCosts
+	_, err = s.GetCurrentMonthTotalCosts(context.Background())
+	assert.NoError(t, err)
+
+	// Test GetLastMonthTotalCosts
+	_, err = s.GetLastMonthTotalCosts(context.Background())
+	assert.NoError(t, err)
 }

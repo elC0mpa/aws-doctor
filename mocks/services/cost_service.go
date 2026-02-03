@@ -1,5 +1,5 @@
 // Package mocks provides mock implementations for testing.
-package mocks
+package services
 
 import (
 	"context"
