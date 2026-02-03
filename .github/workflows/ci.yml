@@ -37,6 +37,7 @@ jobs:
         run: go test -v ./...
 
       - name: Update coverage report
+        if: github.ref == 'refs/heads/main'
         uses: ncruces/go-coverage-report@main
 
   lint:

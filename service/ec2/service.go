@@ -39,6 +39,7 @@ func (s *service) GetElasticIPAddressesInfo(ctx context.Context) (*model.Elastic
 	for _, address := range output.Addresses {
 		if address.AssociationId == nil {
 			unusedEIPs = append(unusedEIPs, aws.ToString(address.AllocationId))
+			continue
 		}
 
 		attachedIP := model.AttachedIPInfo{

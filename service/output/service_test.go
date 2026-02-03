@@ -2,6 +2,11 @@ package output
 
 import (
 	"testing"
+
+	"github.com/elC0mpa/aws-doctor/mocks/renderers"
+	"github.com/elC0mpa/aws-doctor/model"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 )
 
 func TestNewService(t *testing.T) {
@@ -45,8 +50,94 @@ func TestNewService(t *testing.T) {
 			if s.format != tt.expectedFormat {
 				t.Errorf("expected format %q, got %q", tt.expectedFormat, s.format)
 			}
+
+			if s.renderer == nil {
+				t.Error("renderer should not be nil")
+			}
 		})
 	}
+}
+
+func TestRenderCostComparison(t *testing.T) {
+	t.Run("TableFormat", func(t *testing.T) {
+		mr := new(renderers.MockRenderer)
+		s := &service{format: FormatTable, renderer: mr}
+
+		mr.On("DrawCostTable", "123", "100.00 USD", "120.00 USD", mock.Anything, mock.Anything, "UnblendedCost").Return()
+
+		err := s.RenderCostComparison("123", "100.00 USD", "120.00 USD", &model.CostInfo{}, &model.CostInfo{})
+		assert.NoError(t, err)
+		mr.AssertExpectations(t)
+	})
+
+	t.Run("JSONFormat", func(t *testing.T) {
+		mr := new(renderers.MockRenderer)
+		s := &service{format: FormatJSON, renderer: mr}
+
+		mr.On("OutputCostComparisonJSON", "123", 100.0, 120.0, mock.Anything, mock.Anything).Return(nil)
+
+		err := s.RenderCostComparison("123", "100.00 USD", "120.00 USD", &model.CostInfo{}, &model.CostInfo{})
+		assert.NoError(t, err)
+		mr.AssertExpectations(t)
+	})
+}
+
+func TestRenderTrend(t *testing.T) {
+	t.Run("TableFormat", func(t *testing.T) {
+		mr := new(renderers.MockRenderer)
+		s := &service{format: FormatTable, renderer: mr}
+
+		mr.On("DrawTrendChart", "123", mock.Anything).Return()
+
+		err := s.RenderTrend("123", []model.CostInfo{})
+		assert.NoError(t, err)
+		mr.AssertExpectations(t)
+	})
+
+	t.Run("JSONFormat", func(t *testing.T) {
+		mr := new(renderers.MockRenderer)
+		s := &service{format: FormatJSON, renderer: mr}
+
+		mr.On("OutputTrendJSON", "123", mock.Anything).Return(nil)
+
+		err := s.RenderTrend("123", []model.CostInfo{})
+		assert.NoError(t, err)
+		mr.AssertExpectations(t)
+	})
+}
+
+func TestRenderWaste(t *testing.T) {
+	t.Run("TableFormat", func(t *testing.T) {
+		mr := new(renderers.MockRenderer)
+		s := &service{format: FormatTable, renderer: mr}
+
+		mr.On("DrawWasteTable", "123", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return()
+
+		err := s.RenderWaste("123", nil, nil, nil, nil, nil, nil, nil, nil)
+		assert.NoError(t, err)
+		mr.AssertExpectations(t)
+	})
+
+	t.Run("JSONFormat", func(t *testing.T) {
+		mr := new(renderers.MockRenderer)
+		s := &service{format: FormatJSON, renderer: mr}
+
+		mr.On("OutputWasteJSON", "123", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil)
+
+		err := s.RenderWaste("123", nil, nil, nil, nil, nil, nil, nil, nil)
+		assert.NoError(t, err)
+		mr.AssertExpectations(t)
+	})
+}
+
+func TestStopSpinner(t *testing.T) {
+	mr := new(renderers.MockRenderer)
+	s := &service{renderer: mr}
+
+	mr.On("StopSpinner").Return()
+
+	s.StopSpinner()
+	mr.AssertExpectations(t)
 }
 
 func TestFormatConstants(t *testing.T) {
