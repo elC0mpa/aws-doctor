@@ -19,6 +19,8 @@ var (
 	bannerWidths []int
 )
 
+const bannerSize = 200 // 32, 64, 96, 128, 160, 200
+
 func init() {
 	bannerByWidth = parseBannerFile(bannerRawFile)
 	for width := range bannerByWidth {
@@ -102,6 +104,17 @@ func printCenteredLines(lines []string, width int) {
 	}
 }
 
+func drawBannerImage() {
+	fmt.Print(bannerByWidth[bannerSize])
+	fmt.Println()
+}
+
+func drawBannerTitle(width int) {
+	fmt.Print("\x1b[1;37m")
+	printCenteredLines(titleLines, width)
+	fmt.Print("\x1b[0m")
+}
+
 // DrawBanner prints the application banner to stdout.
 func DrawBanner() {
 	EnableANSI()
@@ -110,20 +123,6 @@ func DrawBanner() {
 		width = w
 	}
 
-	for _, size := range bannerWidths {
-		if width >= size+2 {
-			fmt.Print(bannerByWidth[size])
-			fmt.Println()
-			fmt.Print("\x1b[1;37m")
-			printCenteredLines(titleLines, width)
-			fmt.Print("\x1b[0m")
-			return
-		}
-	}
-
-	fmt.Print(bannerByWidth[64])
-	fmt.Println()
-	fmt.Print("\x1b[1;37m")
-	printCenteredLines(titleLines, width)
-	fmt.Print("\x1b[0m")
+	// drawBannerImage()
+	drawBannerTitle(width)
 }
