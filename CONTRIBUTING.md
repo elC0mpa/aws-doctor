@@ -207,7 +207,7 @@ go test ./service/ec2/...
 
 - Use table-driven tests for comprehensive coverage
 - Test edge cases and error conditions
-- Don't modify production code solely for testability unless discussed
+- Use mocks for AWS services (see `mocks/` directory)
 - Place test files alongside the code they test (`service.go` → `service_test.go`)
 
 ### Test Structure

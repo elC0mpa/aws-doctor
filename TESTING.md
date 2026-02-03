@@ -29,55 +29,80 @@ Located in `utils/*_test.go` files. Test helper functions that don't require moc
 
 ### Mocked Service Tests
 
-Located in `service/orchestrator/service_test.go`. Use testify/mock to test service interactions.
+Located in `service/*package*/service_test.go`. We use `testify/mock` and Dependency Injection (DI) to test service logic in isolation.
 
-#### Mock Implementations
+#### Mock Directory Structure
 
-Mocks are in `mocks/services.go` and implement the service interfaces:
+The `mocks/` directory is organized into two subdirectories:
 
-- `MockSTSService` - mocks `awssts.STSService`
-- `MockCostService` - mocks `awscostexplorer.CostService`
-- `MockEC2Service` - mocks `awsec2.EC2Service`
-- `MockELBService` - mocks `elb.ELBService`
+1.  **`mocks/services/`**: Mocks of our internal application services (e.g., `MockCostService`, `MockEC2Service`). These are used when testing higher-level components like the `orchestrator`.
+2.  **`mocks/awsinterfaces/`**: Mocks of external AWS SDK clients (e.g., `MockCostExplorerClient`). These are used when testing low-level service adapters (e.g., `service/costexplorer`).
 
-#### Writing Mocked Tests
+#### Testing Pattern (Dependency Injection)
+
+To make AWS services testable, we define an interface for the AWS client methods we use, rather than depending on the concrete struct.
+
+**1. Define the Interface (in `service/pkg/types.go`):**
 
 ```go
-func TestExample(t *testing.T) {
-    // Create mocks
-    mockSTS := new(mocks.MockSTSService)
-    mockCost := new(mocks.MockCostService)
-    mockEC2 := new(mocks.MockEC2Service)
-    mockELB := new(mocks.MockELBService)
+// CostExplorerClientAPI is the interface for the AWS Cost Explorer client methods used by the service.
+type CostExplorerClientAPI interface {
+    GetCostAndUsage(ctx context.Context, params *costexplorer.GetCostAndUsageInput, optFns ...func(*costexplorer.Options)) (*costexplorer.GetCostAndUsageOutput, error)
+}
 
-    // Setup expectations
-    mockSTS.On("GetCallerIdentity", mock.Anything).Return(&sts.GetCallerIdentityOutput{
-        Account: aws.String("123456789012"),
-    }, nil)
-
-    // Create service with mocks
-    svc := orchestrator.NewService(mockSTS, mockCost, mockEC2, mockELB)
-
-    // Execute and assert
-    err := svc.Orchestrate(model.Flags{Output: "json"})
-    assert.NoError(t, err)
-    mockSTS.AssertExpectations(t)
+type service struct {
+    client CostExplorerClientAPI
 }
 ```
 
-#### Testing Error Paths
+**2. Implement the Mock (in `mocks/awsinterfaces/pkg.go`):**
 
 ```go
-mockCost.On("GetCurrentMonthCostsByService", mock.Anything).Return(nil, errors.New("API error"))
+type MockCostExplorerClient struct {
+    mock.Mock
+}
+
+func (m *MockCostExplorerClient) GetCostAndUsage(ctx context.Context, params *costexplorer.GetCostAndUsageInput, optFns ...func(*costexplorer.Options)) (*costexplorer.GetCostAndUsageOutput, error) {
+    args := m.Called(ctx, params, optFns)
+    return args.Get(0).(*costexplorer.GetCostAndUsageOutput), args.Error(1)
+}
+```
+
+**3. Write the Test (in `service/pkg/service_test.go`):**
+
+```go
+func TestGetMonthCostsByService(t *testing.T) {
+    // Create mock
+    mockClient := new(awsinterfaces.MockCostExplorerClient)
+    
+    // Inject mock into service
+    s := &service{client: mockClient}
+
+    // Setup expectations
+    mockClient.On("GetCostAndUsage", mock.Anything, mock.Anything, mock.Anything).Return(&costexplorer.GetCostAndUsageOutput{...}, nil)
+
+    // Execute
+    result, err := s.GetMonthCostsByService(context.Background(), time.Now())
+
+    // Assert
+    assert.NoError(t, err)
+    mockClient.AssertExpectations(t)
+}
 ```
 
 ## Adding New Tests
 
 When adding new features:
 
-1. **Utility functions**: Add pure unit tests in the corresponding `*_test.go` file
-2. **Service methods**: Add mock method to `mocks/services.go` if needed
-3. **Orchestrator changes**: Add tests in `service/orchestrator/service_test.go`
+1.  **Utility functions**: Add pure unit tests in the corresponding `*_test.go` file.
+2.  **New AWS calls**:
+    *   Add the method to the client interface in `types.go`.
+    *   Update the mock in `mocks/awsinterfaces/`.
+    *   Add unit tests in `service_test.go` mocking the new call.
+3.  **Service methods**:
+    *   Add the method to the internal service interface.
+    *   Update the mock in `mocks/services/`.
+4.  **Orchestrator changes**: Add tests in `service/orchestrator/service_test.go` using the service mocks.
 
 ## Test Style
 
