@@ -150,6 +150,7 @@ func bannerTitleColorName(color bannerColor) string {
 // DrawBannerTitle prints the application title banner to stdout.
 func DrawBannerTitle() {
 	EnableANSI()
+
 	width := 80
 
 	if w, _, err := term.GetSize(int(os.Stdout.Fd())); err == nil {
