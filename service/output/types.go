@@ -16,7 +16,8 @@ const (
 	FormatJSON  Format = "json"
 )
 
-type renderer interface {
+// Renderer defines the interface for drawing tables and charts
+type Renderer interface {
 	DrawCostTable(accountID, lastTotalCost, currentTotalCost string, lastMonth, currentMonth *model.CostInfo, costsAggregation string)
 	OutputCostComparisonJSON(accountID string, lastTotalCost, currentTotalCost float64, lastMonth, currentMonth *model.CostInfo) error
 	DrawTrendChart(accountID string, costInfo []model.CostInfo)
@@ -59,7 +60,7 @@ func (r *realRenderer) StopSpinner() {
 // service is the internal implementation
 type service struct {
 	format   Format
-	renderer renderer
+	renderer Renderer
 }
 
 // Service defines the interface for output operations

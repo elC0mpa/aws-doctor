@@ -3,47 +3,11 @@ package output
 import (
 	"testing"
 
-	"github.com/aws/aws-sdk-go-v2/service/ec2/types"
-	elbtypes "github.com/aws/aws-sdk-go-v2/service/elasticloadbalancingv2/types"
+	"github.com/elC0mpa/aws-doctor/mocks/renderers"
 	"github.com/elC0mpa/aws-doctor/model"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )
-
-type mockRenderer struct {
-	mock.Mock
-}
-
-func (m *mockRenderer) DrawCostTable(accountID, lastTotalCost, currentTotalCost string, lastMonth, currentMonth *model.CostInfo, costsAggregation string) {
-	m.Called(accountID, lastTotalCost, currentTotalCost, lastMonth, currentMonth, costsAggregation)
-}
-
-func (m *mockRenderer) OutputCostComparisonJSON(accountID string, lastTotalCost, currentTotalCost float64, lastMonth, currentMonth *model.CostInfo) error {
-	args := m.Called(accountID, lastTotalCost, currentTotalCost, lastMonth, currentMonth)
-	return args.Error(0)
-}
-
-func (m *mockRenderer) DrawTrendChart(accountID string, costInfo []model.CostInfo) {
-	m.Called(accountID, costInfo)
-}
-
-func (m *mockRenderer) OutputTrendJSON(accountID string, costInfo []model.CostInfo) error {
-	args := m.Called(accountID, costInfo)
-	return args.Error(0)
-}
-
-func (m *mockRenderer) DrawWasteTable(accountID string, elasticIPs []types.Address, unusedVolumes []types.Volume, stoppedVolumes []types.Volume, ris []model.RiExpirationInfo, stoppedInstances []types.Instance, loadBalancers []elbtypes.LoadBalancer, unusedAMIs []model.AMIWasteInfo, orphanedSnapshots []model.SnapshotWasteInfo) {
-	m.Called(accountID, elasticIPs, unusedVolumes, stoppedVolumes, ris, stoppedInstances, loadBalancers, unusedAMIs, orphanedSnapshots)
-}
-
-func (m *mockRenderer) OutputWasteJSON(accountID string, elasticIPs []types.Address, unusedVolumes []types.Volume, stoppedVolumes []types.Volume, ris []model.RiExpirationInfo, stoppedInstances []types.Instance, loadBalancers []elbtypes.LoadBalancer, unusedAMIs []model.AMIWasteInfo, orphanedSnapshots []model.SnapshotWasteInfo) error {
-	args := m.Called(accountID, elasticIPs, unusedVolumes, stoppedVolumes, ris, stoppedInstances, loadBalancers, unusedAMIs, orphanedSnapshots)
-	return args.Error(0)
-}
-
-func (m *mockRenderer) StopSpinner() {
-	m.Called()
-}
 
 func TestNewService(t *testing.T) {
 	tests := []struct {
@@ -96,7 +60,7 @@ func TestNewService(t *testing.T) {
 
 func TestRenderCostComparison(t *testing.T) {
 	t.Run("TableFormat", func(t *testing.T) {
-		mr := new(mockRenderer)
+		mr := new(renderers.MockRenderer)
 		s := &service{format: FormatTable, renderer: mr}
 
 		mr.On("DrawCostTable", "123", "100.00 USD", "120.00 USD", mock.Anything, mock.Anything, "UnblendedCost").Return()
@@ -107,7 +71,7 @@ func TestRenderCostComparison(t *testing.T) {
 	})
 
 	t.Run("JSONFormat", func(t *testing.T) {
-		mr := new(mockRenderer)
+		mr := new(renderers.MockRenderer)
 		s := &service{format: FormatJSON, renderer: mr}
 
 		mr.On("OutputCostComparisonJSON", "123", 100.0, 120.0, mock.Anything, mock.Anything).Return(nil)
@@ -120,7 +84,7 @@ func TestRenderCostComparison(t *testing.T) {
 
 func TestRenderTrend(t *testing.T) {
 	t.Run("TableFormat", func(t *testing.T) {
-		mr := new(mockRenderer)
+		mr := new(renderers.MockRenderer)
 		s := &service{format: FormatTable, renderer: mr}
 
 		mr.On("DrawTrendChart", "123", mock.Anything).Return()
@@ -131,7 +95,7 @@ func TestRenderTrend(t *testing.T) {
 	})
 
 	t.Run("JSONFormat", func(t *testing.T) {
-		mr := new(mockRenderer)
+		mr := new(renderers.MockRenderer)
 		s := &service{format: FormatJSON, renderer: mr}
 
 		mr.On("OutputTrendJSON", "123", mock.Anything).Return(nil)
@@ -144,7 +108,7 @@ func TestRenderTrend(t *testing.T) {
 
 func TestRenderWaste(t *testing.T) {
 	t.Run("TableFormat", func(t *testing.T) {
-		mr := new(mockRenderer)
+		mr := new(renderers.MockRenderer)
 		s := &service{format: FormatTable, renderer: mr}
 
 		mr.On("DrawWasteTable", "123", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return()
@@ -155,7 +119,7 @@ func TestRenderWaste(t *testing.T) {
 	})
 
 	t.Run("JSONFormat", func(t *testing.T) {
-		mr := new(mockRenderer)
+		mr := new(renderers.MockRenderer)
 		s := &service{format: FormatJSON, renderer: mr}
 
 		mr.On("OutputWasteJSON", "123", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil)
@@ -167,7 +131,7 @@ func TestRenderWaste(t *testing.T) {
 }
 
 func TestStopSpinner(t *testing.T) {
-	mr := new(mockRenderer)
+	mr := new(renderers.MockRenderer)
 	s := &service{renderer: mr}
 
 	mr.On("StopSpinner").Return()
