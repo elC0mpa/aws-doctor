@@ -8,29 +8,29 @@ import (
 	"golang.org/x/term"
 )
 
-type BannerColor int
+type bannerColor int
 
 const (
-	BannerCocaColaRed BannerColor = iota
-	BannerFacebookBlue
-	BannerTwitterBlue
-	BannerLinkedInBlue
-	BannerIBMBlue
-	BannerYouTubeRed
-	BannerSpotifyGreen
-	BannerNetflixRed
-	BannerTwitchPurple
-	BannerYahooPurple
-	BannerAmazonOrange
-	BannerIntelBlue
-	BannerWhatsAppGreen
-	BannerAndroidGreen
-	BannerSkypeBlue
-	BannerStarbucksGreen
-	BannerPinterestRed
-	BannerAirbnbPink
-	BannerFantaOrange
-	BannerBMWBlue
+	bannerCocaColaRed bannerColor = iota
+	bannerFacebookBlue
+	bannerTwitterBlue
+	bannerLinkedInBlue
+	bannerIBMBlue
+	bannerYouTubeRed
+	bannerSpotifyGreen
+	bannerNetflixRed
+	bannerTwitchPurple
+	bannerYahooPurple
+	bannerAmazonOrange
+	bannerIntelBlue
+	bannerWhatsAppGreen
+	bannerAndroidGreen
+	bannerSkypeBlue
+	bannerStarbucksGreen
+	bannerPinterestRed
+	bannerAirbnbPink
+	bannerFantaOrange
+	bannerBMWBlue
 )
 
 var bannerTitleColors = []string{
@@ -56,107 +56,102 @@ var bannerTitleColors = []string{
 	"\x1b[38;2;0;152;218m",  // BMW Blue
 }
 
-const bannerTitleColorDefault = BannerSkypeBlue
-const bannerTitleColorBlueBackground = BannerAmazonOrange
-const bannerTitleColorEnv = "AWS_DOCTOR_BANNER_COLOR"
-
-var titleLines = []string{
-"  █████╗  ██╗    ██╗ ███████╗        ██████╗   ██████╗   ██████╗ ████████╗  ██████╗  ██████╗ ",
-" ██╔══██╗ ██║    ██║ ██╔════╝        ██╔══██╗ ██╔═══██╗ ██╔════╝ ╚══██╔══╝ ██╔═══██╗ ██╔══██╗",
-" ███████║ ██║ █╗ ██║ ███████╗ █████╗ ██║  ██║ ██║   ██║ ██║         ██║    ██║   ██║ ██████╔╝",
-" ██╔══██║ ██║███╗██║ ╚════██║ ╚════╝ ██║  ██║ ██║   ██║ ██║         ██║    ██║   ██║ ██╔══██╗",
-" ██║  ██║ ╚███╔███╔╝ ███████║        ██████╔╝ ╚██████╔╝ ╚██████╗    ██║    ╚██████╔╝ ██║  ██║",
-" ╚═╝  ╚═╝  ╚══╝╚══╝  ╚══════╝        ╚═════╝   ╚═════╝   ╚═════╝    ╚═╝     ╚═════╝  ╚═╝  ╚═╝",
+var bannerTitleColorNames = []string{
+	"CocaColaRed",
+	"FacebookBlue",
+	"TwitterBlue",
+	"LinkedInBlue",
+	"IBMBlue",
+	"YouTubeRed",
+	"SpotifyGreen",
+	"NetflixRed",
+	"TwitchPurple",
+	"YahooPurple",
+	"AmazonOrange",
+	"IntelBlue",
+	"WhatsAppGreen",
+	"AndroidGreen",
+	"SkypeBlue",
+	"StarbucksGreen",
+	"PinterestRed",
+	"AirbnbPink",
+	"FantaOrange",
+	"BMWBlue",
 }
 
+const (
+	bannerTitleColorDefault        = bannerSkypeBlue
+	bannerTitleColorBlueBackground = bannerAmazonOrange
+	bannerTitleColorEnv            = "AWS_DOCTOR_BANNER_COLOR"
+)
+
+var titleLines = []string{
+	"  █████╗  ██╗    ██╗ ███████╗        ██████╗   ██████╗   ██████╗ ████████╗  ██████╗  ██████╗ ",
+	" ██╔══██╗ ██║    ██║ ██╔════╝        ██╔══██╗ ██╔═══██╗ ██╔════╝ ╚══██╔══╝ ██╔═══██╗ ██╔══██╗",
+	" ███████║ ██║ █╗ ██║ ███████╗ █████╗ ██║  ██║ ██║   ██║ ██║         ██║    ██║   ██║ ██████╔╝",
+	" ██╔══██║ ██║███╗██║ ╚════██║ ╚════╝ ██║  ██║ ██║   ██║ ██║         ██║    ██║   ██║ ██╔══██╗",
+	" ██║  ██║ ╚███╔███╔╝ ███████║        ██████╔╝ ╚██████╔╝ ╚██████╗    ██║    ╚██████╔╝ ██║  ██║",
+	" ╚═╝  ╚═╝  ╚══╝╚══╝  ╚══════╝        ╚═════╝   ╚═════╝   ╚═════╝    ╚═╝     ╚═════╝  ╚═╝  ╚═╝",
+}
 
 func printCenteredLines(lines []string, width int) {
 	for _, line := range lines {
 		pad := 0
+
 		if width > len(line) {
 			pad = (width - len(line)) / 2
 		}
+
 		if pad > 0 {
 			fmt.Print(strings.Repeat(" ", pad))
 		}
+
 		fmt.Println(line)
 	}
 }
 
-func bannerTitleColor() BannerColor {
+func bannerTitleColor() bannerColor {
 	if color, ok := bannerTitleColorFromEnv(); ok {
 		return color
 	}
+
 	if isBlueBackground() {
 		return bannerTitleColorBlueBackground
 	}
+
 	return bannerTitleColorDefault
 }
 
-func bannerTitleColorFromEnv() (BannerColor, bool) {
+func bannerTitleColorFromEnv() (bannerColor, bool) {
 	raw := strings.TrimSpace(os.Getenv(bannerTitleColorEnv))
+
 	if raw == "" {
 		return 0, false
 	}
+
 	for idx, color := range bannerTitleColors {
-		name := bannerTitleColorName(BannerColor(idx))
+		name := bannerTitleColorName(bannerColor(idx))
 		if strings.EqualFold(raw, name) || raw == color {
-			return BannerColor(idx), true
+			return bannerColor(idx), true
 		}
 	}
+
 	return 0, false
 }
 
-func bannerTitleColorName(color BannerColor) string {
-	switch color {
-	case BannerCocaColaRed:
-		return "CocaColaRed"
-	case BannerFacebookBlue:
-		return "FacebookBlue"
-	case BannerTwitterBlue:
-		return "TwitterBlue"
-	case BannerLinkedInBlue:
-		return "LinkedInBlue"
-	case BannerIBMBlue:
-		return "IBMBlue"
-	case BannerYouTubeRed:
-		return "YouTubeRed"
-	case BannerSpotifyGreen:
-		return "SpotifyGreen"
-	case BannerNetflixRed:
-		return "NetflixRed"
-	case BannerTwitchPurple:
-		return "TwitchPurple"
-	case BannerYahooPurple:
-		return "YahooPurple"
-	case BannerAmazonOrange:
-		return "AmazonOrange"
-	case BannerIntelBlue:
-		return "IntelBlue"
-	case BannerWhatsAppGreen:
-		return "WhatsAppGreen"
-	case BannerAndroidGreen:
-		return "AndroidGreen"
-	case BannerSkypeBlue:
-		return "SkypeBlue"
-	case BannerStarbucksGreen:
-		return "StarbucksGreen"
-	case BannerPinterestRed:
-		return "PinterestRed"
-	case BannerAirbnbPink:
-		return "AirbnbPink"
-	case BannerFantaOrange:
-		return "FantaOrange"
-	case BannerBMWBlue:
-		return "BMWBlue"
-	default:
+func bannerTitleColorName(color bannerColor) string {
+	if color < 0 || int(color) >= len(bannerTitleColorNames) {
 		return ""
 	}
+
+	return bannerTitleColorNames[int(color)]
 }
 
+// DrawBannerTitle prints the application title banner to stdout.
 func DrawBannerTitle() {
 	EnableANSI()
 	width := 80
+
 	if w, _, err := term.GetSize(int(os.Stdout.Fd())); err == nil {
 		width = w
 	}
