@@ -56,7 +56,9 @@ var bannerTitleColors = []string{
 	"\x1b[38;2;0;152;218m",  // BMW Blue
 }
 
-const bannerTitleColor = BannerSkypeBlue
+const bannerTitleColorDefault = BannerSkypeBlue
+const bannerTitleColorBlueBackground = BannerAmazonOrange
+const bannerTitleColorEnv = "AWS_DOCTOR_BANNER_COLOR"
 
 var titleLines = []string{
 "  █████╗  ██╗    ██╗ ███████╗        ██████╗   ██████╗   ██████╗ ████████╗  ██████╗  ██████╗ ",
@@ -81,6 +83,77 @@ func printCenteredLines(lines []string, width int) {
 	}
 }
 
+func bannerTitleColor() BannerColor {
+	if color, ok := bannerTitleColorFromEnv(); ok {
+		return color
+	}
+	if isBlueBackground() {
+		return bannerTitleColorBlueBackground
+	}
+	return bannerTitleColorDefault
+}
+
+func bannerTitleColorFromEnv() (BannerColor, bool) {
+	raw := strings.TrimSpace(os.Getenv(bannerTitleColorEnv))
+	if raw == "" {
+		return 0, false
+	}
+	for idx, color := range bannerTitleColors {
+		name := bannerTitleColorName(BannerColor(idx))
+		if strings.EqualFold(raw, name) || raw == color {
+			return BannerColor(idx), true
+		}
+	}
+	return 0, false
+}
+
+func bannerTitleColorName(color BannerColor) string {
+	switch color {
+	case BannerCocaColaRed:
+		return "CocaColaRed"
+	case BannerFacebookBlue:
+		return "FacebookBlue"
+	case BannerTwitterBlue:
+		return "TwitterBlue"
+	case BannerLinkedInBlue:
+		return "LinkedInBlue"
+	case BannerIBMBlue:
+		return "IBMBlue"
+	case BannerYouTubeRed:
+		return "YouTubeRed"
+	case BannerSpotifyGreen:
+		return "SpotifyGreen"
+	case BannerNetflixRed:
+		return "NetflixRed"
+	case BannerTwitchPurple:
+		return "TwitchPurple"
+	case BannerYahooPurple:
+		return "YahooPurple"
+	case BannerAmazonOrange:
+		return "AmazonOrange"
+	case BannerIntelBlue:
+		return "IntelBlue"
+	case BannerWhatsAppGreen:
+		return "WhatsAppGreen"
+	case BannerAndroidGreen:
+		return "AndroidGreen"
+	case BannerSkypeBlue:
+		return "SkypeBlue"
+	case BannerStarbucksGreen:
+		return "StarbucksGreen"
+	case BannerPinterestRed:
+		return "PinterestRed"
+	case BannerAirbnbPink:
+		return "AirbnbPink"
+	case BannerFantaOrange:
+		return "FantaOrange"
+	case BannerBMWBlue:
+		return "BMWBlue"
+	default:
+		return ""
+	}
+}
+
 func DrawBannerTitle() {
 	EnableANSI()
 	width := 80
@@ -88,7 +161,7 @@ func DrawBannerTitle() {
 		width = w
 	}
 
-	fmt.Print(bannerTitleColors[bannerTitleColor])
+	fmt.Print(bannerTitleColors[bannerTitleColor()])
 	printCenteredLines(titleLines, width)
 	fmt.Print("\x1b[0m")
 }

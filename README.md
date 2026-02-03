@@ -30,7 +30,7 @@ A terminal-based tool that acts as a comprehensive health check for your AWS acc
 - **📉 Cost Comparison:** Compares costs between the current and previous month for the exact same period (e.g., comparing Jan 1–15 vs Feb 1–15) to give a fair assessment of spending velocity.
 - **🏥 Waste Detection (The "Checkup"):** Scans your account for "zombie" resources and inefficiencies that are silently inflating your bill.
 - **📊 Trend Analysis:** Visualizes cost history over the last 6 months to spot long-term anomalies.
-- **Startup Banner:** Renders the aws-doctor logo in ANSI truecolor on launch (skipped for `--version` and `--update`).
+- **Startup Banner:** Renders the aws-doctor logo in ANSI truecolor on launch (skipped for `--version` and `--update`); the title color switches to AmazonOrange when a blue background is detected (Windows console attributes or `COLORFGBG` on Unix-like terminals), otherwise it uses SkypeBlue. Override with `AWS_DOCTOR_BANNER_COLOR` set to a color name like `AmazonOrange` or `SkypeBlue` (case-insensitive) or a full ANSI code like `\x1b[38;2;255;153;0m`.
 
 ## Motivation
 
