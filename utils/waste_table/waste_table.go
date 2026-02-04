@@ -1,4 +1,4 @@
-package utils //nolint:revive
+package wastetable
 
 import (
 	"fmt"
@@ -9,6 +9,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/ec2/types"
 	elbtypes "github.com/aws/aws-sdk-go-v2/service/elasticloadbalancingv2/types"
 	"github.com/elC0mpa/aws-doctor/model"
+	"github.com/elC0mpa/aws-doctor/utils/ec2"
 	"github.com/jedib0t/go-pretty/v6/table"
 	"github.com/jedib0t/go-pretty/v6/text"
 )
@@ -248,7 +249,7 @@ func populateInstanceRows(instances []types.Instance) []table.Row {
 
 		timeInfo := "-"
 
-		stoppedAt, err := ParseTransitionDate(reason)
+		stoppedAt, err := ec2.ParseTransitionDate(reason)
 		if err == nil {
 			days := int(now.Sub(stoppedAt).Hours() / 24)
 			timeInfo = fmt.Sprintf("%d days ago", days)

@@ -4,7 +4,11 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/ec2/types"
 	elbtypes "github.com/aws/aws-sdk-go-v2/service/elasticloadbalancingv2/types"
 	"github.com/elC0mpa/aws-doctor/model"
-	"github.com/elC0mpa/aws-doctor/utils"
+	"github.com/elC0mpa/aws-doctor/utils/barchart"
+	costtable "github.com/elC0mpa/aws-doctor/utils/cost_table"
+	jsonoutput "github.com/elC0mpa/aws-doctor/utils/json_output"
+	"github.com/elC0mpa/aws-doctor/utils/spinner"
+	wastetable "github.com/elC0mpa/aws-doctor/utils/waste_table"
 )
 
 // Format represents the output format type
@@ -30,31 +34,31 @@ type Renderer interface {
 type realRenderer struct{}
 
 func (r *realRenderer) DrawCostTable(accountID, lastTotalCost, currentTotalCost string, lastMonth, currentMonth *model.CostInfo, costsAggregation string) {
-	utils.DrawCostTable(accountID, lastTotalCost, currentTotalCost, lastMonth, currentMonth, costsAggregation)
+	costtable.DrawCostTable(accountID, lastTotalCost, currentTotalCost, lastMonth, currentMonth, costsAggregation)
 }
 
 func (r *realRenderer) OutputCostComparisonJSON(accountID string, lastTotalCost, currentTotalCost float64, lastMonth, currentMonth *model.CostInfo) error {
-	return utils.OutputCostComparisonJSON(accountID, lastTotalCost, currentTotalCost, lastMonth, currentMonth)
+	return jsonoutput.OutputCostComparisonJSON(accountID, lastTotalCost, currentTotalCost, lastMonth, currentMonth)
 }
 
 func (r *realRenderer) DrawTrendChart(accountID string, costInfo []model.CostInfo) {
-	utils.DrawTrendChart(accountID, costInfo)
+	barchart.DrawTrendChart(accountID, costInfo)
 }
 
 func (r *realRenderer) OutputTrendJSON(accountID string, costInfo []model.CostInfo) error {
-	return utils.OutputTrendJSON(accountID, costInfo)
+	return jsonoutput.OutputTrendJSON(accountID, costInfo)
 }
 
 func (r *realRenderer) DrawWasteTable(accountID string, elasticIPs []types.Address, unusedVolumes []types.Volume, stoppedVolumes []types.Volume, ris []model.RiExpirationInfo, stoppedInstances []types.Instance, loadBalancers []elbtypes.LoadBalancer, unusedAMIs []model.AMIWasteInfo, orphanedSnapshots []model.SnapshotWasteInfo) {
-	utils.DrawWasteTable(accountID, elasticIPs, unusedVolumes, stoppedVolumes, ris, stoppedInstances, loadBalancers, unusedAMIs, orphanedSnapshots)
+	wastetable.DrawWasteTable(accountID, elasticIPs, unusedVolumes, stoppedVolumes, ris, stoppedInstances, loadBalancers, unusedAMIs, orphanedSnapshots)
 }
 
 func (r *realRenderer) OutputWasteJSON(accountID string, elasticIPs []types.Address, unusedVolumes []types.Volume, stoppedVolumes []types.Volume, ris []model.RiExpirationInfo, stoppedInstances []types.Instance, loadBalancers []elbtypes.LoadBalancer, unusedAMIs []model.AMIWasteInfo, orphanedSnapshots []model.SnapshotWasteInfo) error {
-	return utils.OutputWasteJSON(accountID, elasticIPs, unusedVolumes, stoppedVolumes, ris, stoppedInstances, loadBalancers, unusedAMIs, orphanedSnapshots)
+	return jsonoutput.OutputWasteJSON(accountID, elasticIPs, unusedVolumes, stoppedVolumes, ris, stoppedInstances, loadBalancers, unusedAMIs, orphanedSnapshots)
 }
 
 func (r *realRenderer) StopSpinner() {
-	utils.StopSpinner()
+	spinner.StopSpinner()
 }
 
 // service is the internal implementation

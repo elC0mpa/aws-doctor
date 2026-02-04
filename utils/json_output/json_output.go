@@ -1,4 +1,4 @@
-package utils //nolint:revive
+package jsonoutput
 
 import (
 	"encoding/json"
@@ -9,6 +9,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/ec2/types"
 	elbtypes "github.com/aws/aws-sdk-go-v2/service/elasticloadbalancingv2/types"
 	"github.com/elC0mpa/aws-doctor/model"
+	"github.com/elC0mpa/aws-doctor/utils/ec2"
 )
 
 // OutputCostComparisonJSON outputs cost comparison data as JSON
@@ -118,7 +119,7 @@ func OutputWasteJSON(accountID string, elasticIPs []types.Address, unusedVolumes
 			InstanceID: aws.ToString(instance.InstanceId),
 		}
 		if instance.StateTransitionReason != nil {
-			if stoppedAt, err := ParseTransitionDate(*instance.StateTransitionReason); err == nil {
+			if stoppedAt, err := ec2.ParseTransitionDate(*instance.StateTransitionReason); err == nil {
 				si.StoppedAt = stoppedAt.Format(time.RFC3339)
 				si.DaysAgo = int(now.Sub(stoppedAt).Hours() / 24)
 			}

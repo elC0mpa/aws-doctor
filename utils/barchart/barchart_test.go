@@ -1,4 +1,4 @@
-package utils //nolint:revive
+package barchart
 
 import (
 	"bytes"

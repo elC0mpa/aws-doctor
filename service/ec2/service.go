@@ -11,7 +11,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/ec2"
 	"github.com/aws/aws-sdk-go-v2/service/ec2/types"
 	"github.com/elC0mpa/aws-doctor/model"
-	"github.com/elC0mpa/aws-doctor/utils"
+	utilsec2 "github.com/elC0mpa/aws-doctor/utils/ec2"
 )
 
 const ebsSnapshotCostPerGBMonth = 0.05
@@ -150,7 +150,7 @@ func (s *service) GetStoppedInstancesInfo(ctx context.Context) ([]types.Instance
 
 				reason := aws.ToString(instance.StateTransitionReason)
 
-				stoppedAt, err := utils.ParseTransitionDate(reason)
+				stoppedAt, err := utilsec2.ParseTransitionDate(reason)
 				if err != nil {
 					continue
 				}
