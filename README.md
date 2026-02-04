@@ -2,7 +2,7 @@
 
 [![Go Version](https://img.shields.io/github/go-mod/go-version/elC0mpa/aws-doctor)](https://github.com/elC0mpa/aws-doctor/blob/main/go.mod)
 [![Go Report Card](https://goreportcard.com/badge/github.com/elC0mpa/aws-doctor)](https://goreportcard.com/report/github.com/elC0mpa/aws-doctor)
-[![Go Coverage](https://github.com/elC0mpa/aws-doctor/wiki/coverage.svg)](https://raw.githack.com/wiki/elC0mpa/aws-doctor/coverage.html)
+[![codecov](https://codecov.io/gh/elC0mpa/aws-doctor/graph/badge.svg)](https://codecov.io/gh/elC0mpa/aws-doctor)
 [![Go Reference](https://pkg.go.dev/badge/github.com/elC0mpa/aws-doctor.svg)](https://pkg.go.dev/github.com/elC0mpa/aws-doctor)
 
 [![CI](https://github.com/elC0mpa/aws-doctor/actions/workflows/ci.yml/badge.svg)](https://github.com/elC0mpa/aws-doctor/actions/workflows/ci.yml)
@@ -38,7 +38,7 @@ A terminal-based tool that acts as a comprehensive health check for your AWS acc
 - **🏥 Waste Detection (The "Checkup"):** Scans your account for "zombie" resources and inefficiencies that are silently inflating your bill.
 - **📊 Trend Analysis:** Visualizes cost history over the last 6 months to spot long-term anomalies.
 - **🔐 MFA Support:** Fully supports AWS profiles that require Multi-Factor Authentication (MFA) to assume roles.
-- **Startup Banner:** Renders the aws-doctor logo in ANSI truecolor on launch (skipped for `--version` and `--update`); the title color switches to AmazonOrange when a blue background is detected (Windows console attributes or `COLORFGBG` on Unix-like terminals), otherwise it uses SkypeBlue. Override with `AWS_DOCTOR_BANNER_COLOR` set to a color name like `AmazonOrange` or `SkypeBlue` (case-insensitive) or a full ANSI code like `\x1b[38;2;255;153;0m`.
+- **🎨 Startup Banner:** Displays a high-fidelity ANSI logo on launch. Automatically adjusts colors based on your terminal background (e.g., switches to AmazonOrange on blue backgrounds) and can be customized via the `AWS_DOCTOR_BANNER_COLOR` environment variable.
 
 ## Motivation
 
