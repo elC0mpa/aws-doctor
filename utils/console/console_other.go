@@ -1,13 +1,14 @@
 //go:build !windows
 
-package utils //nolint:revive
+package console
 
 import (
 	"os"
 	"strings"
 )
 
-func isBlueBackground() bool {
+// IsBlueBackground returns true if the terminal background color is blue.
+func IsBlueBackground() bool {
 	raw := os.Getenv("COLORFGBG")
 
 	if raw == "" {

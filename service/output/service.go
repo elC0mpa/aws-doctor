@@ -5,7 +5,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/ec2/types"
 	elbtypes "github.com/aws/aws-sdk-go-v2/service/elasticloadbalancingv2/types"
 	"github.com/elC0mpa/aws-doctor/model"
-	"github.com/elC0mpa/aws-doctor/utils"
+	"github.com/elC0mpa/aws-doctor/utils/cost"
 )
 
 // NewService creates a new output service with the specified format
@@ -25,8 +25,8 @@ func (s *service) RenderCostComparison(accountID, lastTotalCost, currentTotalCos
 	if s.format == FormatJSON {
 		return s.renderer.OutputCostComparisonJSON(
 			accountID,
-			utils.ParseCostString(lastTotalCost),
-			utils.ParseCostString(currentTotalCost),
+			cost.ParseCostString(lastTotalCost),
+			cost.ParseCostString(currentTotalCost),
 			lastMonth,
 			currentMonth,
 		)

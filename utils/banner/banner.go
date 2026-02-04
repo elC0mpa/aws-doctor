@@ -1,10 +1,12 @@
-package utils //nolint:revive
+package banner
 
 import (
 	"fmt"
 	"os"
 	"strings"
 
+	"github.com/elC0mpa/aws-doctor/utils/ansi"
+	"github.com/elC0mpa/aws-doctor/utils/console"
 	"golang.org/x/term"
 )
 
@@ -115,7 +117,7 @@ func bannerTitleColor() bannerColor {
 		return color
 	}
 
-	if isBlueBackground() {
+	if console.IsBlueBackground() {
 		return bannerTitleColorBlueBackground
 	}
 
@@ -149,7 +151,7 @@ func bannerTitleColorName(color bannerColor) string {
 
 // DrawBannerTitle prints the application title banner to stdout.
 func DrawBannerTitle() {
-	EnableANSI()
+	ansi.EnableANSI()
 
 	width := 80
 

@@ -1,6 +1,6 @@
 //go:build windows
 
-package utils //nolint:revive
+package console
 
 import (
 	"os"
@@ -8,7 +8,8 @@ import (
 	"golang.org/x/sys/windows"
 )
 
-func isBlueBackground() bool {
+// IsBlueBackground returns true if the terminal background color is blue.
+func IsBlueBackground() bool {
 	handle := windows.Handle(os.Stdout.Fd())
 
 	var info windows.ConsoleScreenBufferInfo

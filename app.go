@@ -16,7 +16,8 @@ import (
 	"github.com/elC0mpa/aws-doctor/service/output"
 	awssts "github.com/elC0mpa/aws-doctor/service/sts"
 	"github.com/elC0mpa/aws-doctor/service/update"
-	"github.com/elC0mpa/aws-doctor/utils"
+	"github.com/elC0mpa/aws-doctor/utils/banner"
+	"github.com/elC0mpa/aws-doctor/utils/spinner"
 )
 
 var (
@@ -54,10 +55,7 @@ func run() error {
 		return orchestratorService.Orchestrate(flags)
 	}
 
-	utils.DrawBannerTitle()
-	utils.StartSpinner()
-
-	defer utils.StopSpinner()
+	banner.DrawBannerTitle()
 
 	cfgService := awsconfig.NewService()
 
@@ -66,9 +64,9 @@ func run() error {
 		return fmt.Errorf("failed to load AWS config: %w", err)
 	}
 
-	utils.StartSpinner()
+	spinner.StartSpinner()
 
-	defer utils.StopSpinner()
+	defer spinner.StopSpinner()
 
 	costService := awscostexplorer.NewService(awsCfg)
 	stsService := awssts.NewService(awsCfg)

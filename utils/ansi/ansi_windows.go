@@ -1,6 +1,6 @@
 //go:build windows
 
-package utils //nolint:revive
+package ansi
 
 import (
 	"os"
