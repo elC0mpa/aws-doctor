@@ -11,7 +11,7 @@ import (
 
 func TestRealRenderer_DrawCostTable(t *testing.T) {
 	r := &realRenderer{}
-	
+
 	lastMonth := &model.CostInfo{
 		DateInterval: cetypes.DateInterval{
 			Start: aws.String("2023-01-01"),
@@ -31,7 +31,7 @@ func TestRealRenderer_DrawCostTable(t *testing.T) {
 		},
 	}
 
-	// This calls external utils which print to stdout. 
+	// This calls external utils which print to stdout.
 	// We just want to ensure it doesn't panic and covers the code.
 	assert.NotPanics(t, func() {
 		r.DrawCostTable("123456789012", "100.00 USD", "120.00 USD", lastMonth, currentMonth, "UnblendedCost")
@@ -40,7 +40,7 @@ func TestRealRenderer_DrawCostTable(t *testing.T) {
 
 func TestRealRenderer_OutputCostComparisonJSON(t *testing.T) {
 	r := &realRenderer{}
-	
+
 	lastMonth := &model.CostInfo{
 		DateInterval: cetypes.DateInterval{
 			Start: aws.String("2023-01-01"),
@@ -66,7 +66,7 @@ func TestRealRenderer_OutputCostComparisonJSON(t *testing.T) {
 
 func TestRealRenderer_DrawTrendChart(t *testing.T) {
 	r := &realRenderer{}
-	
+
 	costInfo := []model.CostInfo{
 		{
 			DateInterval: cetypes.DateInterval{
@@ -86,7 +86,7 @@ func TestRealRenderer_DrawTrendChart(t *testing.T) {
 
 func TestRealRenderer_OutputTrendJSON(t *testing.T) {
 	r := &realRenderer{}
-	
+
 	costInfo := []model.CostInfo{
 		{
 			DateInterval: cetypes.DateInterval{
@@ -105,7 +105,7 @@ func TestRealRenderer_OutputTrendJSON(t *testing.T) {
 
 func TestRealRenderer_DrawWasteTable(t *testing.T) {
 	r := &realRenderer{}
-	
+
 	assert.NotPanics(t, func() {
 		r.DrawWasteTable("123456789012", nil, nil, nil, nil, nil, nil, nil, nil)
 	})
@@ -113,14 +113,14 @@ func TestRealRenderer_DrawWasteTable(t *testing.T) {
 
 func TestRealRenderer_OutputWasteJSON(t *testing.T) {
 	r := &realRenderer{}
-	
+
 	err := r.OutputWasteJSON("123456789012", nil, nil, nil, nil, nil, nil, nil, nil)
 	assert.NoError(t, err)
 }
 
 func TestRealRenderer_StopSpinner(t *testing.T) {
 	r := &realRenderer{}
-	
+
 	assert.NotPanics(t, func() {
 		r.StopSpinner()
 	})

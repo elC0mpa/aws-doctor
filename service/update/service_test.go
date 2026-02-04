@@ -21,7 +21,7 @@ func (m *mockRunner) Run(name string, arg ...string) error {
 func TestNewService(t *testing.T) {
 	svc := NewService()
 	assert.NotNil(t, svc)
-	
+
 	s, ok := svc.(*service)
 	assert.True(t, ok)
 	assert.NotNil(t, s.runner)
@@ -52,7 +52,7 @@ func TestUpdate_Error(t *testing.T) {
 }
 
 func TestRealRunner_Run(t *testing.T) {
-	// This actually tries to run a command. 
+	// This actually tries to run a command.
 	// We'll run something harmless like 'true'.
 	r := &realRunner{}
 	err := r.Run("true")

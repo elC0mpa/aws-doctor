@@ -13,6 +13,7 @@ func (r *realRunner) Run(name string, arg ...string) error {
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	cmd.Stdin = os.Stdin
+
 	return cmd.Run()
 }
 
