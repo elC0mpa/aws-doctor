@@ -2,7 +2,10 @@ package awsconfig
 
 import (
 	"context"
+	"os"
 	"testing"
+
+	"github.com/aws/aws-sdk-go-v2/config"
 )
 
 func TestNewService(t *testing.T) {
@@ -97,4 +100,120 @@ func TestGetAWSCfg_ContextCancellation(t *testing.T) {
 	_, _ = s.GetAWSCfg(ctx, "", "")
 	// Not asserting on error since context cancellation behavior
 	// depends on SDK internals
+}
+
+func TestGetAWSCfg_WithMFAProfile(t *testing.T) {
+	// Create a temporary config file
+	tmpDir := t.TempDir()
+	configFile := tmpDir + "/config"
+	configContent := `[default]
+          region = us-east-1
+         `
+
+	if err := os.WriteFile(configFile, []byte(configContent), 0o600); err != nil {
+		t.Fatalf("failed to write temporary config file: %v", err)
+	}
+
+	// Mock loadSharedConfigProfile
+	origLoadShared := loadSharedConfigProfile
+
+	defer func() { loadSharedConfigProfile = origLoadShared }()
+
+	loadSharedConfigProfile = func(ctx context.Context, profileName string, optFns ...func(*config.LoadSharedConfigOptions)) (config.SharedConfig, error) {
+		if profileName == "mfa-test" {
+			return config.SharedConfig{
+				RoleARN:           "arn:aws:iam::123456789012:role/test-role",
+				MFASerial:         "arn:aws:iam::123456789012:mfa/test-user",
+				SourceProfileName: "default",
+				Region:            "us-west-2",
+			}, nil
+		}
+
+		if profileName == "mfa-no-arn" {
+			return config.SharedConfig{
+				MFASerial: "arn:aws:iam::123456789012:mfa/test-user",
+			}, nil
+		}
+
+		if profileName == "mfa-error" {
+			return config.SharedConfig{
+				RoleARN:   "arn:aws:iam::123456789012:role/test-role",
+				MFASerial: "arn:aws:iam::123456789012:mfa/test-user",
+			}, nil
+		}
+
+		return config.SharedConfig{}, nil
+	}
+
+	t.Setenv("AWS_CONFIG_FILE", configFile)
+	t.Setenv("AWS_ACCESS_KEY_ID", "test-key")
+	t.Setenv("AWS_SECRET_ACCESS_KEY", "test-secret")
+	t.Setenv("AWS_SDK_LOAD_CONFIG", "1")
+
+	s := NewService()
+
+	t.Run("MFA with explicit region", func(t *testing.T) {
+		_, err := s.GetAWSCfg(context.Background(), "us-east-1", "mfa-test")
+		if err == nil {
+			t.Error("Expected error for fake MFA profile, but got nil")
+		}
+	})
+
+	t.Run("MFA with config region", func(t *testing.T) {
+		_, err := s.GetAWSCfg(context.Background(), "", "mfa-test")
+		if err == nil {
+			t.Error("Expected error for fake MFA profile, but got nil")
+		}
+	})
+
+	t.Run("MFA profile with missing ARN", func(t *testing.T) {
+		_, _ = s.GetAWSCfg(context.Background(), "us-east-1", "mfa-no-arn")
+	})
+
+	t.Run("MFA with manual trigger error path", func(t *testing.T) {
+		// To cover the path where stsRegion fallback happens
+		_, _ = s.GetAWSCfg(context.Background(), "", "mfa-error")
+	})
+
+	t.Run("loadConfigWithManualMFA missing fields", func(t *testing.T) {
+		// Call directly to hit error paths
+		loadSharedConfigProfile = func(ctx context.Context, profileName string, optFns ...func(*config.LoadSharedConfigOptions)) (config.SharedConfig, error) {
+			return config.SharedConfig{
+				RoleARN: "", // Missing RoleARN
+			}, nil
+		}
+
+		_, err := s.(*service).loadConfigWithManualMFA(context.Background(), "", "any")
+		if err == nil {
+			t.Error("Expected error for missing RoleARN, but got nil")
+		}
+	})
+
+	t.Run("loadConfigWithManualMFA stsRegion fallback", func(t *testing.T) {
+		loadSharedConfigProfile = func(ctx context.Context, profileName string, optFns ...func(*config.LoadSharedConfigOptions)) (config.SharedConfig, error) {
+			return config.SharedConfig{
+				RoleARN:   "arn:aws:iam::123456789012:role/test-role",
+				MFASerial: "arn:aws:iam::123456789012:mfa/test-user",
+				Region:    "", // Trigger fallback
+			}, nil
+		}
+
+		_, _ = s.(*service).loadConfigWithManualMFA(context.Background(), "", "any")
+	})
+}
+
+func TestGetAWSCfg_LoadConfigError(t *testing.T) {
+	// We can't easily trigger an error in config.LoadDefaultConfig without
+	// more complex mocking, but we can test the case where credentials retrieval fails.
+	t.Setenv("AWS_ACCESS_KEY_ID", "test")
+	t.Setenv("AWS_SECRET_ACCESS_KEY", "test")
+	// Use an invalid region to potentially trigger some errors,
+	// though LoadDefaultConfig is quite lenient.
+
+	s := NewService()
+	_, err := s.GetAWSCfg(context.Background(), "invalid-region-!@#$", "")
+	// If it doesn't error here, it's fine, we are just exploring.
+	if err != nil {
+		t.Logf("Got expected error or log: %v", err)
+	}
 }

@@ -11,6 +11,9 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/sts"
 )
 
+// loadSharedConfigProfile is a variable to allow mocking in tests.
+var loadSharedConfigProfile = config.LoadSharedConfigProfile
+
 // NewService creates a new AWS configuration service.
 func NewService() Service {
 	return &service{}
@@ -21,7 +24,7 @@ func (s *service) GetAWSCfg(ctx context.Context, region, profile string) (aws.Co
 	// This avoids the issue where LoadDefaultConfig returns a config that fails later
 	// (SignatureDoesNotMatch) because it didn't correctly use the source profile's credentials for signing.
 	if profile != "" {
-		sharedCfg, err := config.LoadSharedConfigProfile(ctx, profile)
+		sharedCfg, err := loadSharedConfigProfile(ctx, profile)
 		if err == nil && sharedCfg.RoleARN != "" && sharedCfg.MFASerial != "" {
 			return s.loadConfigWithManualMFA(ctx, region, profile)
 		}
@@ -66,7 +69,7 @@ func (s *service) GetAWSCfg(ctx context.Context, region, profile string) (aws.Co
 // when LoadDefaultConfig fails to apply the token provider.
 func (s *service) loadConfigWithManualMFA(ctx context.Context, region, profile string) (aws.Config, error) {
 	// 1. Load the shared config to get RoleARN and MFASerial
-	sharedCfg, err := config.LoadSharedConfigProfile(ctx, profile)
+	sharedCfg, err := loadSharedConfigProfile(ctx, profile)
 	if err != nil {
 		return aws.Config{}, fmt.Errorf("failed to load shared config profile: %w", err)
 	}
