@@ -5,4 +5,10 @@ type Service interface {
 	Update() error
 }
 
-type service struct{}
+type commandRunner interface {
+	Run(name string, arg ...string) error
+}
+
+type service struct {
+	runner commandRunner
+}
