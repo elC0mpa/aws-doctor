@@ -51,6 +51,11 @@ func TestParseCostString(t *testing.T) {
 			want:  42.50,
 		},
 		{
+			name:  "no_space_single_part",
+			input: "100",
+			want:  100.0,
+		},
+		{
 			name:  "empty_string",
 			input: "",
 			want:  0.0,

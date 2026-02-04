@@ -441,6 +441,30 @@ func TestDrawCostTable_EmptyServices(t *testing.T) {
 	}
 }
 
+func TestPopulateFirstRow_Panics(t *testing.T) {
+	// Test panic for current month
+	func() {
+		defer func() {
+			if r := recover(); r == nil {
+				t.Errorf("populateFirstRow should have panicked for invalid current cost")
+			}
+		}()
+
+		populateFirstRow("100.00 USD", "invalid")
+	}()
+
+	// Test panic for last month
+	func() {
+		defer func() {
+			if r := recover(); r == nil {
+				t.Errorf("populateFirstRow should have panicked for invalid last cost")
+			}
+		}()
+
+		populateFirstRow("invalid", "100.00 USD")
+	}()
+}
+
 func BenchmarkDrawCostTable(b *testing.B) {
 	lastMonthGroups := &model.CostInfo{
 		CostGroup: model.CostGroup{

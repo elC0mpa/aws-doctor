@@ -85,6 +85,14 @@ func TestPrintJSON(t *testing.T) {
 	}
 }
 
+func TestPrintJSON_Error(t *testing.T) {
+	// Channels cannot be marshaled to JSON
+	err := printJSON(make(chan int))
+	if err == nil {
+		t.Error("printJSON() should have returned an error for a channel")
+	}
+}
+
 func TestOutputCostComparisonJSON(t *testing.T) {
 	lastMonth := &model.CostInfo{
 		CostGroup: model.CostGroup{
@@ -296,6 +304,42 @@ func TestOutputWasteJSON(t *testing.T) {
 
 	if len(result.UnusedLoadBalancers) != 1 {
 		t.Errorf("UnusedLoadBalancers has %d items, want 1", len(result.UnusedLoadBalancers))
+	}
+}
+
+func TestOutputWasteJSON_WithSnapshots(t *testing.T) {
+	orphanedSnapshots := []model.SnapshotWasteInfo{
+		{
+			SnapshotID: "snap-orphaned",
+			Category:   model.SnapshotCategoryOrphaned,
+		},
+		{
+			SnapshotID: "snap-stale",
+			Category:   model.SnapshotCategoryStale,
+		},
+	}
+
+	var err error
+
+	output := captureStdout(func() {
+		err = OutputWasteJSON("123456789012", nil, nil, nil, nil, nil, nil, nil, orphanedSnapshots)
+	})
+
+	if err != nil {
+		t.Fatalf("OutputWasteJSON() error = %v", err)
+	}
+
+	var result model.WasteReportJSON
+	if jsonErr := json.Unmarshal([]byte(strings.TrimSpace(output)), &result); jsonErr != nil {
+		t.Fatalf("Failed to parse output JSON: %v", jsonErr)
+	}
+
+	if len(result.OrphanedSnapshots) != 1 {
+		t.Errorf("OrphanedSnapshots has %d items, want 1", len(result.OrphanedSnapshots))
+	}
+
+	if len(result.StaleSnapshots) != 1 {
+		t.Errorf("StaleSnapshots has %d items, want 1", len(result.StaleSnapshots))
 	}
 }
 
