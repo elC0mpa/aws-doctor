@@ -13,9 +13,9 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/sts v1.38.2
 	github.com/briandowns/spinner v1.23.2
 	github.com/charmbracelet/lipgloss v1.0.0
-	github.com/common-nighthawk/go-figure v0.0.0-20210622060536-734e95fb86be
 	github.com/jedib0t/go-pretty/v6 v6.6.8
 	github.com/stretchr/testify v1.11.1
+	golang.org/x/term v0.29.0
 	golang.org/x/sync v0.11.0
 )
 
@@ -50,7 +50,6 @@ require (
 	github.com/rivo/uniseg v0.4.7 // indirect
 	github.com/stretchr/objx v0.5.2 // indirect
 	golang.org/x/sys v0.30.0 // indirect
-	golang.org/x/term v0.29.0 // indirect
 	golang.org/x/text v0.22.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )

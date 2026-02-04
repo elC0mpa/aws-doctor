@@ -7,9 +7,11 @@ This file provides instructions for AI coding agents working on this project. Fo
 aws-doctor is a Go CLI tool that provides AWS cost analysis and waste detection. It acts as a free alternative to AWS Trusted Advisor.
 
 ### Key Features
+
 - Cost comparison between current and previous month
 - 6-month trend analysis
 - Waste detection (unused EIPs, EBS volumes, stopped instances, load balancers, etc.)
+- Startup banner uses ANSI truecolor; title color switches to AmazonOrange when a blue background is detected (Windows console attributes or `COLORFGBG` on Unix-like terminals), otherwise SkypeBlue. Override with `AWS_DOCTOR_BANNER_COLOR` (color name or ANSI code).
 
 ## Quick Reference
 
@@ -60,6 +62,7 @@ aws-doctor/
 ### Service Pattern
 
 Each service follows this pattern to enable Dependency Injection for testing:
+
 - `types.go` - Interface definitions (Service and AWS Client) and struct types
 - `service.go` - Implementation
 
@@ -97,6 +100,7 @@ func NewService(cfg aws.Config) ServiceInterface {
 ### Remote Setup
 
 Contributors typically have:
+
 - `origin` - their fork
 - `upstream` - the original repo (elC0mpa/aws-doctor)
 
@@ -122,6 +126,7 @@ git push origin feat/feature-name --force
 ### Imports
 
 Use import aliases for AWS SDK packages to avoid conflicts:
+
 ```go
 import (
     elb "github.com/aws/aws-sdk-go-v2/service/elasticloadbalancingv2"
@@ -132,6 +137,7 @@ import (
 ### Concurrency
 
 Use `errgroup` for concurrent AWS API calls:
+
 ```go
 g, ctx := errgroup.WithContext(ctx)
 
@@ -148,6 +154,7 @@ if err := g.Wait(); err != nil {
 ### Pagination
 
 Use AWS SDK v2 paginators for APIs that return paginated results:
+
 ```go
 paginator := elb.NewDescribeLoadBalancersPaginator(s.client, &elb.DescribeLoadBalancersInput{})
 for paginator.HasMorePages() {
@@ -168,6 +175,7 @@ for paginator.HasMorePages() {
 ### Linting Compliance
 
 The CI runs golangci-lint. Common issues to avoid:
+
 - **S1017**: Use `strings.TrimPrefix(s, prefix)` directly instead of `if strings.HasPrefix(s, prefix) { s = strings.TrimPrefix(s, prefix) }`
 - Remove unused imports (the build will fail)
 
@@ -182,6 +190,7 @@ The CI runs golangci-lint. Common issues to avoid:
 ### Test Style
 
 Use table-driven tests:
+
 ```go
 func TestFunction(t *testing.T) {
     tests := []struct {
@@ -238,6 +247,7 @@ If a change makes documentation inaccurate or incomplete, treat the documentatio
 ## PR Checklist
 
 Before submitting:
+
 - [ ] Rebased against upstream `development` branch
 - [ ] `go build ./...` succeeds
 - [ ] `go test ./...` passes
@@ -247,6 +257,7 @@ Before submitting:
 - [ ] PR targets `development` branch (not `main`)
 
 After pushing:
+
 - [ ] CI passes (build, lint, tests on Go 1.23 and 1.24)
 - [ ] Address any golangci-lint warnings
 
