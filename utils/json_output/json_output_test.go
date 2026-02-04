@@ -320,6 +320,7 @@ func TestOutputWasteJSON_WithSnapshots(t *testing.T) {
 	}
 
 	var err error
+
 	output := captureStdout(func() {
 		err = OutputWasteJSON("123456789012", nil, nil, nil, nil, nil, nil, nil, orphanedSnapshots)
 	})

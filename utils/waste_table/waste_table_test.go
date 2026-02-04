@@ -827,39 +827,47 @@ func TestDrawSnapshotTable(t *testing.T) {
 
 func TestDrawWasteTable_IndividualResources(t *testing.T) {
 	accountID := "123456789012"
-	
+
 	// Test EBS only
 	unusedVolumes := []types.Volume{{VolumeId: aws.String("vol-1"), Size: aws.Int32(10)}}
+
 	output := captureWasteOutput(func() {
 		DrawWasteTable(accountID, nil, unusedVolumes, nil, nil, nil, nil, nil, nil)
 	})
+
 	if !strings.Contains(output, "EBS Volume Waste") {
 		t.Error("DrawWasteTable with EBS only missing title")
 	}
 
 	// Test LoadBalancer only
 	lbs := []elbtypes.LoadBalancer{{LoadBalancerName: aws.String("lb-1"), Type: elbtypes.LoadBalancerTypeEnumApplication}}
+
 	output = captureWasteOutput(func() {
 		DrawWasteTable(accountID, nil, nil, nil, nil, nil, lbs, nil, nil)
 	})
+
 	if !strings.Contains(output, "Load Balancer Waste") {
 		t.Error("DrawWasteTable with LB only missing title")
 	}
 
 	// Test AMIs only
 	amis := []model.AMIWasteInfo{{ImageID: "ami-1", Name: "ami-1", DaysSinceCreate: 10}}
+
 	output = captureWasteOutput(func() {
 		DrawWasteTable(accountID, nil, nil, nil, nil, nil, nil, amis, nil)
 	})
+
 	if !strings.Contains(output, "Unused AMI Waste") {
 		t.Error("DrawWasteTable with AMIs only missing title")
 	}
 
 	// Test Snapshots only
 	snaps := []model.SnapshotWasteInfo{{SnapshotID: "snap-1", Category: model.SnapshotCategoryOrphaned}}
+
 	output = captureWasteOutput(func() {
 		DrawWasteTable(accountID, nil, nil, nil, nil, nil, nil, nil, snaps)
 	})
+
 	if !strings.Contains(output, "EBS Snapshot Waste") {
 		t.Error("DrawWasteTable with Snapshots only missing title")
 	}

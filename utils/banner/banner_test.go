@@ -19,7 +19,9 @@ func captureOutput(f func()) string {
 	os.Stdout = old
 
 	var buf bytes.Buffer
+
 	_, _ = io.Copy(&buf, r)
+
 	return buf.String()
 }
 
@@ -42,15 +44,17 @@ func TestBannerTitleColorName(t *testing.T) {
 }
 
 func TestBannerTitleColorFromEnv(t *testing.T) {
-	os.Setenv(bannerTitleColorEnv, "AmazonOrange")
-	defer os.Unsetenv(bannerTitleColorEnv)
+	_ = os.Setenv(bannerTitleColorEnv, "AmazonOrange")
+
+	defer func() { _ = os.Unsetenv(bannerTitleColorEnv) }()
 
 	color, ok := bannerTitleColorFromEnv()
 	if !ok || color != bannerAmazonOrange {
 		t.Errorf("bannerTitleColorFromEnv() = %v, %v, want %v, true", color, ok, bannerAmazonOrange)
 	}
 
-	os.Setenv(bannerTitleColorEnv, "InvalidColor")
+	_ = os.Setenv(bannerTitleColorEnv, "InvalidColor")
+
 	_, ok = bannerTitleColorFromEnv()
 	if ok {
 		t.Error("bannerTitleColorFromEnv() should return false for invalid color")
@@ -59,25 +63,30 @@ func TestBannerTitleColorFromEnv(t *testing.T) {
 
 func TestBannerTitleColor(t *testing.T) {
 	// Test default
-	os.Unsetenv(bannerTitleColorEnv)
-	os.Unsetenv("COLORFGBG")
+	_ = os.Unsetenv(bannerTitleColorEnv)
+	_ = os.Unsetenv("COLORFGBG")
+
 	if color := bannerTitleColor(); color != bannerTitleColorDefault {
 		t.Errorf("bannerTitleColor() = %v, want %v", color, bannerTitleColorDefault)
 	}
 
 	// Test blue background
-	os.Setenv("COLORFGBG", "15;4")
+	_ = os.Setenv("COLORFGBG", "15;4")
+
 	if color := bannerTitleColor(); color != bannerTitleColorBlueBackground {
 		t.Errorf("bannerTitleColor() with blue bg = %v, want %v", color, bannerTitleColorBlueBackground)
 	}
-	os.Unsetenv("COLORFGBG")
+
+	_ = os.Unsetenv("COLORFGBG")
 
 	// Test from env
-	os.Setenv(bannerTitleColorEnv, "CocaColaRed")
+	_ = os.Setenv(bannerTitleColorEnv, "CocaColaRed")
+
 	if color := bannerTitleColor(); color != bannerCocaColaRed {
 		t.Errorf("bannerTitleColor() from env = %v, want %v", color, bannerCocaColaRed)
 	}
-	os.Unsetenv(bannerTitleColorEnv)
+
+	_ = os.Unsetenv(bannerTitleColorEnv)
 }
 
 func TestPrintCenteredLines(t *testing.T) {
@@ -107,11 +116,11 @@ func TestDrawBannerTitle_NonTerminal(t *testing.T) {
 	oldStdout := os.Stdout
 	os.Stdout = w
 
-	// We don't use captureOutput here because we want to specifically 
+	// We don't use captureOutput here because we want to specifically
 	// have os.Stdout be a pipe during the term.GetSize call
 	DrawBannerTitle()
 
 	os.Stdout = oldStdout
-	w.Close()
-	r.Close()
+	_ = w.Close()
+	_ = r.Close()
 }

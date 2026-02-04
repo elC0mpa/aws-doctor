@@ -21,14 +21,15 @@ func TestIsBlueBackground(t *testing.T) {
 
 	for _, tt := range tests {
 		if tt.envValue != "" {
-			os.Setenv("COLORFGBG", tt.envValue)
+			_ = os.Setenv("COLORFGBG", tt.envValue)
 		} else {
-			os.Unsetenv("COLORFGBG")
+			_ = os.Unsetenv("COLORFGBG")
 		}
 
 		if got := IsBlueBackground(); got != tt.want {
 			t.Errorf("IsBlueBackground() for COLORFGBG=%q = %v, want %v", tt.envValue, got, tt.want)
 		}
 	}
-	os.Unsetenv("COLORFGBG")
+
+	_ = os.Unsetenv("COLORFGBG")
 }

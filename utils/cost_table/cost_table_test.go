@@ -449,6 +449,7 @@ func TestPopulateFirstRow_Panics(t *testing.T) {
 				t.Errorf("populateFirstRow should have panicked for invalid current cost")
 			}
 		}()
+
 		populateFirstRow("100.00 USD", "invalid")
 	}()
 
@@ -459,6 +460,7 @@ func TestPopulateFirstRow_Panics(t *testing.T) {
 				t.Errorf("populateFirstRow should have panicked for invalid last cost")
 			}
 		}()
+
 		populateFirstRow("invalid", "100.00 USD")
 	}()
 }
