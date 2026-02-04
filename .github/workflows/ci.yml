@@ -34,7 +34,7 @@ jobs:
         run: go vet ./...
 
       - name: Run tests
-        run: go test -coverprofile=coverage.txt
+        run: go test -v ./... -coverprofile=coverage.txt
 
       - name: Upload coverage reports to Codecov
         if: github.ref == 'refs/heads/main'
