@@ -65,3 +65,11 @@ type SnapshotWasteInfo struct {
 	Reason              string           // Human-readable reason (e.g., "Volume Deleted", "Old Backup")
 	MaxPotentialSavings float64          // Max monthly savings (actual may be lower due to incremental storage)
 }
+
+// KeyPairWasteInfo contains information about unused EC2 key pairs
+type KeyPairWasteInfo struct {
+	KeyName         string
+	KeyPairID       string
+	CreateTime      time.Time
+	DaysSinceCreate int
+}

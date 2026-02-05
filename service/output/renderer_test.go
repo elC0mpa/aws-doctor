@@ -107,14 +107,14 @@ func TestRealRenderer_DrawWasteTable(t *testing.T) {
 	r := &realRenderer{}
 
 	assert.NotPanics(t, func() {
-		r.DrawWasteTable("123456789012", nil, nil, nil, nil, nil, nil, nil, nil)
+		r.DrawWasteTable("123456789012", nil, nil, nil, nil, nil, nil, nil, nil, nil)
 	})
 }
 
 func TestRealRenderer_OutputWasteJSON(t *testing.T) {
 	r := &realRenderer{}
 
-	err := r.OutputWasteJSON("123456789012", nil, nil, nil, nil, nil, nil, nil, nil)
+	err := r.OutputWasteJSON("123456789012", nil, nil, nil, nil, nil, nil, nil, nil, nil)
 	assert.NoError(t, err)
 }
 

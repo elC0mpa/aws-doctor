@@ -471,6 +471,66 @@ func (s *service) GetOrphanedSnapshots(ctx context.Context, staleDays int) ([]mo
 	return results, nil
 }
 
+// GetUnusedKeyPairs returns key pairs that are not used by any instances.
+func (s *service) GetUnusedKeyPairs(ctx context.Context) ([]model.KeyPairWasteInfo, error) {
+	// 1. Get all key pairs
+	keyPairsOutput, err := s.client.DescribeKeyPairs(ctx, &ec2.DescribeKeyPairsInput{})
+	if err != nil {
+		return nil, fmt.Errorf("failed to describe key pairs: %w", err)
+	}
+
+	if len(keyPairsOutput.KeyPairs) == 0 {
+		return nil, nil
+	}
+
+	// 2. Identify key pairs in use by instances
+	usedKeyPairs := make(map[string]bool)
+	instancePaginator := ec2.NewDescribeInstancesPaginator(s.client, &ec2.DescribeInstancesInput{})
+
+	for instancePaginator.HasMorePages() {
+		page, err := instancePaginator.NextPage(ctx)
+		if err != nil {
+			return nil, fmt.Errorf("failed to describe instances: %w", err)
+		}
+
+		for _, reservation := range page.Reservations {
+			for _, instance := range reservation.Instances {
+				if instance.KeyName != nil {
+					usedKeyPairs[*instance.KeyName] = true
+				}
+			}
+		}
+	}
+
+	// 3. Filter unused key pairs
+	var results []model.KeyPairWasteInfo
+
+	now := time.Now()
+
+	for _, kp := range keyPairsOutput.KeyPairs {
+		keyName := aws.ToString(kp.KeyName)
+		if !usedKeyPairs[keyName] {
+			var createTime time.Time
+
+			var daysSinceCreate int
+
+			if kp.CreateTime != nil {
+				createTime = *kp.CreateTime
+				daysSinceCreate = int(now.Sub(createTime).Hours() / 24)
+			}
+
+			results = append(results, model.KeyPairWasteInfo{
+				KeyName:         keyName,
+				KeyPairID:       aws.ToString(kp.KeyPairId),
+				CreateTime:      createTime,
+				DaysSinceCreate: daysSinceCreate,
+			})
+		}
+	}
+
+	return results, nil
+}
+
 func (s *service) getResourceTypeFromDescription(description string) types.NetworkInterfaceType {
 	desc := strings.ToLower(description)
 

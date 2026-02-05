@@ -15,7 +15,7 @@ import (
 )
 
 // DrawWasteTable renders a table containing detected AWS waste.
-func DrawWasteTable(accountID string, elasticIPInfo []types.Address, unusedEBSVolumeInfo []types.Volume, attachedToStoppedInstancesEBSVolumeInfo []types.Volume, expireReservedInstancesInfo []model.RiExpirationInfo, instancesStoppedMoreThan30Days []types.Instance, unusedLoadBalancers []elbtypes.LoadBalancer, unusedAMIs []model.AMIWasteInfo, orphanedSnapshots []model.SnapshotWasteInfo) {
+func DrawWasteTable(accountID string, elasticIPInfo []types.Address, unusedEBSVolumeInfo []types.Volume, attachedToStoppedInstancesEBSVolumeInfo []types.Volume, expireReservedInstancesInfo []model.RiExpirationInfo, instancesStoppedMoreThan30Days []types.Instance, unusedLoadBalancers []elbtypes.LoadBalancer, unusedAMIs []model.AMIWasteInfo, orphanedSnapshots []model.SnapshotWasteInfo, unusedKeyPairs []model.KeyPairWasteInfo) {
 	fmt.Printf("\n%s\n", text.FgHiWhite.Sprint(" 🏥 AWS DOCTOR CHECKUP"))
 	fmt.Printf(" Account ID: %s\n", text.FgBlue.Sprint(accountID))
 	fmt.Println(text.FgHiBlue.Sprint(" ------------------------------------------------"))
@@ -27,7 +27,8 @@ func DrawWasteTable(accountID string, elasticIPInfo []types.Address, unusedEBSVo
 		len(expireReservedInstancesInfo) > 0 ||
 		len(unusedLoadBalancers) > 0 ||
 		len(unusedAMIs) > 0 ||
-		len(orphanedSnapshots) > 0
+		len(orphanedSnapshots) > 0 ||
+		len(unusedKeyPairs) > 0
 
 	if !hasWaste {
 		fmt.Println("\n" + text.FgHiGreen.Sprint(" ✅  Your account is healthy! No waste found."))
@@ -56,6 +57,10 @@ func DrawWasteTable(accountID string, elasticIPInfo []types.Address, unusedEBSVo
 
 	if len(orphanedSnapshots) > 0 {
 		drawSnapshotTable(orphanedSnapshots)
+	}
+
+	if len(unusedKeyPairs) > 0 {
+		drawKeyPairTable(unusedKeyPairs)
 	}
 }
 
@@ -442,6 +447,46 @@ func populateSnapshotRows(snapshots []model.SnapshotWasteInfo) []table.Row {
 			snap.Reason,
 			fmt.Sprintf("%d GB", snap.SizeGB),
 			fmt.Sprintf("$%.2f/mo", snap.MaxPotentialSavings),
+		})
+	}
+
+	return rows
+}
+
+func drawKeyPairTable(keyPairs []model.KeyPairWasteInfo) {
+	t := table.NewWriter()
+	t.SetOutputMirror(os.Stdout)
+	t.SetStyle(table.StyleRounded)
+	t.SetTitle("Unused EC2 Key Pair Waste")
+
+	t.AppendHeader(table.Row{"Status", "Key Name", "Key Pair ID", "Age (Days)"})
+
+	t.SetColumnConfigs([]table.ColumnConfig{
+		{Number: 4, Align: text.AlignRight},
+	})
+
+	statusUnused := "Unused"
+	rows := populateKeyPairRows(keyPairs)
+
+	if len(rows) > 0 {
+		halfRow := len(rows) / 2
+		rows[halfRow][0] = text.FgHiRed.Sprint(statusUnused)
+	}
+
+	t.AppendRows(rows)
+	t.Render()
+	fmt.Println()
+}
+
+func populateKeyPairRows(keyPairs []model.KeyPairWasteInfo) []table.Row {
+	var rows []table.Row
+
+	for _, kp := range keyPairs {
+		rows = append(rows, table.Row{
+			"",
+			kp.KeyName,
+			kp.KeyPairID,
+			fmt.Sprintf("%d days", kp.DaysSinceCreate),
 		})
 	}
 

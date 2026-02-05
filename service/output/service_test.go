@@ -111,9 +111,9 @@ func TestRenderWaste(t *testing.T) {
 		mr := new(renderers.MockRenderer)
 		s := &service{format: FormatTable, renderer: mr}
 
-		mr.On("DrawWasteTable", "123", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return()
+		mr.On("DrawWasteTable", "123", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return()
 
-		err := s.RenderWaste("123", nil, nil, nil, nil, nil, nil, nil, nil)
+		err := s.RenderWaste("123", nil, nil, nil, nil, nil, nil, nil, nil, nil)
 		assert.NoError(t, err)
 		mr.AssertExpectations(t)
 	})
@@ -122,9 +122,9 @@ func TestRenderWaste(t *testing.T) {
 		mr := new(renderers.MockRenderer)
 		s := &service{format: FormatJSON, renderer: mr}
 
-		mr.On("OutputWasteJSON", "123", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil)
+		mr.On("OutputWasteJSON", "123", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil)
 
-		err := s.RenderWaste("123", nil, nil, nil, nil, nil, nil, nil, nil)
+		err := s.RenderWaste("123", nil, nil, nil, nil, nil, nil, nil, nil, nil)
 		assert.NoError(t, err)
 		mr.AssertExpectations(t)
 	})

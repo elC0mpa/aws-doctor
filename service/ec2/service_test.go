@@ -436,6 +436,50 @@ func TestGetOrphanedSnapshots(t *testing.T) {
 	mockClient.AssertExpectations(t)
 }
 
+func TestGetUnusedKeyPairs(t *testing.T) {
+	mockClient := new(awsinterfaces.MockEC2Client)
+	s := &service{client: mockClient}
+
+	now := time.Now()
+	createTime := now.AddDate(0, 0, -10)
+
+	// Mock DescribeKeyPairs
+	mockClient.On("DescribeKeyPairs", mock.Anything, mock.Anything, mock.Anything).Return(&ec2.DescribeKeyPairsOutput{
+		KeyPairs: []types.KeyPairInfo{
+			{
+				KeyName:    aws.String("key-used"),
+				KeyPairId:  aws.String("key-1"),
+				CreateTime: &createTime,
+			},
+			{
+				KeyName:    aws.String("key-unused"),
+				KeyPairId:  aws.String("key-2"),
+				CreateTime: &createTime,
+			},
+		},
+	}, nil)
+
+	// Mock DescribeInstances
+	mockClient.On("DescribeInstances", mock.Anything, mock.Anything, mock.Anything).Return(&ec2.DescribeInstancesOutput{
+		Reservations: []types.Reservation{
+			{
+				Instances: []types.Instance{
+					{KeyName: aws.String("key-used")},
+				},
+			},
+		},
+	}, nil)
+
+	result, err := s.GetUnusedKeyPairs(context.Background())
+
+	assert.NoError(t, err)
+	assert.Len(t, result, 1)
+	assert.Equal(t, "key-unused", result[0].KeyName)
+	assert.Equal(t, "key-2", result[0].KeyPairID)
+	assert.Equal(t, 10, result[0].DaysSinceCreate)
+	mockClient.AssertExpectations(t)
+}
+
 func TestGetResourceTypeFromDescription(t *testing.T) {
 	// Create a service instance for testing the method
 	// We don't need a real client since getResourceTypeFromDescription doesn't use it
