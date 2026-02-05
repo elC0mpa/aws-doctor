@@ -223,19 +223,26 @@ If a change makes documentation inaccurate or incomplete, treat the documentatio
 
 ### Adding a New Waste Detection Type
 
-1. Add model type in `model/` package (e.g., `model/ec2.go` for `SnapshotWasteInfo`)
-2. Define any new AWS client methods needed in `service/ec2/types.go` (ClientAPI interface)
-3. Update mock in `mocks/awsinterfaces/`
-4. Add method to `service/ec2/service.go` (or appropriate service)
-5. Update interface in `service/ec2/types.go` (Service interface)
-6. Update mock in `mocks/services/`
-7. Add concurrent call in `service/orchestrator/service.go` wasteWorkflow
-8. Update `service/output/service.go` to pass the new data into `RenderWaste`
-9. Add display function in `utils/waste_table.go` (update `DrawWasteTable` signature)
-10. Add JSON output type in `model/output.go` and update `utils/json_output.go`
-11. **Update all test calls** when function signatures change (e.g., `DrawWasteTable`, `OutputWasteJSON`)
-12. Update README.md checklist
-13. Add tests for any pure helper functions
+1. **Model Type**: Add the appropriate struct in `model/` package (e.g., `model/ec2.go` for `KeyPairWasteInfo`).
+2. **Client Interface**: Define any new AWS client methods needed in the `*ClientAPI` interface (e.g., `service/ec2/types.go`).
+3. **Client Mock**: Update the corresponding mock in `mocks/awsinterfaces/` to implement the new client method.
+4. **Service Method**: Implement the logic in the service file (e.g., `service/ec2/service.go`). Use paginators for all AWS APIs that support them.
+5. **Service Interface**: Add the new method to the `Service` interface in `types.go`.
+6. **Service Mock**: Update the service mock in `mocks/services/` to include the new method. **This is critical to avoid `go vet` and build failures in orchestrator tests.**
+7. **Orchestrator**: 
+   - Add the concurrent call in `service/orchestrator/service.go` within `wasteWorkflow`.
+   - Update the `RenderWaste` call to pass the new data.
+8. **Output Service**: 
+   - Update `RenderWaste` in `service/output/service.go`.
+   - Update `Service` and `Renderer` interfaces in `service/output/types.go`.
+   - Update `realRenderer` implementation in `service/output/types.go`.
+   - Update `MockOutputService` in `mocks/services/output_service.go` and `MockRenderer` in `mocks/renderers/renderer.go`.
+9. **Utility Handlers**:
+   - Add a display function in `utils/waste_table/waste_table.go` and update `DrawWasteTable` signature.
+   - Add a JSON output type in `model/output.go` and update `utils/json_output/json_output.go`.
+10. **Test Compliance**: **Update all existing test calls** in `service/orchestrator`, `service/output`, and `utils` when function signatures change. Run `go test ./...` frequently.
+11. **Documentation**: Update the feature checklist in `README.md`.
+12. **Validation**: Run `go vet ./...` and `golangci-lint run` to ensure no regressions or interface mismatches were introduced.
 
 ### Adding a New CLI Flag
 
