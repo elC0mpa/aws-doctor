@@ -233,6 +233,7 @@ func (s *service) wasteWorkflow() error {
 		unusedLoadBalancers,
 		unusedAMIs,
 		orphanedSnapshots,
+		unusedKeyPairs,
 	)
 }
 

@@ -70,7 +70,7 @@ func OutputTrendJSON(accountID string, costInfo []model.CostInfo) error {
 }
 
 // OutputWasteJSON outputs waste detection data as JSON
-func OutputWasteJSON(accountID string, elasticIPs []types.Address, unusedVolumes []types.Volume, stoppedVolumes []types.Volume, ris []model.RiExpirationInfo, stoppedInstances []types.Instance, loadBalancers []elbtypes.LoadBalancer, unusedAMIs []model.AMIWasteInfo, orphanedSnapshots []model.SnapshotWasteInfo) error {
+func OutputWasteJSON(accountID string, elasticIPs []types.Address, unusedVolumes []types.Volume, stoppedVolumes []types.Volume, ris []model.RiExpirationInfo, stoppedInstances []types.Instance, loadBalancers []elbtypes.LoadBalancer, unusedAMIs []model.AMIWasteInfo, orphanedSnapshots []model.SnapshotWasteInfo, unusedKeyPairs []model.KeyPairWasteInfo) error {
 	output := model.WasteReportJSON{
 		AccountID:           accountID,
 		GeneratedAt:         time.Now().UTC().Format(time.RFC3339),
@@ -83,6 +83,7 @@ func OutputWasteJSON(accountID string, elasticIPs []types.Address, unusedVolumes
 		UnusedAMIs:          []model.AMIJSON{},
 		OrphanedSnapshots:   []model.SnapshotJSON{},
 		StaleSnapshots:      []model.SnapshotJSON{},
+		UnusedKeyPairs:      []model.KeyPairJSON{},
 	}
 
 	// Unused Elastic IPs
@@ -188,6 +189,16 @@ func OutputWasteJSON(accountID string, elasticIPs []types.Address, unusedVolumes
 		}
 	}
 
+	// Unused Key Pairs
+	for _, kp := range unusedKeyPairs {
+		output.UnusedKeyPairs = append(output.UnusedKeyPairs, model.KeyPairJSON{
+			KeyName:         kp.KeyName,
+			KeyPairID:       kp.KeyPairID,
+			CreationDate:    kp.CreateTime.Format(time.RFC3339),
+			DaysSinceCreate: kp.DaysSinceCreate,
+		})
+	}
+
 	output.HasWaste = len(output.UnusedElasticIPs) > 0 ||
 		len(output.UnusedEBSVolumes) > 0 ||
 		len(output.StoppedVolumes) > 0 ||
@@ -196,7 +207,8 @@ func OutputWasteJSON(accountID string, elasticIPs []types.Address, unusedVolumes
 		len(output.UnusedLoadBalancers) > 0 ||
 		len(output.UnusedAMIs) > 0 ||
 		len(output.OrphanedSnapshots) > 0 ||
-		len(output.StaleSnapshots) > 0
+		len(output.StaleSnapshots) > 0 ||
+		len(output.UnusedKeyPairs) > 0
 
 	return printJSON(output)
 }

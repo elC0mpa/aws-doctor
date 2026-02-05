@@ -55,6 +55,7 @@ type WasteReportJSON struct {
 	UnusedAMIs          []AMIJSON              `json:"unused_amis"`
 	OrphanedSnapshots   []SnapshotJSON         `json:"orphaned_snapshots"`
 	StaleSnapshots      []SnapshotJSON         `json:"stale_snapshots"`
+	UnusedKeyPairs      []KeyPairJSON          `json:"unused_key_pairs"`
 }
 
 // ElasticIPJSON represents an unused Elastic IP
@@ -122,4 +123,12 @@ type SnapshotJSON struct {
 	Category            string  `json:"category"`              // "orphaned" or "stale"
 	Reason              string  `json:"reason"`                // Human-readable reason
 	MaxPotentialSavings float64 `json:"max_potential_savings"` // Actual savings may be lower due to incremental storage
+}
+
+// KeyPairJSON represents an unused EC2 key pair
+type KeyPairJSON struct {
+	KeyName         string `json:"key_name"`
+	KeyPairID       string `json:"key_pair_id"`
+	CreationDate    string `json:"creation_date"`
+	DaysSinceCreate int    `json:"days_since_create"`
 }
