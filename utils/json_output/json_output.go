@@ -74,51 +74,69 @@ func OutputWasteJSON(accountID string, elasticIPs []types.Address, unusedVolumes
 	output := model.WasteReportJSON{
 		AccountID:           accountID,
 		GeneratedAt:         time.Now().UTC().Format(time.RFC3339),
-		UnusedElasticIPs:    []model.ElasticIPJSON{},
-		UnusedEBSVolumes:    []model.EBSVolumeJSON{},
-		StoppedVolumes:      []model.EBSVolumeJSON{},
-		StoppedInstances:    []model.StoppedInstanceJSON{},
-		ReservedInstances:   []model.ReservedInstanceJSON{},
-		UnusedLoadBalancers: []model.LoadBalancerJSON{},
-		UnusedAMIs:          []model.AMIJSON{},
-		OrphanedSnapshots:   []model.SnapshotJSON{},
-		StaleSnapshots:      []model.SnapshotJSON{},
-		UnusedKeyPairs:      []model.KeyPairJSON{},
+		UnusedElasticIPs:    mapElasticIPs(elasticIPs),
+		UnusedEBSVolumes:    mapEBSVolumes(unusedVolumes, "available"),
+		StoppedVolumes:      mapEBSVolumes(stoppedVolumes, "attached_to_stopped"),
+		StoppedInstances:    mapStoppedInstances(stoppedInstances),
+		ReservedInstances:   mapReservedInstances(ris),
+		UnusedLoadBalancers: mapLoadBalancers(loadBalancers),
+		UnusedAMIs:          mapAMIs(unusedAMIs),
+		UnusedKeyPairs:      mapKeyPairs(unusedKeyPairs),
 	}
 
-	// Unused Elastic IPs
+	output.OrphanedSnapshots, output.StaleSnapshots = mapSnapshots(orphanedSnapshots)
+
+	output.HasWaste = len(output.UnusedElasticIPs) > 0 ||
+		len(output.UnusedEBSVolumes) > 0 ||
+		len(output.StoppedVolumes) > 0 ||
+		len(output.StoppedInstances) > 0 ||
+		len(output.ReservedInstances) > 0 ||
+		len(output.UnusedLoadBalancers) > 0 ||
+		len(output.UnusedAMIs) > 0 ||
+		len(output.OrphanedSnapshots) > 0 ||
+		len(output.StaleSnapshots) > 0 ||
+		len(output.UnusedKeyPairs) > 0
+
+	return printJSON(output)
+}
+
+func mapElasticIPs(elasticIPs []types.Address) []model.ElasticIPJSON {
+	var result []model.ElasticIPJSON
+
 	for _, ip := range elasticIPs {
-		output.UnusedElasticIPs = append(output.UnusedElasticIPs, model.ElasticIPJSON{
+		result = append(result, model.ElasticIPJSON{
 			PublicIP:     aws.ToString(ip.PublicIp),
 			AllocationID: aws.ToString(ip.AllocationId),
 		})
 	}
 
-	// Unused EBS Volumes
-	for _, vol := range unusedVolumes {
-		output.UnusedEBSVolumes = append(output.UnusedEBSVolumes, model.EBSVolumeJSON{
+	return result
+}
+
+func mapEBSVolumes(volumes []types.Volume, status string) []model.EBSVolumeJSON {
+	var result []model.EBSVolumeJSON
+
+	for _, vol := range volumes {
+		result = append(result, model.EBSVolumeJSON{
 			VolumeID: aws.ToString(vol.VolumeId),
 			Size:     aws.ToInt32(vol.Size),
-			Status:   "available",
+			Status:   status,
 		})
 	}
 
-	// EBS Volumes attached to stopped instances
-	for _, vol := range stoppedVolumes {
-		output.StoppedVolumes = append(output.StoppedVolumes, model.EBSVolumeJSON{
-			VolumeID: aws.ToString(vol.VolumeId),
-			Size:     aws.ToInt32(vol.Size),
-			Status:   "attached_to_stopped",
-		})
-	}
+	return result
+}
 
-	// Stopped instances
+func mapStoppedInstances(stoppedInstances []types.Instance) []model.StoppedInstanceJSON {
+	var result []model.StoppedInstanceJSON
+
 	now := time.Now()
 
 	for _, instance := range stoppedInstances {
 		si := model.StoppedInstanceJSON{
 			InstanceID: aws.ToString(instance.InstanceId),
 		}
+
 		if instance.StateTransitionReason != nil {
 			if stoppedAt, err := ec2.ParseTransitionDate(*instance.StateTransitionReason); err == nil {
 				si.StoppedAt = stoppedAt.Format(time.RFC3339)
@@ -126,12 +144,17 @@ func OutputWasteJSON(accountID string, elasticIPs []types.Address, unusedVolumes
 			}
 		}
 
-		output.StoppedInstances = append(output.StoppedInstances, si)
+		result = append(result, si)
 	}
 
-	// Reserved instances
+	return result
+}
+
+func mapReservedInstances(ris []model.RiExpirationInfo) []model.ReservedInstanceJSON {
+	var result []model.ReservedInstanceJSON
+
 	for _, ri := range ris {
-		output.ReservedInstances = append(output.ReservedInstances, model.ReservedInstanceJSON{
+		result = append(result, model.ReservedInstanceJSON{
 			ReservedInstanceID: ri.ReservedInstanceID,
 			InstanceType:       ri.InstanceType,
 			ExpirationDate:     ri.ExpirationDate.Format(time.RFC3339),
@@ -141,18 +164,28 @@ func OutputWasteJSON(accountID string, elasticIPs []types.Address, unusedVolumes
 		})
 	}
 
-	// Unused load balancers
+	return result
+}
+
+func mapLoadBalancers(loadBalancers []elbtypes.LoadBalancer) []model.LoadBalancerJSON {
+	var result []model.LoadBalancerJSON
+
 	for _, lb := range loadBalancers {
-		output.UnusedLoadBalancers = append(output.UnusedLoadBalancers, model.LoadBalancerJSON{
+		result = append(result, model.LoadBalancerJSON{
 			Name: aws.ToString(lb.LoadBalancerName),
 			ARN:  aws.ToString(lb.LoadBalancerArn),
 			Type: string(lb.Type),
 		})
 	}
 
-	// Unused AMIs
+	return result
+}
+
+func mapAMIs(unusedAMIs []model.AMIWasteInfo) []model.AMIJSON {
+	var result []model.AMIJSON
+
 	for _, ami := range unusedAMIs {
-		output.UnusedAMIs = append(output.UnusedAMIs, model.AMIJSON{
+		result = append(result, model.AMIJSON{
 			ImageID:            ami.ImageID,
 			Name:               ami.Name,
 			Description:        ami.Description,
@@ -166,7 +199,12 @@ func OutputWasteJSON(accountID string, elasticIPs []types.Address, unusedVolumes
 		})
 	}
 
-	// Snapshots (split by category: orphaned vs stale)
+	return result
+}
+
+func mapSnapshots(orphanedSnapshots []model.SnapshotWasteInfo) ([]model.SnapshotJSON, []model.SnapshotJSON) {
+	var orphaned, stale []model.SnapshotJSON
+
 	for _, snap := range orphanedSnapshots {
 		snapshotJSON := model.SnapshotJSON{
 			SnapshotID:          snap.SnapshotID,
@@ -182,16 +220,22 @@ func OutputWasteJSON(accountID string, elasticIPs []types.Address, unusedVolumes
 			Reason:              snap.Reason,
 			MaxPotentialSavings: snap.MaxPotentialSavings,
 		}
+
 		if snap.Category == model.SnapshotCategoryOrphaned {
-			output.OrphanedSnapshots = append(output.OrphanedSnapshots, snapshotJSON)
+			orphaned = append(orphaned, snapshotJSON)
 		} else {
-			output.StaleSnapshots = append(output.StaleSnapshots, snapshotJSON)
+			stale = append(stale, snapshotJSON)
 		}
 	}
 
-	// Unused Key Pairs
+	return orphaned, stale
+}
+
+func mapKeyPairs(unusedKeyPairs []model.KeyPairWasteInfo) []model.KeyPairJSON {
+	var result []model.KeyPairJSON
+
 	for _, kp := range unusedKeyPairs {
-		output.UnusedKeyPairs = append(output.UnusedKeyPairs, model.KeyPairJSON{
+		result = append(result, model.KeyPairJSON{
 			KeyName:         kp.KeyName,
 			KeyPairID:       kp.KeyPairID,
 			CreationDate:    kp.CreateTime.Format(time.RFC3339),
@@ -199,18 +243,7 @@ func OutputWasteJSON(accountID string, elasticIPs []types.Address, unusedVolumes
 		})
 	}
 
-	output.HasWaste = len(output.UnusedElasticIPs) > 0 ||
-		len(output.UnusedEBSVolumes) > 0 ||
-		len(output.StoppedVolumes) > 0 ||
-		len(output.StoppedInstances) > 0 ||
-		len(output.ReservedInstances) > 0 ||
-		len(output.UnusedLoadBalancers) > 0 ||
-		len(output.UnusedAMIs) > 0 ||
-		len(output.OrphanedSnapshots) > 0 ||
-		len(output.StaleSnapshots) > 0 ||
-		len(output.UnusedKeyPairs) > 0
-
-	return printJSON(output)
+	return result
 }
 
 func printJSON(v interface{}) error {

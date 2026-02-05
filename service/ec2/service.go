@@ -504,12 +504,14 @@ func (s *service) GetUnusedKeyPairs(ctx context.Context) ([]model.KeyPairWasteIn
 
 	// 3. Filter unused key pairs
 	var results []model.KeyPairWasteInfo
+
 	now := time.Now()
 
 	for _, kp := range keyPairsOutput.KeyPairs {
 		keyName := aws.ToString(kp.KeyName)
 		if !usedKeyPairs[keyName] {
 			var createTime time.Time
+
 			var daysSinceCreate int
 
 			if kp.CreateTime != nil {

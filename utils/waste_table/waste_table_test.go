@@ -1137,6 +1137,7 @@ func TestPopulateKeyPairRows(t *testing.T) {
 			if len(rows) != tt.wantLen {
 				t.Errorf("populateKeyPairRows() returned %d rows, want %d", len(rows), tt.wantLen)
 			}
+
 			if tt.wantLen > 0 {
 				if len(rows[0]) != 4 {
 					t.Errorf("Row has %d columns, want 4", len(rows[0]))
