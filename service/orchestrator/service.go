@@ -130,6 +130,7 @@ func (s *service) wasteWorkflow() error {
 		unusedLoadBalancers                      []elbtypes.LoadBalancer
 		unusedAMIs                               []model.AMIWasteInfo
 		orphanedSnapshots                        []model.SnapshotWasteInfo
+		unusedKeyPairs                           []model.KeyPairWasteInfo
 		stsResult                                *sts.GetCallerIdentityOutput
 	)
 
@@ -202,6 +203,15 @@ func (s *service) wasteWorkflow() error {
 		var err error
 
 		orphanedSnapshots, err = s.ec2Service.GetOrphanedSnapshots(ctx, 90)
+
+		return err
+	})
+
+	// Fetch unused keypairs concurrently
+	g.Go(func() error {
+		var err error
+
+		unusedKeyPairs, err = s.ec2Service.GetUnusedKeyPairs(ctx)
 
 		return err
 	})

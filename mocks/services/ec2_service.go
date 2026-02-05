@@ -92,3 +92,13 @@ func (m *MockEC2Service) GetOrphanedSnapshots(ctx context.Context, staleDays int
 
 	return args.Get(0).([]model.SnapshotWasteInfo), args.Error(1)
 }
+
+// GetUnusedKeyPairs mocks the GetUnusedKeyPairs method.
+func (m *MockEC2Service) GetUnusedKeyPairs(ctx context.Context) ([]model.KeyPairWasteInfo, error) {
+	args := m.Called(ctx)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+
+	return args.Get(0).([]model.KeyPairWasteInfo), args.Error(1)
+}

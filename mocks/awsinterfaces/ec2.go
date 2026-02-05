@@ -81,3 +81,13 @@ func (m *MockEC2Client) DescribeSnapshots(ctx context.Context, params *ec2.Descr
 
 	return args.Get(0).(*ec2.DescribeSnapshotsOutput), args.Error(1)
 }
+
+// DescribeKeyPairs mocks the DescribeKeyPairs API call.
+func (m *MockEC2Client) DescribeKeyPairs(ctx context.Context, params *ec2.DescribeKeyPairsInput, optFns ...func(*ec2.Options)) (*ec2.DescribeKeyPairsOutput, error) {
+	args := m.Called(ctx, params, optFns)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+
+	return args.Get(0).(*ec2.DescribeKeyPairsOutput), args.Error(1)
+}
