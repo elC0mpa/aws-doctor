@@ -13,7 +13,7 @@ import (
 )
 
 // DrawCostTable renders a table comparing costs between months.
-func DrawCostTable(input model.RenderCostComparisonInput, _ string) {
+func DrawCostTable(input model.RenderCostComparisonInput) {
 	fmt.Printf("\n%s\n", text.FgHiWhite.Sprint(" 💰 AWS COST DIAGNOSIS"))
 	fmt.Printf(" Account ID: %s\n", text.FgBlue.Sprint(input.AccountID))
 	fmt.Println(text.FgHiBlue.Sprint(" ------------------------------------------------"))

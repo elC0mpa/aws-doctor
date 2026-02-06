@@ -23,7 +23,7 @@ func (s *service) RenderCostComparison(input model.RenderCostComparisonInput) er
 		return s.renderer.OutputCostComparisonJSON(input)
 	}
 
-	s.renderer.DrawCostTable(input, "UnblendedCost")
+	s.renderer.DrawCostTable(input)
 
 	return nil
 }

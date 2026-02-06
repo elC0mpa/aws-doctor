@@ -40,7 +40,7 @@ func TestRealRenderer_DrawCostTable(t *testing.T) {
 			CurrentTotalCost: "120.00 USD",
 			LastMonth:        lastMonth,
 			CurrentMonth:     currentMonth,
-		}, "UnblendedCost")
+		})
 	})
 }
 

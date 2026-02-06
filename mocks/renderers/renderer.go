@@ -11,8 +11,8 @@ type MockRenderer struct {
 }
 
 // DrawCostTable mocks DrawCostTable
-func (m *MockRenderer) DrawCostTable(input model.RenderCostComparisonInput, costsAggregation string) {
-	m.Called(input, costsAggregation)
+func (m *MockRenderer) DrawCostTable(input model.RenderCostComparisonInput) {
+	m.Called(input)
 }
 
 // OutputCostComparisonJSON mocks OutputCostComparisonJSON

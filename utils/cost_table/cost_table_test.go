@@ -347,7 +347,7 @@ func TestDrawCostTable(t *testing.T) {
 			CurrentTotalCost: "165.00 USD",
 			LastMonth:        lastMonthGroups,
 			CurrentMonth:     currentMonthGroups,
-		}, "UnblendedCost")
+		})
 	})
 
 	// Verify output contains expected elements
@@ -394,7 +394,7 @@ func TestDrawCostTable_CostsIncreased(t *testing.T) {
 			CurrentTotalCost: "200.00 USD",
 			LastMonth:        lastMonthGroups,
 			CurrentMonth:     currentMonthGroups,
-		}, "UnblendedCost")
+		})
 	})
 
 	// Should have output (table with red colors for increases)
@@ -427,7 +427,7 @@ func TestDrawCostTable_CostsDecreased(t *testing.T) {
 			CurrentTotalCost: "100.00 USD",
 			LastMonth:        lastMonthGroups,
 			CurrentMonth:     currentMonthGroups,
-		}, "UnblendedCost")
+		})
 	})
 
 	// Should have output (table with green colors for decreases)
@@ -456,7 +456,7 @@ func TestDrawCostTable_EmptyServices(t *testing.T) {
 			CurrentTotalCost: "0.00 USD",
 			LastMonth:        lastMonthGroups,
 			CurrentMonth:     currentMonthGroups,
-		}, "UnblendedCost")
+		})
 	})
 
 	// Should still produce header and table structure
@@ -525,6 +525,6 @@ func BenchmarkDrawCostTable(b *testing.B) {
 			CurrentTotalCost: "195.00 USD",
 			LastMonth:        lastMonthGroups,
 			CurrentMonth:     currentMonthGroups,
-		}, "UnblendedCost")
+		})
 	}
 }

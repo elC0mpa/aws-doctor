@@ -70,7 +70,7 @@ func TestRenderCostComparison(t *testing.T) {
 			LastMonth:        &model.CostInfo{},
 			CurrentMonth:     &model.CostInfo{},
 		}
-		mr.On("DrawCostTable", input, "UnblendedCost").Return()
+		mr.On("DrawCostTable", input).Return()
 
 		err := s.RenderCostComparison(input)
 		assert.NoError(t, err)

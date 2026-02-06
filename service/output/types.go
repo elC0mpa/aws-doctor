@@ -20,7 +20,7 @@ const (
 
 // Renderer defines the interface for drawing tables and charts
 type Renderer interface {
-	DrawCostTable(input model.RenderCostComparisonInput, costsAggregation string)
+	DrawCostTable(input model.RenderCostComparisonInput)
 	OutputCostComparisonJSON(input model.RenderCostComparisonInput) error
 	DrawTrendChart(accountID string, costInfo []model.CostInfo)
 	OutputTrendJSON(accountID string, costInfo []model.CostInfo) error
@@ -31,8 +31,8 @@ type Renderer interface {
 
 type realRenderer struct{}
 
-func (r *realRenderer) DrawCostTable(input model.RenderCostComparisonInput, costsAggregation string) {
-	costtable.DrawCostTable(input, costsAggregation)
+func (r *realRenderer) DrawCostTable(input model.RenderCostComparisonInput) {
+	costtable.DrawCostTable(input)
 }
 
 func (r *realRenderer) OutputCostComparisonJSON(input model.RenderCostComparisonInput) error {
