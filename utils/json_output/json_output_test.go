@@ -115,7 +115,13 @@ func TestOutputCostComparisonJSON(t *testing.T) {
 	var err error
 
 	output := captureStdout(func() {
-		err = OutputCostComparisonJSON("123456789012", 150.0, 165.0, lastMonth, currentMonth)
+		err = OutputCostComparisonJSON(model.RenderCostComparisonInput{
+			AccountID:        "123456789012",
+			LastTotalCost:    "150.00 USD",
+			CurrentTotalCost: "165.00 USD",
+			LastMonth:        lastMonth,
+			CurrentMonth:     currentMonth,
+		})
 	})
 
 	if err != nil {

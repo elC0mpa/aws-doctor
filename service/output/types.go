@@ -3,7 +3,6 @@ package output
 import (
 	"github.com/elC0mpa/aws-doctor/model"
 	"github.com/elC0mpa/aws-doctor/utils/barchart"
-	"github.com/elC0mpa/aws-doctor/utils/cost"
 	costtable "github.com/elC0mpa/aws-doctor/utils/cost_table"
 	jsonoutput "github.com/elC0mpa/aws-doctor/utils/json_output"
 	"github.com/elC0mpa/aws-doctor/utils/spinner"
@@ -33,11 +32,11 @@ type Renderer interface {
 type realRenderer struct{}
 
 func (r *realRenderer) DrawCostTable(input model.RenderCostComparisonInput, costsAggregation string) {
-	costtable.DrawCostTable(input.AccountID, input.LastTotalCost, input.CurrentTotalCost, input.LastMonth, input.CurrentMonth, costsAggregation)
+	costtable.DrawCostTable(input, costsAggregation)
 }
 
 func (r *realRenderer) OutputCostComparisonJSON(input model.RenderCostComparisonInput) error {
-	return jsonoutput.OutputCostComparisonJSON(input.AccountID, cost.ParseCostString(input.LastTotalCost), cost.ParseCostString(input.CurrentTotalCost), input.LastMonth, input.CurrentMonth)
+	return jsonoutput.OutputCostComparisonJSON(input)
 }
 
 func (r *realRenderer) DrawTrendChart(accountID string, costInfo []model.CostInfo) {
