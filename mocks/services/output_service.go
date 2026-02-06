@@ -1,8 +1,6 @@
 package services
 
 import (
-	"github.com/aws/aws-sdk-go-v2/service/ec2/types"
-	elbtypes "github.com/aws/aws-sdk-go-v2/service/elasticloadbalancingv2/types"
 	"github.com/elC0mpa/aws-doctor/model"
 	"github.com/stretchr/testify/mock"
 )
@@ -13,8 +11,8 @@ type MockOutputService struct {
 }
 
 // RenderCostComparison mocks the RenderCostComparison method.
-func (m *MockOutputService) RenderCostComparison(accountID, lastTotalCost, currentTotalCost string, lastMonth, currentMonth *model.CostInfo) error {
-	args := m.Called(accountID, lastTotalCost, currentTotalCost, lastMonth, currentMonth)
+func (m *MockOutputService) RenderCostComparison(input model.RenderCostComparisonInput) error {
+	args := m.Called(input)
 	return args.Error(0)
 }
 
@@ -25,8 +23,8 @@ func (m *MockOutputService) RenderTrend(accountID string, costInfo []model.CostI
 }
 
 // RenderWaste mocks the RenderWaste method.
-func (m *MockOutputService) RenderWaste(accountID string, elasticIPs []types.Address, unusedVolumes []types.Volume, stoppedVolumes []types.Volume, ris []model.RiExpirationInfo, stoppedInstances []types.Instance, loadBalancers []elbtypes.LoadBalancer, unusedAMIs []model.AMIWasteInfo, orphanedSnapshots []model.SnapshotWasteInfo, unusedKeyPairs []model.KeyPairWasteInfo) error {
-	args := m.Called(accountID, elasticIPs, unusedVolumes, stoppedVolumes, ris, stoppedInstances, loadBalancers, unusedAMIs, orphanedSnapshots, unusedKeyPairs)
+func (m *MockOutputService) RenderWaste(input model.RenderWasteInput) error {
+	args := m.Called(input)
 	return args.Error(0)
 }
 

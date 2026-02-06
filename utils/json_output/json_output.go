@@ -70,21 +70,21 @@ func OutputTrendJSON(accountID string, costInfo []model.CostInfo) error {
 }
 
 // OutputWasteJSON outputs waste detection data as JSON
-func OutputWasteJSON(accountID string, elasticIPs []types.Address, unusedVolumes []types.Volume, stoppedVolumes []types.Volume, ris []model.RiExpirationInfo, stoppedInstances []types.Instance, loadBalancers []elbtypes.LoadBalancer, unusedAMIs []model.AMIWasteInfo, orphanedSnapshots []model.SnapshotWasteInfo, unusedKeyPairs []model.KeyPairWasteInfo) error {
+func OutputWasteJSON(input model.RenderWasteInput) error {
 	output := model.WasteReportJSON{
-		AccountID:           accountID,
+		AccountID:           input.AccountID,
 		GeneratedAt:         time.Now().UTC().Format(time.RFC3339),
-		UnusedElasticIPs:    mapElasticIPs(elasticIPs),
-		UnusedEBSVolumes:    mapEBSVolumes(unusedVolumes, "available"),
-		StoppedVolumes:      mapEBSVolumes(stoppedVolumes, "attached_to_stopped"),
-		StoppedInstances:    mapStoppedInstances(stoppedInstances),
-		ReservedInstances:   mapReservedInstances(ris),
-		UnusedLoadBalancers: mapLoadBalancers(loadBalancers),
-		UnusedAMIs:          mapAMIs(unusedAMIs),
-		UnusedKeyPairs:      mapKeyPairs(unusedKeyPairs),
+		UnusedElasticIPs:    mapElasticIPs(input.ElasticIPs),
+		UnusedEBSVolumes:    mapEBSVolumes(input.UnusedVolumes, "available"),
+		StoppedVolumes:      mapEBSVolumes(input.StoppedVolumes, "attached_to_stopped"),
+		StoppedInstances:    mapStoppedInstances(input.StoppedInstances),
+		ReservedInstances:   mapReservedInstances(input.Ris),
+		UnusedLoadBalancers: mapLoadBalancers(input.LoadBalancers),
+		UnusedAMIs:          mapAMIs(input.UnusedAMIs),
+		UnusedKeyPairs:      mapKeyPairs(input.UnusedKeyPairs),
 	}
 
-	output.OrphanedSnapshots, output.StaleSnapshots = mapSnapshots(orphanedSnapshots)
+	output.OrphanedSnapshots, output.StaleSnapshots = mapSnapshots(input.OrphanedSnapshots)
 
 	output.HasWaste = len(output.UnusedElasticIPs) > 0 ||
 		len(output.UnusedEBSVolumes) > 0 ||
