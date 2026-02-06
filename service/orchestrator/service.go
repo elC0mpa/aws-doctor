@@ -14,6 +14,7 @@ import (
 	awsec2 "github.com/elC0mpa/aws-doctor/service/ec2"
 	"github.com/elC0mpa/aws-doctor/service/elb"
 	"github.com/elC0mpa/aws-doctor/service/output"
+	"github.com/elC0mpa/aws-doctor/service/s3"
 	awssts "github.com/elC0mpa/aws-doctor/service/sts"
 	"github.com/elC0mpa/aws-doctor/service/update"
 	"github.com/jedib0t/go-pretty/v6/text"
@@ -21,12 +22,13 @@ import (
 )
 
 // NewService creates a new orchestrator service.
-func NewService(stsService awssts.Service, costService awscostexplorer.Service, ec2Service awsec2.Service, elbService elb.Service, outputService output.Service, updateService update.Service, versionInfo model.VersionInfo) Service {
+func NewService(stsService awssts.Service, costService awscostexplorer.Service, ec2Service awsec2.Service, elbService elb.Service, s3Service s3.Service, outputService output.Service, updateService update.Service, versionInfo model.VersionInfo) Service {
 	return &service{
 		stsService:    stsService,
 		costService:   costService,
 		ec2Service:    ec2Service,
 		elbService:    elbService,
+		s3Service:     s3Service,
 		outputService: outputService,
 		updateService: updateService,
 		versionInfo:   versionInfo,
@@ -139,6 +141,7 @@ func (s *service) wasteWorkflow() error {
 		unusedAMIs                               []model.AMIWasteInfo
 		orphanedSnapshots                        []model.SnapshotWasteInfo
 		unusedKeyPairs                           []model.KeyPairWasteInfo
+		s3Buckets                                []model.S3BucketWasteInfo
 		stsResult                                *sts.GetCallerIdentityOutput
 	)
 
@@ -223,6 +226,15 @@ func (s *service) wasteWorkflow() error {
 		return err
 	})
 
+	// Fetch S3 buckets without lifecycle policies concurrently
+	g.Go(func() error {
+		var err error
+
+		s3Buckets, err = s.s3Service.GetBucketsWithoutLifecyclePolicies(ctx)
+
+		return err
+	})
+
 	// Wait for all goroutines to complete
 	if err := g.Wait(); err != nil {
 		return err
@@ -241,6 +253,7 @@ func (s *service) wasteWorkflow() error {
 		UnusedAMIs:        unusedAMIs,
 		OrphanedSnapshots: orphanedSnapshots,
 		UnusedKeyPairs:    unusedKeyPairs,
+		S3Buckets:         s3Buckets,
 	}
 
 	return s.outputService.RenderWaste(input)

@@ -28,7 +28,8 @@ func DrawWasteTable(input model.RenderWasteInput) {
 		len(input.LoadBalancers) > 0 ||
 		len(input.UnusedAMIs) > 0 ||
 		len(input.OrphanedSnapshots) > 0 ||
-		len(input.UnusedKeyPairs) > 0
+		len(input.UnusedKeyPairs) > 0 ||
+		len(input.S3Buckets) > 0
 
 	if !hasWaste {
 		fmt.Println("\n" + text.FgHiGreen.Sprint(" ✅  Your account is healthy! No waste found."))
@@ -49,6 +50,10 @@ func DrawWasteTable(input model.RenderWasteInput) {
 
 	if len(input.LoadBalancers) > 0 {
 		drawLoadBalancerTable(input.LoadBalancers)
+	}
+
+	if len(input.S3Buckets) > 0 {
+		drawS3Table(input.S3Buckets)
 	}
 
 	if len(input.UnusedAMIs) > 0 {
@@ -487,6 +492,42 @@ func populateKeyPairRows(keyPairs []model.KeyPairWasteInfo) []table.Row {
 			kp.KeyName,
 			kp.KeyPairID,
 			fmt.Sprintf("%d days", kp.DaysSinceCreate),
+		})
+	}
+
+	return rows
+}
+
+func drawS3Table(buckets []model.S3BucketWasteInfo) {
+	t := table.NewWriter()
+	t.SetOutputMirror(os.Stdout)
+	t.SetStyle(table.StyleRounded)
+	t.SetTitle("S3 Bucket Waste")
+
+	t.AppendHeader(table.Row{"Status", "Bucket Name", "Reason", "Creation Date"})
+
+	statusUnused := "No Lifecycle Policy"
+	rows := populateS3Rows(buckets)
+
+	if len(rows) > 0 {
+		halfRow := len(rows) / 2
+		rows[halfRow][0] = text.FgHiRed.Sprint(statusUnused)
+	}
+
+	t.AppendRows(rows)
+	t.Render()
+	fmt.Println()
+}
+
+func populateS3Rows(buckets []model.S3BucketWasteInfo) []table.Row {
+	var rows []table.Row
+
+	for _, bucket := range buckets {
+		rows = append(rows, table.Row{
+			"",
+			bucket.BucketName,
+			bucket.Reason,
+			bucket.CreationDate.Format("2006-01-02"),
 		})
 	}
 
