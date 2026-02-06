@@ -13,13 +13,13 @@ import (
 )
 
 // DrawCostTable renders a table comparing costs between months.
-func DrawCostTable(accountID string, lastTotalCost, currenttotalCost string, lastMonthGroups, currentMonthGroups *model.CostInfo, _ string) {
+func DrawCostTable(input model.RenderCostComparisonInput) {
 	fmt.Printf("\n%s\n", text.FgHiWhite.Sprint(" 💰 AWS COST DIAGNOSIS"))
-	fmt.Printf(" Account ID: %s\n", text.FgBlue.Sprint(accountID))
+	fmt.Printf(" Account ID: %s\n", text.FgBlue.Sprint(input.AccountID))
 	fmt.Println(text.FgHiBlue.Sprint(" ------------------------------------------------"))
 
-	currentMonthHeader := fmt.Sprintf("Current Month\n(%s\n%s)", *currentMonthGroups.Start, *currentMonthGroups.End)
-	lastMonthHeader := fmt.Sprintf("Last Month\n(%s\n%s)", *lastMonthGroups.Start, *lastMonthGroups.End)
+	currentMonthHeader := fmt.Sprintf("Current Month\n(%s\n%s)", *input.CurrentMonth.Start, *input.CurrentMonth.End)
+	lastMonthHeader := fmt.Sprintf("Last Month\n(%s\n%s)", *input.LastMonth.Start, *input.LastMonth.End)
 
 	rowHeader := table.Row{
 		"Service",
@@ -34,12 +34,12 @@ func DrawCostTable(accountID string, lastTotalCost, currenttotalCost string, las
 
 	var rows []table.Row
 
-	rows = append(rows, populateFirstRow(lastTotalCost, currenttotalCost))
+	rows = append(rows, populateFirstRow(input.LastTotalCost, input.CurrentTotalCost))
 
-	orderedServicesCosts := orderCostServices(&currentMonthGroups.CostGroup)
+	orderedServicesCosts := orderCostServices(&input.CurrentMonth.CostGroup)
 
 	for _, group := range orderedServicesCosts {
-		rows = append(rows, populateRow(*lastMonthGroups, group))
+		rows = append(rows, populateRow(*input.LastMonth, group))
 	}
 
 	tw.AppendRows(rows)

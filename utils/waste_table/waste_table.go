@@ -15,52 +15,52 @@ import (
 )
 
 // DrawWasteTable renders a table containing detected AWS waste.
-func DrawWasteTable(accountID string, elasticIPInfo []types.Address, unusedEBSVolumeInfo []types.Volume, attachedToStoppedInstancesEBSVolumeInfo []types.Volume, expireReservedInstancesInfo []model.RiExpirationInfo, instancesStoppedMoreThan30Days []types.Instance, unusedLoadBalancers []elbtypes.LoadBalancer, unusedAMIs []model.AMIWasteInfo, orphanedSnapshots []model.SnapshotWasteInfo, unusedKeyPairs []model.KeyPairWasteInfo) {
+func DrawWasteTable(input model.RenderWasteInput) {
 	fmt.Printf("\n%s\n", text.FgHiWhite.Sprint(" 🏥 AWS DOCTOR CHECKUP"))
-	fmt.Printf(" Account ID: %s\n", text.FgBlue.Sprint(accountID))
+	fmt.Printf(" Account ID: %s\n", text.FgBlue.Sprint(input.AccountID))
 	fmt.Println(text.FgHiBlue.Sprint(" ------------------------------------------------"))
 
-	hasWaste := len(elasticIPInfo) > 0 ||
-		len(unusedEBSVolumeInfo) > 0 ||
-		len(attachedToStoppedInstancesEBSVolumeInfo) > 0 ||
-		len(instancesStoppedMoreThan30Days) > 0 ||
-		len(expireReservedInstancesInfo) > 0 ||
-		len(unusedLoadBalancers) > 0 ||
-		len(unusedAMIs) > 0 ||
-		len(orphanedSnapshots) > 0 ||
-		len(unusedKeyPairs) > 0
+	hasWaste := len(input.ElasticIPs) > 0 ||
+		len(input.UnusedVolumes) > 0 ||
+		len(input.StoppedVolumes) > 0 ||
+		len(input.StoppedInstances) > 0 ||
+		len(input.Ris) > 0 ||
+		len(input.LoadBalancers) > 0 ||
+		len(input.UnusedAMIs) > 0 ||
+		len(input.OrphanedSnapshots) > 0 ||
+		len(input.UnusedKeyPairs) > 0
 
 	if !hasWaste {
 		fmt.Println("\n" + text.FgHiGreen.Sprint(" ✅  Your account is healthy! No waste found."))
 		return
 	}
 
-	if len(unusedEBSVolumeInfo) > 0 || len(attachedToStoppedInstancesEBSVolumeInfo) > 0 {
-		drawEBSTable(unusedEBSVolumeInfo, attachedToStoppedInstancesEBSVolumeInfo)
+	if len(input.UnusedVolumes) > 0 || len(input.StoppedVolumes) > 0 {
+		drawEBSTable(input.UnusedVolumes, input.StoppedVolumes)
 	}
 
-	if len(elasticIPInfo) > 0 {
-		drawElasticIPTable(elasticIPInfo)
+	if len(input.ElasticIPs) > 0 {
+		drawElasticIPTable(input.ElasticIPs)
 	}
 
-	if len(instancesStoppedMoreThan30Days) > 0 || len(expireReservedInstancesInfo) > 0 {
-		drawEC2Table(instancesStoppedMoreThan30Days, expireReservedInstancesInfo)
+	if len(input.StoppedInstances) > 0 || len(input.Ris) > 0 {
+		drawEC2Table(input.StoppedInstances, input.Ris)
 	}
 
-	if len(unusedLoadBalancers) > 0 {
-		drawLoadBalancerTable(unusedLoadBalancers)
+	if len(input.LoadBalancers) > 0 {
+		drawLoadBalancerTable(input.LoadBalancers)
 	}
 
-	if len(unusedAMIs) > 0 {
-		drawAMITable(unusedAMIs)
+	if len(input.UnusedAMIs) > 0 {
+		drawAMITable(input.UnusedAMIs)
 	}
 
-	if len(orphanedSnapshots) > 0 {
-		drawSnapshotTable(orphanedSnapshots)
+	if len(input.OrphanedSnapshots) > 0 {
+		drawSnapshotTable(input.OrphanedSnapshots)
 	}
 
-	if len(unusedKeyPairs) > 0 {
-		drawKeyPairTable(unusedKeyPairs)
+	if len(input.UnusedKeyPairs) > 0 {
+		drawKeyPairTable(input.UnusedKeyPairs)
 	}
 }
 

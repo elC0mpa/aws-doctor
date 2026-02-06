@@ -1,8 +1,6 @@
 package output
 
 import (
-	"github.com/aws/aws-sdk-go-v2/service/ec2/types"
-	elbtypes "github.com/aws/aws-sdk-go-v2/service/elasticloadbalancingv2/types"
 	"github.com/elC0mpa/aws-doctor/model"
 	"github.com/elC0mpa/aws-doctor/utils/barchart"
 	costtable "github.com/elC0mpa/aws-doctor/utils/cost_table"
@@ -22,23 +20,23 @@ const (
 
 // Renderer defines the interface for drawing tables and charts
 type Renderer interface {
-	DrawCostTable(accountID, lastTotalCost, currentTotalCost string, lastMonth, currentMonth *model.CostInfo, costsAggregation string)
-	OutputCostComparisonJSON(accountID string, lastTotalCost, currentTotalCost float64, lastMonth, currentMonth *model.CostInfo) error
+	DrawCostTable(input model.RenderCostComparisonInput)
+	OutputCostComparisonJSON(input model.RenderCostComparisonInput) error
 	DrawTrendChart(accountID string, costInfo []model.CostInfo)
 	OutputTrendJSON(accountID string, costInfo []model.CostInfo) error
-	DrawWasteTable(accountID string, elasticIPs []types.Address, unusedVolumes []types.Volume, stoppedVolumes []types.Volume, ris []model.RiExpirationInfo, stoppedInstances []types.Instance, loadBalancers []elbtypes.LoadBalancer, unusedAMIs []model.AMIWasteInfo, orphanedSnapshots []model.SnapshotWasteInfo, unusedKeyPairs []model.KeyPairWasteInfo)
-	OutputWasteJSON(accountID string, elasticIPs []types.Address, unusedVolumes []types.Volume, stoppedVolumes []types.Volume, ris []model.RiExpirationInfo, stoppedInstances []types.Instance, loadBalancers []elbtypes.LoadBalancer, unusedAMIs []model.AMIWasteInfo, orphanedSnapshots []model.SnapshotWasteInfo, unusedKeyPairs []model.KeyPairWasteInfo) error
+	DrawWasteTable(input model.RenderWasteInput)
+	OutputWasteJSON(input model.RenderWasteInput) error
 	StopSpinner()
 }
 
 type realRenderer struct{}
 
-func (r *realRenderer) DrawCostTable(accountID, lastTotalCost, currentTotalCost string, lastMonth, currentMonth *model.CostInfo, costsAggregation string) {
-	costtable.DrawCostTable(accountID, lastTotalCost, currentTotalCost, lastMonth, currentMonth, costsAggregation)
+func (r *realRenderer) DrawCostTable(input model.RenderCostComparisonInput) {
+	costtable.DrawCostTable(input)
 }
 
-func (r *realRenderer) OutputCostComparisonJSON(accountID string, lastTotalCost, currentTotalCost float64, lastMonth, currentMonth *model.CostInfo) error {
-	return jsonoutput.OutputCostComparisonJSON(accountID, lastTotalCost, currentTotalCost, lastMonth, currentMonth)
+func (r *realRenderer) OutputCostComparisonJSON(input model.RenderCostComparisonInput) error {
+	return jsonoutput.OutputCostComparisonJSON(input)
 }
 
 func (r *realRenderer) DrawTrendChart(accountID string, costInfo []model.CostInfo) {
@@ -49,12 +47,12 @@ func (r *realRenderer) OutputTrendJSON(accountID string, costInfo []model.CostIn
 	return jsonoutput.OutputTrendJSON(accountID, costInfo)
 }
 
-func (r *realRenderer) DrawWasteTable(accountID string, elasticIPs []types.Address, unusedVolumes []types.Volume, stoppedVolumes []types.Volume, ris []model.RiExpirationInfo, stoppedInstances []types.Instance, loadBalancers []elbtypes.LoadBalancer, unusedAMIs []model.AMIWasteInfo, orphanedSnapshots []model.SnapshotWasteInfo, unusedKeyPairs []model.KeyPairWasteInfo) {
-	wastetable.DrawWasteTable(accountID, elasticIPs, unusedVolumes, stoppedVolumes, ris, stoppedInstances, loadBalancers, unusedAMIs, orphanedSnapshots, unusedKeyPairs)
+func (r *realRenderer) DrawWasteTable(input model.RenderWasteInput) {
+	wastetable.DrawWasteTable(input)
 }
 
-func (r *realRenderer) OutputWasteJSON(accountID string, elasticIPs []types.Address, unusedVolumes []types.Volume, stoppedVolumes []types.Volume, ris []model.RiExpirationInfo, stoppedInstances []types.Instance, loadBalancers []elbtypes.LoadBalancer, unusedAMIs []model.AMIWasteInfo, orphanedSnapshots []model.SnapshotWasteInfo, unusedKeyPairs []model.KeyPairWasteInfo) error {
-	return jsonoutput.OutputWasteJSON(accountID, elasticIPs, unusedVolumes, stoppedVolumes, ris, stoppedInstances, loadBalancers, unusedAMIs, orphanedSnapshots, unusedKeyPairs)
+func (r *realRenderer) OutputWasteJSON(input model.RenderWasteInput) error {
+	return jsonoutput.OutputWasteJSON(input)
 }
 
 func (r *realRenderer) StopSpinner() {
@@ -70,13 +68,13 @@ type service struct {
 // Service defines the interface for output operations
 type Service interface {
 	// RenderCostComparison outputs cost comparison data in the configured format
-	RenderCostComparison(accountID, lastTotalCost, currentTotalCost string, lastMonth, currentMonth *model.CostInfo) error
+	RenderCostComparison(input model.RenderCostComparisonInput) error
 
 	// RenderTrend outputs trend data in the configured format
 	RenderTrend(accountID string, costInfo []model.CostInfo) error
 
 	// RenderWaste outputs waste report data in the configured format
-	RenderWaste(accountID string, elasticIPs []types.Address, unusedVolumes []types.Volume, stoppedVolumes []types.Volume, ris []model.RiExpirationInfo, stoppedInstances []types.Instance, loadBalancers []elbtypes.LoadBalancer, unusedAMIs []model.AMIWasteInfo, orphanedSnapshots []model.SnapshotWasteInfo, unusedKeyPairs []model.KeyPairWasteInfo) error
+	RenderWaste(input model.RenderWasteInput) error
 
 	// StopSpinner stops the loading spinner before rendering output
 	StopSpinner()

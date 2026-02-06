@@ -2,10 +2,7 @@
 package output
 
 import (
-	"github.com/aws/aws-sdk-go-v2/service/ec2/types"
-	elbtypes "github.com/aws/aws-sdk-go-v2/service/elasticloadbalancingv2/types"
 	"github.com/elC0mpa/aws-doctor/model"
-	"github.com/elC0mpa/aws-doctor/utils/cost"
 )
 
 // NewService creates a new output service with the specified format
@@ -21,18 +18,12 @@ func NewService(format string) Service {
 	}
 }
 
-func (s *service) RenderCostComparison(accountID, lastTotalCost, currentTotalCost string, lastMonth, currentMonth *model.CostInfo) error {
+func (s *service) RenderCostComparison(input model.RenderCostComparisonInput) error {
 	if s.format == FormatJSON {
-		return s.renderer.OutputCostComparisonJSON(
-			accountID,
-			cost.ParseCostString(lastTotalCost),
-			cost.ParseCostString(currentTotalCost),
-			lastMonth,
-			currentMonth,
-		)
+		return s.renderer.OutputCostComparisonJSON(input)
 	}
 
-	s.renderer.DrawCostTable(accountID, lastTotalCost, currentTotalCost, lastMonth, currentMonth, "UnblendedCost")
+	s.renderer.DrawCostTable(input)
 
 	return nil
 }
@@ -47,12 +38,12 @@ func (s *service) RenderTrend(accountID string, costInfo []model.CostInfo) error
 	return nil
 }
 
-func (s *service) RenderWaste(accountID string, elasticIPs []types.Address, unusedVolumes []types.Volume, stoppedVolumes []types.Volume, ris []model.RiExpirationInfo, stoppedInstances []types.Instance, loadBalancers []elbtypes.LoadBalancer, unusedAMIs []model.AMIWasteInfo, orphanedSnapshots []model.SnapshotWasteInfo, unusedKeyPairs []model.KeyPairWasteInfo) error {
+func (s *service) RenderWaste(input model.RenderWasteInput) error {
 	if s.format == FormatJSON {
-		return s.renderer.OutputWasteJSON(accountID, elasticIPs, unusedVolumes, stoppedVolumes, ris, stoppedInstances, loadBalancers, unusedAMIs, orphanedSnapshots, unusedKeyPairs)
+		return s.renderer.OutputWasteJSON(input)
 	}
 
-	s.renderer.DrawWasteTable(accountID, elasticIPs, unusedVolumes, stoppedVolumes, ris, stoppedInstances, loadBalancers, unusedAMIs, orphanedSnapshots, unusedKeyPairs)
+	s.renderer.DrawWasteTable(input)
 
 	return nil
 }

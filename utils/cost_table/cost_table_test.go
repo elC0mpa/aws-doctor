@@ -341,7 +341,13 @@ func TestDrawCostTable(t *testing.T) {
 	currentMonthGroups.End = aws.String("2024-02-29")
 
 	output := captureTableOutput(func() {
-		DrawCostTable("123456789012", "150.00 USD", "165.00 USD", lastMonthGroups, currentMonthGroups, "UnblendedCost")
+		DrawCostTable(model.RenderCostComparisonInput{
+			AccountID:        "123456789012",
+			LastTotalCost:    "150.00 USD",
+			CurrentTotalCost: "165.00 USD",
+			LastMonth:        lastMonthGroups,
+			CurrentMonth:     currentMonthGroups,
+		})
 	})
 
 	// Verify output contains expected elements
@@ -382,7 +388,13 @@ func TestDrawCostTable_CostsIncreased(t *testing.T) {
 	currentMonthGroups.End = aws.String("2024-02-29")
 
 	output := captureTableOutput(func() {
-		DrawCostTable("123456789012", "100.00 USD", "200.00 USD", lastMonthGroups, currentMonthGroups, "UnblendedCost")
+		DrawCostTable(model.RenderCostComparisonInput{
+			AccountID:        "123456789012",
+			LastTotalCost:    "100.00 USD",
+			CurrentTotalCost: "200.00 USD",
+			LastMonth:        lastMonthGroups,
+			CurrentMonth:     currentMonthGroups,
+		})
 	})
 
 	// Should have output (table with red colors for increases)
@@ -409,7 +421,13 @@ func TestDrawCostTable_CostsDecreased(t *testing.T) {
 	currentMonthGroups.End = aws.String("2024-02-29")
 
 	output := captureTableOutput(func() {
-		DrawCostTable("123456789012", "200.00 USD", "100.00 USD", lastMonthGroups, currentMonthGroups, "UnblendedCost")
+		DrawCostTable(model.RenderCostComparisonInput{
+			AccountID:        "123456789012",
+			LastTotalCost:    "200.00 USD",
+			CurrentTotalCost: "100.00 USD",
+			LastMonth:        lastMonthGroups,
+			CurrentMonth:     currentMonthGroups,
+		})
 	})
 
 	// Should have output (table with green colors for decreases)
@@ -432,7 +450,13 @@ func TestDrawCostTable_EmptyServices(t *testing.T) {
 	currentMonthGroups.End = aws.String("2024-02-29")
 
 	output := captureTableOutput(func() {
-		DrawCostTable("123456789012", "0.00 USD", "0.00 USD", lastMonthGroups, currentMonthGroups, "UnblendedCost")
+		DrawCostTable(model.RenderCostComparisonInput{
+			AccountID:        "123456789012",
+			LastTotalCost:    "0.00 USD",
+			CurrentTotalCost: "0.00 USD",
+			LastMonth:        lastMonthGroups,
+			CurrentMonth:     currentMonthGroups,
+		})
 	})
 
 	// Should still produce header and table structure
@@ -495,6 +519,12 @@ func BenchmarkDrawCostTable(b *testing.B) {
 	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {
-		DrawCostTable("123456789012", "175.00 USD", "195.00 USD", lastMonthGroups, currentMonthGroups, "UnblendedCost")
+		DrawCostTable(model.RenderCostComparisonInput{
+			AccountID:        "123456789012",
+			LastTotalCost:    "175.00 USD",
+			CurrentTotalCost: "195.00 USD",
+			LastMonth:        lastMonthGroups,
+			CurrentMonth:     currentMonthGroups,
+		})
 	}
 }

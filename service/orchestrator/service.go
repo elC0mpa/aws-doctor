@@ -97,7 +97,15 @@ func (s *service) defaultWorkflow() error {
 
 	s.outputService.StopSpinner()
 
-	return s.outputService.RenderCostComparison(*stsResult.Account, *lastTotalCost, *currentTotalCost, lastMonthData, currentMonthData)
+	input := model.RenderCostComparisonInput{
+		AccountID:        *stsResult.Account,
+		LastTotalCost:    *lastTotalCost,
+		CurrentTotalCost: *currentTotalCost,
+		LastMonth:        lastMonthData,
+		CurrentMonth:     currentMonthData,
+	}
+
+	return s.outputService.RenderCostComparison(input)
 }
 
 func (s *service) trendWorkflow() error {
@@ -135,7 +143,6 @@ func (s *service) wasteWorkflow() error {
 	)
 
 	// Fetch unused Elastic IPs concurrently
-
 	g.Go(func() error {
 		var err error
 
@@ -223,18 +230,20 @@ func (s *service) wasteWorkflow() error {
 
 	s.outputService.StopSpinner()
 
-	return s.outputService.RenderWaste(
-		*stsResult.Account,
-		elasticIPInfo,
-		availableEBSVolumesInfo,
-		attachedToStoppedInstancesEBSVolumesInfo,
-		expireReservedInstancesInfo,
-		stoppedInstancesMoreThan30Days,
-		unusedLoadBalancers,
-		unusedAMIs,
-		orphanedSnapshots,
-		unusedKeyPairs,
-	)
+	input := model.RenderWasteInput{
+		AccountID:         *stsResult.Account,
+		ElasticIPs:        elasticIPInfo,
+		UnusedVolumes:     availableEBSVolumesInfo,
+		StoppedVolumes:    attachedToStoppedInstancesEBSVolumesInfo,
+		Ris:               expireReservedInstancesInfo,
+		StoppedInstances:  stoppedInstancesMoreThan30Days,
+		LoadBalancers:     unusedLoadBalancers,
+		UnusedAMIs:        unusedAMIs,
+		OrphanedSnapshots: orphanedSnapshots,
+		UnusedKeyPairs:    unusedKeyPairs,
+	}
+
+	return s.outputService.RenderWaste(input)
 }
 
 func (s *service) handleCostError(err error) error {

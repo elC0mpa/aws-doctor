@@ -63,9 +63,16 @@ func TestRenderCostComparison(t *testing.T) {
 		mr := new(renderers.MockRenderer)
 		s := &service{format: FormatTable, renderer: mr}
 
-		mr.On("DrawCostTable", "123", "100.00 USD", "120.00 USD", mock.Anything, mock.Anything, "UnblendedCost").Return()
+		input := model.RenderCostComparisonInput{
+			AccountID:        "123",
+			LastTotalCost:    "100.00 USD",
+			CurrentTotalCost: "120.00 USD",
+			LastMonth:        &model.CostInfo{},
+			CurrentMonth:     &model.CostInfo{},
+		}
+		mr.On("DrawCostTable", input).Return()
 
-		err := s.RenderCostComparison("123", "100.00 USD", "120.00 USD", &model.CostInfo{}, &model.CostInfo{})
+		err := s.RenderCostComparison(input)
 		assert.NoError(t, err)
 		mr.AssertExpectations(t)
 	})
@@ -74,9 +81,16 @@ func TestRenderCostComparison(t *testing.T) {
 		mr := new(renderers.MockRenderer)
 		s := &service{format: FormatJSON, renderer: mr}
 
-		mr.On("OutputCostComparisonJSON", "123", 100.0, 120.0, mock.Anything, mock.Anything).Return(nil)
+		input := model.RenderCostComparisonInput{
+			AccountID:        "123",
+			LastTotalCost:    "100.00 USD",
+			CurrentTotalCost: "120.00 USD",
+			LastMonth:        &model.CostInfo{},
+			CurrentMonth:     &model.CostInfo{},
+		}
+		mr.On("OutputCostComparisonJSON", input).Return(nil)
 
-		err := s.RenderCostComparison("123", "100.00 USD", "120.00 USD", &model.CostInfo{}, &model.CostInfo{})
+		err := s.RenderCostComparison(input)
 		assert.NoError(t, err)
 		mr.AssertExpectations(t)
 	})
@@ -111,9 +125,10 @@ func TestRenderWaste(t *testing.T) {
 		mr := new(renderers.MockRenderer)
 		s := &service{format: FormatTable, renderer: mr}
 
-		mr.On("DrawWasteTable", "123", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return()
+		input := model.RenderWasteInput{AccountID: "123"}
+		mr.On("DrawWasteTable", input).Return()
 
-		err := s.RenderWaste("123", nil, nil, nil, nil, nil, nil, nil, nil, nil)
+		err := s.RenderWaste(input)
 		assert.NoError(t, err)
 		mr.AssertExpectations(t)
 	})
@@ -122,9 +137,10 @@ func TestRenderWaste(t *testing.T) {
 		mr := new(renderers.MockRenderer)
 		s := &service{format: FormatJSON, renderer: mr}
 
-		mr.On("OutputWasteJSON", "123", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil)
+		input := model.RenderWasteInput{AccountID: "123"}
+		mr.On("OutputWasteJSON", input).Return(nil)
 
-		err := s.RenderWaste("123", nil, nil, nil, nil, nil, nil, nil, nil, nil)
+		err := s.RenderWaste(input)
 		assert.NoError(t, err)
 		mr.AssertExpectations(t)
 	})

@@ -34,7 +34,13 @@ func TestRealRenderer_DrawCostTable(t *testing.T) {
 	// This calls external utils which print to stdout.
 	// We just want to ensure it doesn't panic and covers the code.
 	assert.NotPanics(t, func() {
-		r.DrawCostTable("123456789012", "100.00 USD", "120.00 USD", lastMonth, currentMonth, "UnblendedCost")
+		r.DrawCostTable(model.RenderCostComparisonInput{
+			AccountID:        "123456789012",
+			LastTotalCost:    "100.00 USD",
+			CurrentTotalCost: "120.00 USD",
+			LastMonth:        lastMonth,
+			CurrentMonth:     currentMonth,
+		})
 	})
 }
 
@@ -60,7 +66,13 @@ func TestRealRenderer_OutputCostComparisonJSON(t *testing.T) {
 		},
 	}
 
-	err := r.OutputCostComparisonJSON("123456789012", 100.0, 120.0, lastMonth, currentMonth)
+	err := r.OutputCostComparisonJSON(model.RenderCostComparisonInput{
+		AccountID:        "123456789012",
+		LastTotalCost:    "100.00 USD",
+		CurrentTotalCost: "120.00 USD",
+		LastMonth:        lastMonth,
+		CurrentMonth:     currentMonth,
+	})
 	assert.NoError(t, err)
 }
 
@@ -107,14 +119,14 @@ func TestRealRenderer_DrawWasteTable(t *testing.T) {
 	r := &realRenderer{}
 
 	assert.NotPanics(t, func() {
-		r.DrawWasteTable("123456789012", nil, nil, nil, nil, nil, nil, nil, nil, nil)
+		r.DrawWasteTable(model.RenderWasteInput{AccountID: "123456789012"})
 	})
 }
 
 func TestRealRenderer_OutputWasteJSON(t *testing.T) {
 	r := &realRenderer{}
 
-	err := r.OutputWasteJSON("123456789012", nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	err := r.OutputWasteJSON(model.RenderWasteInput{AccountID: "123456789012"})
 	assert.NoError(t, err)
 }
 

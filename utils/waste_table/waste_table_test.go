@@ -497,7 +497,7 @@ func captureWasteOutput(f func()) string {
 
 func TestDrawWasteTable_NoWaste(t *testing.T) {
 	output := captureWasteOutput(func() {
-		DrawWasteTable("123456789012", nil, nil, nil, nil, nil, nil, nil, nil, nil)
+		DrawWasteTable(model.RenderWasteInput{AccountID: "123456789012"})
 	})
 
 	if !strings.Contains(output, "AWS DOCTOR CHECKUP") {
@@ -519,7 +519,10 @@ func TestDrawWasteTable_WithElasticIPs(t *testing.T) {
 	}
 
 	output := captureWasteOutput(func() {
-		DrawWasteTable("123456789012", elasticIPs, nil, nil, nil, nil, nil, nil, nil, nil)
+		DrawWasteTable(model.RenderWasteInput{
+			AccountID:  "123456789012",
+			ElasticIPs: elasticIPs,
+		})
 	})
 
 	if !strings.Contains(output, "Elastic IP") {
@@ -533,7 +536,10 @@ func TestDrawWasteTable_WithEBSVolumes(t *testing.T) {
 	}
 
 	output := captureWasteOutput(func() {
-		DrawWasteTable("123456789012", nil, unusedVolumes, nil, nil, nil, nil, nil, nil, nil)
+		DrawWasteTable(model.RenderWasteInput{
+			AccountID:     "123456789012",
+			UnusedVolumes: unusedVolumes,
+		})
 	})
 
 	if !strings.Contains(output, "EBS") {
@@ -550,7 +556,10 @@ func TestDrawWasteTable_WithStoppedInstances(t *testing.T) {
 	}
 
 	output := captureWasteOutput(func() {
-		DrawWasteTable("123456789012", nil, nil, nil, nil, stoppedInstances, nil, nil, nil, nil)
+		DrawWasteTable(model.RenderWasteInput{
+			AccountID:        "123456789012",
+			StoppedInstances: stoppedInstances,
+		})
 	})
 
 	if !strings.Contains(output, "EC2") || !strings.Contains(output, "Reserved Instance") {
@@ -568,7 +577,10 @@ func TestDrawWasteTable_WithReservedInstances(t *testing.T) {
 	}
 
 	output := captureWasteOutput(func() {
-		DrawWasteTable("123456789012", nil, nil, nil, ris, nil, nil, nil, nil, nil)
+		DrawWasteTable(model.RenderWasteInput{
+			AccountID: "123456789012",
+			Ris:       ris,
+		})
 	})
 
 	if !strings.Contains(output, "Reserved Instance") {
@@ -585,7 +597,10 @@ func TestDrawWasteTable_WithLoadBalancers(t *testing.T) {
 	}
 
 	output := captureWasteOutput(func() {
-		DrawWasteTable("123456789012", nil, nil, nil, nil, nil, loadBalancers, nil, nil, nil)
+		DrawWasteTable(model.RenderWasteInput{
+			AccountID:     "123456789012",
+			LoadBalancers: loadBalancers,
+		})
 	})
 
 	if !strings.Contains(output, "Load Balancer") {
@@ -614,7 +629,15 @@ func TestDrawWasteTable_AllWasteTypes(t *testing.T) {
 	}
 
 	output := captureWasteOutput(func() {
-		DrawWasteTable("123456789012", elasticIPs, unusedVolumes, stoppedVolumes, ris, stoppedInstances, loadBalancers, nil, nil, nil)
+		DrawWasteTable(model.RenderWasteInput{
+			AccountID:        "123456789012",
+			ElasticIPs:       elasticIPs,
+			UnusedVolumes:    unusedVolumes,
+			StoppedVolumes:   stoppedVolumes,
+			Ris:              ris,
+			StoppedInstances: stoppedInstances,
+			LoadBalancers:    loadBalancers,
+		})
 	})
 
 	// Should have all sections
@@ -832,7 +855,10 @@ func TestDrawWasteTable_IndividualResources(t *testing.T) {
 	unusedVolumes := []types.Volume{{VolumeId: aws.String("vol-1"), Size: aws.Int32(10)}}
 
 	output := captureWasteOutput(func() {
-		DrawWasteTable(accountID, nil, unusedVolumes, nil, nil, nil, nil, nil, nil, nil)
+		DrawWasteTable(model.RenderWasteInput{
+			AccountID:     accountID,
+			UnusedVolumes: unusedVolumes,
+		})
 	})
 
 	if !strings.Contains(output, "EBS Volume Waste") {
@@ -843,7 +869,10 @@ func TestDrawWasteTable_IndividualResources(t *testing.T) {
 	lbs := []elbtypes.LoadBalancer{{LoadBalancerName: aws.String("lb-1"), Type: elbtypes.LoadBalancerTypeEnumApplication}}
 
 	output = captureWasteOutput(func() {
-		DrawWasteTable(accountID, nil, nil, nil, nil, nil, lbs, nil, nil, nil)
+		DrawWasteTable(model.RenderWasteInput{
+			AccountID:     accountID,
+			LoadBalancers: lbs,
+		})
 	})
 
 	if !strings.Contains(output, "Load Balancer Waste") {
@@ -854,7 +883,10 @@ func TestDrawWasteTable_IndividualResources(t *testing.T) {
 	amis := []model.AMIWasteInfo{{ImageID: "ami-1", Name: "ami-1", DaysSinceCreate: 10}}
 
 	output = captureWasteOutput(func() {
-		DrawWasteTable(accountID, nil, nil, nil, nil, nil, nil, amis, nil, nil)
+		DrawWasteTable(model.RenderWasteInput{
+			AccountID:  accountID,
+			UnusedAMIs: amis,
+		})
 	})
 
 	if !strings.Contains(output, "Unused AMI Waste") {
@@ -865,7 +897,10 @@ func TestDrawWasteTable_IndividualResources(t *testing.T) {
 	snaps := []model.SnapshotWasteInfo{{SnapshotID: "snap-1", Category: model.SnapshotCategoryOrphaned}}
 
 	output = captureWasteOutput(func() {
-		DrawWasteTable(accountID, nil, nil, nil, nil, nil, nil, nil, snaps, nil)
+		DrawWasteTable(model.RenderWasteInput{
+			AccountID:         accountID,
+			OrphanedSnapshots: snaps,
+		})
 	})
 
 	if !strings.Contains(output, "EBS Snapshot Waste") {
@@ -1056,7 +1091,10 @@ func TestDrawWasteTable_WithUnusedAMIs(t *testing.T) {
 	}
 
 	output := captureWasteOutput(func() {
-		DrawWasteTable("123456789012", nil, nil, nil, nil, nil, nil, unusedAMIs, nil, nil)
+		DrawWasteTable(model.RenderWasteInput{
+			AccountID:  "123456789012",
+			UnusedAMIs: unusedAMIs,
+		})
 	})
 
 	if !strings.Contains(output, "Unused AMI") {
@@ -1103,7 +1141,11 @@ func BenchmarkDrawWasteTable(b *testing.B) {
 	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {
-		DrawWasteTable("123456789012", elasticIPs, unusedVolumes, nil, nil, nil, nil, nil, nil, nil)
+		DrawWasteTable(model.RenderWasteInput{
+			AccountID:     "123456789012",
+			ElasticIPs:    elasticIPs,
+			UnusedVolumes: unusedVolumes,
+		})
 	}
 }
 
@@ -1183,7 +1225,10 @@ func TestDrawWasteTable_WithKeyPairs(t *testing.T) {
 	}
 
 	output := captureWasteOutput(func() {
-		DrawWasteTable("123456789012", nil, nil, nil, nil, nil, nil, nil, nil, keyPairs)
+		DrawWasteTable(model.RenderWasteInput{
+			AccountID:      "123456789012",
+			UnusedKeyPairs: keyPairs,
+		})
 	})
 
 	if !strings.Contains(output, "Key Pair Waste") {

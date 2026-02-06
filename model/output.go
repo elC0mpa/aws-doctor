@@ -1,5 +1,10 @@
 package model
 
+import (
+	"github.com/aws/aws-sdk-go-v2/service/ec2/types"
+	elbtypes "github.com/aws/aws-sdk-go-v2/service/elasticloadbalancingv2/types"
+)
+
 // CostComparisonJSON represents the JSON output for cost comparison
 type CostComparisonJSON struct {
 	AccountID        string                   `json:"account_id"`
@@ -131,4 +136,28 @@ type KeyPairJSON struct {
 	KeyPairID       string `json:"key_pair_id"`
 	CreationDate    string `json:"creation_date"`
 	DaysSinceCreate int    `json:"days_since_create"`
+}
+
+// RenderWasteInput represents the input data for rendering the waste report
+type RenderWasteInput struct {
+	AccountID         string
+	ElasticIPs        []types.Address
+	UnusedVolumes     []types.Volume
+	StoppedVolumes    []types.Volume
+	Ris               []RiExpirationInfo
+	StoppedInstances  []types.Instance
+	LoadBalancers     []elbtypes.LoadBalancer
+	UnusedAMIs        []AMIWasteInfo
+	OrphanedSnapshots []SnapshotWasteInfo
+	UnusedKeyPairs    []KeyPairWasteInfo
+}
+
+// RenderCostComparisonInput represents the input data for rendering the cost comparison report
+// RenderCostComparisonInput represents the input data for rendering the cost comparison report
+type RenderCostComparisonInput struct {
+	AccountID        string
+	LastTotalCost    string
+	CurrentTotalCost string
+	LastMonth        *CostInfo
+	CurrentMonth     *CostInfo
 }

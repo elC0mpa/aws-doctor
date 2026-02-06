@@ -115,7 +115,13 @@ func TestOutputCostComparisonJSON(t *testing.T) {
 	var err error
 
 	output := captureStdout(func() {
-		err = OutputCostComparisonJSON("123456789012", 150.0, 165.0, lastMonth, currentMonth)
+		err = OutputCostComparisonJSON(model.RenderCostComparisonInput{
+			AccountID:        "123456789012",
+			LastTotalCost:    "150.00 USD",
+			CurrentTotalCost: "165.00 USD",
+			LastMonth:        lastMonth,
+			CurrentMonth:     currentMonth,
+		})
 	})
 
 	if err != nil {
@@ -270,7 +276,16 @@ func TestOutputWasteJSON(t *testing.T) {
 	var err error
 
 	output := captureStdout(func() {
-		err = OutputWasteJSON("123456789012", elasticIPs, unusedVolumes, stoppedVolumes, ris, stoppedInstances, loadBalancers, nil, nil, unusedKeyPairs)
+		err = OutputWasteJSON(model.RenderWasteInput{
+			AccountID:        "123456789012",
+			ElasticIPs:       elasticIPs,
+			UnusedVolumes:    unusedVolumes,
+			StoppedVolumes:   stoppedVolumes,
+			Ris:              ris,
+			StoppedInstances: stoppedInstances,
+			LoadBalancers:    loadBalancers,
+			UnusedKeyPairs:   unusedKeyPairs,
+		})
 	})
 
 	if err != nil {
@@ -339,7 +354,10 @@ func TestOutputWasteJSON_WithSnapshots(t *testing.T) {
 	var err error
 
 	output := captureStdout(func() {
-		err = OutputWasteJSON("123456789012", nil, nil, nil, nil, nil, nil, nil, orphanedSnapshots, nil)
+		err = OutputWasteJSON(model.RenderWasteInput{
+			AccountID:         "123456789012",
+			OrphanedSnapshots: orphanedSnapshots,
+		})
 	})
 
 	if err != nil {
@@ -364,7 +382,7 @@ func TestOutputWasteJSON_NoWaste(t *testing.T) {
 	var err error
 
 	output := captureStdout(func() {
-		err = OutputWasteJSON("123456789012", nil, nil, nil, nil, nil, nil, nil, nil, nil)
+		err = OutputWasteJSON(model.RenderWasteInput{AccountID: "123456789012"})
 	})
 
 	if err != nil {
@@ -392,7 +410,10 @@ func TestOutputWasteJSON_InstanceWithoutTransitionReason(t *testing.T) {
 	var err error
 
 	output := captureStdout(func() {
-		err = OutputWasteJSON("123456789012", nil, nil, nil, nil, stoppedInstances, nil, nil, nil, nil)
+		err = OutputWasteJSON(model.RenderWasteInput{
+			AccountID:        "123456789012",
+			StoppedInstances: stoppedInstances,
+		})
 	})
 
 	if err != nil {
@@ -425,7 +446,10 @@ func TestOutputWasteJSON_InstanceWithInvalidTransitionReason(t *testing.T) {
 	var err error
 
 	output := captureStdout(func() {
-		err = OutputWasteJSON("123456789012", nil, nil, nil, nil, stoppedInstances, nil, nil, nil, nil)
+		err = OutputWasteJSON(model.RenderWasteInput{
+			AccountID:        "123456789012",
+			StoppedInstances: stoppedInstances,
+		})
 	})
 
 	if err != nil {
@@ -463,7 +487,10 @@ func TestOutputWasteJSON_WithUnusedAMIs(t *testing.T) {
 	var err error
 
 	output := captureStdout(func() {
-		err = OutputWasteJSON("123456789012", nil, nil, nil, nil, nil, nil, unusedAMIs, nil, nil)
+		err = OutputWasteJSON(model.RenderWasteInput{
+			AccountID:  "123456789012",
+			UnusedAMIs: unusedAMIs,
+		})
 	})
 
 	if err != nil {
@@ -525,7 +552,10 @@ func TestOutputWasteJSON_AMIWithEmptySnapshots(t *testing.T) {
 	var err error
 
 	output := captureStdout(func() {
-		err = OutputWasteJSON("123456789012", nil, nil, nil, nil, nil, nil, unusedAMIs, nil, nil)
+		err = OutputWasteJSON(model.RenderWasteInput{
+			AccountID:  "123456789012",
+			UnusedAMIs: unusedAMIs,
+		})
 	})
 
 	if err != nil {
@@ -569,6 +599,9 @@ func BenchmarkOutputWasteJSON(b *testing.B) {
 	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {
-		_ = OutputWasteJSON("123456789012", elasticIPs, nil, nil, nil, nil, nil, nil, nil, nil)
+		_ = OutputWasteJSON(model.RenderWasteInput{
+			AccountID:  "123456789012",
+			ElasticIPs: elasticIPs,
+		})
 	}
 }

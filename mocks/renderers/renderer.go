@@ -1,8 +1,6 @@
 package renderers
 
 import (
-	"github.com/aws/aws-sdk-go-v2/service/ec2/types"
-	elbtypes "github.com/aws/aws-sdk-go-v2/service/elasticloadbalancingv2/types"
 	"github.com/elC0mpa/aws-doctor/model"
 	"github.com/stretchr/testify/mock"
 )
@@ -13,13 +11,13 @@ type MockRenderer struct {
 }
 
 // DrawCostTable mocks DrawCostTable
-func (m *MockRenderer) DrawCostTable(accountID, lastTotalCost, currentTotalCost string, lastMonth, currentMonth *model.CostInfo, costsAggregation string) {
-	m.Called(accountID, lastTotalCost, currentTotalCost, lastMonth, currentMonth, costsAggregation)
+func (m *MockRenderer) DrawCostTable(input model.RenderCostComparisonInput) {
+	m.Called(input)
 }
 
 // OutputCostComparisonJSON mocks OutputCostComparisonJSON
-func (m *MockRenderer) OutputCostComparisonJSON(accountID string, lastTotalCost, currentTotalCost float64, lastMonth, currentMonth *model.CostInfo) error {
-	args := m.Called(accountID, lastTotalCost, currentTotalCost, lastMonth, currentMonth)
+func (m *MockRenderer) OutputCostComparisonJSON(input model.RenderCostComparisonInput) error {
+	args := m.Called(input)
 	return args.Error(0)
 }
 
@@ -35,13 +33,13 @@ func (m *MockRenderer) OutputTrendJSON(accountID string, costInfo []model.CostIn
 }
 
 // DrawWasteTable mocks DrawWasteTable
-func (m *MockRenderer) DrawWasteTable(accountID string, elasticIPs []types.Address, unusedVolumes []types.Volume, stoppedVolumes []types.Volume, ris []model.RiExpirationInfo, stoppedInstances []types.Instance, loadBalancers []elbtypes.LoadBalancer, unusedAMIs []model.AMIWasteInfo, orphanedSnapshots []model.SnapshotWasteInfo, unusedKeyPairs []model.KeyPairWasteInfo) {
-	m.Called(accountID, elasticIPs, unusedVolumes, stoppedVolumes, ris, stoppedInstances, loadBalancers, unusedAMIs, orphanedSnapshots, unusedKeyPairs)
+func (m *MockRenderer) DrawWasteTable(input model.RenderWasteInput) {
+	m.Called(input)
 }
 
 // OutputWasteJSON mocks OutputWasteJSON
-func (m *MockRenderer) OutputWasteJSON(accountID string, elasticIPs []types.Address, unusedVolumes []types.Volume, stoppedVolumes []types.Volume, ris []model.RiExpirationInfo, stoppedInstances []types.Instance, loadBalancers []elbtypes.LoadBalancer, unusedAMIs []model.AMIWasteInfo, orphanedSnapshots []model.SnapshotWasteInfo, unusedKeyPairs []model.KeyPairWasteInfo) error {
-	args := m.Called(accountID, elasticIPs, unusedVolumes, stoppedVolumes, ris, stoppedInstances, loadBalancers, unusedAMIs, orphanedSnapshots, unusedKeyPairs)
+func (m *MockRenderer) OutputWasteJSON(input model.RenderWasteInput) error {
+	args := m.Called(input)
 	return args.Error(0)
 }
 

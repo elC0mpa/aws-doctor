@@ -35,7 +35,7 @@ func TestOrchestrate_RouteToDefaultWorkflow(t *testing.T) {
 		Account: aws.String("123456789012"),
 	}, nil)
 	mockOutput.On("StopSpinner").Return()
-	mockOutput.On("RenderCostComparison", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil)
+	mockOutput.On("RenderCostComparison", mock.Anything).Return(nil)
 
 	// Execute
 	flags := model.Flags{Output: "json"}
@@ -130,7 +130,7 @@ func TestOrchestrate_RouteToWasteWorkflow(t *testing.T) {
 		Account: aws.String("123456789012"),
 	}, nil)
 	mockOutput.On("StopSpinner").Return()
-	mockOutput.On("RenderWaste", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil)
+	mockOutput.On("RenderWaste", mock.Anything).Return(nil)
 
 	// Execute with Waste flag
 	flags := model.Flags{Waste: true, Output: "json"}
@@ -169,7 +169,7 @@ func TestOrchestrate_WasteTakesPrecedenceOverTrend(t *testing.T) {
 		Account: aws.String("123456789012"),
 	}, nil)
 	mockOutput.On("StopSpinner").Return()
-	mockOutput.On("RenderWaste", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil)
+	mockOutput.On("RenderWaste", mock.Anything).Return(nil)
 
 	// Execute with both flags - Waste should take precedence
 	flags := model.Flags{Waste: true, Trend: true, Output: "json"}
@@ -244,7 +244,7 @@ func TestDefaultWorkflow_CostServiceError(t *testing.T) {
 
 			tt.setupMocks(mockCost, mockSTS)
 			mockOutput.On("StopSpinner").Return().Maybe()
-			mockOutput.On("RenderCostComparison", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil).Maybe()
+			mockOutput.On("RenderCostComparison", mock.Anything).Return(nil).Maybe()
 
 			svc := NewService(mockSTS, mockCost, mockEC2, mockELB, mockOutput, mockUpdate, model.VersionInfo{Version: "dev", Commit: "none", Date: "unknown"})
 			err := svc.Orchestrate(model.Flags{Output: "json"})
@@ -370,7 +370,7 @@ func TestWasteWorkflow_Error(t *testing.T) {
 
 			tt.setupMocks(mockEC2, mockELB, mockSTS)
 			mockOutput.On("StopSpinner").Return().Maybe()
-			mockOutput.On("RenderWaste", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil).Maybe()
+			mockOutput.On("RenderWaste", mock.Anything).Return(nil).Maybe()
 
 			svc := NewService(mockSTS, mockCost, mockEC2, mockELB, mockOutput, mockUpdate, model.VersionInfo{Version: "dev", Commit: "none", Date: "unknown"})
 			err := svc.Orchestrate(model.Flags{Waste: true, Output: "json"})

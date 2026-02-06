@@ -9,23 +9,27 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/ec2/types"
 	elbtypes "github.com/aws/aws-sdk-go-v2/service/elasticloadbalancingv2/types"
 	"github.com/elC0mpa/aws-doctor/model"
+	"github.com/elC0mpa/aws-doctor/utils/cost"
 	"github.com/elC0mpa/aws-doctor/utils/ec2"
 )
 
 // OutputCostComparisonJSON outputs cost comparison data as JSON
-func OutputCostComparisonJSON(accountID string, lastTotalCost, currentTotalCost float64, lastMonth, currentMonth *model.CostInfo) error {
+func OutputCostComparisonJSON(input model.RenderCostComparisonInput) error {
+	lastTotalCost := cost.ParseCostString(input.LastTotalCost)
+	currentTotalCost := cost.ParseCostString(input.CurrentTotalCost)
+
 	output := model.CostComparisonJSON{
-		AccountID:   accountID,
+		AccountID:   input.AccountID,
 		GeneratedAt: time.Now().UTC().Format(time.RFC3339),
 		CurrentMonth: model.CostPeriodJSON{
-			Start: aws.ToString(currentMonth.Start),
-			End:   aws.ToString(currentMonth.End),
+			Start: aws.ToString(input.CurrentMonth.Start),
+			End:   aws.ToString(input.CurrentMonth.End),
 			Total: currentTotalCost,
 			Unit:  "USD",
 		},
 		LastMonth: model.CostPeriodJSON{
-			Start: aws.ToString(lastMonth.Start),
-			End:   aws.ToString(lastMonth.End),
+			Start: aws.ToString(input.LastMonth.Start),
+			End:   aws.ToString(input.LastMonth.End),
 			Total: lastTotalCost,
 			Unit:  "USD",
 		},
@@ -33,8 +37,8 @@ func OutputCostComparisonJSON(accountID string, lastTotalCost, currentTotalCost 
 	}
 
 	// Add service breakdown
-	for serviceName, currentCost := range currentMonth.CostGroup {
-		lastCost := lastMonth.CostGroup[serviceName]
+	for serviceName, currentCost := range input.CurrentMonth.CostGroup {
+		lastCost := input.LastMonth.CostGroup[serviceName]
 		output.ServiceBreakdown = append(output.ServiceBreakdown, model.ServiceCostCompareJSON{
 			Service:     serviceName,
 			CurrentCost: currentCost.Amount,
@@ -70,21 +74,21 @@ func OutputTrendJSON(accountID string, costInfo []model.CostInfo) error {
 }
 
 // OutputWasteJSON outputs waste detection data as JSON
-func OutputWasteJSON(accountID string, elasticIPs []types.Address, unusedVolumes []types.Volume, stoppedVolumes []types.Volume, ris []model.RiExpirationInfo, stoppedInstances []types.Instance, loadBalancers []elbtypes.LoadBalancer, unusedAMIs []model.AMIWasteInfo, orphanedSnapshots []model.SnapshotWasteInfo, unusedKeyPairs []model.KeyPairWasteInfo) error {
+func OutputWasteJSON(input model.RenderWasteInput) error {
 	output := model.WasteReportJSON{
-		AccountID:           accountID,
+		AccountID:           input.AccountID,
 		GeneratedAt:         time.Now().UTC().Format(time.RFC3339),
-		UnusedElasticIPs:    mapElasticIPs(elasticIPs),
-		UnusedEBSVolumes:    mapEBSVolumes(unusedVolumes, "available"),
-		StoppedVolumes:      mapEBSVolumes(stoppedVolumes, "attached_to_stopped"),
-		StoppedInstances:    mapStoppedInstances(stoppedInstances),
-		ReservedInstances:   mapReservedInstances(ris),
-		UnusedLoadBalancers: mapLoadBalancers(loadBalancers),
-		UnusedAMIs:          mapAMIs(unusedAMIs),
-		UnusedKeyPairs:      mapKeyPairs(unusedKeyPairs),
+		UnusedElasticIPs:    mapElasticIPs(input.ElasticIPs),
+		UnusedEBSVolumes:    mapEBSVolumes(input.UnusedVolumes, "available"),
+		StoppedVolumes:      mapEBSVolumes(input.StoppedVolumes, "attached_to_stopped"),
+		StoppedInstances:    mapStoppedInstances(input.StoppedInstances),
+		ReservedInstances:   mapReservedInstances(input.Ris),
+		UnusedLoadBalancers: mapLoadBalancers(input.LoadBalancers),
+		UnusedAMIs:          mapAMIs(input.UnusedAMIs),
+		UnusedKeyPairs:      mapKeyPairs(input.UnusedKeyPairs),
 	}
 
-	output.OrphanedSnapshots, output.StaleSnapshots = mapSnapshots(orphanedSnapshots)
+	output.OrphanedSnapshots, output.StaleSnapshots = mapSnapshots(input.OrphanedSnapshots)
 
 	output.HasWaste = len(output.UnusedElasticIPs) > 0 ||
 		len(output.UnusedEBSVolumes) > 0 ||
