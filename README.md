@@ -1,14 +1,18 @@
 # aws-doctor
 
-[![Go Version](https://img.shields.io/github/go-mod/go-version/elC0mpa/aws-doctor)](https://github.com/elC0mpa/aws-doctor/blob/main/go.mod)
-[![Go Report Card](https://goreportcard.com/badge/github.com/elC0mpa/aws-doctor)](https://goreportcard.com/report/github.com/elC0mpa/aws-doctor)
-[![codecov](https://codecov.io/gh/elC0mpa/aws-doctor/graph/badge.svg)](https://codecov.io/gh/elC0mpa/aws-doctor)
-[![Go Reference](https://pkg.go.dev/badge/github.com/elC0mpa/aws-doctor.svg)](https://pkg.go.dev/github.com/elC0mpa/aws-doctor)
+<p align="center">
+  <a href="https://github.com/elC0mpa/aws-doctor/blob/main/go.mod"><img src="https://img.shields.io/github/go-mod/go-version/elC0mpa/aws-doctor" alt="Go Version"></a>
+  <a href="https://pkg.go.dev/github.com/elC0mpa/aws-doctor"><img src="https://pkg.go.dev/badge/github.com/elC0mpa/aws-doctor.svg" alt="Go Reference"></a>
+  <a href="https://goreportcard.com/report/github.com/elC0mpa/aws-doctor"><img src="https://goreportcard.com/badge/github.com/elC0mpa/aws-doctor" alt="Go Report Card"></a>
+  <a href="https://codecov.io/gh/elC0mpa/aws-doctor"><img src="https://codecov.io/gh/elC0mpa/aws-doctor/graph/badge.svg" alt="codecov"></a>
+</p>
 
-[![CI](https://github.com/elC0mpa/aws-doctor/actions/workflows/ci.yml/badge.svg)](https://github.com/elC0mpa/aws-doctor/actions/workflows/ci.yml)
-[![GitHub all releases](https://img.shields.io/github/downloads/elC0mpa/aws-doctor/total?color=blue&label=Downloads)](https://github.com/elC0mpa/aws-doctor/releases)
-[![License](https://img.shields.io/github/license/elC0mpa/aws-doctor)](https://github.com/elC0mpa/aws-doctor/blob/main/LICENSE)
-[![Maintained](https://img.shields.io/badge/Maintained-yes-green.svg)](https://github.com/elC0mpa/aws-doctor/commits/main)
+<p align="center">
+  <a href="https://github.com/elC0mpa/aws-doctor/releases"><img src="https://img.shields.io/github/downloads/elC0mpa/aws-doctor/total?color=blue&label=Downloads" alt="GitHub all releases"></a>
+  <a href="https://github.com/elC0mpa/aws-doctor/actions/workflows/ci.yml"><img src="https://github.com/elC0mpa/aws-doctor/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
+  <a href="https://github.com/elC0mpa/aws-doctor/blob/main/LICENSE"><img src="https://img.shields.io/github/license/elC0mpa/aws-doctor" alt="License"></a>
+  <a href="https://github.com/elC0mpa/aws-doctor/commits/main"><img src="https://img.shields.io/badge/Maintained-yes-green.svg" alt="Maintained"></a>
+</p>
 
 A terminal-based tool that acts as a comprehensive health check for your AWS accounts. Built with Golang, **aws-doctor** diagnoses cost anomalies, detects idle resources, and provides a proactive analysis of your cloud infrastructure—effectively giving you the insights of AWS Trusted Advisor without the need for a Business or Enterprise support plan.
 
