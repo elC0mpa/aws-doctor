@@ -16,11 +16,24 @@ import (
 
 // DrawWasteTable renders a table containing detected AWS waste.
 func DrawWasteTable(input model.RenderWasteInput) {
-	fmt.Printf("\n%s\n", text.FgHiWhite.Sprint(" 🏥 AWS DOCTOR CHECKUP"))
-	fmt.Printf(" Account ID: %s\n", text.FgBlue.Sprint(input.AccountID))
-	fmt.Println(text.FgHiBlue.Sprint(" ------------------------------------------------"))
+	drawHeader(input.AccountID)
 
-	hasWaste := len(input.ElasticIPs) > 0 ||
+	if !hasAnyWaste(input) {
+		fmt.Println("\n" + text.FgHiGreen.Sprint(" ✅  Your account is healthy! No waste found."))
+		return
+	}
+
+	drawWasteSections(input)
+}
+
+func drawHeader(accountID string) {
+	fmt.Printf("\n%s\n", text.FgHiWhite.Sprint(" 🏥 AWS DOCTOR CHECKUP"))
+	fmt.Printf(" Account ID: %s\n", text.FgBlue.Sprint(accountID))
+	fmt.Println(text.FgHiBlue.Sprint(" ------------------------------------------------"))
+}
+
+func hasAnyWaste(input model.RenderWasteInput) bool {
+	return len(input.ElasticIPs) > 0 ||
 		len(input.UnusedVolumes) > 0 ||
 		len(input.StoppedVolumes) > 0 ||
 		len(input.StoppedInstances) > 0 ||
@@ -30,12 +43,9 @@ func DrawWasteTable(input model.RenderWasteInput) {
 		len(input.OrphanedSnapshots) > 0 ||
 		len(input.UnusedKeyPairs) > 0 ||
 		len(input.S3Buckets) > 0
+}
 
-	if !hasWaste {
-		fmt.Println("\n" + text.FgHiGreen.Sprint(" ✅  Your account is healthy! No waste found."))
-		return
-	}
-
+func drawWasteSections(input model.RenderWasteInput) {
 	if len(input.UnusedVolumes) > 0 || len(input.StoppedVolumes) > 0 {
 		drawEBSTable(input.UnusedVolumes, input.StoppedVolumes)
 	}

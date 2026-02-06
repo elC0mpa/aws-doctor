@@ -1267,6 +1267,7 @@ func TestPopulateS3Rows(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			rows := populateS3Rows(tt.buckets)
+
 			if len(rows) != tt.wantLen {
 				t.Errorf("populateS3Rows() returned %d rows, want %d", len(rows), tt.wantLen)
 			}
@@ -1275,9 +1276,11 @@ func TestPopulateS3Rows(t *testing.T) {
 				if len(rows[0]) != 4 {
 					t.Errorf("Row has %d columns, want 4", len(rows[0]))
 				}
+
 				if rows[0][1] != "test-bucket" {
 					t.Errorf("BucketName = %v, want 'test-bucket'", rows[0][1])
 				}
+
 				if rows[0][3] != "2024-01-01" {
 					t.Errorf("CreationDate = %v, want '2024-01-01'", rows[0][3])
 				}

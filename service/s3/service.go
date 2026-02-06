@@ -25,7 +25,9 @@ func NewService(awsconfig aws.Config) Service {
 
 func (s *service) GetBucketsWithoutLifecyclePolicies(ctx context.Context) ([]model.S3BucketWasteInfo, error) {
 	var results []model.S3BucketWasteInfo
+
 	var mu sync.Mutex
+
 	g, ctx := errgroup.WithContext(ctx)
 	g.SetLimit(10) // Limit concurrency to avoid hitting rate limits
 
@@ -47,12 +49,15 @@ func (s *service) GetBucketsWithoutLifecyclePolicies(ctx context.Context) ([]mod
 					if errors.As(err, &apiErr) {
 						if apiErr.ErrorCode() == "NoSuchLifecycleConfiguration" {
 							mu.Lock()
+
 							results = append(results, model.S3BucketWasteInfo{
 								BucketName:   aws.ToString(bucket.Name),
 								CreationDate: aws.ToTime(bucket.CreationDate),
 								Reason:       "No lifecycle policy",
 							})
+
 							mu.Unlock()
+
 							return nil
 						}
 					}

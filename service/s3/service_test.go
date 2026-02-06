@@ -76,10 +76,12 @@ func TestGetBucketsWithoutLifecyclePolicies(t *testing.T) {
 			} else {
 				assert.NoError(t, err)
 				assert.Len(t, results, tt.wantCount)
+
 				if tt.wantCount > 0 {
 					assert.Equal(t, "no-policy-bucket", results[0].BucketName)
 				}
 			}
+
 			mockClient.AssertExpectations(t)
 		})
 	}

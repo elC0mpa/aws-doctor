@@ -7,14 +7,14 @@ import (
 	"github.com/elC0mpa/aws-doctor/model"
 )
 
-// S3ClientAPI is the interface for the AWS S3 client methods used by the service.
-type S3ClientAPI interface {
+// ClientAPI is the interface for the AWS S3 client methods used by the service.
+type ClientAPI interface {
 	ListBuckets(ctx context.Context, params *s3.ListBucketsInput, optFns ...func(*s3.Options)) (*s3.ListBucketsOutput, error)
 	GetBucketLifecycleConfiguration(ctx context.Context, params *s3.GetBucketLifecycleConfigurationInput, optFns ...func(*s3.Options)) (*s3.GetBucketLifecycleConfigurationOutput, error)
 }
 
 type service struct {
-	client S3ClientAPI
+	client ClientAPI
 }
 
 // Service is the interface for AWS S3 service.
