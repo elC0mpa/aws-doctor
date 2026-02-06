@@ -20,11 +20,12 @@ func TestOrchestrate_RouteToDefaultWorkflow(t *testing.T) {
 	mockCost := new(services.MockCostService)
 	mockEC2 := new(services.MockEC2Service)
 	mockELB := new(services.MockELBService)
+	mockS3 := new(services.MockS3Service)
 	mockOutput := new(services.MockOutputService)
 	mockUpdate := new(services.MockUpdateService)
 
 	// Create service
-	svc := NewService(mockSTS, mockCost, mockEC2, mockELB, mockOutput, mockUpdate, model.VersionInfo{Version: "dev", Commit: "none", Date: "unknown"})
+	svc := NewService(mockSTS, mockCost, mockEC2, mockELB, mockS3, mockOutput, mockUpdate, model.VersionInfo{Version: "dev", Commit: "none", Date: "unknown"})
 
 	// Setup expectations for default workflow
 	mockCost.On("GetCurrentMonthCostsByService", mock.Anything).Return(&model.CostInfo{}, nil)
@@ -54,11 +55,12 @@ func TestOrchestrate_RouteToUpdateWorkflow(t *testing.T) {
 	mockCost := new(services.MockCostService)
 	mockEC2 := new(services.MockEC2Service)
 	mockELB := new(services.MockELBService)
+	mockS3 := new(services.MockS3Service)
 	mockOutput := new(services.MockOutputService)
 	mockUpdate := new(services.MockUpdateService)
 
 	// Create service
-	svc := NewService(mockSTS, mockCost, mockEC2, mockELB, mockOutput, mockUpdate, model.VersionInfo{Version: "dev", Commit: "none", Date: "unknown"})
+	svc := NewService(mockSTS, mockCost, mockEC2, mockELB, mockS3, mockOutput, mockUpdate, model.VersionInfo{Version: "dev", Commit: "none", Date: "unknown"})
 
 	// Setup expectations
 	mockOutput.On("StopSpinner").Return()
@@ -80,11 +82,12 @@ func TestOrchestrate_RouteToTrendWorkflow(t *testing.T) {
 	mockCost := new(services.MockCostService)
 	mockEC2 := new(services.MockEC2Service)
 	mockELB := new(services.MockELBService)
+	mockS3 := new(services.MockS3Service)
 	mockOutput := new(services.MockOutputService)
 	mockUpdate := new(services.MockUpdateService)
 
 	// Create service
-	svc := NewService(mockSTS, mockCost, mockEC2, mockELB, mockOutput, mockUpdate, model.VersionInfo{Version: "dev", Commit: "none", Date: "unknown"})
+	svc := NewService(mockSTS, mockCost, mockEC2, mockELB, mockS3, mockOutput, mockUpdate, model.VersionInfo{Version: "dev", Commit: "none", Date: "unknown"})
 
 	// Setup expectations for trend workflow
 	mockCost.On("GetLastSixMonthsCosts", mock.Anything).Return([]model.CostInfo{}, nil)
@@ -111,11 +114,12 @@ func TestOrchestrate_RouteToWasteWorkflow(t *testing.T) {
 	mockCost := new(services.MockCostService)
 	mockEC2 := new(services.MockEC2Service)
 	mockELB := new(services.MockELBService)
+	mockS3 := new(services.MockS3Service)
 	mockOutput := new(services.MockOutputService)
 	mockUpdate := new(services.MockUpdateService)
 
 	// Create service
-	svc := NewService(mockSTS, mockCost, mockEC2, mockELB, mockOutput, mockUpdate, model.VersionInfo{Version: "dev", Commit: "none", Date: "unknown"})
+	svc := NewService(mockSTS, mockCost, mockEC2, mockELB, mockS3, mockOutput, mockUpdate, model.VersionInfo{Version: "dev", Commit: "none", Date: "unknown"})
 
 	// Setup expectations for waste workflow
 	mockEC2.On("GetUnusedElasticIPAddressesInfo", mock.Anything).Return([]types.Address{}, nil)
@@ -125,6 +129,7 @@ func TestOrchestrate_RouteToWasteWorkflow(t *testing.T) {
 	mockEC2.On("GetUnusedAMIs", mock.Anything, mock.Anything).Return([]model.AMIWasteInfo{}, nil)
 	mockEC2.On("GetOrphanedSnapshots", mock.Anything, mock.Anything).Return([]model.SnapshotWasteInfo{}, nil)
 	mockEC2.On("GetUnusedKeyPairs", mock.Anything).Return([]model.KeyPairWasteInfo{}, nil)
+	mockS3.On("GetBucketsWithoutLifecyclePolicies", mock.Anything).Return([]model.S3BucketWasteInfo{}, nil)
 	mockELB.On("GetUnusedLoadBalancers", mock.Anything).Return([]elbtypes.LoadBalancer{}, nil)
 	mockSTS.On("GetCallerIdentity", mock.Anything).Return(&sts.GetCallerIdentityOutput{
 		Account: aws.String("123456789012"),
@@ -150,11 +155,12 @@ func TestOrchestrate_WasteTakesPrecedenceOverTrend(t *testing.T) {
 	mockCost := new(services.MockCostService)
 	mockEC2 := new(services.MockEC2Service)
 	mockELB := new(services.MockELBService)
+	mockS3 := new(services.MockS3Service)
 	mockOutput := new(services.MockOutputService)
 	mockUpdate := new(services.MockUpdateService)
 
 	// Create service
-	svc := NewService(mockSTS, mockCost, mockEC2, mockELB, mockOutput, mockUpdate, model.VersionInfo{Version: "dev", Commit: "none", Date: "unknown"})
+	svc := NewService(mockSTS, mockCost, mockEC2, mockELB, mockS3, mockOutput, mockUpdate, model.VersionInfo{Version: "dev", Commit: "none", Date: "unknown"})
 
 	// Setup expectations for waste workflow (should be called, not trend)
 	mockEC2.On("GetUnusedElasticIPAddressesInfo", mock.Anything).Return([]types.Address{}, nil)
@@ -164,6 +170,7 @@ func TestOrchestrate_WasteTakesPrecedenceOverTrend(t *testing.T) {
 	mockEC2.On("GetUnusedAMIs", mock.Anything, mock.Anything).Return([]model.AMIWasteInfo{}, nil)
 	mockEC2.On("GetOrphanedSnapshots", mock.Anything, mock.Anything).Return([]model.SnapshotWasteInfo{}, nil)
 	mockEC2.On("GetUnusedKeyPairs", mock.Anything).Return([]model.KeyPairWasteInfo{}, nil)
+	mockS3.On("GetBucketsWithoutLifecyclePolicies", mock.Anything).Return([]model.S3BucketWasteInfo{}, nil)
 	mockELB.On("GetUnusedLoadBalancers", mock.Anything).Return([]elbtypes.LoadBalancer{}, nil)
 	mockSTS.On("GetCallerIdentity", mock.Anything).Return(&sts.GetCallerIdentityOutput{
 		Account: aws.String("123456789012"),
@@ -239,6 +246,7 @@ func TestDefaultWorkflow_CostServiceError(t *testing.T) {
 			mockCost := new(services.MockCostService)
 			mockEC2 := new(services.MockEC2Service)
 			mockELB := new(services.MockELBService)
+			mockS3 := new(services.MockS3Service)
 			mockOutput := new(services.MockOutputService)
 			mockUpdate := new(services.MockUpdateService)
 
@@ -246,7 +254,7 @@ func TestDefaultWorkflow_CostServiceError(t *testing.T) {
 			mockOutput.On("StopSpinner").Return().Maybe()
 			mockOutput.On("RenderCostComparison", mock.Anything).Return(nil).Maybe()
 
-			svc := NewService(mockSTS, mockCost, mockEC2, mockELB, mockOutput, mockUpdate, model.VersionInfo{Version: "dev", Commit: "none", Date: "unknown"})
+			svc := NewService(mockSTS, mockCost, mockEC2, mockELB, mockS3, mockOutput, mockUpdate, model.VersionInfo{Version: "dev", Commit: "none", Date: "unknown"})
 			err := svc.Orchestrate(model.Flags{Output: "json"})
 
 			assert.Error(t, err)
@@ -284,6 +292,7 @@ func TestTrendWorkflow_Error(t *testing.T) {
 			mockCost := new(services.MockCostService)
 			mockEC2 := new(services.MockEC2Service)
 			mockELB := new(services.MockELBService)
+			mockS3 := new(services.MockS3Service)
 			mockOutput := new(services.MockOutputService)
 			mockUpdate := new(services.MockUpdateService)
 
@@ -291,7 +300,7 @@ func TestTrendWorkflow_Error(t *testing.T) {
 			mockOutput.On("StopSpinner").Return().Maybe()
 			mockOutput.On("RenderTrend", mock.Anything, mock.Anything).Return(nil).Maybe()
 
-			svc := NewService(mockSTS, mockCost, mockEC2, mockELB, mockOutput, mockUpdate, model.VersionInfo{Version: "dev", Commit: "none", Date: "unknown"})
+			svc := NewService(mockSTS, mockCost, mockEC2, mockELB, mockS3, mockOutput, mockUpdate, model.VersionInfo{Version: "dev", Commit: "none", Date: "unknown"})
 			err := svc.Orchestrate(model.Flags{Trend: true, Output: "json"})
 
 			assert.Error(t, err)
@@ -303,12 +312,12 @@ func TestTrendWorkflow_Error(t *testing.T) {
 func TestWasteWorkflow_Error(t *testing.T) {
 	tests := []struct {
 		name        string
-		setupMocks  func(*services.MockEC2Service, *services.MockELBService, *services.MockSTSService)
+		setupMocks  func(*services.MockEC2Service, *services.MockELBService, *services.MockS3Service, *services.MockSTSService)
 		expectedErr string
 	}{
 		{
 			name: "GetUnusedElasticIpAddressesInfo_fails",
-			setupMocks: func(mockEC2 *services.MockEC2Service, mockELB *services.MockELBService, mockSTS *services.MockSTSService) {
+			setupMocks: func(mockEC2 *services.MockEC2Service, mockELB *services.MockELBService, mockS3 *services.MockS3Service, mockSTS *services.MockSTSService) {
 				mockEC2.On("GetUnusedElasticIPAddressesInfo", mock.Anything).Return(([]types.Address)(nil), errors.New("EIP error"))
 				mockEC2.On("GetUnusedEBSVolumes", mock.Anything).Return([]types.Volume{}, nil)
 				mockEC2.On("GetStoppedInstancesInfo", mock.Anything).Return([]types.Instance{}, []types.Volume{}, nil)
@@ -316,6 +325,7 @@ func TestWasteWorkflow_Error(t *testing.T) {
 				mockEC2.On("GetUnusedAMIs", mock.Anything, mock.Anything).Return([]model.AMIWasteInfo{}, nil)
 				mockEC2.On("GetOrphanedSnapshots", mock.Anything, mock.Anything).Return([]model.SnapshotWasteInfo{}, nil)
 				mockEC2.On("GetUnusedKeyPairs", mock.Anything).Return([]model.KeyPairWasteInfo{}, nil)
+				mockS3.On("GetBucketsWithoutLifecyclePolicies", mock.Anything).Return([]model.S3BucketWasteInfo{}, nil)
 				mockELB.On("GetUnusedLoadBalancers", mock.Anything).Return([]elbtypes.LoadBalancer{}, nil)
 				mockSTS.On("GetCallerIdentity", mock.Anything).Return(&sts.GetCallerIdentityOutput{
 					Account: aws.String("123456789012"),
@@ -325,7 +335,7 @@ func TestWasteWorkflow_Error(t *testing.T) {
 		},
 		{
 			name: "GetUnusedEBSVolumes_fails",
-			setupMocks: func(mockEC2 *services.MockEC2Service, mockELB *services.MockELBService, mockSTS *services.MockSTSService) {
+			setupMocks: func(mockEC2 *services.MockEC2Service, mockELB *services.MockELBService, mockS3 *services.MockS3Service, mockSTS *services.MockSTSService) {
 				mockEC2.On("GetUnusedElasticIPAddressesInfo", mock.Anything).Return([]types.Address{}, nil)
 				mockEC2.On("GetUnusedEBSVolumes", mock.Anything).Return(([]types.Volume)(nil), errors.New("EBS error"))
 				mockEC2.On("GetStoppedInstancesInfo", mock.Anything).Return([]types.Instance{}, []types.Volume{}, nil)
@@ -333,6 +343,7 @@ func TestWasteWorkflow_Error(t *testing.T) {
 				mockEC2.On("GetUnusedAMIs", mock.Anything, mock.Anything).Return([]model.AMIWasteInfo{}, nil)
 				mockEC2.On("GetOrphanedSnapshots", mock.Anything, mock.Anything).Return([]model.SnapshotWasteInfo{}, nil)
 				mockEC2.On("GetUnusedKeyPairs", mock.Anything).Return([]model.KeyPairWasteInfo{}, nil)
+				mockS3.On("GetBucketsWithoutLifecyclePolicies", mock.Anything).Return([]model.S3BucketWasteInfo{}, nil)
 				mockELB.On("GetUnusedLoadBalancers", mock.Anything).Return([]elbtypes.LoadBalancer{}, nil)
 				mockSTS.On("GetCallerIdentity", mock.Anything).Return(&sts.GetCallerIdentityOutput{
 					Account: aws.String("123456789012"),
@@ -342,7 +353,7 @@ func TestWasteWorkflow_Error(t *testing.T) {
 		},
 		{
 			name: "GetUnusedLoadBalancers_fails",
-			setupMocks: func(mockEC2 *services.MockEC2Service, mockELB *services.MockELBService, mockSTS *services.MockSTSService) {
+			setupMocks: func(mockEC2 *services.MockEC2Service, mockELB *services.MockELBService, mockS3 *services.MockS3Service, mockSTS *services.MockSTSService) {
 				mockEC2.On("GetUnusedElasticIPAddressesInfo", mock.Anything).Return([]types.Address{}, nil)
 				mockEC2.On("GetUnusedEBSVolumes", mock.Anything).Return([]types.Volume{}, nil)
 				mockEC2.On("GetStoppedInstancesInfo", mock.Anything).Return([]types.Instance{}, []types.Volume{}, nil)
@@ -350,6 +361,7 @@ func TestWasteWorkflow_Error(t *testing.T) {
 				mockEC2.On("GetUnusedAMIs", mock.Anything, mock.Anything).Return([]model.AMIWasteInfo{}, nil)
 				mockEC2.On("GetOrphanedSnapshots", mock.Anything, mock.Anything).Return([]model.SnapshotWasteInfo{}, nil)
 				mockEC2.On("GetUnusedKeyPairs", mock.Anything).Return([]model.KeyPairWasteInfo{}, nil)
+				mockS3.On("GetBucketsWithoutLifecyclePolicies", mock.Anything).Return([]model.S3BucketWasteInfo{}, nil)
 				mockELB.On("GetUnusedLoadBalancers", mock.Anything).Return(([]elbtypes.LoadBalancer)(nil), errors.New("ELB error"))
 				mockSTS.On("GetCallerIdentity", mock.Anything).Return(&sts.GetCallerIdentityOutput{
 					Account: aws.String("123456789012"),
@@ -365,14 +377,15 @@ func TestWasteWorkflow_Error(t *testing.T) {
 			mockCost := new(services.MockCostService)
 			mockEC2 := new(services.MockEC2Service)
 			mockELB := new(services.MockELBService)
+			mockS3 := new(services.MockS3Service)
 			mockOutput := new(services.MockOutputService)
 			mockUpdate := new(services.MockUpdateService)
 
-			tt.setupMocks(mockEC2, mockELB, mockSTS)
+			tt.setupMocks(mockEC2, mockELB, mockS3, mockSTS)
 			mockOutput.On("StopSpinner").Return().Maybe()
 			mockOutput.On("RenderWaste", mock.Anything).Return(nil).Maybe()
 
-			svc := NewService(mockSTS, mockCost, mockEC2, mockELB, mockOutput, mockUpdate, model.VersionInfo{Version: "dev", Commit: "none", Date: "unknown"})
+			svc := NewService(mockSTS, mockCost, mockEC2, mockELB, mockS3, mockOutput, mockUpdate, model.VersionInfo{Version: "dev", Commit: "none", Date: "unknown"})
 			err := svc.Orchestrate(model.Flags{Waste: true, Output: "json"})
 
 			assert.Error(t, err)

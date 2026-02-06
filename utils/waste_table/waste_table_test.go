@@ -1239,3 +1239,99 @@ func TestDrawWasteTable_WithKeyPairs(t *testing.T) {
 		t.Error("DrawWasteTable() with key pairs missing key name")
 	}
 }
+
+func TestPopulateS3Rows(t *testing.T) {
+	tests := []struct {
+		name    string
+		buckets []model.S3BucketWasteInfo
+		wantLen int
+	}{
+		{
+			name:    "empty_buckets",
+			buckets: []model.S3BucketWasteInfo{},
+			wantLen: 0,
+		},
+		{
+			name: "single_bucket",
+			buckets: []model.S3BucketWasteInfo{
+				{
+					BucketName:   "test-bucket",
+					Reason:       "No lifecycle policy",
+					CreationDate: time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC),
+				},
+			},
+			wantLen: 1,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			rows := populateS3Rows(tt.buckets)
+
+			if len(rows) != tt.wantLen {
+				t.Errorf("populateS3Rows() returned %d rows, want %d", len(rows), tt.wantLen)
+			}
+
+			if tt.wantLen > 0 {
+				if len(rows[0]) != 4 {
+					t.Errorf("Row has %d columns, want 4", len(rows[0]))
+				}
+
+				if rows[0][1] != "test-bucket" {
+					t.Errorf("BucketName = %v, want 'test-bucket'", rows[0][1])
+				}
+
+				if rows[0][3] != "2024-01-01" {
+					t.Errorf("CreationDate = %v, want '2024-01-01'", rows[0][3])
+				}
+			}
+		})
+	}
+}
+
+func TestDrawS3Table(t *testing.T) {
+	buckets := []model.S3BucketWasteInfo{
+		{
+			BucketName:   "waste-bucket",
+			Reason:       "No lifecycle policy",
+			CreationDate: time.Now(),
+		},
+	}
+
+	output := captureWasteOutput(func() {
+		drawS3Table(buckets)
+	})
+
+	if !strings.Contains(output, "S3 Bucket Waste") {
+		t.Error("drawS3Table() missing title")
+	}
+
+	if !strings.Contains(output, "waste-bucket") {
+		t.Error("drawS3Table() missing bucket name")
+	}
+}
+
+func TestDrawWasteTable_WithS3Buckets(t *testing.T) {
+	buckets := []model.S3BucketWasteInfo{
+		{
+			BucketName:   "s3-waste-bucket",
+			Reason:       "No lifecycle policy",
+			CreationDate: time.Now(),
+		},
+	}
+
+	output := captureWasteOutput(func() {
+		DrawWasteTable(model.RenderWasteInput{
+			AccountID: "123456789012",
+			S3Buckets: buckets,
+		})
+	})
+
+	if !strings.Contains(output, "S3 Bucket Waste") {
+		t.Error("DrawWasteTable() with S3 buckets missing S3 section")
+	}
+
+	if !strings.Contains(output, "s3-waste-bucket") {
+		t.Error("DrawWasteTable() with S3 buckets missing bucket name")
+	}
+}

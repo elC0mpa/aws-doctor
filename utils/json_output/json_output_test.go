@@ -273,6 +273,14 @@ func TestOutputWasteJSON(t *testing.T) {
 		},
 	}
 
+	s3Buckets := []model.S3BucketWasteInfo{
+		{
+			BucketName:   "waste-bucket",
+			CreationDate: time.Now().AddDate(0, 0, -10),
+			Reason:       "No lifecycle policy",
+		},
+	}
+
 	var err error
 
 	output := captureStdout(func() {
@@ -285,6 +293,7 @@ func TestOutputWasteJSON(t *testing.T) {
 			StoppedInstances: stoppedInstances,
 			LoadBalancers:    loadBalancers,
 			UnusedKeyPairs:   unusedKeyPairs,
+			S3Buckets:        s3Buckets,
 		})
 	})
 
@@ -332,6 +341,10 @@ func TestOutputWasteJSON(t *testing.T) {
 
 	if len(result.UnusedKeyPairs) != 1 {
 		t.Errorf("UnusedKeyPairs has %d items, want 1", len(result.UnusedKeyPairs))
+	}
+
+	if len(result.S3Buckets) != 1 {
+		t.Errorf("S3Buckets has %d items, want 1", len(result.S3Buckets))
 	}
 
 	if result.UnusedKeyPairs[0].KeyName != "test-key" {

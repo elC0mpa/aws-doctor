@@ -86,6 +86,7 @@ func OutputWasteJSON(input model.RenderWasteInput) error {
 		UnusedLoadBalancers: mapLoadBalancers(input.LoadBalancers),
 		UnusedAMIs:          mapAMIs(input.UnusedAMIs),
 		UnusedKeyPairs:      mapKeyPairs(input.UnusedKeyPairs),
+		S3Buckets:           mapS3Buckets(input.S3Buckets),
 	}
 
 	output.OrphanedSnapshots, output.StaleSnapshots = mapSnapshots(input.OrphanedSnapshots)
@@ -99,9 +100,23 @@ func OutputWasteJSON(input model.RenderWasteInput) error {
 		len(output.UnusedAMIs) > 0 ||
 		len(output.OrphanedSnapshots) > 0 ||
 		len(output.StaleSnapshots) > 0 ||
-		len(output.UnusedKeyPairs) > 0
+		len(output.UnusedKeyPairs) > 0 ||
+		len(output.S3Buckets) > 0
 
 	return printJSON(output)
+}
+
+func mapS3Buckets(buckets []model.S3BucketWasteInfo) []model.S3BucketJSON {
+	var result []model.S3BucketJSON
+
+	for _, b := range buckets {
+		result = append(result, model.S3BucketJSON{
+			BucketName:   b.BucketName,
+			CreationDate: b.CreationDate.Format(time.RFC3339),
+		})
+	}
+
+	return result
 }
 
 func mapElasticIPs(elasticIPs []types.Address) []model.ElasticIPJSON {
