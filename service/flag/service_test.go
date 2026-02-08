@@ -9,14 +9,8 @@ import (
 )
 
 func TestGetParsedFlags(t *testing.T) {
-	// Reset the global flag set
-	flag.CommandLine = flag.NewFlagSet(os.Args[0], flag.ExitOnError)
-
-	// Set dummy command line arguments
-	os.Args = []string{"cmd", "-update", "-region", "us-east-1"}
-
 	svc := NewService()
-	flags, err := svc.GetParsedFlags()
+	flags, err := svc.GetParsedFlags([]string{"-update", "-region", "us-east-1"})
 
 	assert.NoError(t, err)
 	assert.True(t, flags.Update)

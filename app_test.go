@@ -24,6 +24,27 @@ func TestVersionVariablesHaveDefaults(t *testing.T) {
 	}
 }
 
+func TestRunVersionJSON(t *testing.T) {
+	err := run([]string{"--version", "--output", "json"})
+	if err != nil {
+		t.Errorf("run() with --version and --output json failed: %v", err)
+	}
+}
+
+func TestRunInvalidFlag(t *testing.T) {
+	err := run([]string{"--invalid-flag"})
+	if err == nil {
+		t.Error("run() with invalid flag should return an error")
+	}
+}
+
+func TestRunVersion(t *testing.T) {
+	err := run([]string{"--version"})
+	if err != nil {
+		t.Errorf("run() with --version failed: %v", err)
+	}
+}
+
 func TestVersionOutput(t *testing.T) {
 	// Build the binary
 	tmpBinary := t.TempDir() + "/aws-doctor-test"
