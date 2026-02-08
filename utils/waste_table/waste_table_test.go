@@ -1273,16 +1273,16 @@ func TestPopulateS3Rows(t *testing.T) {
 			}
 
 			if tt.wantLen > 0 {
-				if len(rows[0]) != 4 {
-					t.Errorf("Row has %d columns, want 4", len(rows[0]))
+				if len(rows[0]) != 3 {
+					t.Errorf("Row has %d columns, want 3", len(rows[0]))
 				}
 
 				if rows[0][1] != "test-bucket" {
 					t.Errorf("BucketName = %v, want 'test-bucket'", rows[0][1])
 				}
 
-				if rows[0][3] != "2024-01-01" {
-					t.Errorf("CreationDate = %v, want '2024-01-01'", rows[0][3])
+				if !strings.Contains(rows[0][2].(string), "2024-01-01") {
+					t.Errorf("Info = %v, want it to contain '2024-01-01'", rows[0][2])
 				}
 			}
 		})
@@ -1298,16 +1298,35 @@ func TestDrawS3Table(t *testing.T) {
 		},
 	}
 
+	multipart := []model.S3MultipartUploadWasteInfo{
+		{
+			BucketName:  "multipart-bucket",
+			UploadCount: 5,
+		},
+	}
+
 	output := captureWasteOutput(func() {
-		drawS3Table(buckets)
+		drawS3Table(buckets, multipart)
 	})
 
 	if !strings.Contains(output, "S3 Bucket Waste") {
 		t.Error("drawS3Table() missing title")
 	}
 
+	if !strings.Contains(output, "No Lifecycle Policy") {
+		t.Error("drawS3Table() missing lifecycle status")
+	}
+
+	if !strings.Contains(output, "Incomplete Multipart") {
+		t.Error("drawS3Table() missing multipart status")
+	}
+
 	if !strings.Contains(output, "waste-bucket") {
 		t.Error("drawS3Table() missing bucket name")
+	}
+
+	if !strings.Contains(output, "multipart-bucket") {
+		t.Error("drawS3Table() missing multipart bucket name")
 	}
 }
 
@@ -1333,5 +1352,81 @@ func TestDrawWasteTable_WithS3Buckets(t *testing.T) {
 
 	if !strings.Contains(output, "s3-waste-bucket") {
 		t.Error("DrawWasteTable() with S3 buckets missing bucket name")
+	}
+}
+
+func TestPopulateS3MultipartRows(t *testing.T) {
+	tests := []struct {
+		name    string
+		buckets []model.S3MultipartUploadWasteInfo
+		wantLen int
+	}{
+		{
+			name:    "empty_buckets",
+			buckets: []model.S3MultipartUploadWasteInfo{},
+			wantLen: 0,
+		},
+		{
+			name: "single_bucket",
+			buckets: []model.S3MultipartUploadWasteInfo{
+				{
+					BucketName:  "test-multipart-bucket",
+					UploadCount: 5,
+				},
+			},
+			wantLen: 1,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			rows := populateS3MultipartRows(tt.buckets)
+
+			if len(rows) != tt.wantLen {
+				t.Errorf("populateS3MultipartRows() returned %d rows, want %d", len(rows), tt.wantLen)
+			}
+
+			if tt.wantLen > 0 {
+				if len(rows[0]) != 3 {
+					t.Errorf("Row has %d columns, want 3", len(rows[0]))
+				}
+
+				if rows[0][1] != "test-multipart-bucket" {
+					t.Errorf("BucketName = %v, want 'test-multipart-bucket'", rows[0][1])
+				}
+
+				if !strings.Contains(rows[0][2].(string), "5 incomplete uploads") {
+					t.Errorf("Info = %v, want it to contain '5 incomplete uploads'", rows[0][2])
+				}
+			}
+		})
+	}
+}
+
+func TestDrawWasteTable_WithS3Multipart(t *testing.T) {
+	buckets := []model.S3MultipartUploadWasteInfo{
+		{
+			BucketName:  "s3-multipart-waste-bucket",
+			UploadCount: 3,
+		},
+	}
+
+	output := captureWasteOutput(func() {
+		DrawWasteTable(model.RenderWasteInput{
+			AccountID:          "123456789012",
+			S3MultipartUploads: buckets,
+		})
+	})
+
+	if !strings.Contains(output, "S3 Bucket Waste") {
+		t.Error("DrawWasteTable() with S3 multipart missing S3 section")
+	}
+
+	if !strings.Contains(output, "Incomplete Multipart") {
+		t.Error("DrawWasteTable() with S3 multipart missing multipart status")
+	}
+
+	if !strings.Contains(output, "s3-multipart-waste-bucket") {
+		t.Error("DrawWasteTable() with S3 multipart missing bucket name")
 	}
 }

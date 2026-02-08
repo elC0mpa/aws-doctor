@@ -28,16 +28,16 @@ var (
 )
 
 func main() {
-	if err := run(); err != nil {
+	if err := run(os.Args[1:]); err != nil {
 		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
 		os.Exit(1)
 	}
 }
 
-func run() error {
+func run(args []string) error {
 	flagService := flag.NewService()
 
-	flags, err := flagService.GetParsedFlags()
+	flags, err := flagService.GetParsedFlags(args)
 	if err != nil {
 		return fmt.Errorf("failed to parse flags: %w", err)
 	}

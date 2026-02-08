@@ -23,8 +23,10 @@ func NewService(awsconfig aws.Config) Service {
 	}
 }
 
-func (s *service) GetBucketsWithoutLifecyclePolicies(ctx context.Context) ([]model.S3BucketWasteInfo, error) {
-	var results []model.S3BucketWasteInfo
+func (s *service) GetS3Waste(ctx context.Context) ([]model.S3BucketWasteInfo, []model.S3MultipartUploadWasteInfo, error) {
+	var bucketsWithoutPolicy []model.S3BucketWasteInfo
+
+	var bucketsWithMultipart []model.S3MultipartUploadWasteInfo
 
 	var mu sync.Mutex
 
@@ -36,13 +38,17 @@ func (s *service) GetBucketsWithoutLifecyclePolicies(ctx context.Context) ([]mod
 	for paginator.HasMorePages() {
 		output, err := paginator.NextPage(ctx)
 		if err != nil {
-			return nil, fmt.Errorf("failed to list buckets: %w", err)
+			return nil, nil, fmt.Errorf("failed to list buckets: %w", err)
 		}
 
 		for _, bucket := range output.Buckets {
+			bucketName := bucket.Name
+			creationDate := bucket.CreationDate
+
 			g.Go(func() error {
+				// Check Lifecycle Policy
 				_, err := s.client.GetBucketLifecycleConfiguration(ctx, &s3.GetBucketLifecycleConfigurationInput{
-					Bucket: bucket.Name,
+					Bucket: bucketName,
 				})
 				if err != nil {
 					var apiErr smithy.APIError
@@ -50,20 +56,28 @@ func (s *service) GetBucketsWithoutLifecyclePolicies(ctx context.Context) ([]mod
 						if apiErr.ErrorCode() == "NoSuchLifecycleConfiguration" {
 							mu.Lock()
 
-							results = append(results, model.S3BucketWasteInfo{
-								BucketName:   aws.ToString(bucket.Name),
-								CreationDate: aws.ToTime(bucket.CreationDate),
+							bucketsWithoutPolicy = append(bucketsWithoutPolicy, model.S3BucketWasteInfo{
+								BucketName:   aws.ToString(bucketName),
+								CreationDate: aws.ToTime(creationDate),
 								Reason:       "No lifecycle policy",
 							})
 
 							mu.Unlock()
-
-							return nil
 						}
 					}
-					// Other errors might be permissions or connectivity issues
-					// We don't want to fail the whole process if one bucket fails.
-					return nil
+				}
+
+				// Check Incomplete Multipart Uploads
+				uploadCount, err := s.countMultipartUploads(ctx, bucketName)
+				if err == nil && uploadCount > 0 {
+					mu.Lock()
+
+					bucketsWithMultipart = append(bucketsWithMultipart, model.S3MultipartUploadWasteInfo{
+						BucketName:  aws.ToString(bucketName),
+						UploadCount: uploadCount,
+					})
+
+					mu.Unlock()
 				}
 
 				return nil
@@ -72,8 +86,27 @@ func (s *service) GetBucketsWithoutLifecyclePolicies(ctx context.Context) ([]mod
 	}
 
 	if err := g.Wait(); err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
-	return results, nil
+	return bucketsWithoutPolicy, bucketsWithMultipart, nil
+}
+
+func (s *service) countMultipartUploads(ctx context.Context, bucketName *string) (int, error) {
+	paginator := s3.NewListMultipartUploadsPaginator(s.client, &s3.ListMultipartUploadsInput{
+		Bucket: bucketName,
+	})
+
+	uploadCount := 0
+
+	for paginator.HasMorePages() {
+		output, err := paginator.NextPage(ctx)
+		if err != nil {
+			return 0, err
+		}
+
+		uploadCount += len(output.Uploads)
+	}
+
+	return uploadCount, nil
 }

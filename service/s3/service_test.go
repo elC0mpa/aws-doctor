@@ -15,51 +15,67 @@ import (
 	"github.com/stretchr/testify/mock"
 )
 
-func TestGetBucketsWithoutLifecyclePolicies(t *testing.T) {
+func TestGetS3Waste(t *testing.T) {
 	ctx := context.Background()
 	creationDate := time.Now()
 
 	tests := []struct {
-		name       string
-		setupMocks func(*awsinterfaces.MockS3Client)
-		wantCount  int
-		wantErr    bool
+		name               string
+		setupMocks         func(*awsinterfaces.MockS3Client)
+		wantBucketsCount   int
+		wantMultipartCount int
+		wantErr            bool
 	}{
 		{
-			name: "bucket without lifecycle policy",
+			name: "bucket with both types of waste",
 			setupMocks: func(m *awsinterfaces.MockS3Client) {
 				m.On("ListBuckets", mock.Anything, mock.Anything, mock.Anything).Return(&s3.ListBucketsOutput{
 					Buckets: []types.Bucket{
-						{Name: aws.String("no-policy-bucket"), CreationDate: &creationDate},
+						{Name: aws.String("waste-bucket"), CreationDate: &creationDate},
 					},
 				}, nil)
+				// Lifecycle check
 				m.On("GetBucketLifecycleConfiguration", mock.Anything, mock.Anything, mock.Anything).Return((*s3.GetBucketLifecycleConfigurationOutput)(nil), &smithy.GenericAPIError{
 					Code: "NoSuchLifecycleConfiguration",
 				})
+				// Multipart check
+				m.On("ListMultipartUploads", mock.Anything, mock.Anything, mock.Anything).Return(&s3.ListMultipartUploadsOutput{
+					Uploads: []types.MultipartUpload{
+						{UploadId: aws.String("upload-1")},
+					},
+				}, nil)
 			},
-			wantCount: 1,
-			wantErr:   false,
+			wantBucketsCount:   1,
+			wantMultipartCount: 1,
+			wantErr:            false,
 		},
 		{
-			name: "bucket with lifecycle policy",
+			name: "clean bucket",
 			setupMocks: func(m *awsinterfaces.MockS3Client) {
 				m.On("ListBuckets", mock.Anything, mock.Anything, mock.Anything).Return(&s3.ListBucketsOutput{
 					Buckets: []types.Bucket{
-						{Name: aws.String("with-policy-bucket"), CreationDate: &creationDate},
+						{Name: aws.String("clean-bucket"), CreationDate: &creationDate},
 					},
 				}, nil)
+				// Lifecycle check - success means it has policy
 				m.On("GetBucketLifecycleConfiguration", mock.Anything, mock.Anything, mock.Anything).Return(&s3.GetBucketLifecycleConfigurationOutput{}, nil)
+				// Multipart check - empty means no waste
+				m.On("ListMultipartUploads", mock.Anything, mock.Anything, mock.Anything).Return(&s3.ListMultipartUploadsOutput{
+					Uploads: []types.MultipartUpload{},
+				}, nil)
 			},
-			wantCount: 0,
-			wantErr:   false,
+			wantBucketsCount:   0,
+			wantMultipartCount: 0,
+			wantErr:            false,
 		},
 		{
 			name: "list buckets fails",
 			setupMocks: func(m *awsinterfaces.MockS3Client) {
 				m.On("ListBuckets", mock.Anything, mock.Anything, mock.Anything).Return((*s3.ListBucketsOutput)(nil), errors.New("list error"))
 			},
-			wantCount: 0,
-			wantErr:   true,
+			wantBucketsCount:   0,
+			wantMultipartCount: 0,
+			wantErr:            true,
 		},
 	}
 
@@ -69,16 +85,22 @@ func TestGetBucketsWithoutLifecyclePolicies(t *testing.T) {
 			tt.setupMocks(mockClient)
 
 			svc := &service{client: mockClient}
-			results, err := svc.GetBucketsWithoutLifecyclePolicies(ctx)
+			buckets, multiparts, err := svc.GetS3Waste(ctx)
 
 			if tt.wantErr {
 				assert.Error(t, err)
 			} else {
 				assert.NoError(t, err)
-				assert.Len(t, results, tt.wantCount)
+				assert.Len(t, buckets, tt.wantBucketsCount)
+				assert.Len(t, multiparts, tt.wantMultipartCount)
 
-				if tt.wantCount > 0 {
-					assert.Equal(t, "no-policy-bucket", results[0].BucketName)
+				if tt.wantBucketsCount > 0 {
+					assert.Equal(t, "waste-bucket", buckets[0].BucketName)
+				}
+
+				if tt.wantMultipartCount > 0 {
+					assert.Equal(t, "waste-bucket", multiparts[0].BucketName)
+					assert.Equal(t, 1, multiparts[0].UploadCount)
 				}
 			}
 

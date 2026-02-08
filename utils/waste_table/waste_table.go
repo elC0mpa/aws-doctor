@@ -42,7 +42,8 @@ func hasAnyWaste(input model.RenderWasteInput) bool {
 		len(input.UnusedAMIs) > 0 ||
 		len(input.OrphanedSnapshots) > 0 ||
 		len(input.UnusedKeyPairs) > 0 ||
-		len(input.S3Buckets) > 0
+		len(input.S3Buckets) > 0 ||
+		len(input.S3MultipartUploads) > 0
 }
 
 func drawWasteSections(input model.RenderWasteInput) {
@@ -62,8 +63,8 @@ func drawWasteSections(input model.RenderWasteInput) {
 		drawLoadBalancerTable(input.LoadBalancers)
 	}
 
-	if len(input.S3Buckets) > 0 {
-		drawS3Table(input.S3Buckets)
+	if len(input.S3Buckets) > 0 || len(input.S3MultipartUploads) > 0 {
+		drawS3Table(input.S3Buckets, input.S3MultipartUploads)
 	}
 
 	if len(input.UnusedAMIs) > 0 {
@@ -508,23 +509,42 @@ func populateKeyPairRows(keyPairs []model.KeyPairWasteInfo) []table.Row {
 	return rows
 }
 
-func drawS3Table(buckets []model.S3BucketWasteInfo) {
+func drawS3Table(buckets []model.S3BucketWasteInfo, multipartBuckets []model.S3MultipartUploadWasteInfo) {
 	t := table.NewWriter()
 	t.SetOutputMirror(os.Stdout)
 	t.SetStyle(table.StyleRounded)
 	t.SetTitle("S3 Bucket Waste")
 
-	t.AppendHeader(table.Row{"Status", "Bucket Name", "Reason", "Creation Date"})
+	t.AppendHeader(table.Row{"Status", "Bucket Name", "Info"})
 
-	statusUnused := "No Lifecycle Policy"
-	rows := populateS3Rows(buckets)
+	var hasPreviousRows bool
 
-	if len(rows) > 0 {
+	if len(buckets) > 0 {
+		statusLabel := "No Lifecycle Policy"
+		rows := populateS3Rows(buckets)
+
 		halfRow := len(rows) / 2
-		rows[halfRow][0] = text.FgHiRed.Sprint(statusUnused)
+		rows[halfRow][0] = text.FgHiRed.Sprint(statusLabel)
+
+		t.AppendRows(rows)
+
+		hasPreviousRows = true
 	}
 
-	t.AppendRows(rows)
+	if len(multipartBuckets) > 0 {
+		if hasPreviousRows {
+			t.AppendSeparator()
+		}
+
+		statusLabel := "Incomplete Multipart"
+		rows := populateS3MultipartRows(multipartBuckets)
+
+		halfRow := len(rows) / 2
+		rows[halfRow][0] = text.FgHiRed.Sprint(statusLabel)
+
+		t.AppendRows(rows)
+	}
+
 	t.Render()
 	fmt.Println()
 }
@@ -536,8 +556,21 @@ func populateS3Rows(buckets []model.S3BucketWasteInfo) []table.Row {
 		rows = append(rows, table.Row{
 			"",
 			bucket.BucketName,
-			bucket.Reason,
-			bucket.CreationDate.Format("2006-01-02"),
+			fmt.Sprintf("Created on %s", bucket.CreationDate.Format("2006-01-02")),
+		})
+	}
+
+	return rows
+}
+
+func populateS3MultipartRows(buckets []model.S3MultipartUploadWasteInfo) []table.Row {
+	var rows []table.Row
+
+	for _, bucket := range buckets {
+		rows = append(rows, table.Row{
+			"",
+			bucket.BucketName,
+			fmt.Sprintf("%d incomplete uploads", bucket.UploadCount),
 		})
 	}
 

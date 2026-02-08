@@ -142,6 +142,7 @@ func (s *service) wasteWorkflow() error {
 		orphanedSnapshots                        []model.SnapshotWasteInfo
 		unusedKeyPairs                           []model.KeyPairWasteInfo
 		s3Buckets                                []model.S3BucketWasteInfo
+		s3MultipartUploads                       []model.S3MultipartUploadWasteInfo
 		stsResult                                *sts.GetCallerIdentityOutput
 	)
 
@@ -226,11 +227,11 @@ func (s *service) wasteWorkflow() error {
 		return err
 	})
 
-	// Fetch S3 buckets without lifecycle policies concurrently
+	// Fetch S3 waste concurrently
 	g.Go(func() error {
 		var err error
 
-		s3Buckets, err = s.s3Service.GetBucketsWithoutLifecyclePolicies(ctx)
+		s3Buckets, s3MultipartUploads, err = s.s3Service.GetS3Waste(ctx)
 
 		return err
 	})
@@ -243,17 +244,18 @@ func (s *service) wasteWorkflow() error {
 	s.outputService.StopSpinner()
 
 	input := model.RenderWasteInput{
-		AccountID:         *stsResult.Account,
-		ElasticIPs:        elasticIPInfo,
-		UnusedVolumes:     availableEBSVolumesInfo,
-		StoppedVolumes:    attachedToStoppedInstancesEBSVolumesInfo,
-		Ris:               expireReservedInstancesInfo,
-		StoppedInstances:  stoppedInstancesMoreThan30Days,
-		LoadBalancers:     unusedLoadBalancers,
-		UnusedAMIs:        unusedAMIs,
-		OrphanedSnapshots: orphanedSnapshots,
-		UnusedKeyPairs:    unusedKeyPairs,
-		S3Buckets:         s3Buckets,
+		AccountID:          *stsResult.Account,
+		ElasticIPs:         elasticIPInfo,
+		UnusedVolumes:      availableEBSVolumesInfo,
+		StoppedVolumes:     attachedToStoppedInstancesEBSVolumesInfo,
+		Ris:                expireReservedInstancesInfo,
+		StoppedInstances:   stoppedInstancesMoreThan30Days,
+		LoadBalancers:      unusedLoadBalancers,
+		UnusedAMIs:         unusedAMIs,
+		OrphanedSnapshots:  orphanedSnapshots,
+		UnusedKeyPairs:     unusedKeyPairs,
+		S3Buckets:          s3Buckets,
+		S3MultipartUploads: s3MultipartUploads,
 	}
 
 	return s.outputService.RenderWaste(input)

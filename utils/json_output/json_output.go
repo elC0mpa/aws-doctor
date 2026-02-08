@@ -87,6 +87,7 @@ func OutputWasteJSON(input model.RenderWasteInput) error {
 		UnusedAMIs:          mapAMIs(input.UnusedAMIs),
 		UnusedKeyPairs:      mapKeyPairs(input.UnusedKeyPairs),
 		S3Buckets:           mapS3Buckets(input.S3Buckets),
+		S3MultipartUploads:  mapS3MultipartUploads(input.S3MultipartUploads),
 	}
 
 	output.OrphanedSnapshots, output.StaleSnapshots = mapSnapshots(input.OrphanedSnapshots)
@@ -101,7 +102,8 @@ func OutputWasteJSON(input model.RenderWasteInput) error {
 		len(output.OrphanedSnapshots) > 0 ||
 		len(output.StaleSnapshots) > 0 ||
 		len(output.UnusedKeyPairs) > 0 ||
-		len(output.S3Buckets) > 0
+		len(output.S3Buckets) > 0 ||
+		len(output.S3MultipartUploads) > 0
 
 	return printJSON(output)
 }
@@ -114,6 +116,16 @@ func mapS3Buckets(buckets []model.S3BucketWasteInfo) []model.S3BucketJSON {
 			BucketName:   b.BucketName,
 			CreationDate: b.CreationDate.Format(time.RFC3339),
 		})
+	}
+
+	return result
+}
+
+func mapS3MultipartUploads(buckets []model.S3MultipartUploadWasteInfo) []model.S3MultipartJSON {
+	var result []model.S3MultipartJSON
+
+	for _, b := range buckets {
+		result = append(result, model.S3MultipartJSON(b))
 	}
 
 	return result

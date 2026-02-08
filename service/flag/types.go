@@ -6,5 +6,5 @@ type service struct{}
 
 // Service is the interface for CLI flag service.
 type Service interface {
-	GetParsedFlags() (model.Flags, error)
+	GetParsedFlags(args []string) (model.Flags, error)
 }

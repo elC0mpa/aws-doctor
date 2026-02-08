@@ -95,6 +95,7 @@ Available platforms:
   - [x] Stale EBS Snapshots (created more than 90 days ago, source volume exists and not used by any AMI).
   - [x] Unused EC2 Key Pairs (not associated with any running or stopped instance).
   - [x] S3 Buckets without lifecycle policies.
+  - [x] S3 Buckets with incomplete multipart uploads.
   - [ ] Inactive VPC interface endpoints.
   - [ ] Inactive NAT Gateways.
   - [ ] Idle Load Balancers.

@@ -62,12 +62,19 @@ type WasteReportJSON struct {
 	StaleSnapshots      []SnapshotJSON         `json:"stale_snapshots"`
 	UnusedKeyPairs      []KeyPairJSON          `json:"unused_key_pairs"`
 	S3Buckets           []S3BucketJSON         `json:"s3_buckets_without_lifecycle"`
+	S3MultipartUploads  []S3MultipartJSON      `json:"s3_buckets_with_incomplete_multipart_uploads"`
 }
 
 // S3BucketJSON represents an S3 bucket without lifecycle policy
 type S3BucketJSON struct {
 	BucketName   string `json:"bucket_name"`
 	CreationDate string `json:"creation_date"`
+}
+
+// S3MultipartJSON represents an S3 bucket with incomplete multipart uploads
+type S3MultipartJSON struct {
+	BucketName  string `json:"bucket_name"`
+	UploadCount int    `json:"upload_count"`
 }
 
 // ElasticIPJSON represents an unused Elastic IP
@@ -147,17 +154,18 @@ type KeyPairJSON struct {
 
 // RenderWasteInput represents the input data for rendering the waste report
 type RenderWasteInput struct {
-	AccountID         string
-	ElasticIPs        []types.Address
-	UnusedVolumes     []types.Volume
-	StoppedVolumes    []types.Volume
-	Ris               []RiExpirationInfo
-	StoppedInstances  []types.Instance
-	LoadBalancers     []elbtypes.LoadBalancer
-	UnusedAMIs        []AMIWasteInfo
-	OrphanedSnapshots []SnapshotWasteInfo
-	UnusedKeyPairs    []KeyPairWasteInfo
-	S3Buckets         []S3BucketWasteInfo
+	AccountID          string
+	ElasticIPs         []types.Address
+	UnusedVolumes      []types.Volume
+	StoppedVolumes     []types.Volume
+	Ris                []RiExpirationInfo
+	StoppedInstances   []types.Instance
+	LoadBalancers      []elbtypes.LoadBalancer
+	UnusedAMIs         []AMIWasteInfo
+	OrphanedSnapshots  []SnapshotWasteInfo
+	UnusedKeyPairs     []KeyPairWasteInfo
+	S3Buckets          []S3BucketWasteInfo
+	S3MultipartUploads []S3MultipartUploadWasteInfo
 }
 
 // RenderCostComparisonInput represents the input data for rendering the cost comparison report

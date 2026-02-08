@@ -11,6 +11,7 @@ import (
 type ClientAPI interface {
 	ListBuckets(ctx context.Context, params *s3.ListBucketsInput, optFns ...func(*s3.Options)) (*s3.ListBucketsOutput, error)
 	GetBucketLifecycleConfiguration(ctx context.Context, params *s3.GetBucketLifecycleConfigurationInput, optFns ...func(*s3.Options)) (*s3.GetBucketLifecycleConfigurationOutput, error)
+	ListMultipartUploads(ctx context.Context, params *s3.ListMultipartUploadsInput, optFns ...func(*s3.Options)) (*s3.ListMultipartUploadsOutput, error)
 }
 
 type service struct {
@@ -19,5 +20,5 @@ type service struct {
 
 // Service is the interface for AWS S3 service.
 type Service interface {
-	GetBucketsWithoutLifecyclePolicies(ctx context.Context) ([]model.S3BucketWasteInfo, error)
+	GetS3Waste(ctx context.Context) ([]model.S3BucketWasteInfo, []model.S3MultipartUploadWasteInfo, error)
 }

@@ -281,19 +281,27 @@ func TestOutputWasteJSON(t *testing.T) {
 		},
 	}
 
+	s3Multipart := []model.S3MultipartUploadWasteInfo{
+		{
+			BucketName:  "multipart-bucket",
+			UploadCount: 5,
+		},
+	}
+
 	var err error
 
 	output := captureStdout(func() {
 		err = OutputWasteJSON(model.RenderWasteInput{
-			AccountID:        "123456789012",
-			ElasticIPs:       elasticIPs,
-			UnusedVolumes:    unusedVolumes,
-			StoppedVolumes:   stoppedVolumes,
-			Ris:              ris,
-			StoppedInstances: stoppedInstances,
-			LoadBalancers:    loadBalancers,
-			UnusedKeyPairs:   unusedKeyPairs,
-			S3Buckets:        s3Buckets,
+			AccountID:          "123456789012",
+			ElasticIPs:         elasticIPs,
+			UnusedVolumes:      unusedVolumes,
+			StoppedVolumes:     stoppedVolumes,
+			Ris:                ris,
+			StoppedInstances:   stoppedInstances,
+			LoadBalancers:      loadBalancers,
+			UnusedKeyPairs:     unusedKeyPairs,
+			S3Buckets:          s3Buckets,
+			S3MultipartUploads: s3Multipart,
 		})
 	})
 
@@ -345,6 +353,10 @@ func TestOutputWasteJSON(t *testing.T) {
 
 	if len(result.S3Buckets) != 1 {
 		t.Errorf("S3Buckets has %d items, want 1", len(result.S3Buckets))
+	}
+
+	if len(result.S3MultipartUploads) != 1 {
+		t.Errorf("S3MultipartUploads has %d items, want 1", len(result.S3MultipartUploads))
 	}
 
 	if result.UnusedKeyPairs[0].KeyName != "test-key" {

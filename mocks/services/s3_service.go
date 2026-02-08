@@ -12,12 +12,12 @@ type MockS3Service struct {
 	mock.Mock
 }
 
-// GetBucketsWithoutLifecyclePolicies mocks the GetBucketsWithoutLifecyclePolicies method.
-func (m *MockS3Service) GetBucketsWithoutLifecyclePolicies(ctx context.Context) ([]model.S3BucketWasteInfo, error) {
+// GetS3Waste mocks the GetS3Waste method.
+func (m *MockS3Service) GetS3Waste(ctx context.Context) ([]model.S3BucketWasteInfo, []model.S3MultipartUploadWasteInfo, error) {
 	args := m.Called(ctx)
-	if args.Get(0) == nil {
-		return nil, args.Error(1)
-	}
 
-	return args.Get(0).([]model.S3BucketWasteInfo), args.Error(1)
+	buckets, _ := args.Get(0).([]model.S3BucketWasteInfo)
+	multiparts, _ := args.Get(1).([]model.S3MultipartUploadWasteInfo)
+
+	return buckets, multiparts, args.Error(2)
 }
