@@ -31,3 +31,13 @@ func (m *MockS3Client) GetBucketLifecycleConfiguration(ctx context.Context, para
 
 	return args.Get(0).(*s3.GetBucketLifecycleConfigurationOutput), args.Error(1)
 }
+
+// ListMultipartUploads mocks the ListMultipartUploads API call.
+func (m *MockS3Client) ListMultipartUploads(ctx context.Context, params *s3.ListMultipartUploadsInput, optFns ...func(*s3.Options)) (*s3.ListMultipartUploadsOutput, error) {
+	args := m.Called(ctx, params, optFns)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+
+	return args.Get(0).(*s3.ListMultipartUploadsOutput), args.Error(1)
+}

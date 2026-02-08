@@ -8,3 +8,9 @@ type S3BucketWasteInfo struct {
 	CreationDate time.Time
 	Reason       string
 }
+
+// S3MultipartUploadWasteInfo represents information about an S3 bucket that has incomplete multipart uploads.
+type S3MultipartUploadWasteInfo struct {
+	BucketName  string
+	UploadCount int
+}
