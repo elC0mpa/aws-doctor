@@ -20,11 +20,11 @@ func TestGetS3Waste(t *testing.T) {
 	creationDate := time.Now()
 
 	tests := []struct {
-		name                 string
-		setupMocks           func(*awsinterfaces.MockS3Client)
-		wantBucketsCount     int
-		wantMultipartCount   int
-		wantErr              bool
+		name               string
+		setupMocks         func(*awsinterfaces.MockS3Client)
+		wantBucketsCount   int
+		wantMultipartCount int
+		wantErr            bool
 	}{
 		{
 			name: "bucket with both types of waste",
@@ -97,6 +97,7 @@ func TestGetS3Waste(t *testing.T) {
 				if tt.wantBucketsCount > 0 {
 					assert.Equal(t, "waste-bucket", buckets[0].BucketName)
 				}
+
 				if tt.wantMultipartCount > 0 {
 					assert.Equal(t, "waste-bucket", multiparts[0].BucketName)
 					assert.Equal(t, 1, multiparts[0].UploadCount)

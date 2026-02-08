@@ -154,17 +154,17 @@ type KeyPairJSON struct {
 
 // RenderWasteInput represents the input data for rendering the waste report
 type RenderWasteInput struct {
-	AccountID         string
-	ElasticIPs        []types.Address
-	UnusedVolumes     []types.Volume
-	StoppedVolumes    []types.Volume
-	Ris               []RiExpirationInfo
-	StoppedInstances  []types.Instance
-	LoadBalancers     []elbtypes.LoadBalancer
-	UnusedAMIs        []AMIWasteInfo
-	OrphanedSnapshots []SnapshotWasteInfo
-	UnusedKeyPairs    []KeyPairWasteInfo
-	S3Buckets         []S3BucketWasteInfo
+	AccountID          string
+	ElasticIPs         []types.Address
+	UnusedVolumes      []types.Volume
+	StoppedVolumes     []types.Volume
+	Ris                []RiExpirationInfo
+	StoppedInstances   []types.Instance
+	LoadBalancers      []elbtypes.LoadBalancer
+	UnusedAMIs         []AMIWasteInfo
+	OrphanedSnapshots  []SnapshotWasteInfo
+	UnusedKeyPairs     []KeyPairWasteInfo
+	S3Buckets          []S3BucketWasteInfo
 	S3MultipartUploads []S3MultipartUploadWasteInfo
 }
 

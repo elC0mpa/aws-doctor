@@ -125,10 +125,7 @@ func mapS3MultipartUploads(buckets []model.S3MultipartUploadWasteInfo) []model.S
 	var result []model.S3MultipartJSON
 
 	for _, b := range buckets {
-		result = append(result, model.S3MultipartJSON{
-			BucketName:  b.BucketName,
-			UploadCount: b.UploadCount,
-		})
+		result = append(result, model.S3MultipartJSON(b))
 	}
 
 	return result

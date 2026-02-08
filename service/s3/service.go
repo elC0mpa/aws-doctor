@@ -25,6 +25,7 @@ func NewService(awsconfig aws.Config) Service {
 
 func (s *service) GetS3Waste(ctx context.Context) ([]model.S3BucketWasteInfo, []model.S3MultipartUploadWasteInfo, error) {
 	var bucketsWithoutPolicy []model.S3BucketWasteInfo
+
 	var bucketsWithMultipart []model.S3MultipartUploadWasteInfo
 
 	var mu sync.Mutex
@@ -97,11 +98,13 @@ func (s *service) countMultipartUploads(ctx context.Context, bucketName *string)
 	})
 
 	uploadCount := 0
+
 	for paginator.HasMorePages() {
 		output, err := paginator.NextPage(ctx)
 		if err != nil {
 			return 0, err
 		}
+
 		uploadCount += len(output.Uploads)
 	}
 

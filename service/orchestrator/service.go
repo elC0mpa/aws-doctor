@@ -244,17 +244,17 @@ func (s *service) wasteWorkflow() error {
 	s.outputService.StopSpinner()
 
 	input := model.RenderWasteInput{
-		AccountID:         *stsResult.Account,
-		ElasticIPs:        elasticIPInfo,
-		UnusedVolumes:     availableEBSVolumesInfo,
-		StoppedVolumes:    attachedToStoppedInstancesEBSVolumesInfo,
-		Ris:               expireReservedInstancesInfo,
-		StoppedInstances:  stoppedInstancesMoreThan30Days,
-		LoadBalancers:     unusedLoadBalancers,
-		UnusedAMIs:        unusedAMIs,
-		OrphanedSnapshots: orphanedSnapshots,
-		UnusedKeyPairs:    unusedKeyPairs,
-		S3Buckets:         s3Buckets,
+		AccountID:          *stsResult.Account,
+		ElasticIPs:         elasticIPInfo,
+		UnusedVolumes:      availableEBSVolumesInfo,
+		StoppedVolumes:     attachedToStoppedInstancesEBSVolumesInfo,
+		Ris:                expireReservedInstancesInfo,
+		StoppedInstances:   stoppedInstancesMoreThan30Days,
+		LoadBalancers:      unusedLoadBalancers,
+		UnusedAMIs:         unusedAMIs,
+		OrphanedSnapshots:  orphanedSnapshots,
+		UnusedKeyPairs:     unusedKeyPairs,
+		S3Buckets:          s3Buckets,
 		S3MultipartUploads: s3MultipartUploads,
 	}
 

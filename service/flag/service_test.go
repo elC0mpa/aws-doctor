@@ -1,8 +1,6 @@
 package flag
 
 import (
-	"flag"
-	"os"
 	"testing"
 
 	"github.com/stretchr/testify/assert"

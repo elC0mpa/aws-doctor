@@ -527,6 +527,7 @@ func drawS3Table(buckets []model.S3BucketWasteInfo, multipartBuckets []model.S3M
 		rows[halfRow][0] = text.FgHiRed.Sprint(statusLabel)
 
 		t.AppendRows(rows)
+
 		hasPreviousRows = true
 	}
 
