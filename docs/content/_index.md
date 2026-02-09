@@ -39,21 +39,21 @@ layout: "hextra-home"
 
 {{< hextra/feature-grid cols="3" >}}
   {{< hextra/feature-card
-    icon="currency-dollar"
-    title="Speed & Efficiency"
-    subtitle="Built in Go for lightning-fast execution. Audit large multi-region environments in seconds and get immediate feedback on your cloud health."
+    icon="trending-up"
+    title="Comparative Cost Analytics"
+    subtitle="Gain a fair assessment of your spending velocity. AWS Doctor compares your current month's costs against the exact same period in the previous month (e.g., 1st–10th), allowing you to spot anomalies and spikes in real-time."
   >}}
 
   {{< hextra/feature-card
-    icon="currency-dollar"
-    title="Cost Optimization"
-    subtitle="Identify underutilized resources, optimize S3 storage, and uncover hidden costs. AWS Doctor helps you keep your cloud bill under control."
+    icon="trash"
+    title="Zombie Resource Discovery"
+    subtitle="Get a high-level health check of your entire AWS account. The tool scans multiple services simultaneously to identify idle, unattached, and forgotten resources, providing a unified view of infrastructure waste in seconds."
   >}}
 
   {{< hextra/feature-card
-    title="One-Command Audit"
-    link="/docs/"
-    subtitle="Run <code>aws-doctor</code> and get a comprehensive report of your infrastructure including cost trends and waste detection."
+    icon="terminal"
+    title="Flexible Output Formats"
+    subtitle="Choose the format that fits your workflow. Use rich terminal tables for quick manual audits, or generate structured JSON output to feed data into your CI/CD pipelines, custom dashboards, and automation scripts."
   >}}
 {{< /hextra/feature-grid >}}
 
