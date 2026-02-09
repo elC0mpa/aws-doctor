@@ -10,7 +10,7 @@ layout: "hextra-home"
 >}}
 {{< hextra/hero-badge link="https://github.com/elC0mpa/aws-doctor/releases" >}}
   <div class="hx-w-2 hx-h-2 hx-rounded-full hx-bg-primary-400"></div>
-  <span>Latest version: v1.6.0</span>
+  <span>Latest version: {{< latest-version >}}</span>
   {{< icon name="arrow-circle-right" attributes="height=14" >}}
 {{< /hextra/hero-badge >}}
 
@@ -22,7 +22,7 @@ layout: "hextra-home"
 
 <div class="hx:mt-6 hx-mb-6">
 {{< hextra/hero-subtitle >}}
-  A powerful, open-source CLI tool to identify security risks, cost optimizations, and operational best practices in your cloud environment.
+  Powerful open-source CLI to audit security, costs, and best practices in AWS.
 {{< /hextra/hero-subtitle >}}
 </div>
 
@@ -93,3 +93,5 @@ layout: "hextra-home"
     subtitle="Full support for MFA-protected roles and proactive IAM credential audits."
   >}}
 {{< /hextra/feature-grid >}}
+
+<div class="hx:mt-16"></div>
