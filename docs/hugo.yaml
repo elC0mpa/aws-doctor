@@ -17,6 +17,7 @@ params:
     displayCopyright: true
   theme:
     default: system
+    displayToggle: false
 
 markup:
   goldmark:
@@ -29,7 +30,11 @@ menu:
       url: "/docs/"
       weight: 10
     - name: "GitHub"
-      url: "https://github.com/elcompa/aws-doctor"
+      url: "https://github.com/elC0mpa/aws-doctor"
       weight: 20
       params:
         icon: github
+    - name: "Theme Toggle"
+      weight: 30
+      params:
+        type: theme-toggle

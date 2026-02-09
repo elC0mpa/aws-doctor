@@ -14,19 +14,19 @@ layout: "hextra-home"
   {{< icon name="arrow-circle-right" attributes="height=14" >}}
 {{< /hextra/hero-badge >}}
 
-<div class="hx-mt-6 hx-mb-6 hx:mt-4">
+<div class="hx-mt-6 hx-mb-6 hx:mt-6">
 {{< hextra/hero-headline >}}
   AWS Doctor
 {{< /hextra/hero-headline >}}
 </div>
 
-<div class="hx-mt-4 hx-mb-6">
+<div class="hx:mt-6 hx-mb-6">
 {{< hextra/hero-subtitle >}}
   A powerful, open-source CLI tool to identify security risks, cost optimizations, and operational best practices in your cloud environment.
 {{< /hextra/hero-subtitle >}}
 </div>
 
-<div class="hx:mt-4 hx:flex hx:gap-x-2">
+<div class="hx:mt-6 hx:flex hx:gap-x-2">
 {{< hextra/hero-button text="Get Started" link="docs/" >}}
 {{< hextra/hero-badge style="padding: 13px 12px !important; font-size: .875rem !important;" link="https://github.com/elC0mpa/aws-doctor" >}}
   <span>View on GitHub <img class="not-prose" style="display: inline; height: 22px; margin-left: 8px;" src='https://img.shields.io/github/stars/elC0mpa/aws-doctor?style=social'/></span>
@@ -35,7 +35,13 @@ layout: "hextra-home"
 </div>
 {{< /hextra/hero-container >}}
 
-<div class="hx:mt-16"></div>
+<div class="hx:mt-12"></div>
+
+{{< hextra/hero-section >}}
+  Core Features
+{{< /hextra/hero-section >}}
+
+<div class="hx:mt-4"></div>
 
 {{< hextra/feature-grid cols="3" >}}
   {{< hextra/feature-card
@@ -60,42 +66,30 @@ layout: "hextra-home"
 <div class="hx:mt-16"></div>
 
 {{< hextra/hero-section >}}
-  Virtual Tour
+  Instant Infrastructure Audit
 {{< /hextra/hero-section >}}
 
-{{< columns cols="2" >}}
-  {{< column
-      title="Ongoing Cost Comparison"
-      border="true"
-      image="/images/demo/basic.gif"
-  >}}
-    Fair assessment of spending velocity by comparing the current month against the previous period. Spot spikes and anomalies instantly.
-  {{< /column >}}
+<div class="hx:mt-4"></div>
 
-  {{< column
-      title="6-Month Trend Analysis"
-      border="true"
-      image="/images/demo/trend.gif"
+{{< hextra/feature-grid cols="4" >}}
+  {{< hextra/feature-card
+    icon="server"
+    title="Compute & EBS"
+    subtitle="Detect idle EC2 instances, unattached EBS volumes, and orphaned snapshots."
   >}}
-    Visualize cost history to spot long-term anomalies and infrastructure trends. Understand your growth patterns over time.
-  {{< /column >}}
-
-  {{< column
-      title="Intelligent Waste Detection"
-      border="true"
-      image="/images/demo/waste.gif"
+  {{< hextra/feature-card
+    icon="archive"
+    title="S3 Storage"
+    subtitle="Audit buckets without lifecycle policies and cleanup abandoned multipart uploads."
   >}}
-    Scans your account for 'zombie' resources like unattached volumes, idle instances, and abandoned S3 multipart uploads.
-  {{< /column >}}
-
-  {{< column
-      title="Multi-Service Support"
-      border="true"
-      image="/images/logo.webp"
-      imageStyle="width: 128px; margin: 2rem auto;"
+  {{< hextra/feature-card
+    icon="share"
+    title="Networking"
+    subtitle="Identify unassociated Elastic IPs and Load Balancers without healthy targets."
   >}}
-    Comprehensive support for EC2, EBS, S3, ELB, and more. One tool to provide a bird's-eye view of your entire AWS infrastructure.
-  {{< /column >}}
-{{< /columns >}}
-
-<div class="hx-mt-20"></div>
+  {{< hextra/feature-card
+    icon="key"
+    title="Security & IAM"
+    subtitle="Full support for MFA-protected roles and proactive IAM credential audits."
+  >}}
+{{< /hextra/feature-grid >}}
