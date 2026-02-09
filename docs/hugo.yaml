@@ -1,10 +1,57 @@
 baseURL: "https://elcompa.github.io/aws-doctor/"
-languageCode: "en-us"
 title: "AWS Doctor"
 
 module:
   imports:
     - path: github.com/imfing/hextra
+
+defaultContentLanguage: en
+languages:
+  en:
+    languageName: English
+    languageCode: en-us
+    weight: 1
+    menu:
+      main:
+        - name: "Documentation"
+          url: "/docs/"
+          weight: 10
+        - name: "GitHub"
+          url: "https://github.com/elC0mpa/aws-doctor"
+          weight: 20
+          params:
+            icon: github
+        - name: "Theme Toggle"
+          weight: 30
+          params:
+            type: theme-toggle
+        - name: "Language"
+          weight: 40
+          params:
+            type: language-switch
+  es:
+    languageName: Español
+    languageCode: es-es
+    weight: 2
+    title: "AWS Doctor"
+    menu:
+      main:
+        - name: "Documentación"
+          url: "/docs/"
+          weight: 10
+        - name: "GitHub"
+          url: "https://github.com/elC0mpa/aws-doctor"
+          weight: 20
+          params:
+            icon: github
+        - name: "Cambiar Tema"
+          weight: 30
+          params:
+            type: theme-toggle
+        - name: "Idioma"
+          weight: 40
+          params:
+            type: language-switch
 
 params:
   navbar:
@@ -23,18 +70,3 @@ markup:
   goldmark:
     renderer:
       unsafe: true
-
-menu:
-  main:
-    - name: "Documentation"
-      url: "/docs/"
-      weight: 10
-    - name: "GitHub"
-      url: "https://github.com/elC0mpa/aws-doctor"
-      weight: 20
-      params:
-        icon: github
-    - name: "Theme Toggle"
-      weight: 30
-      params:
-        type: theme-toggle
