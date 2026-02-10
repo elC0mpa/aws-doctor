@@ -94,3 +94,28 @@ layout: "hextra-home"
     subtitle="Identifica IPs Elásticas sin asociar y Load Balancers sin objetivos saludables."
   >}}
 {{< /hextra/feature-grid >}}
+
+<div class="hx:mt-16"></div>
+
+{{< hextra/hero-section >}}
+  Únete a la Comunidad
+{{< /hextra/hero-section >}}
+
+{{< repo-stats contribLabel="Colaboradores" forksLabel="Forks" >}}
+
+{{< hextra/feature-grid cols="2" >}}
+  {{< hextra/feature-card
+    icon="terminal"
+    title="Reportar Errores"
+    subtitle="¿Encontraste un error o tienes una idea para una nueva regla? Ayúdanos a mejorar la herramienta abriendo un issue en GitHub."
+    link="https://github.com/elC0mpa/aws-doctor/issues"
+  >}}
+  {{< hextra/feature-card
+    icon="github"
+    title="Contribuir Código"
+    subtitle="¿Listo para contribuir? Aceptamos PRs para nuevas funciones, correcciones y documentación."
+    link="https://github.com/elC0mpa/aws-doctor/pulls"
+  >}}
+{{< /hextra/feature-grid >}}
+
+<div class="hx:mt-24"></div>

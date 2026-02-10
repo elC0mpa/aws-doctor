@@ -1,0 +1,48 @@
+{{- $repo := "elC0mpa/aws-doctor" -}}
+{{- $repoUrl := printf "https://api.github.com/repos/%s" $repo -}}
+{{- $opts := dict "headers" (dict "User-Agent" "Hugo-Hextra") -}}
+
+{{- /* Fetch Repo Data (Forks) */ -}}
+{{- $forks := 0 -}}
+{{- $repoRes := resources.GetRemote $repoUrl $opts -}}
+{{- if $repoRes -}}
+  {{- $data := $repoRes | transform.Unmarshal -}}
+  {{- if $data -}}
+    {{- $forks = index $data "forks_count" | default 0 -}}
+  {{- end -}}
+{{- end -}}
+
+{{- /* Fetch Contributors Count */ -}}
+{{- $contributors := 1 -}}
+{{- $contribUrl := printf "https://api.github.com/repos/%s/contributors" $repo -}}
+{{- $contribRes := resources.GetRemote $contribUrl $opts -}}
+{{- if $contribRes -}}
+  {{- $data := $contribRes | transform.Unmarshal -}}
+  {{- if reflect.IsSlice $data -}}
+    {{- $contributors = len $data -}}
+  {{- end -}}
+{{- end -}}
+
+{{- /* Labels */ -}}
+{{- $contribLabel := .contribLabel | default "Contributors" -}}
+{{- $forksLabel := .forksLabel | default "Forks" -}}
+
+<div style="display: flex; justify-content: center; align-items: center; gap: 1.5rem; margin: 2rem auto 3rem; padding: 0.75rem 1.5rem; background: rgba(128, 128, 128, 0.05); border: 1px solid rgba(128, 128, 128, 0.1); border-radius: 9999px; width: max-content;">
+  <div style="display: flex; align-items: center; gap: 0.5rem;">
+    <div style="color: #0070f3; display: flex; align-items: center;">
+      <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+    </div>
+    <span style="font-weight: 700; font-size: 1.1rem;">{{ $contributors }}</span>
+    <span style="font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; opacity: 0.6; font-weight: 600;">{{ $contribLabel }}</span>
+  </div>
+  
+  <div style="width: 1px; height: 1.25rem; background: rgba(128, 128, 128, 0.2);"></div>
+
+  <div style="display: flex; align-items: center; gap: 0.5rem;">
+    <div style="color: #0070f3; display: flex; align-items: center;">
+      <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="18" r="3"></circle><circle cx="6" cy="6" r="3"></circle><circle cx="18" cy="6" r="3"></circle><path d="M18 9v2c0 .6-.4 1-1 1H7c-.6 0-1-.4-1-1V9"></path><path d="M12 12v3"></path></svg>
+    </div>
+    <span style="font-weight: 700; font-size: 1.1rem;">{{ $forks }}</span>
+    <span style="font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; opacity: 0.6; font-weight: 600;">{{ $forksLabel }}</span>
+  </div>
+</div>

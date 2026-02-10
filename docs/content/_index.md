@@ -97,3 +97,26 @@ layout: "hextra-home"
 {{< /hextra/feature-grid >}}
 
 <div class="hx:mt-16"></div>
+
+{{< hextra/hero-section >}}
+  Join the Community
+{{< /hextra/hero-section >}}
+
+{{< repo-stats >}}
+
+{{< hextra/feature-grid cols="2" >}}
+  {{< hextra/feature-card
+    icon="terminal"
+    title="Report Issues"
+    subtitle="Found a bug or have an idea for a new detection rule? Help us improve the tool by opening an issue on GitHub."
+    link="https://github.com/elC0mpa/aws-doctor/issues"
+  >}}
+  {{< hextra/feature-card
+    icon="github"
+    title="Contribute Code"
+    subtitle="Ready to contribute? We welcome PRs for new features, bug fixes, and documentation improvements."
+    link="https://github.com/elC0mpa/aws-doctor/pulls"
+  >}}
+{{< /hextra/feature-grid >}}
+
+<div class="hx:mt-24"></div>
