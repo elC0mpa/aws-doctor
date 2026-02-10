@@ -26,13 +26,13 @@ layout: "hextra-home"
 {{< /hextra/hero-subtitle >}}
 </div>
 
-<div class="hx:mt-6 hx:flex hx:gap-x-2">
+{{< hero-buttons >}}
 {{< hextra/hero-button text="Get Started" link="docs/" >}}
-{{< hextra/hero-badge style="padding: 13px 12px !important; font-size: .875rem !important;" link="https://github.com/elC0mpa/aws-doctor" >}}
+{{< hextra/hero-badge style="display: flex; justify-content: center; padding: 13px 12px !important; font-size: .875rem !important;" link="https://github.com/elC0mpa/aws-doctor" >}}
   <span>View on GitHub <img class="not-prose" style="display: inline; height: 22px; margin-left: 8px;" src='https://img.shields.io/github/stars/elC0mpa/aws-doctor?style=social'/></span>
   {{< icon name="arrow-circle-right" attributes="height=14" >}}
 {{< /hextra/hero-badge >}}
-</div>
+{{< /hero-buttons >}}
 {{< /hextra/hero-container >}}
 
 <div class="hx:mt-12"></div>
