@@ -1,6 +1,7 @@
 package spinner
 
 import (
+	"os"
 	"time"
 
 	"github.com/briandowns/spinner"
@@ -10,7 +11,7 @@ var loader *spinner.Spinner
 
 // StartSpinner starts the CLI loading spinner.
 func StartSpinner() {
-	loader = spinner.New(spinner.CharSets[11], 100*time.Millisecond)
+	loader = spinner.New(spinner.CharSets[11], 100*time.Millisecond, spinner.WithWriter(os.Stderr))
 	loader.Color("yellow") //nolint:errcheck
 	loader.Suffix = " Please wait while data is being fetched..."
 	loader.Start()

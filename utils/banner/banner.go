@@ -105,10 +105,10 @@ func printCenteredLines(lines []string, width int) {
 		}
 
 		if pad > 0 {
-			fmt.Print(strings.Repeat(" ", pad))
+			fmt.Fprint(os.Stderr, strings.Repeat(" ", pad))
 		}
 
-		fmt.Println(line)
+		fmt.Fprintln(os.Stderr, line)
 	}
 }
 
@@ -159,7 +159,7 @@ func DrawBannerTitle() {
 		width = w
 	}
 
-	fmt.Print(bannerTitleColors[bannerTitleColor()])
+	fmt.Fprint(os.Stderr, bannerTitleColors[bannerTitleColor()])
 	printCenteredLines(titleLines, width)
-	fmt.Print("\x1b[0m")
+	fmt.Fprint(os.Stderr, "\x1b[0m")
 }
