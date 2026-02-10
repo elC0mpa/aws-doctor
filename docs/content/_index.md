@@ -43,24 +43,31 @@ layout: "hextra-home"
 
 <div class="hx:mt-4"></div>
 
-{{< hextra/feature-grid cols="3" >}}
+{{< hextra/feature-grid cols="4" >}}
   {{< hextra/feature-card
     icon="trending-up"
-    title="Comparative Cost Analytics"
+    title="Cost Analytics"
     subtitle="Gain a fair assessment of your spending velocity. AWS Doctor compares your current month's costs against the exact same period in the previous month (e.g., 1st–10th), allowing you to spot anomalies and spikes in real-time."
   >}}
 
   {{< hextra/feature-card
     icon="trash"
-    title="Zombie Resource Discovery"
+    title="Zombie Discovery"
     subtitle="Get a high-level health check of your entire AWS account. The tool scans multiple services simultaneously to identify idle, unattached, and forgotten resources, providing a unified view of infrastructure waste in seconds."
   >}}
 
   {{< hextra/feature-card
     icon="terminal"
-    title="Flexible Output Formats"
+    title="Output Formats"
     subtitle="Choose the format that fits your workflow. Use rich terminal tables for quick manual audits, or generate structured JSON output to feed data into your CI/CD pipelines, custom dashboards, and automation scripts."
   >}}
+
+  {{< hextra/feature-card
+    icon="key"
+    title="Security & IAM"
+    subtitle="Full support for MFA-protected roles and proactive IAM credential audits."
+  >}}
+
 {{< /hextra/feature-grid >}}
 
 <div class="hx:mt-16"></div>
@@ -71,7 +78,7 @@ layout: "hextra-home"
 
 <div class="hx:mt-4"></div>
 
-{{< hextra/feature-grid cols="4" >}}
+{{< hextra/feature-grid cols="3" >}}
   {{< hextra/feature-card
     icon="server"
     title="Compute & EBS"
@@ -86,11 +93,6 @@ layout: "hextra-home"
     icon="share"
     title="Networking"
     subtitle="Identify unassociated Elastic IPs and Load Balancers without healthy targets."
-  >}}
-  {{< hextra/feature-card
-    icon="key"
-    title="Security & IAM"
-    subtitle="Full support for MFA-protected roles and proactive IAM credential audits."
   >}}
 {{< /hextra/feature-grid >}}
 

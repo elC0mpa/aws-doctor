@@ -43,10 +43,10 @@ layout: "hextra-home"
 
 <div class="hx:mt-4"></div>
 
-{{< hextra/feature-grid cols="3" >}}
+{{< hextra/feature-grid cols="4" >}}
   {{< hextra/feature-card
     icon="trending-up"
-    title="Análisis Comparativo de Costos"
+    title="Análisis de Costos"
     subtitle="Obtenga una evaluación justa de su velocidad de gasto. AWS Doctor compara los costos del mes actual con el mismo periodo del mes anterior (ej. del 1 al 10), permitiéndole detectar anomalías y picos en tiempo real."
   >}}
 
@@ -58,8 +58,14 @@ layout: "hextra-home"
 
   {{< hextra/feature-card
     icon="terminal"
-    title="Formatos de Salida Flexibles"
+    title="Formatos de Salida"
     subtitle="Elija el formato que mejor se adapte a su flujo de trabajo. Use tablas enriquecidas en la terminal para auditorías manuales rápidas, o genere una salida JSON estructurada para integrarla en sus pipelines de CI/CD."
+  >}}
+
+  {{< hextra/feature-card
+    icon="key"
+    title="Seguridad e IAM"
+    subtitle="Soporte completo para roles protegidos por MFA y auditorías proactivas de credenciales IAM."
   >}}
 {{< /hextra/feature-grid >}}
 
@@ -71,7 +77,7 @@ layout: "hextra-home"
 
 <div class="hx:mt-4"></div>
 
-{{< hextra/feature-grid cols="4" >}}
+{{< hextra/feature-grid cols="3" >}}
   {{< hextra/feature-card
     icon="server"
     title="Cómputo y EBS"
@@ -86,10 +92,5 @@ layout: "hextra-home"
     icon="share"
     title="Redes"
     subtitle="Identifica IPs Elásticas sin asociar y Load Balancers sin objetivos saludables."
-  >}}
-  {{< hextra/feature-card
-    icon="key"
-    title="Seguridad e IAM"
-    subtitle="Soporte completo para roles protegidos por MFA y auditorías proactivas de credenciales IAM."
   >}}
 {{< /hextra/feature-grid >}}
