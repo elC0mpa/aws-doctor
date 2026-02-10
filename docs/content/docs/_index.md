@@ -30,7 +30,7 @@ Welcome to the **AWS Doctor** documentation. This guide will help you set up, co
   >}}
   {{< hextra/feature-card
     icon="search"
-    title="Waste Detection"
+    title="Waste"
     link="waste-detection/"
     subtitle="In-depth technical logic for detecting waste in EC2, S3, and Networking."
   >}}

@@ -2,6 +2,8 @@
 title: "Waste Detection"
 weight: 40
 type: docs
+prev: /docs/cost-analytics
+next: /docs/automation
 sidebar:
   collapsed: false
 ---
