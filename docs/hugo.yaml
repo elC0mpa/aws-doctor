@@ -12,7 +12,7 @@ languages:
     languageName: English
     languageCode: en-us
     weight: 1
-    title: "AWS Doctor - AWS Security & Cost Audit CLI"
+    title: "AWS Doctor"
     params:
       description: "Powerful open-source CLI to audit security, costs, and best practices in AWS. Identify idle resources, analyze cost trends, and optimize your infrastructure."
       keywords: ["AWS", "CLI", "Audit", "Security", "Cost Optimization", "FinOps", "Cloud Waste", "EC2", "S3", "Open Source"]
@@ -39,7 +39,7 @@ languages:
     languageName: Español
     languageCode: es-es
     weight: 2
-    title: "AWS Doctor - CLI para Auditoría de Seguridad y Costos en AWS"
+    title: "AWS Doctor"
     params:
       description: "Potente CLI de código abierto para auditar seguridad, costos y mejores prácticas en AWS. Identifica recursos inactivos, analiza tendencias de costos y optimiza tu infraestructura."
       keywords: ["AWS", "CLI", "Auditoría", "Seguridad", "Optimización de Costos", "FinOps", "Desperdicio en la Nube", "EC2", "S3", "Código Abierto"]
