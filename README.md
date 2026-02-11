@@ -21,7 +21,7 @@ A terminal-based tool that acts as a comprehensive health check for your AWS acc
 
 ## 🏥 Quick Scan
 
-![](https://github.com/elC0mpa/aws-doctor/blob/main/demo/waste.gif)
+![](https://github.com/elC0mpa/aws-doctor/blob/main/docs/static/images/demo/waste.gif)
 
 ## 🚀 Installation
 
@@ -52,4 +52,4 @@ I created ***\*aws-doctor\**** to fill that gap. It doesn't just show you the bi
 
 ## 🤝 Contributing
 
-We love contributions! Whether it's a new detection rule or a bug fix, check our [Community Dashboard](https://elcompa.github.io/#join-the-community) to get started.
+We love contributions! Whether it's a new detection rule or a bug fix, check our [Community Dashboard](https://awsdoctor.compacompila.com/#join-the-community) to get started.

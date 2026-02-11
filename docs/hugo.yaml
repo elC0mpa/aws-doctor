@@ -58,6 +58,12 @@ params:
     displayLogo: true
     displaySearch: true
     width: wide
+    logo:
+      path: favicon.svg
+      dark: favicon-dark.svg
+      link: /
+      width: 40
+      height: 40
   page:
     width: wide
   footer:
