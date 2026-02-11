@@ -50,8 +50,11 @@ func (s *service) GetAWSCfg(ctx context.Context, region, profile string) (aws.Co
 	opts = append(opts, config.WithAssumeRoleCredentialOptions(func(options *stscreds.AssumeRoleOptions) {
 		options.TokenProvider = func() (string, error) {
 			var v string
+
 			fmt.Fprint(os.Stderr, "Enter MFA code: ")
+
 			_, err := fmt.Scanln(&v)
+
 			return v, err
 		}
 	}))
@@ -122,8 +125,11 @@ func (s *service) loadConfigWithManualMFA(ctx context.Context, region, profile s
 		o.SerialNumber = aws.String(sharedCfg.MFASerial)
 		o.TokenProvider = func() (string, error) {
 			var v string
+
 			fmt.Fprintf(os.Stderr, "Enter MFA code for %s: ", sharedCfg.MFASerial)
+
 			_, err := fmt.Scanln(&v)
+
 			return v, err
 		}
 	})
