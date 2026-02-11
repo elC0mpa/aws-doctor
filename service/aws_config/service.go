@@ -4,6 +4,7 @@ package awsconfig
 import (
 	"context"
 	"fmt"
+	"os"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
@@ -45,8 +46,17 @@ func (s *service) GetAWSCfg(ctx context.Context, region, profile string) (aws.Co
 
 	// Provide MFA token provider for profiles that use assume role with MFA.
 	// This prompts the user to enter their MFA code when required.
+	// We use a custom provider that writes to stderr to avoid corrupting stdout (e.g. when using --output json)
 	opts = append(opts, config.WithAssumeRoleCredentialOptions(func(options *stscreds.AssumeRoleOptions) {
-		options.TokenProvider = stscreds.StdinTokenProvider
+		options.TokenProvider = func() (string, error) {
+			var v string
+
+			fmt.Fprint(os.Stderr, "Enter MFA code: ")
+
+			_, err := fmt.Scanln(&v)
+
+			return v, err
+		}
 	}))
 
 	cfg, err := config.LoadDefaultConfig(ctx, opts...)
@@ -113,7 +123,15 @@ func (s *service) loadConfigWithManualMFA(ctx context.Context, region, profile s
 	// 4. Create AssumeRoleProvider with the MFA token provider
 	provider := stscreds.NewAssumeRoleProvider(stsClient, sharedCfg.RoleARN, func(o *stscreds.AssumeRoleOptions) {
 		o.SerialNumber = aws.String(sharedCfg.MFASerial)
-		o.TokenProvider = stscreds.StdinTokenProvider
+		o.TokenProvider = func() (string, error) {
+			var v string
+
+			fmt.Fprintf(os.Stderr, "Enter MFA code for %s: ", sharedCfg.MFASerial)
+
+			_, err := fmt.Scanln(&v)
+
+			return v, err
+		}
 	})
 
 	// 5. Create the final config

@@ -1,0 +1,78 @@
+baseURL: "https://awsdoctor.compacompila.com/"
+title: "AWS Doctor"
+
+module:
+  imports:
+    - path: github.com/imfing/hextra
+
+defaultContentLanguage: en
+languages:
+  en:
+    languageName: English
+    languageCode: en-us
+    weight: 1
+    menu:
+      main:
+        - name: "Documentation"
+          url: "/docs/"
+          weight: 10
+        - name: "GitHub"
+          url: "https://github.com/elC0mpa/aws-doctor"
+          weight: 20
+          params:
+            icon: github
+        - name: "Theme Toggle"
+          weight: 30
+          params:
+            type: theme-toggle
+        - name: "Language"
+          weight: 40
+          params:
+            type: language-switch
+  es:
+    languageName: Español
+    languageCode: es-es
+    weight: 2
+    title: "AWS Doctor"
+    menu:
+      main:
+        - name: "Documentación"
+          url: "/es/docs/"
+          weight: 10
+        - name: "GitHub"
+          url: "https://github.com/elC0mpa/aws-doctor"
+          weight: 20
+          params:
+            icon: github
+        - name: "Cambiar Tema"
+          weight: 30
+          params:
+            type: theme-toggle
+        - name: "Idioma"
+          weight: 40
+          params:
+            type: language-switch
+
+params:
+  navbar:
+    displayLogo: true
+    displaySearch: true
+    width: wide
+    logo:
+      path: favicon.svg
+      dark: favicon-dark.svg
+      link: /
+      width: 40
+      height: 40
+  page:
+    width: wide
+  footer:
+    displayCopyright: false
+  theme:
+    default: system
+    displayToggle: false
+
+markup:
+  goldmark:
+    renderer:
+      unsafe: true

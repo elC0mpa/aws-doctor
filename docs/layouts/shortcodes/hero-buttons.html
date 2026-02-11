@@ -1,0 +1,21 @@
+<style>
+  /* Ideally, these styles should be implemented using Tailwind CSS. 
+     However, Hextra's pre-compiled Tailwind doesn't scan content/ files for custom classes. */
+  .hero-buttons-wrapper {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    margin-top: 1.5rem;
+  }
+
+  @media (min-width: 768px) {
+    .hero-buttons-wrapper {
+      flex-direction: row;
+      gap: 0.5rem;
+    }
+  }
+</style>
+
+<div class="hero-buttons-wrapper">
+  {{ .Inner }}
+</div>

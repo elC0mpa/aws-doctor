@@ -1,0 +1,6 @@
+{{- $params := dict 
+  "contribLabel" (.Get "contribLabel" | default "Contributors")
+  "forksLabel" (.Get "forksLabel" | default "Forks")
+  "minimal" (.Get "minimal" | default false)
+-}}
+{{ partial "repo-stats.html" $params }}

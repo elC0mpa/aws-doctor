@@ -1,0 +1,15 @@
+{{- /* Fetch the latest release version from GitHub API */ -}}
+{{- $repo := "elC0mpa/aws-doctor" -}}
+{{- $url := printf "https://api.github.com/repos/%s/releases/latest" $repo -}}
+{{- $opts := dict "headers" (dict "User-Agent" "Hugo-Hextra") -}}
+{{- $res := resources.GetRemote $url $opts -}}
+{{- if $res -}}
+  {{- $data := $res | transform.Unmarshal -}}
+  {{- if $data -}}
+    {{- index $data "tag_name" | default "v1.6.0" -}}
+  {{- else -}}
+    v1.6.0
+  {{- end -}}
+{{- else -}}
+  v1.6.0
+{{- end -}}
