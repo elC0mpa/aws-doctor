@@ -1,5 +1,6 @@
 ---
 title: "Usage Guide"
+description: "Detailed guide on using AWS Doctor CLI flags, selecting regions and profiles, and managing MFA-protected roles."
 weight: 20
 type: docs
 prev: /docs/getting-started

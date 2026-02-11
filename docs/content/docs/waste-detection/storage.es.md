@@ -1,5 +1,6 @@
 ---
 title: "Almacenamiento S3"
+description: "Optimice los costos de almacenamiento de S3 identificando buckets sin políticas de ciclo de vida y detectando cargas multipartes incompletas ocultas."
 weight: 20
 ---
 

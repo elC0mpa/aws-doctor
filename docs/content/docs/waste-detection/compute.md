@@ -1,5 +1,6 @@
 ---
 title: "Compute & EBS"
+description: "Audit EC2 instances, EBS volumes, and snapshots for waste. Identify long-stopped instances and orphaned storage to save costs."
 weight: 10
 ---
 

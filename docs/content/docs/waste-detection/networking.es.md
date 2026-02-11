@@ -1,5 +1,6 @@
 ---
 title: "Redes"
+description: "Detecte IPs Elásticas sin asociar y Load Balancers inactivos sin objetivos saludables para eliminar costos de red innecesarios."
 weight: 30
 ---
 

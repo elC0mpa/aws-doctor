@@ -1,5 +1,6 @@
 ---
 title: "AWS Doctor"
+description: "AWS Doctor es una potente herramienta CLI de código abierto para auditar seguridad, costos y mejores prácticas en AWS. Identifica el desperdicio en la nube y optimiza tu infraestructura fácilmente."
 layout: "hextra-home"
 ---
 

@@ -1,5 +1,6 @@
 ---
 title: "Networking"
+description: "Detect unassociated Elastic IPs and idle Load Balancers without healthy targets to eliminate unnecessary networking costs."
 weight: 30
 ---
 

@@ -1,5 +1,6 @@
 ---
 title: "Getting Started"
+description: "Learn how to install AWS Doctor and configure the necessary AWS credentials and permissions to start auditing your infrastructure."
 weight: 10
 type: docs
 next: /docs/usage

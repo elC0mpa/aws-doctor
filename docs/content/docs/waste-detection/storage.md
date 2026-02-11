@@ -1,5 +1,6 @@
 ---
 title: "S3 Storage"
+description: "Optimize S3 storage costs by identifying buckets without lifecycle policies and detecting hidden incomplete multipart uploads."
 weight: 20
 ---
 

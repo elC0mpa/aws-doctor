@@ -1,5 +1,6 @@
 ---
 title: "Waste Detection"
+description: "Scan your AWS account for 'zombie' resources. Learn about the detection categories for compute, storage, and networking waste."
 weight: 40
 type: docs
 prev: /docs/cost-analytics

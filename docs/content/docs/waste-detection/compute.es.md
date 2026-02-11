@@ -1,5 +1,6 @@
 ---
 title: "Cómputo y EBS"
+description: "Audite instancias EC2, volúmenes EBS y snapshots en busca de desperdicio. Identifique instancias detenidas y almacenamiento huérfano para ahorrar costos."
 weight: 10
 ---
 

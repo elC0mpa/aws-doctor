@@ -1,5 +1,6 @@
 ---
 title: "Cost Analytics"
+description: "Understand the 'Fair Assessment' logic behind AWS Doctor's cost comparisons and how to generate 6-month trend reports."
 weight: 30
 type: docs
 prev: /docs/usage

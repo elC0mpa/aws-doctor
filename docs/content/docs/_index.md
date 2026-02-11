@@ -1,5 +1,6 @@
 ---
 title: "Documentation"
+description: "Comprehensive guide to using AWS Doctor. Learn how to install, configure permissions, and use the tool to audit your AWS infrastructure for costs and security."
 weight: 1
 ---
 
