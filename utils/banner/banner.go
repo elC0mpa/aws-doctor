@@ -155,7 +155,7 @@ func DrawBannerTitle() {
 
 	width := 80
 
-	if w, _, err := term.GetSize(int(os.Stdout.Fd())); err == nil {
+	if w, _, err := term.GetSize(int(os.Stderr.Fd())); err == nil {
 		width = w
 	}
 

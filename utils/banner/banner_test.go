@@ -9,14 +9,14 @@ import (
 )
 
 func captureOutput(f func()) string {
-	old := os.Stdout
+	old := os.Stderr
 	r, w, _ := os.Pipe()
-	os.Stdout = w
+	os.Stderr = w
 
 	f()
 
 	_ = w.Close()
-	os.Stdout = old
+	os.Stderr = old
 
 	var buf bytes.Buffer
 
@@ -111,16 +111,16 @@ func TestDrawBannerTitle(t *testing.T) {
 }
 
 func TestDrawBannerTitle_NonTerminal(t *testing.T) {
-	// When stdout is a pipe, term.GetSize should fail
+	// When stderr is a pipe, term.GetSize should fail
 	r, w, _ := os.Pipe()
-	oldStdout := os.Stdout
-	os.Stdout = w
+	oldStderr := os.Stderr
+	os.Stderr = w
 
 	// We don't use captureOutput here because we want to specifically
-	// have os.Stdout be a pipe during the term.GetSize call
+	// have os.Stderr be a pipe during the term.GetSize call
 	DrawBannerTitle()
 
-	os.Stdout = oldStdout
+	os.Stderr = oldStderr
 	_ = w.Close()
 	_ = r.Close()
 }
