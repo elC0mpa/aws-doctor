@@ -1,4 +1,4 @@
-baseURL: "https://elcompa.github.io/aws-doctor/"
+baseURL: "https://elcompa.github.io/"
 title: "AWS Doctor"
 
 module:
@@ -37,7 +37,7 @@ languages:
     menu:
       main:
         - name: "Documentación"
-          url: "/docs/"
+          url: "/es/docs/"
           weight: 10
         - name: "GitHub"
           url: "https://github.com/elC0mpa/aws-doctor"
@@ -61,7 +61,7 @@ params:
   page:
     width: wide
   footer:
-    displayCopyright: true
+    displayCopyright: false
   theme:
     default: system
     displayToggle: false
