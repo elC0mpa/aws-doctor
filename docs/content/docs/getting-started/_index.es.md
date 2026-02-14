@@ -9,21 +9,28 @@ Ponga en marcha **AWS Doctor** en menos de un minuto.
 
 ## Instalación
 
-### 1. Script de una sola línea (Linux y macOS)
+### 1. Homebrew (macOS y Linux)
+La forma recomendada de instalar y mantenerse actualizado:
+
+```bash
+brew install elC0mpa/homebrew-tap/aws-doctor
+```
+
+### 2. Script de una sola línea (Linux y macOS)
 La forma más rápida de instalar la última versión:
 
 ```bash
 curl -sSfL https://raw.githubusercontent.com/elC0mpa/aws-doctor/main/install.sh | sh
 ```
 
-### 2. Usando Go
+### 3. Usando Go
 Si tiene Go instalado (1.23+):
 
 ```bash
 go install github.com/elC0mpa/aws-doctor@latest
 ```
 
-### 3. Descarga Manual del Binario
+### 4. Descarga Manual del Binario
 Descargue el binario precompilado para su arquitectura desde la página de [GitHub Releases](https://github.com/elC0mpa/aws-doctor/releases). Plataformas compatibles:
 - **macOS** (Intel y Apple Silicon)
 - **Linux** (amd64 y arm64)
