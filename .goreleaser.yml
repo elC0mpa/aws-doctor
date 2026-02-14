@@ -45,6 +45,17 @@ archives:
       - README.md
       - LICENSE*
 
+brews:
+  - repository:
+      owner: elC0mpa
+      name: homebrew-tap
+    directory: Formula
+    homepage: https://github.com/elC0mpa/aws-doctor
+    description: Powerful open-source CLI to audit security, costs, and best practices in AWS. 🩺 ☁️
+    license: MIT
+    test: |
+      system "#{bin}/aws-doctor --version"
+
 checksum:
   name_template: 'checksums.txt'
   algorithm: sha256
@@ -67,19 +78,24 @@ release:
   header: |
     ## AWS Doctor v{{.Version}}
 
-    Analyze your AWS infrastructure for cost optimization and security best practices.
+    Powerful open-source CLI to audit security, costs, and best practices in AWS. 🩺 ☁️
 
   footer: |
     ## Installation
 
-    ### Using Go
+    ### Using homebrew (macOS/Linux)
     ```bash
-    go install github.com/elC0mpa/aws-doctor@{{.Tag}}
+    brew install elC0mpa/homebrew-tap/aws-doctor
     ```
 
     ### Using install script (macOS/Linux)
     ```bash
     curl -sSfL https://raw.githubusercontent.com/elC0mpa/aws-doctor/main/install.sh | sh
+    ```
+
+    ### Using Go
+    ```bash
+    go install github.com/elC0mpa/aws-doctor@{{.Tag}}
     ```
 
     ### Direct download
