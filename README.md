@@ -21,9 +21,22 @@ A terminal-based tool that acts as a comprehensive health check for your AWS acc
 
 ## 🏥 Quick Scan
 
-![](https://github.com/elC0mpa/aws-doctor/blob/main/docs/static/images/demo/waste.gif)
+### ⚖️ Comparative Cost Analytics
+![Comparative Cost Analytics](https://github.com/elC0mpa/aws-doctor/blob/main/docs/static/images/demo/basic.gif?raw=true)
+
+### 📈 6-Month Trend Analysis
+![6-Month Trend Analysis](https://github.com/elC0mpa/aws-doctor/blob/main/docs/static/images/demo/trend.gif?raw=true)
+
+### 🧟 Waste Detection
+![Waste Detection](https://github.com/elC0mpa/aws-doctor/blob/main/docs/static/images/demo/waste.gif?raw=true)
 
 ## 🚀 Installation
+
+**Homebrew (macOS/Linux):**
+
+```bash
+brew install elC0mpa/homebrew-tap/aws-doctor
+```
 
 **One-Line Script (macOS/Linux):**
 
