@@ -36,9 +36,9 @@ func main() {
 func run() error {
 	flagService := flag.NewService()
 
-	flags, err := flagService.GetParsedFlags()
+	flags, err := flagService.GetParsedFlags(os.Args[1:])
 	if err != nil {
-		return fmt.Errorf("failed to parse flags: %w", err)
+		return err
 	}
 
 	versionInfo := model.VersionInfo{
