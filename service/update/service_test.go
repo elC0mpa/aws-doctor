@@ -55,7 +55,7 @@ func TestRealRunner_Run(t *testing.T) {
 	// This actually tries to run a command.
 	// We'll run something harmless like 'true'.
 	r := &realRunner{}
-	err := r.Run("true")
+	err := r.Run("go", "version")
 	assert.NoError(t, err)
 }
 
