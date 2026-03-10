@@ -25,6 +25,7 @@ func (s *service) GetParsedFlags(args []string) (model.Flags, error) {
 	update := fs.Bool("update", false, "Update aws-doctor to the latest version")
 
 	var wasteChecks []string
+
 	filteredArgs := make([]string, 0, len(args))
 
 	for i := 0; i < len(args); i++ {

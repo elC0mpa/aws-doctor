@@ -11,5 +11,6 @@ func ContainsIgnoreCase(slice []string, val string) bool {
 			return true
 		}
 	}
+
 	return false
 }

@@ -157,49 +157,63 @@ func (s *service) wasteWorkflow(wasteChecks []string) error {
 		// Fetch unused Elastic IPs concurrently
 		g.Go(func() error {
 			var err error
+
 			elasticIPInfo, err = s.ec2Service.GetUnusedElasticIPAddressesInfo(ctx)
+
 			return err
 		})
 
 		// Fetch unused EBS volumes concurrently
 		g.Go(func() error {
 			var err error
+
 			availableEBSVolumesInfo, err = s.ec2Service.GetUnusedEBSVolumes(ctx)
+
 			return err
 		})
 
 		// Fetch stopped instances info concurrently
 		g.Go(func() error {
 			var err error
+
 			stoppedInstancesMoreThan30Days, attachedToStoppedInstancesEBSVolumesInfo, err = s.ec2Service.GetStoppedInstancesInfo(ctx)
+
 			return err
 		})
 
 		// Fetch reserved instance expiration info concurrently
 		g.Go(func() error {
 			var err error
+
 			expireReservedInstancesInfo, err = s.ec2Service.GetReservedInstanceExpiringOrExpired30DaysWaste(ctx)
+
 			return err
 		})
 
 		// Fetch unused AMIs concurrently
 		g.Go(func() error {
 			var err error
+
 			unusedAMIs, err = s.ec2Service.GetUnusedAMIs(ctx, 90)
+
 			return err
 		})
 
 		// Fetch orphaned EBS snapshots concurrently
 		g.Go(func() error {
 			var err error
+
 			orphanedSnapshots, err = s.ec2Service.GetOrphanedSnapshots(ctx, 90)
+
 			return err
 		})
 
 		// Fetch unused keypairs concurrently
 		g.Go(func() error {
 			var err error
+
 			unusedKeyPairs, err = s.ec2Service.GetUnusedKeyPairs(ctx)
+
 			return err
 		})
 	}
@@ -208,7 +222,9 @@ func (s *service) wasteWorkflow(wasteChecks []string) error {
 		// Fetch unused Load Balancers concurrently
 		g.Go(func() error {
 			var err error
+
 			unusedLoadBalancers, err = s.elbService.GetUnusedLoadBalancers(ctx)
+
 			return err
 		})
 	}
@@ -217,7 +233,9 @@ func (s *service) wasteWorkflow(wasteChecks []string) error {
 		// Fetch S3 waste concurrently
 		g.Go(func() error {
 			var err error
+
 			s3Buckets, s3MultipartUploads, err = s.s3Service.GetS3Waste(ctx)
+
 			return err
 		})
 	}
@@ -225,7 +243,9 @@ func (s *service) wasteWorkflow(wasteChecks []string) error {
 	// Fetch caller identity concurrently (always required for output)
 	g.Go(func() error {
 		var err error
+
 		stsResult, err = s.stsService.GetCallerIdentity(ctx)
+
 		return err
 	})
 
