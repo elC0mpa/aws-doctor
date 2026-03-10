@@ -19,7 +19,7 @@ A terminal-based tool that acts as a comprehensive health check for your AWS acc
 > [!TIP]
 > **View the full documentation, permissions guide, and usage examples at [awsdoctor.compacompila.com](https://awsdoctor.compacompila.com/)**
 
-## 🏥 Quick Scan
+## 👀 Quick glance
 
 ### ⚖️ Comparative Cost Analytics
 ![Comparative Cost Analytics](https://github.com/elC0mpa/aws-doctor/blob/main/docs/static/images/demo/basic.gif?raw=true)
