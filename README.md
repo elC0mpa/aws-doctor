@@ -19,7 +19,7 @@ A terminal-based tool that acts as a comprehensive health check for your AWS acc
 > [!TIP]
 > **View the full documentation, permissions guide, and usage examples at [awsdoctor.compacompila.com](https://awsdoctor.compacompila.com/)**
 
-## 🏥 Quick Scan
+## 👀 Quick glance
 
 ### ⚖️ Comparative Cost Analytics
 ![Comparative Cost Analytics](https://github.com/elC0mpa/aws-doctor/blob/main/docs/static/images/demo/basic.gif?raw=true)
@@ -29,6 +29,7 @@ A terminal-based tool that acts as a comprehensive health check for your AWS acc
 
 ### 🧟 Waste Detection
 ![Waste Detection](https://github.com/elC0mpa/aws-doctor/blob/main/docs/static/images/demo/waste.gif?raw=true)
+*Supports selective scanning: `aws-doctor --waste ec2,s3`*
 
 ## 🚀 Installation
 
@@ -53,7 +54,7 @@ go install github.com/elC0mpa/aws-doctor@latest
 ## ✨ Key Features
 
 - **📉 Fair Cost Comparison:** Compares identical time windows between months to spot real anomalies.
-- **🧟 Zombie Discovery:** Scans for idle EIPs, stopped instances, orphaned snapshots, and more.
+- **🧟 Zombie Discovery:** Scans for idle EIPs, stopped instances, orphaned snapshots, and more. Supports selective service filtering (`ec2`, `s3`, `elb`).
 - **📊 6-Month Trends:** High-fidelity ANSI visualization of your spending velocity.
 - **🔐 MFA Ready:** Native support for profiles requiring Multi-Factor Authentication.
 

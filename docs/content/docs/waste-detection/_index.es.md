@@ -11,13 +11,26 @@ sidebar:
 El motor de **Detección de Desperdicio** es el módulo de diagnóstico central de **AWS Doctor**. Escanea su cuenta en busca de recursos "zombie": activos que están activos y facturando pero que no proporcionan ningún valor a su negocio.
 
 ## Cómo Ejecutar
-Utilice el flag `--waste` para activar un escaneo de múltiples servicios:
+Utilice el flag `--waste` para activar un escaneo completo en todos los servicios soportados:
 
 ```bash
 aws-doctor --waste --region us-east-1
 ```
 
 ![Escaneo de Detección de Desperdicio](/images/demo/waste.gif)
+
+### Escaneo Selectivo
+Si sólo desea escanear servicios de AWS específicos, puede pasar una lista separada por comas directamente al flag. Esto es útil para una ejecución más rápida o para limpiezas específicas.
+
+Los filtros soportados actualmente son `ec2`, `s3`, y `elb`.
+
+```bash
+# Ejemplo: Escanear solo recursos de EC2 y S3
+aws-doctor --waste ec2,s3 --region us-east-1
+
+# Ejemplo: Escanear solo Elastic Load Balancers
+aws-doctor --waste elb --region us-east-1
+```
 
 ## Categorías de Detección
 
