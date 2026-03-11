@@ -47,7 +47,7 @@ Agrupamos el desperdicio en tres categorías principales de infraestructura:
     icon="archive"
     title="Almacenamiento y Logs"
     link="storage/"
-    subtitle="Buckets sin ciclo de vida, cargas multipartes incompletas y grupos de logs sin retención."
+    subtitle="Buckets sin políticas de ciclo de vida, cargas multipartes incompletas y grupos de logs sin retención."
   >}}
   {{< hextra/feature-card
     icon="share"
