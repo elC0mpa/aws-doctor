@@ -1,4 +1,4 @@
-package awscostexplorer
+package ec2
 
 import (
 	"context"

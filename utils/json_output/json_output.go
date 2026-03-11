@@ -88,6 +88,7 @@ func OutputWasteJSON(input model.RenderWasteInput) error {
 		UnusedKeyPairs:      mapKeyPairs(input.UnusedKeyPairs),
 		S3Buckets:           mapS3Buckets(input.S3Buckets),
 		S3MultipartUploads:  mapS3MultipartUploads(input.S3MultipartUploads),
+		CloudWatchLogGroups: mapCloudWatchLogGroups(input.CloudWatchLogGroups),
 	}
 
 	output.OrphanedSnapshots, output.StaleSnapshots = mapSnapshots(input.OrphanedSnapshots)
@@ -103,7 +104,8 @@ func OutputWasteJSON(input model.RenderWasteInput) error {
 		len(output.StaleSnapshots) > 0 ||
 		len(output.UnusedKeyPairs) > 0 ||
 		len(output.S3Buckets) > 0 ||
-		len(output.S3MultipartUploads) > 0
+		len(output.S3MultipartUploads) > 0 ||
+		len(output.CloudWatchLogGroups) > 0
 
 	return printJSON(output)
 }
@@ -271,6 +273,20 @@ func mapKeyPairs(unusedKeyPairs []model.KeyPairWasteInfo) []model.KeyPairJSON {
 			KeyPairID:       kp.KeyPairID,
 			CreationDate:    kp.CreateTime.Format(time.RFC3339),
 			DaysSinceCreate: kp.DaysSinceCreate,
+		})
+	}
+
+	return result
+}
+
+func mapCloudWatchLogGroups(logGroups []model.CloudWatchLogsWasteInfo) []model.CloudWatchLogGroupJSON {
+	var result []model.CloudWatchLogGroupJSON
+
+	for _, lg := range logGroups {
+		result = append(result, model.CloudWatchLogGroupJSON{
+			LogGroupName: lg.LogGroupName,
+			CreationTime: lg.CreationTime.Format(time.RFC3339),
+			StoredBytes:  lg.StoredBytes,
 		})
 	}
 

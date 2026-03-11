@@ -63,6 +63,14 @@ type WasteReportJSON struct {
 	UnusedKeyPairs      []KeyPairJSON          `json:"unused_key_pairs"`
 	S3Buckets           []S3BucketJSON         `json:"s3_buckets_without_lifecycle"`
 	S3MultipartUploads  []S3MultipartJSON      `json:"s3_buckets_with_incomplete_multipart_uploads"`
+	CloudWatchLogGroups []CloudWatchLogGroupJSON `json:"cloudwatch_log_groups_without_retention_policy"`
+}
+
+// CloudWatchLogGroupJSON represents a CloudWatch Log Group without a retention policy
+type CloudWatchLogGroupJSON struct {
+	LogGroupName string `json:"log_group_name"`
+	CreationTime string `json:"creation_time"`
+	StoredBytes  int64  `json:"stored_bytes"`
 }
 
 // S3BucketJSON represents an S3 bucket without lifecycle policy
@@ -166,6 +174,7 @@ type RenderWasteInput struct {
 	UnusedKeyPairs     []KeyPairWasteInfo
 	S3Buckets          []S3BucketWasteInfo
 	S3MultipartUploads []S3MultipartUploadWasteInfo
+	CloudWatchLogGroups []CloudWatchLogsWasteInfo
 }
 
 // RenderCostComparisonInput represents the input data for rendering the cost comparison report

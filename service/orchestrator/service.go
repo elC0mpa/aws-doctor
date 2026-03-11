@@ -10,6 +10,7 @@ import (
 	elbtypes "github.com/aws/aws-sdk-go-v2/service/elasticloadbalancingv2/types"
 	"github.com/aws/aws-sdk-go-v2/service/sts"
 	"github.com/elC0mpa/aws-doctor/model"
+	"github.com/elC0mpa/aws-doctor/service/cloudwatchlogs"
 	awscostexplorer "github.com/elC0mpa/aws-doctor/service/costexplorer"
 	awsec2 "github.com/elC0mpa/aws-doctor/service/ec2"
 	"github.com/elC0mpa/aws-doctor/service/elb"
@@ -23,16 +24,17 @@ import (
 )
 
 // NewService creates a new orchestrator service.
-func NewService(stsService awssts.Service, costService awscostexplorer.Service, ec2Service awsec2.Service, elbService elb.Service, s3Service s3.Service, outputService output.Service, updateService update.Service, versionInfo model.VersionInfo) Service {
+func NewService(stsService awssts.Service, costService awscostexplorer.Service, ec2Service awsec2.Service, elbService elb.Service, s3Service s3.Service, cloudwatchlogsService cloudwatchlogs.Service, outputService output.Service, updateService update.Service, versionInfo model.VersionInfo) Service {
 	return &service{
-		stsService:    stsService,
-		costService:   costService,
-		ec2Service:    ec2Service,
-		elbService:    elbService,
-		s3Service:     s3Service,
-		outputService: outputService,
-		updateService: updateService,
-		versionInfo:   versionInfo,
+		stsService:            stsService,
+		costService:           costService,
+		ec2Service:            ec2Service,
+		elbService:            elbService,
+		s3Service:             s3Service,
+		cloudwatchlogsService: cloudwatchlogsService,
+		outputService:         outputService,
+		updateService:         updateService,
+		versionInfo:           versionInfo,
 	}
 }
 
@@ -136,6 +138,7 @@ func (s *service) wasteWorkflow(wasteChecks []string) error {
 	runEC2 := runAll || slice.ContainsIgnoreCase(wasteChecks, "ec2")
 	runELB := runAll || slice.ContainsIgnoreCase(wasteChecks, "elb")
 	runS3 := runAll || slice.ContainsIgnoreCase(wasteChecks, "s3")
+	runCloudWatchLogs := runAll || slice.ContainsIgnoreCase(wasteChecks, "cloudwatch")
 
 	// Results from concurrent API calls
 	var (
@@ -150,6 +153,7 @@ func (s *service) wasteWorkflow(wasteChecks []string) error {
 		unusedKeyPairs                           []model.KeyPairWasteInfo
 		s3Buckets                                []model.S3BucketWasteInfo
 		s3MultipartUploads                       []model.S3MultipartUploadWasteInfo
+		cloudwatchLogs                           []model.CloudWatchLogsWasteInfo
 		stsResult                                *sts.GetCallerIdentityOutput
 	)
 
@@ -240,6 +244,17 @@ func (s *service) wasteWorkflow(wasteChecks []string) error {
 		})
 	}
 
+	if runCloudWatchLogs {
+		// Fetch CloudWatch Logs waste concurrently
+		g.Go(func() error {
+			var err error
+
+			cloudwatchLogs, err = s.cloudwatchlogsService.GetCloudWatchLogsWaste(ctx)
+
+			return err
+		})
+	}
+
 	// Fetch caller identity concurrently (always required for output)
 	g.Go(func() error {
 		var err error
@@ -257,18 +272,19 @@ func (s *service) wasteWorkflow(wasteChecks []string) error {
 	s.outputService.StopSpinner()
 
 	input := model.RenderWasteInput{
-		AccountID:          *stsResult.Account,
-		ElasticIPs:         elasticIPInfo,
-		UnusedVolumes:      availableEBSVolumesInfo,
-		StoppedVolumes:     attachedToStoppedInstancesEBSVolumesInfo,
-		Ris:                expireReservedInstancesInfo,
-		StoppedInstances:   stoppedInstancesMoreThan30Days,
-		LoadBalancers:      unusedLoadBalancers,
-		UnusedAMIs:         unusedAMIs,
-		OrphanedSnapshots:  orphanedSnapshots,
-		UnusedKeyPairs:     unusedKeyPairs,
-		S3Buckets:          s3Buckets,
-		S3MultipartUploads: s3MultipartUploads,
+		AccountID:           *stsResult.Account,
+		ElasticIPs:          elasticIPInfo,
+		UnusedVolumes:       availableEBSVolumesInfo,
+		StoppedVolumes:      attachedToStoppedInstancesEBSVolumesInfo,
+		Ris:                 expireReservedInstancesInfo,
+		StoppedInstances:    stoppedInstancesMoreThan30Days,
+		LoadBalancers:       unusedLoadBalancers,
+		UnusedAMIs:          unusedAMIs,
+		OrphanedSnapshots:   orphanedSnapshots,
+		UnusedKeyPairs:      unusedKeyPairs,
+		S3Buckets:           s3Buckets,
+		S3MultipartUploads:  s3MultipartUploads,
+		CloudWatchLogGroups: cloudwatchLogs,
 	}
 
 	return s.outputService.RenderWaste(input)
