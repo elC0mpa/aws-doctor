@@ -2,6 +2,7 @@ package orchestrator
 
 import (
 	"github.com/elC0mpa/aws-doctor/model"
+	"github.com/elC0mpa/aws-doctor/service/cloudwatchlogs"
 	awscostexplorer "github.com/elC0mpa/aws-doctor/service/costexplorer"
 	awsec2 "github.com/elC0mpa/aws-doctor/service/ec2"
 	"github.com/elC0mpa/aws-doctor/service/elb"
@@ -12,14 +13,15 @@ import (
 )
 
 type service struct {
-	stsService    awssts.Service
-	costService   awscostexplorer.Service
-	ec2Service    awsec2.Service
-	elbService    elb.Service
-	s3Service     s3.Service
-	outputService output.Service
-	updateService update.Service
-	versionInfo   model.VersionInfo
+	stsService            awssts.Service
+	costService           awscostexplorer.Service
+	ec2Service            awsec2.Service
+	elbService            elb.Service
+	s3Service             s3.Service
+	cloudwatchlogsService cloudwatchlogs.Service
+	outputService         output.Service
+	updateService         update.Service
+	versionInfo           model.VersionInfo
 }
 
 // Service is the interface for orchestrator service.

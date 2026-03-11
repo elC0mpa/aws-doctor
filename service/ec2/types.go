@@ -1,4 +1,4 @@
-package awscostexplorer
+package ec2
 
 import (
 	"context"
@@ -8,8 +8,8 @@ import (
 	"github.com/elC0mpa/aws-doctor/model"
 )
 
-// EC2ClientAPI is the interface for the AWS EC2 client methods used by the service.
-type EC2ClientAPI interface {
+// ClientAPI is the interface for the AWS EC2 client methods used by the service.
+type ClientAPI interface {
 	DescribeAddresses(ctx context.Context, params *ec2.DescribeAddressesInput, optFns ...func(*ec2.Options)) (*ec2.DescribeAddressesOutput, error)
 	DescribeNetworkInterfaces(ctx context.Context, params *ec2.DescribeNetworkInterfacesInput, optFns ...func(*ec2.Options)) (*ec2.DescribeNetworkInterfacesOutput, error)
 	DescribeVolumes(ctx context.Context, params *ec2.DescribeVolumesInput, optFns ...func(*ec2.Options)) (*ec2.DescribeVolumesOutput, error)
@@ -21,7 +21,7 @@ type EC2ClientAPI interface {
 }
 
 type service struct {
-	client EC2ClientAPI
+	client ClientAPI
 }
 
 // Service is the interface for AWS EC2 service.
