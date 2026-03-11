@@ -23,14 +23,14 @@ aws-doctor --waste --region us-east-1
 ### Selective Scanning
 If you only want to scan specific AWS services, you can pass a comma-separated list of services directly to the flag. This is useful for faster execution or targeted cleanups. 
 
-Currently supported filters are `ec2`, `s3`, `elb`, and `cloudwatchlogs`.
+Currently supported filters are `ec2`, `s3`, `elb`, and `cloudwatch`.
 
 ```bash
 # Example: Scan only EC2 and S3 resources
 aws-doctor --waste ec2,s3 --region us-east-1
 
 # Example: Scan CloudWatch Logs
-aws-doctor --waste cloudwatchlogs --region us-east-1
+aws-doctor --waste cloudwatch --region us-east-1
 ```
 
 ## Categories of Detection
