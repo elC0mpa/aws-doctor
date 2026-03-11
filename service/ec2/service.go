@@ -1,5 +1,5 @@
-// Package awscostexplorer provides a service for interacting with AWS EC2.
-package awscostexplorer
+// Package ec2 provides a service for interacting with AWS EC2.
+package ec2
 
 import (
 	"context"

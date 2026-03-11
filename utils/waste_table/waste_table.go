@@ -43,7 +43,8 @@ func hasAnyWaste(input model.RenderWasteInput) bool {
 		len(input.OrphanedSnapshots) > 0 ||
 		len(input.UnusedKeyPairs) > 0 ||
 		len(input.S3Buckets) > 0 ||
-		len(input.S3MultipartUploads) > 0
+		len(input.S3MultipartUploads) > 0 ||
+		len(input.CloudWatchLogGroups) > 0
 }
 
 func drawWasteSections(input model.RenderWasteInput) {
@@ -65,6 +66,10 @@ func drawWasteSections(input model.RenderWasteInput) {
 
 	if len(input.S3Buckets) > 0 || len(input.S3MultipartUploads) > 0 {
 		drawS3Table(input.S3Buckets, input.S3MultipartUploads)
+	}
+
+	if len(input.CloudWatchLogGroups) > 0 {
+		drawCloudWatchLogsTable(input.CloudWatchLogGroups)
 	}
 
 	if len(input.UnusedAMIs) > 0 {
@@ -571,6 +576,47 @@ func populateS3MultipartRows(buckets []model.S3MultipartUploadWasteInfo) []table
 			"",
 			bucket.BucketName,
 			fmt.Sprintf("%d incomplete uploads", bucket.UploadCount),
+		})
+	}
+
+	return rows
+}
+
+func drawCloudWatchLogsTable(logGroups []model.CloudWatchLogsWasteInfo) {
+	t := table.NewWriter()
+	t.SetOutputMirror(os.Stdout)
+	t.SetStyle(table.StyleRounded)
+	t.SetTitle("CloudWatch Log Group Waste")
+
+	t.AppendHeader(table.Row{"Status", "Log Group Name", "Size (MB)", "Created On"})
+
+	t.SetColumnConfigs([]table.ColumnConfig{
+		{Number: 3, Align: text.AlignRight},
+	})
+
+	statusLabel := "No Retention Policy"
+	rows := populateCloudWatchLogsRows(logGroups)
+
+	if len(rows) > 0 {
+		halfRow := len(rows) / 2
+		rows[halfRow][0] = text.FgHiRed.Sprint(statusLabel)
+	}
+
+	t.AppendRows(rows)
+	t.Render()
+	fmt.Println()
+}
+
+func populateCloudWatchLogsRows(logGroups []model.CloudWatchLogsWasteInfo) []table.Row {
+	var rows []table.Row
+
+	for _, lg := range logGroups {
+		sizeMB := float64(lg.StoredBytes) / (1024 * 1024)
+		rows = append(rows, table.Row{
+			"",
+			lg.LogGroupName,
+			fmt.Sprintf("%.2f MB", sizeMB),
+			lg.CreationTime.Format("2006-01-02"),
 		})
 	}
 
