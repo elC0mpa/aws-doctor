@@ -79,6 +79,7 @@ func TestGetCloudWatchLogsWaste(t *testing.T) {
 			} else {
 				assert.NoError(t, err)
 				assert.Len(t, waste, tt.wantCount)
+
 				if tt.wantCount > 0 {
 					assert.Equal(t, "waste-group", waste[0].LogGroupName)
 				}
