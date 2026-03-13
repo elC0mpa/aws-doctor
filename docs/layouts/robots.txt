@@ -1,0 +1,5 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://aws-doctor.compacompila.com/en/sitemap.xml
+Sitemap: https://aws-doctor.compacompila.com/es/sitemap.xml
