@@ -58,18 +58,6 @@ func buildOrchestrator(needsAWS bool) (orchestrator.Service, error) {
 var rootCmd = &cobra.Command{
 	Use:   "aws-doctor",
 	Short: "A comprehensive health check for your AWS accounts",
-	RunE: func(cmd *cobra.Command, args []string) error {
-		orch, err := buildOrchestrator(true)
-		if err != nil {
-			return err
-		}
-		flags := model.Flags{
-			Region:  Region,
-			Profile: Profile,
-			Output:  Output,
-		}
-		return orch.Orchestrate(flags)
-	},
 }
 
 func Execute(version, commit, date string) error {

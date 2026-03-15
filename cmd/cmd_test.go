@@ -38,3 +38,10 @@ func TestExecuteWasteCommandExists(t *testing.T) {
 		t.Errorf("waste command not found")
 	}
 }
+
+func TestExecuteCostCommandExists(t *testing.T) {
+	c, _, err := rootCmd.Find([]string{"cost"})
+	if err != nil || c.Name() != "cost" {
+		t.Errorf("cost command not found")
+	}
+}

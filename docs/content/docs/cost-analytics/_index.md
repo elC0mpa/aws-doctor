@@ -1,35 +1,35 @@
 ---
 title: "Cost Analytics"
-description: "Understand the 'Fair Assessment' logic behind AWS Doctor's cost comparisons and how to generate 6-month trend reports."
+description: "Discover the two primary cost analysis workflows: Comparative and Trend analysis."
 weight: 30
 type: docs
 prev: /docs/usage
 next: /docs/waste-detection
 ---
 
-**AWS Doctor** provides context-aware cost analysis that goes beyond simple totals.
+**AWS Doctor** focuses on contextual cost analysis. Instead of just showing raw numbers, it helps you understand how your spending is evolving.
 
-{{< callout type="info" >}}
-**Permissions Required**: `ce:GetCostAndUsage`
-{{< /callout >}}
+## Comparative Workflow
 
-## Comparative Cost Analytics
+To get a side-by-side comparison of your spending, use the `cost` subcommand:
 
-When you run `aws-doctor` without subcommands, it triggers the **Comparative Workflow**. This includes a per-service breakdown (EC2, S3, etc.) to help you identify specific cost drivers.
+```bash
+aws-doctor cost
+```
 
-![Comparative Cost Analytics](/images/demo/basic.gif)
+This triggers the **Comparative Workflow**, which includes a per-service breakdown (EC2, S3, etc.) to help you identify specific cost drivers.
 
-### The "Fair Assessment" Logic
-Most billing tools compare the current month's total against the previous month's total. This is often misleading (e.g., comparing 10 days of spending in February against 31 days in January).
+### Fairness in Comparison
+Traditional billing comparisons (like Month-over-Month) are often misleading. Comparing the 15th of October to the full month of September will always look like a "saving," even if you are spending more.
 
-**AWS Doctor** compares identical time windows:
-- **Current Period**: 1st day of current month → Today.
-- **Previous Period**: 1st day of previous month → Identical day last month.
+**AWS Doctor** solves this by comparing identical time windows:
+- **Current Period**: 1st day of the month → Today.
+- **Previous Period**: 1st day of the previous month → Identical day last month.
 
-*Example: If today is October 15th, it compares Oct 1–15 against Sep 1–15.*
+*Example: If today is Oct 15th, it compares Oct 1-15 vs Sept 1-15.*
 
 {{< callout type="warning" >}}
-**1st Day of the Month**: This feature is unavailable on the 1st day of the month. AWS Cost Explorer requires a minimum 24-hour range where the start date is strictly before the end date.
+**1st Day of the Month**: This feature is not available on the first day of the month. AWS Cost Explorer requires a minimum 24-hour range where the start date is strictly before the end date.
 {{< /callout >}}
 
 ---
@@ -47,4 +47,4 @@ aws-doctor trend
 ### What it shows:
 - A high-fidelity ANSI bar chart in your terminal.
 - Monthly total costs for the last 6 completed billing cycles.
-- Clear indicators of whether your spending is accelerating or stabilizing.
+- Clear indicators of whether your spend is accelerating or stabilizing.

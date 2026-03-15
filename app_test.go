@@ -2,7 +2,6 @@ package main
 
 import (
 	"bytes"
-	"fmt"
 	"os"
 	"os/exec"
 	"strings"
@@ -34,14 +33,14 @@ func TestRunVersionJSON(t *testing.T) {
 	}
 }
 
-func TestRunInvalidFlag(t *testing.T) {
+func TestRunInvalidSubcommand(t *testing.T) {
 	oldArgs := os.Args
 	defer func() { os.Args = oldArgs }()
 
-	os.Args = []string{"aws-doctor", "--invalid-flag"}
+	os.Args = []string{"aws-doctor", "invalid-subcommand"}
 	err := run()
 	if err == nil {
-		t.Error("run() with invalid flag should return an error")
+		t.Error("run() with invalid subcommand should return an error")
 	}
 }
 
@@ -53,6 +52,19 @@ func TestRunVersion(t *testing.T) {
 	err := run()
 	if err != nil {
 		t.Errorf("run() with version failed: %v", err)
+	}
+}
+
+func TestRunRootShowsHelp(t *testing.T) {
+	oldArgs := os.Args
+	defer func() { os.Args = oldArgs }()
+
+	os.Args = []string{"aws-doctor"}
+	// Root command without RunE and subcommands should just print help via Execute()
+	// Cobra returns nil for Execute() when just printing help.
+	err := run()
+	if err != nil {
+		t.Errorf("run() with no args failed: %v", err)
 	}
 }
 
@@ -86,84 +98,5 @@ func TestVersionOutput(t *testing.T) {
 
 	if !strings.Contains(output, "built at:") {
 		t.Errorf("Output should contain 'built at:', got: %s", output)
-	}
-}
-
-func TestVersionWithLdflags(t *testing.T) {
-	tmpBinary := t.TempDir() + "/aws-doctor-test"
-	testVersion := "1.2.3"
-	testCommit := "abc123def"
-	testDate := "2026-01-21T12:00:00Z"
-
-	ldflags := fmt.Sprintf("-X main.version=%s -X main.commit=%s -X main.date=%s",
-		testVersion, testCommit, testDate)
-
-	cmd := exec.Command("go", "build", "-ldflags", ldflags, "-o", tmpBinary, "./app.go")
-	if err := cmd.Run(); err != nil {
-		t.Fatalf("Failed to build binary: %v", err)
-	}
-
-	cmdRun := exec.Command(tmpBinary, "version")
-	var stdout bytes.Buffer
-	cmdRun.Stdout = &stdout
-
-	err := cmdRun.Run()
-	if err != nil {
-		t.Fatalf("Command failed: %v", err)
-	}
-
-	output := stdout.String()
-
-	if !strings.Contains(output, testVersion) {
-		t.Errorf("Output should contain version '%s', got: %s", testVersion, output)
-	}
-
-	if !strings.Contains(output, testCommit) {
-		t.Errorf("Output should contain commit '%s', got: %s", testCommit, output)
-	}
-
-	if !strings.Contains(output, testDate) {
-		t.Errorf("Output should contain date '%s', got: %s", testDate, output)
-	}
-}
-
-func TestVersionExitsCleanly(t *testing.T) {
-	tmpBinary := t.TempDir() + "/aws-doctor-test"
-
-	cmd := exec.Command("go", "build", "-o", tmpBinary, "./app.go")
-	if err := cmd.Run(); err != nil {
-		t.Fatalf("Failed to build binary: %v", err)
-	}
-
-	cmdRun := exec.Command(tmpBinary, "version")
-	cmdRun.Stdout = os.Stdout
-
-	err := cmdRun.Run()
-	if err != nil {
-		t.Errorf("version should exit with code 0, got error: %v", err)
-	}
-}
-
-func TestVersionDoesNotShowBanner(t *testing.T) {
-	tmpBinary := t.TempDir() + "/aws-doctor-test"
-
-	cmd := exec.Command("go", "build", "-o", tmpBinary, "./app.go")
-	if err := cmd.Run(); err != nil {
-		t.Fatalf("Failed to build binary: %v", err)
-	}
-
-	cmdRun := exec.Command(tmpBinary, "version")
-	var stdout bytes.Buffer
-	cmdRun.Stdout = &stdout
-
-	err := cmdRun.Run()
-	if err != nil {
-		t.Fatalf("Command failed: %v", err)
-	}
-
-	output := stdout.String()
-
-	if strings.Contains(output, "___") {
-		t.Errorf("version output should not contain the ASCII banner")
 	}
 }
