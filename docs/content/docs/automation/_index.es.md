@@ -12,7 +12,7 @@ prev: /docs/waste-detection
 Para obtener datos legibles por máquina, utilice el flag `--output json`:
 
 ```bash
-aws-doctor --waste --output json > report.json
+aws-doctor waste --output json > report.json
 ```
 
 ### Ejemplo de Esquema
@@ -42,7 +42,7 @@ En su pipeline de CI/CD (GitHub Actions, Jenkins, etc.), puede usar `jq` para ha
 
 ```bash
 # Lógica de ejemplo
-if aws-doctor --waste --output json | jq -e '.has_waste == true'; then
+if aws-doctor waste --output json | jq -e '.has_waste == true'; then
   echo "¡Desperdicio detectado! Limpie antes de continuar."
   exit 1
 fi

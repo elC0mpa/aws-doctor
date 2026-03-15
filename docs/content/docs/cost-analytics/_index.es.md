@@ -14,7 +14,7 @@ next: /docs/waste-detection
 
 ## Análisis Comparativo de Costos
 
-Cuando ejecuta `aws-doctor` sin flags, se activa el **Flujo Comparativo**. Esto incluye un desglose por servicio (EC2, S3, etc.) para ayudarle a identificar los impulsores de costos específicos.
+Cuando ejecuta `aws-doctor` sin subcomandos, se activa el **Flujo Comparativo**. Esto incluye un desglose por servicio (EC2, S3, etc.) para ayudarle a identificar los impulsores de costos específicos.
 
 ![Análisis Comparativo de Costos](/images/demo/basic.gif)
 
@@ -35,10 +35,10 @@ La mayoría de las herramientas de facturación comparan el total del mes actual
 
 ## Análisis de Tendencias de 6 Meses
 
-Para detectar patrones de crecimiento a largo plazo o cambios arquitectónicos repentinos, utilice el flag `--trend`:
+Para detectar patrones de crecimiento a largo plazo o cambios arquitectónicos repentinos, utilice el subcomando `trend`:
 
 ```bash
-aws-doctor --trend
+aws-doctor trend
 ```
 
 ![Análisis de Tendencias de 6 Meses](/images/demo/trend.gif)

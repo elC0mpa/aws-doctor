@@ -15,7 +15,7 @@ next: /docs/waste-detection
 
 ## Comparative Cost Analytics
 
-When you run `aws-doctor` without flags, it triggers the **Comparative Workflow**. This includes a per-service breakdown (EC2, S3, etc.) to help you identify specific cost drivers.
+When you run `aws-doctor` without subcommands, it triggers the **Comparative Workflow**. This includes a per-service breakdown (EC2, S3, etc.) to help you identify specific cost drivers.
 
 ![Comparative Cost Analytics](/images/demo/basic.gif)
 
@@ -36,10 +36,10 @@ Most billing tools compare the current month's total against the previous month'
 
 ## 6-Month Trend Analysis
 
-To spot long-term growth patterns or sudden architectural shifts, use the `--trend` flag:
+To spot long-term growth patterns or sudden architectural shifts, use the `trend` subcommand:
 
 ```bash
-aws-doctor --trend
+aws-doctor trend
 ```
 
 ![6-Month Trend Analysis](/images/demo/trend.gif)

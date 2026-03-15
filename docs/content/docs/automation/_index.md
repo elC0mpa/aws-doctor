@@ -13,7 +13,7 @@ prev: /docs/waste-detection
 To get machine-readable data, use the `--output json` flag:
 
 ```bash
-aws-doctor --waste --output json > report.json
+aws-doctor waste --output json > report.json
 ```
 
 ### Schema Example
@@ -43,7 +43,7 @@ In your CI/CD pipeline (GitHub Actions, Jenkins, etc.), you can use `jq` to fail
 
 ```bash
 # Example logic
-if aws-doctor --waste --output json | jq -e '.has_waste == true'; then
+if aws-doctor waste --output json | jq -e '.has_waste == true'; then
   echo "Waste detected! Clean up before proceeding."
   exit 1
 fi

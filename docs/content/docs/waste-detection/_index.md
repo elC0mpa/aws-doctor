@@ -12,25 +12,25 @@ sidebar:
 The **Waste Detection** engine is the core diagnostic module of **AWS Doctor**. It scans your account for "zombie" resources—assets that are active and billing but provide zero value to your business.
 
 ## How to Run
-Use the `--waste` flag to trigger a full scan across all supported services:
+Use the `waste` subcommand to trigger a full scan across all supported services:
 
 ```bash
-aws-doctor --waste --region us-east-1
+aws-doctor waste --region us-east-1
 ```
 
 ![Waste Detection Scan](/images/demo/waste.gif)
 
 ### Selective Scanning
-If you only want to scan specific AWS services, you can pass a comma-separated list of services directly to the flag. This is useful for faster execution or targeted cleanups. 
+If you only want to scan specific AWS services, you can pass them as arguments to the subcommand. This is useful for faster execution or targeted cleanups. 
 
 Currently supported filters are `ec2`, `s3`, `elb`, and `cloudwatch`.
 
 ```bash
 # Example: Scan only EC2 and S3 resources
-aws-doctor --waste ec2,s3 --region us-east-1
+aws-doctor waste ec2 s3 --region us-east-1
 
-# Example: Scan CloudWatch Logs
-aws-doctor --waste cloudwatch --region us-east-1
+# Note: Comma-separated lists also work for backward compatibility
+# aws-doctor waste ec2,s3
 ```
 
 ## Categories of Detection
