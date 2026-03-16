@@ -13,11 +13,12 @@ var updateCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		
+
 		flags := model.Flags{
-			Output: Output,
+			Output: outputFormat,
 			Update: true,
 		}
+
 		return orch.Orchestrate(flags)
 	},
 }

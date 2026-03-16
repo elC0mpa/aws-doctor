@@ -6,7 +6,7 @@ import (
 
 func TestExecuteVersion(t *testing.T) {
 	rootCmd.SetArgs([]string{"version"})
-	
+
 	// Temporarily capture output if needed, but here we just ensure it doesn't panic
 	err := Execute("dev", "none", "unknown")
 	if err != nil {
@@ -16,7 +16,7 @@ func TestExecuteVersion(t *testing.T) {
 
 func TestExecuteUpdate(t *testing.T) {
 	rootCmd.SetArgs([]string{"update"})
-	
+
 	// Update will attempt to self-update, which might fail in tests, so we skip actual execution
 	// But we can verify the command exists
 	c, _, err := rootCmd.Find([]string{"update"})

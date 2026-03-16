@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/spf13/cobra"
 	"github.com/elC0mpa/aws-doctor/model"
 	awsconfig "github.com/elC0mpa/aws-doctor/service/aws_config"
 	"github.com/elC0mpa/aws-doctor/service/cloudwatchlogs"
@@ -18,27 +17,29 @@ import (
 	"github.com/elC0mpa/aws-doctor/service/update"
 	"github.com/elC0mpa/aws-doctor/utils/banner"
 	"github.com/elC0mpa/aws-doctor/utils/spinner"
+	"github.com/spf13/cobra"
 )
 
 var (
-	Region      string
-	Profile     string
-	Output      string
-	VersionInfo model.VersionInfo
+	region       string
+	profile      string
+	outputFormat string
+	versionInfo  model.VersionInfo
 )
 
 func buildOrchestrator(needsAWS bool) (orchestrator.Service, error) {
-	outputService := output.NewService(Output)
+	outputService := output.NewService(outputFormat)
 	updateService := update.NewService()
 
 	if !needsAWS {
-		return orchestrator.NewService(nil, nil, nil, nil, nil, nil, outputService, updateService, VersionInfo), nil
+		return orchestrator.NewService(nil, nil, nil, nil, nil, nil, outputService, updateService, versionInfo), nil
 	}
 
 	banner.DrawBannerTitle()
 
 	cfgService := awsconfig.NewService()
-	awsCfg, err := cfgService.GetAWSCfg(context.Background(), Region, Profile)
+
+	awsCfg, err := cfgService.GetAWSCfg(context.Background(), region, profile)
 	if err != nil {
 		return nil, fmt.Errorf("failed to load AWS config: %w", err)
 	}
@@ -52,7 +53,7 @@ func buildOrchestrator(needsAWS bool) (orchestrator.Service, error) {
 	s3Service := s3.NewService(awsCfg)
 	cloudwatchlogsService := cloudwatchlogs.NewService(awsCfg)
 
-	return orchestrator.NewService(stsService, costService, ec2Service, elbService, s3Service, cloudwatchlogsService, outputService, updateService, VersionInfo), nil
+	return orchestrator.NewService(stsService, costService, ec2Service, elbService, s3Service, cloudwatchlogsService, outputService, updateService, versionInfo), nil
 }
 
 var rootCmd = &cobra.Command{
@@ -60,8 +61,9 @@ var rootCmd = &cobra.Command{
 	Short: "A comprehensive health check for your AWS accounts",
 }
 
+// Execute adds all child commands to the root command and sets flags appropriately.
 func Execute(version, commit, date string) error {
-	VersionInfo = model.VersionInfo{
+	versionInfo = model.VersionInfo{
 		Version: version,
 		Commit:  commit,
 		Date:    date,
@@ -71,7 +73,7 @@ func Execute(version, commit, date string) error {
 }
 
 func init() {
-	rootCmd.PersistentFlags().StringVar(&Region, "region", "", "AWS region (defaults to AWS_REGION, AWS_DEFAULT_REGION, or ~/.aws/config)")
-	rootCmd.PersistentFlags().StringVar(&Profile, "profile", "", "AWS profile configuration")
-	rootCmd.PersistentFlags().StringVar(&Output, "output", "table", "Output format: table or json")
+	rootCmd.PersistentFlags().StringVar(&region, "region", "", "AWS region (defaults to AWS_REGION, AWS_DEFAULT_REGION, or ~/.aws/config)")
+	rootCmd.PersistentFlags().StringVar(&profile, "profile", "", "AWS profile configuration")
+	rootCmd.PersistentFlags().StringVar(&outputFormat, "output", "table", "Output format: table or json")
 }

@@ -24,9 +24,11 @@ func TestVersionVariablesHaveDefaults(t *testing.T) {
 
 func TestRunVersionJSON(t *testing.T) {
 	oldArgs := os.Args
+
 	defer func() { os.Args = oldArgs }()
 
 	os.Args = []string{"aws-doctor", "version", "--output", "json"}
+
 	err := run()
 	if err != nil {
 		t.Errorf("run() with version and --output json failed: %v", err)
@@ -35,9 +37,11 @@ func TestRunVersionJSON(t *testing.T) {
 
 func TestRunInvalidSubcommand(t *testing.T) {
 	oldArgs := os.Args
+
 	defer func() { os.Args = oldArgs }()
 
 	os.Args = []string{"aws-doctor", "invalid-subcommand"}
+
 	err := run()
 	if err == nil {
 		t.Error("run() with invalid subcommand should return an error")
@@ -46,9 +50,11 @@ func TestRunInvalidSubcommand(t *testing.T) {
 
 func TestRunVersion(t *testing.T) {
 	oldArgs := os.Args
+
 	defer func() { os.Args = oldArgs }()
 
 	os.Args = []string{"aws-doctor", "version"}
+
 	err := run()
 	if err != nil {
 		t.Errorf("run() with version failed: %v", err)
@@ -57,6 +63,7 @@ func TestRunVersion(t *testing.T) {
 
 func TestRunRootShowsHelp(t *testing.T) {
 	oldArgs := os.Args
+
 	defer func() { os.Args = oldArgs }()
 
 	os.Args = []string{"aws-doctor"}
@@ -79,6 +86,7 @@ func TestVersionOutput(t *testing.T) {
 	cmdRun := exec.Command(tmpBinary, "version")
 
 	var stdout bytes.Buffer
+
 	cmdRun.Stdout = &stdout
 
 	err := cmdRun.Run()

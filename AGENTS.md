@@ -24,6 +24,7 @@ go test ./...
 
 # Run locally
 go run . help
+go run . cost
 go run . waste
 go run . trend
 ```

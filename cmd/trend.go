@@ -13,13 +13,14 @@ var trendCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		
+
 		flags := model.Flags{
-			Region:  Region,
-			Profile: Profile,
-			Output:  Output,
+			Region:  region,
+			Profile: profile,
+			Output:  outputFormat,
 			Trend:   true,
 		}
+
 		return orch.Orchestrate(flags)
 	},
 }

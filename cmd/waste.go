@@ -15,19 +15,21 @@ var wasteCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		
+
 		var parsedChecks []string
+
 		for _, arg := range args {
 			parsedChecks = append(parsedChecks, strings.Split(arg, ",")...)
 		}
-		
+
 		flags := model.Flags{
-			Region:      Region,
-			Profile:     Profile,
-			Output:      Output,
+			Region:      region,
+			Profile:     profile,
+			Output:      outputFormat,
 			Waste:       true,
 			WasteChecks: parsedChecks,
 		}
+
 		return orch.Orchestrate(flags)
 	},
 }
