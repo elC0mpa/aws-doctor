@@ -1,55 +1,54 @@
 ---
 title: "Documentation"
-description: "Welcome to the official AWS Doctor documentation. Explore our guides to cost analytics, waste detection, and automation."
-sidebar:
-  collapsed: false
+description: "Comprehensive guide to using AWS Doctor. Learn how to install, configure permissions, and use the tool to audit your AWS infrastructure for costs and security."
+weight: 1
 ---
 
-**AWS Doctor** is a terminal-based health check tool for your AWS infrastructure. It provides immediate context on your spending and identifies "zombie" resources that are costing you money.
+Welcome to the **AWS Doctor** documentation. This guide will help you set up, configure, and master the tool to keep your AWS infrastructure lean, secure, and cost-effective.
 
-## Quick Start
+## Navigation
 
-```bash
-# Get a comparative cost analysis (Current month vs Last month)
-aws-doctor cost
+<div class="hx:mb-6"></div>
 
-# Scan for idle resources and waste
-aws-doctor waste
-
-# View a 6-month spending trend
-aws-doctor trend
-```
-
-## Explore the Modules
-
-{{< hextra/feature-grid cols="2" >}}
+{{< hextra/feature-grid cols="3" >}}
   {{< hextra/feature-card
-    icon="presentation-chart-line"
+    icon="terminal"
+    title="Basics & Setup"
+    link="getting-started/"
+    subtitle="Learn how to install AWS Doctor and configure the minimum required permissions."
+  >}}
+  {{< hextra/feature-card
+    icon="key"
     title="Usage Guide"
     link="usage/"
     subtitle="Detailed explanation of CLI subcommands, global flags, MFA support, and profile management."
   >}}
   {{< hextra/feature-card
-    icon="calculator"
+    icon="trending-up"
     title="Cost Analytics"
     link="cost-analytics/"
-    subtitle="Understanding the comparative billing engine and the 6-month trend visualization."
+    subtitle="Understand how AWS Doctor performs fair cost comparisons and trend analysis."
   >}}
   {{< hextra/feature-card
-    icon="trash"
-    title="Waste Detection"
+    icon="search"
+    title="Waste"
     link="waste-detection/"
-    subtitle="Deep dive into zombie resource detection: EC2, S3, ELB, and CloudWatch."
+    subtitle="In-depth technical logic for detecting waste in EC2, S3, and Networking."
   >}}
   {{< hextra/feature-card
-    icon="cpu-chip"
+    icon="server"
     title="Automation"
     link="automation/"
-    subtitle="Using JSON output to integrate AWS Doctor into your CI/CD pipelines."
+    subtitle="Guide to JSON output and integration with GitHub Actions or Jenkins."
   >}}
 {{< /hextra/feature-grid >}}
 
----
+## Quick Context
 
-## Need Help?
+- **Stateless**: The tool never stores your data or credentials.
+- **Fair Assessment**: Cost comparisons use identical time windows for accuracy.
+- **Zero Config**: Works out-of-the-box with your existing `~/.aws/config`.
+
+{{< callout type="info" >}}
 Looking for something specific? Use the search bar at the top of the page to find details about a particular service or subcommand.
+{{< /callout >}}

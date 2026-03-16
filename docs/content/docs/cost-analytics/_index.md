@@ -19,6 +19,8 @@ aws-doctor cost
 
 This triggers the **Comparative Workflow**, which includes a per-service breakdown (EC2, S3, etc.) to help you identify specific cost drivers.
 
+![Comparative Cost Analytics](/images/demo/basic.gif)
+
 ### Fairness in Comparison
 Traditional billing comparisons (like Month-over-Month) are often misleading. Comparing the 15th of October to the full month of September will always look like a "saving," even if you are spending more.
 

@@ -19,6 +19,8 @@ aws-doctor cost
 
 Esto activa el **Flujo Comparativo**, que incluye un desglose por servicio (EC2, S3, etc.) para ayudarle a identificar los impulsores de costos específicos.
 
+![Análisis Comparativo de Costos](/images/demo/basic.gif)
+
 ### Justicia en la Comparación
 Las comparaciones de facturación tradicionales (como mes a mes) suelen ser engañosas. Comparar el 15 de octubre con el mes completo de septiembre siempre parecerá un "ahorro", incluso si está gastando más.
 

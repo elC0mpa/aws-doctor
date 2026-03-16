@@ -15,6 +15,7 @@ These are the primary workflows of the tool.
 
 | Subcommand | Description |
 | :--- | :--- |
+| `cost` | Run comparative cost analytics (Current month vs. Last month). |
 | `waste` | Run the waste detection engine. |
 | `trend` | Generate a 6-month cost trend report. |
 | `update` | Self-update the tool to the latest version. |
@@ -45,7 +46,7 @@ If the `--region` flag is not provided, the tool attempts to find a region in th
 To run audits against a specific account or role defined in your AWS config:
 
 ```bash
-aws-doctor waste --profile prod-account
+aws-doctor cost --profile prod-account
 ```
 
 ---
