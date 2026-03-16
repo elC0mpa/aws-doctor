@@ -10,6 +10,7 @@ import (
 	elbtypes "github.com/aws/aws-sdk-go-v2/service/elasticloadbalancingv2/types"
 	"github.com/elC0mpa/aws-doctor/model"
 	"github.com/elC0mpa/aws-doctor/utils/ec2"
+	"github.com/elC0mpa/aws-doctor/utils/pricing"
 	"github.com/jedib0t/go-pretty/v6/table"
 	"github.com/jedib0t/go-pretty/v6/text"
 )
@@ -91,13 +92,11 @@ func drawEBSTable(unusedEBSVolumeInfo []types.Volume, attachedToStoppedInstances
 	t.SetStyle(table.StyleRounded)
 	t.SetTitle("EBS Volume Waste")
 
-	t.AppendHeader(table.Row{"Status", "Volume ID", "Size (GiB)"})
+	t.AppendHeader(table.Row{"Status", "Volume ID", "Size (GiB)", "Est. Cost/Mo"})
 
 	t.SetColumnConfigs([]table.ColumnConfig{
-		{
-			Number: 3,
-			Align:  text.AlignRight,
-		},
+		{Number: 3, Align: text.AlignRight},
+		{Number: 4, Align: text.AlignRight},
 	})
 
 	if len(unusedEBSVolumeInfo) > 0 {
@@ -208,7 +207,7 @@ func drawElasticIPTable(elasticIPInfo []types.Address) {
 	t.SetStyle(table.StyleRounded)
 	t.SetTitle("Elastic IP Waste")
 
-	t.AppendHeader(table.Row{"Status", "IP Address", "Allocation ID"})
+	t.AppendHeader(table.Row{"Status", "IP Address", "Allocation ID", "Est. Cost/Mo"})
 
 	statusUnused := "Unassociated"
 	rows := populateElasticIPRows(elasticIPInfo)
@@ -227,10 +226,12 @@ func populateEBSRows(volumes []types.Volume) []table.Row {
 	var rows []table.Row
 
 	for _, vol := range volumes {
+		cost := float64(*vol.Size) * pricing.EBSgp2CostPerGBMonth
 		rows = append(rows, table.Row{
 			"",
 			*vol.VolumeId,
 			fmt.Sprintf("%d GiB", *vol.Size),
+			fmt.Sprintf("$%.2f", cost),
 		})
 	}
 
@@ -255,6 +256,7 @@ func populateElasticIPRows(ips []types.Address) []table.Row {
 			"",
 			publicIP,
 			allocationID,
+			fmt.Sprintf("$%.2f", pricing.EIPCostPerMonth),
 		})
 	}
 
@@ -323,7 +325,7 @@ func drawLoadBalancerTable(loadBalancers []elbtypes.LoadBalancer) {
 	t.SetStyle(table.StyleRounded)
 	t.SetTitle("Load Balancer Waste")
 
-	t.AppendHeader(table.Row{"Status", "Name", "Type"})
+	t.AppendHeader(table.Row{"Status", "Name", "Type", "Est. Cost/Mo"})
 
 	statusUnused := "No Target Groups"
 	rows := populateLoadBalancerRows(loadBalancers)
@@ -344,11 +346,16 @@ func populateLoadBalancerRows(loadBalancers []elbtypes.LoadBalancer) []table.Row
 	for _, lb := range loadBalancers {
 		name := aws.ToString(lb.LoadBalancerName)
 		lbType := string(lb.Type)
+		monthlyCost := pricing.ALBCostPerMonth
+		if lb.Type == "classic" {
+			monthlyCost = pricing.CLBCostPerMonth
+		}
 
 		rows = append(rows, table.Row{
 			"",
 			name,
 			lbType,
+			fmt.Sprintf("$%.2f", monthlyCost),
 		})
 	}
 
@@ -588,10 +595,11 @@ func drawCloudWatchLogsTable(logGroups []model.CloudWatchLogsWasteInfo) {
 	t.SetStyle(table.StyleRounded)
 	t.SetTitle("CloudWatch Log Group Waste")
 
-	t.AppendHeader(table.Row{"Status", "Log Group Name", "Size (MB)", "Created On"})
+	t.AppendHeader(table.Row{"Status", "Log Group Name", "Size (MB)", "Created On", "Est. Cost/Mo"})
 
 	t.SetColumnConfigs([]table.ColumnConfig{
 		{Number: 3, Align: text.AlignRight},
+		{Number: 5, Align: text.AlignRight},
 	})
 
 	statusLabel := "No Retention Policy"
@@ -617,6 +625,7 @@ func populateCloudWatchLogsRows(logGroups []model.CloudWatchLogsWasteInfo) []tab
 			lg.LogGroupName,
 			fmt.Sprintf("%.2f MB", sizeMB),
 			lg.CreationTime.Format("2006-01-02"),
+			fmt.Sprintf("$%.2f", lg.EstimatedMonthlyCost),
 		})
 	}
 

@@ -20,6 +20,9 @@ func NewService(awsconfig aws.Config) Service {
 	}
 }
 
+// CloudWatch Logs storage pricing: ~$0.03 per GB per month
+const cloudwatchStorageCostPerGBMonth = 0.03
+
 // GetCloudWatchLogsWaste returns a list of CloudWatch Log Groups without a retention policy.
 func (s *service) GetCloudWatchLogsWaste(ctx context.Context) ([]model.CloudWatchLogsWasteInfo, error) {
 	var wasteLogGroups []model.CloudWatchLogsWasteInfo
@@ -34,10 +37,13 @@ func (s *service) GetCloudWatchLogsWaste(ctx context.Context) ([]model.CloudWatc
 
 		for _, logGroup := range output.LogGroups {
 			if logGroup.RetentionInDays == nil {
+				storedBytes := aws.ToInt64(logGroup.StoredBytes)
+				storedGB := float64(storedBytes) / (1024 * 1024 * 1024)
 				wasteLogGroups = append(wasteLogGroups, model.CloudWatchLogsWasteInfo{
-					LogGroupName: *logGroup.LogGroupName,
-					CreationTime: time.Unix(0, *logGroup.CreationTime*int64(time.Millisecond)),
-					StoredBytes:  aws.ToInt64(logGroup.StoredBytes),
+					LogGroupName:         *logGroup.LogGroupName,
+					CreationTime:         time.Unix(0, *logGroup.CreationTime*int64(time.Millisecond)),
+					StoredBytes:          storedBytes,
+					EstimatedMonthlyCost: storedGB * cloudwatchStorageCostPerGBMonth,
 				})
 			}
 		}
