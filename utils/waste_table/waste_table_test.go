@@ -1526,4 +1526,3 @@ func TestDrawWasteTable_WithCloudWatchLogs(t *testing.T) {
 		t.Error("DrawWasteTable() with CloudWatch logs missing log group name")
 	}
 }
-

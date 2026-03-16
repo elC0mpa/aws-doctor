@@ -93,4 +93,3 @@ func TestNewService(t *testing.T) {
 	svc := NewService(cfg)
 	assert.NotNil(t, svc)
 }
-

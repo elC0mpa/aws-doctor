@@ -44,6 +44,7 @@ func TestExecuteVersion(t *testing.T) {
 	})).Return(nil)
 
 	rootCmd.SetArgs([]string{"version"})
+
 	err := Execute("dev", "none", "unknown")
 	assert.NoError(t, err)
 	mockOrch.AssertExpectations(t)
@@ -58,6 +59,7 @@ func TestExecuteUpdate(t *testing.T) {
 	})).Return(nil)
 
 	rootCmd.SetArgs([]string{"update"})
+
 	err := Execute("dev", "none", "unknown")
 	assert.NoError(t, err)
 	mockOrch.AssertExpectations(t)
@@ -72,6 +74,7 @@ func TestExecuteTrend(t *testing.T) {
 	})).Return(nil)
 
 	rootCmd.SetArgs([]string{"trend"})
+
 	err := Execute("dev", "none", "unknown")
 	assert.NoError(t, err)
 	mockOrch.AssertExpectations(t)
@@ -86,6 +89,7 @@ func TestExecuteWaste(t *testing.T) {
 	})).Return(nil)
 
 	rootCmd.SetArgs([]string{"waste", "ec2", "s3"})
+
 	err := Execute("dev", "none", "unknown")
 	assert.NoError(t, err)
 	mockOrch.AssertExpectations(t)
@@ -100,6 +104,7 @@ func TestExecuteWasteComma(t *testing.T) {
 	})).Return(nil)
 
 	rootCmd.SetArgs([]string{"waste", "ec2,s3"})
+
 	err := Execute("dev", "none", "unknown")
 	assert.NoError(t, err)
 	mockOrch.AssertExpectations(t)
@@ -114,6 +119,7 @@ func TestExecuteCost(t *testing.T) {
 	})).Return(nil)
 
 	rootCmd.SetArgs([]string{"cost"})
+
 	err := Execute("dev", "none", "unknown")
 	assert.NoError(t, err)
 	mockOrch.AssertExpectations(t)
@@ -128,6 +134,7 @@ func TestPersistentFlags(t *testing.T) {
 	})).Return(nil)
 
 	rootCmd.SetArgs([]string{"cost", "--region", "us-west-2", "--profile", "test-profile", "--output", "json"})
+
 	err := Execute("dev", "none", "unknown")
 	assert.NoError(t, err)
 	mockOrch.AssertExpectations(t)
@@ -138,4 +145,3 @@ func TestBuildOrchestratorNoAWS(t *testing.T) {
 	assert.NoError(t, err)
 	assert.NotNil(t, orch)
 }
-
