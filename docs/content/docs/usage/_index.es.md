@@ -6,19 +6,30 @@ prev: /docs/getting-started
 next: /docs/cost-analytics
 ---
 
-Aprenda a controlar **AWS Doctor** utilizando flags y perfiles de configuración.
+Aprenda a controlar **AWS Doctor** utilizando subcomandos, flags y perfiles de configuración.
 
-## Flags de la CLI
+## Subcomandos
+
+Estos son los flujos de trabajo principales de la herramienta.
+
+| Subcomando | Descripción |
+| :--- | :--- |
+| `cost` | Ejecutar analítica de costos comparativa (Mes actual vs. Mes anterior). |
+| `waste` | Ejecutar el motor de detección de desperdicio. |
+| `trend` | Generar un informe de tendencia de costos de 6 meses. |
+| `update` | Actualizar la herramienta a la última versión. |
+| `version` | Mostrar información de versión y compilación. |
+| `help` | Mostrar ayuda para cualquier subcomando. |
+
+## Flags Globales
+
+Estos flags se pueden usar con cualquier subcomando (incluyendo el análisis de costos por defecto).
 
 | Flag | Por Defecto | Descripción |
 | :--- | :--- | :--- |
 | `--region` | `~/.aws/config` | Sobrescribir la región de AWS de destino. |
 | `--profile` | `default` | Especificar qué perfil de AWS utilizar. |
-| `--waste` | `false` | Ejecutar el motor de detección de desperdicio. |
-| `--trend` | `false` | Generar un informe de tendencia de costos de 6 meses. |
 | `--output` | `table` | Formato de salida: `table` o `json`. |
-| `--update` | `false` | Actualizar la herramienta a la última versión. |
-| `--version` | `false` | Mostrar información de versión y compilación. |
 
 ---
 
@@ -34,7 +45,7 @@ Si no se proporciona el flag `--region`, la herramienta intenta encontrar una re
 Para ejecutar auditorías contra una cuenta o rol específico definido en su configuración de AWS:
 
 ```bash
-aws-doctor --waste --profile prod-account
+aws-doctor cost --profile prod-account
 ```
 
 ---
@@ -58,6 +69,6 @@ La sesión del rol asumido es gestionada por la herramienta. No es necesario eje
 Mantenga su motor de diagnóstico actualizado con un solo comando:
 
 ```bash
-aws-doctor --update
+aws-doctor update
 ```
 Esto buscará el último lanzamiento en GitHub, descargará el binario para su plataforma y reemplazará el existente.

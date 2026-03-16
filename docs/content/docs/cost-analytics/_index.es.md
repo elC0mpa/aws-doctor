@@ -1,28 +1,31 @@
 ---
 title: "Análisis de Costos"
+description: "Descubra los dos flujos de trabajo principales de análisis de costos: Comparativo y de Tendencia."
 weight: 30
 type: docs
 prev: /docs/usage
 next: /docs/waste-detection
 ---
 
-**AWS Doctor** proporciona un análisis de costos contextual que va más allá de los simples totales.
+**AWS Doctor** se centra en el análisis de costos contextual. En lugar de mostrar solo números brutos, le ayuda a entender cómo evoluciona su gasto.
 
-{{< callout type="info" >}}
-**Permisos Requeridos**: `ce:GetCostAndUsage`
-{{< /callout >}}
+## Flujo Comparativo
 
-## Análisis Comparativo de Costos
+Para obtener una comparación paralela de su gasto, utilice el subcomando `cost`:
 
-Cuando ejecuta `aws-doctor` sin flags, se activa el **Flujo Comparativo**. Esto incluye un desglose por servicio (EC2, S3, etc.) para ayudarle a identificar los impulsores de costos específicos.
+```bash
+aws-doctor cost
+```
+
+Esto activa el **Flujo Comparativo**, que incluye un desglose por servicio (EC2, S3, etc.) para ayudarle a identificar los impulsores de costos específicos.
 
 ![Análisis Comparativo de Costos](/images/demo/basic.gif)
 
-### La Lógica de "Evaluación Justa"
-La mayoría de las herramientas de facturación comparan el total del mes actual con el total del mes anterior. Esto suele ser engañoso (por ejemplo, comparar 10 días de gasto en febrero con 31 días en enero).
+### Justicia en la Comparación
+Las comparaciones de facturación tradicionales (como mes a mes) suelen ser engañosas. Comparar el 15 de octubre con el mes completo de septiembre siempre parecerá un "ahorro", incluso si está gastando más.
 
-**AWS Doctor** compara ventanas de tiempo idénticas:
-- **Periodo Actual**: 1er día del mes actual → Hoy.
+**AWS Doctor** soluciona esto comparando ventanas de tiempo idénticas:
+- **Periodo Actual**: 1er día del mes → Hoy.
 - **Periodo Anterior**: 1er día del mes anterior → Día idéntico del mes pasado.
 
 *Ejemplo: Si hoy es 15 de octubre, compara del 1 al 15 de octubre con el 1 al 15 de septiembre.*
@@ -35,10 +38,10 @@ La mayoría de las herramientas de facturación comparan el total del mes actual
 
 ## Análisis de Tendencias de 6 Meses
 
-Para detectar patrones de crecimiento a largo plazo o cambios arquitectónicos repentinos, utilice el flag `--trend`:
+Para detectar patrones de crecimiento a largo plazo o cambios arquitectónicos repentinos, utilice el subcomando `trend`:
 
 ```bash
-aws-doctor --trend
+aws-doctor trend
 ```
 
 ![Análisis de Tendencias de 6 Meses](/images/demo/trend.gif)
