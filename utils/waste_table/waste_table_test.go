@@ -1430,3 +1430,100 @@ func TestDrawWasteTable_WithS3Multipart(t *testing.T) {
 		t.Error("DrawWasteTable() with S3 multipart missing bucket name")
 	}
 }
+
+func TestPopulateCloudWatchLogsRows(t *testing.T) {
+	tests := []struct {
+		name      string
+		logGroups []model.CloudWatchLogsWasteInfo
+		wantLen   int
+	}{
+		{
+			name:      "empty_loggroups",
+			logGroups: []model.CloudWatchLogsWasteInfo{},
+			wantLen:   0,
+		},
+		{
+			name: "single_loggroup",
+			logGroups: []model.CloudWatchLogsWasteInfo{
+				{
+					LogGroupName: "test-loggroup",
+					StoredBytes:  1024,
+					CreationTime: time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC),
+				},
+			},
+			wantLen: 1,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			rows := populateCloudWatchLogsRows(tt.logGroups)
+
+			if len(rows) != tt.wantLen {
+				t.Errorf("populateCloudWatchLogsRows() returned %d rows, want %d", len(rows), tt.wantLen)
+			}
+
+			if tt.wantLen > 0 {
+				if len(rows[0]) != 4 {
+					t.Errorf("Row has %d columns, want 4", len(rows[0]))
+				}
+
+				if rows[0][1] != "test-loggroup" {
+					t.Errorf("LogGroupName = %v, want 'test-loggroup'", rows[0][1])
+				}
+			}
+		})
+	}
+}
+
+func TestDrawCloudWatchLogsTable(t *testing.T) {
+	logGroups := []model.CloudWatchLogsWasteInfo{
+		{
+			LogGroupName: "waste-loggroup",
+			StoredBytes:  2048,
+			CreationTime: time.Now(),
+		},
+	}
+
+	output := captureWasteOutput(func() {
+		drawCloudWatchLogsTable(logGroups)
+	})
+
+	if !strings.Contains(output, "CloudWatch Log Group Waste") {
+		t.Error("drawCloudWatchLogsTable() missing title")
+	}
+
+	if !strings.Contains(output, "No Retention Policy") {
+		t.Error("drawCloudWatchLogsTable() missing retention status")
+	}
+
+	if !strings.Contains(output, "waste-loggroup") {
+		t.Error("drawCloudWatchLogsTable() missing log group name")
+	}
+}
+
+func TestDrawWasteTable_WithCloudWatchLogs(t *testing.T) {
+	logGroups := []model.CloudWatchLogsWasteInfo{
+		{
+			LogGroupName: "cw-waste-loggroup",
+			StoredBytes:  512,
+			CreationTime: time.Now(),
+		},
+	}
+
+	output := captureWasteOutput(func() {
+		DrawWasteTable(model.RenderWasteInput{
+			AccountID:           "123456789012",
+			CloudWatchLogGroups: logGroups,
+		})
+	})
+
+	if !strings.Contains(output, "CloudWatch Log Group Waste") {
+		t.Error("DrawWasteTable() with CloudWatch logs missing CloudWatch section")
+	}
+
+	if !strings.Contains(output, "cw-waste-loggroup") {
+		t.Error("DrawWasteTable() with CloudWatch logs missing log group name")
+	}
+}
+

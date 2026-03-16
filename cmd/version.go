@@ -9,7 +9,7 @@ var versionCmd = &cobra.Command{
 	Use:   "version",
 	Short: "Display version information",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		orch, err := buildOrchestrator(false)
+		orch, err := orchestratorBuilder(false)
 		if err != nil {
 			return err
 		}

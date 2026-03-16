@@ -11,7 +11,7 @@ var wasteCmd = &cobra.Command{
 	Use:   "waste [checks...]",
 	Short: "Display AWS waste report (e.g., ec2 s3)",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		orch, err := buildOrchestrator(true)
+		orch, err := orchestratorBuilder(true)
 		if err != nil {
 			return err
 		}

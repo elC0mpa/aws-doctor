@@ -2,46 +2,140 @@ package cmd
 
 import (
 	"testing"
+
+	"github.com/elC0mpa/aws-doctor/model"
+	"github.com/elC0mpa/aws-doctor/service/orchestrator"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 )
 
-func TestExecuteVersion(t *testing.T) {
-	rootCmd.SetArgs([]string{"version"})
+// MockOrchestrator is a mock implementation of the orchestrator service.
+type MockOrchestrator struct {
+	mock.Mock
+}
 
-	// Temporarily capture output if needed, but here we just ensure it doesn't panic
-	err := Execute("dev", "none", "unknown")
-	if err != nil {
-		t.Errorf("Execute(version) failed: %v", err)
+func (m *MockOrchestrator) Orchestrate(flags model.Flags) error {
+	args := m.Called(flags)
+	return args.Error(0)
+}
+
+func setupTest() (*MockOrchestrator, func()) {
+	mockOrch := new(MockOrchestrator)
+	originalBuilder := orchestratorBuilder
+	orchestratorBuilder = func(needsAWS bool) (orchestrator.Service, error) {
+		return mockOrch, nil
 	}
+
+	return mockOrch, func() {
+		orchestratorBuilder = originalBuilder
+		// Reset persistent flags to default
+		region = ""
+		profile = ""
+		outputFormat = "table"
+	}
+}
+
+func TestExecuteVersion(t *testing.T) {
+	mockOrch, teardown := setupTest()
+	defer teardown()
+
+	mockOrch.On("Orchestrate", mock.MatchedBy(func(f model.Flags) bool {
+		return f.Version == true
+	})).Return(nil)
+
+	rootCmd.SetArgs([]string{"version"})
+	err := Execute("dev", "none", "unknown")
+	assert.NoError(t, err)
+	mockOrch.AssertExpectations(t)
 }
 
 func TestExecuteUpdate(t *testing.T) {
+	mockOrch, teardown := setupTest()
+	defer teardown()
+
+	mockOrch.On("Orchestrate", mock.MatchedBy(func(f model.Flags) bool {
+		return f.Update == true
+	})).Return(nil)
+
 	rootCmd.SetArgs([]string{"update"})
-
-	// Update will attempt to self-update, which might fail in tests, so we skip actual execution
-	// But we can verify the command exists
-	c, _, err := rootCmd.Find([]string{"update"})
-	if err != nil || c.Name() != "update" {
-		t.Errorf("update command not found")
-	}
+	err := Execute("dev", "none", "unknown")
+	assert.NoError(t, err)
+	mockOrch.AssertExpectations(t)
 }
 
-func TestExecuteTrendCommandExists(t *testing.T) {
-	c, _, err := rootCmd.Find([]string{"trend"})
-	if err != nil || c.Name() != "trend" {
-		t.Errorf("trend command not found")
-	}
+func TestExecuteTrend(t *testing.T) {
+	mockOrch, teardown := setupTest()
+	defer teardown()
+
+	mockOrch.On("Orchestrate", mock.MatchedBy(func(f model.Flags) bool {
+		return f.Trend == true
+	})).Return(nil)
+
+	rootCmd.SetArgs([]string{"trend"})
+	err := Execute("dev", "none", "unknown")
+	assert.NoError(t, err)
+	mockOrch.AssertExpectations(t)
 }
 
-func TestExecuteWasteCommandExists(t *testing.T) {
-	c, _, err := rootCmd.Find([]string{"waste"})
-	if err != nil || c.Name() != "waste" {
-		t.Errorf("waste command not found")
-	}
+func TestExecuteWaste(t *testing.T) {
+	mockOrch, teardown := setupTest()
+	defer teardown()
+
+	mockOrch.On("Orchestrate", mock.MatchedBy(func(f model.Flags) bool {
+		return f.Waste == true && len(f.WasteChecks) == 2 && f.WasteChecks[0] == "ec2" && f.WasteChecks[1] == "s3"
+	})).Return(nil)
+
+	rootCmd.SetArgs([]string{"waste", "ec2", "s3"})
+	err := Execute("dev", "none", "unknown")
+	assert.NoError(t, err)
+	mockOrch.AssertExpectations(t)
 }
 
-func TestExecuteCostCommandExists(t *testing.T) {
-	c, _, err := rootCmd.Find([]string{"cost"})
-	if err != nil || c.Name() != "cost" {
-		t.Errorf("cost command not found")
-	}
+func TestExecuteWasteComma(t *testing.T) {
+	mockOrch, teardown := setupTest()
+	defer teardown()
+
+	mockOrch.On("Orchestrate", mock.MatchedBy(func(f model.Flags) bool {
+		return f.Waste == true && len(f.WasteChecks) == 2 && f.WasteChecks[0] == "ec2" && f.WasteChecks[1] == "s3"
+	})).Return(nil)
+
+	rootCmd.SetArgs([]string{"waste", "ec2,s3"})
+	err := Execute("dev", "none", "unknown")
+	assert.NoError(t, err)
+	mockOrch.AssertExpectations(t)
 }
+
+func TestExecuteCost(t *testing.T) {
+	mockOrch, teardown := setupTest()
+	defer teardown()
+
+	mockOrch.On("Orchestrate", mock.MatchedBy(func(f model.Flags) bool {
+		return f.Waste == false && f.Trend == false
+	})).Return(nil)
+
+	rootCmd.SetArgs([]string{"cost"})
+	err := Execute("dev", "none", "unknown")
+	assert.NoError(t, err)
+	mockOrch.AssertExpectations(t)
+}
+
+func TestPersistentFlags(t *testing.T) {
+	mockOrch, teardown := setupTest()
+	defer teardown()
+
+	mockOrch.On("Orchestrate", mock.MatchedBy(func(f model.Flags) bool {
+		return f.Region == "us-west-2" && f.Profile == "test-profile" && f.Output == "json"
+	})).Return(nil)
+
+	rootCmd.SetArgs([]string{"cost", "--region", "us-west-2", "--profile", "test-profile", "--output", "json"})
+	err := Execute("dev", "none", "unknown")
+	assert.NoError(t, err)
+	mockOrch.AssertExpectations(t)
+}
+
+func TestBuildOrchestratorNoAWS(t *testing.T) {
+	orch, err := buildOrchestrator(false)
+	assert.NoError(t, err)
+	assert.NotNil(t, orch)
+}
+

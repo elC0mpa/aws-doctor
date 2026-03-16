@@ -23,8 +23,9 @@ import (
 var (
 	region       string
 	profile      string
-	outputFormat string
-	versionInfo  model.VersionInfo
+	outputFormat        string
+	versionInfo         model.VersionInfo
+	orchestratorBuilder = buildOrchestrator
 )
 
 func buildOrchestrator(needsAWS bool) (orchestrator.Service, error) {

@@ -9,7 +9,7 @@ var trendCmd = &cobra.Command{
 	Use:   "trend",
 	Short: "Display a trend report for the last 6 months",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		orch, err := buildOrchestrator(true)
+		orch, err := orchestratorBuilder(true)
 		if err != nil {
 			return err
 		}
