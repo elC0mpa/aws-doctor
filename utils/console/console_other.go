@@ -17,10 +17,6 @@ func IsBlueBackground() bool {
 
 	parts := strings.Split(raw, ";")
 
-	if len(parts) == 0 {
-		return false
-	}
-
 	bg := strings.TrimSpace(parts[len(parts)-1])
 
 	if bg == "" {

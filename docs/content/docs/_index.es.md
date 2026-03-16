@@ -20,7 +20,7 @@ Bienvenido a la documentación de **AWS Doctor**. Esta guía le ayudará a confi
     icon="key"
     title="Guía de Uso"
     link="usage/"
-    subtitle="Explicación detallada de los flags de la CLI, soporte de MFA y gestión de perfiles."
+    subtitle="Explicación detallada de los subcomandos de la CLI, flags globales, soporte de MFA y gestión de perfiles."
   >}}
   {{< hextra/feature-card
     icon="trending-up"
@@ -49,5 +49,5 @@ Bienvenido a la documentación de **AWS Doctor**. Esta guía le ayudará a confi
 - **Configuración Cero**: Funciona directamente con su configuración existente en `~/.aws/config`.
 
 {{< callout type="info" >}}
-¿Busca algo específico? Utilice la barra de búsqueda en la parte superior de la página para encontrar detalles sobre un servicio o flag en particular.
+¿Busca algo específico? Utilice la barra de búsqueda en la parte superior de la página para encontrar detalles sobre un servicio o subcomando en particular.
 {{< /callout >}}

@@ -189,7 +189,7 @@ main() {
     esac
 
     log_info ""
-    log_info "Run 'aws-doctor --help' to get started"
+    log_info "Run 'aws-doctor help' to get started"
 }
 
 main "$@"

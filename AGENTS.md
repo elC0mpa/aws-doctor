@@ -23,23 +23,24 @@ go build ./...
 go test ./...
 
 # Run locally
-go run . --help
-go run . --waste
-go run . --trend
+go run . help
+go run . cost
+go run . waste
+go run . trend
 ```
 
 ## Architecture
 
 ```
 aws-doctor/
-|-- app.go                 # Main application entry, flag parsing
+|-- app.go                 # Main application entry, delegates to cmd
+|-- cmd/                   # Cobra CLI commands (root, waste, trend, etc.)
 |-- model/                 # Data structures and types
 |-- service/
 |   |-- aws_config/       # AWS configuration loading
 |   |-- costexplorer/     # AWS Cost Explorer service
 |   |-- ec2/              # EC2 service (EIPs, EBS, instances)
 |   |-- elb/              # ELB service (load balancers)
-|   |-- flag/             # CLI flag parsing
 |   |-- orchestrator/     # Workflow coordination
 |   |-- output/           # Output rendering (table/json) + spinner control
 |   |-- sts/              # AWS STS service
@@ -54,10 +55,11 @@ aws-doctor/
 
 ### Key Flows
 
-- `app.go` builds services, then delegates to `service/orchestrator`.
-- `service/orchestrator` selects a workflow based on flags and calls service methods.
+- `app.go` delegates execution to `cmd.Execute()`.
+- `cmd/` package defines Cobra commands (e.g., `cmd/waste.go`), initializes AWS services, and invokes `service/orchestrator`.
+- `service/orchestrator` executes the workflow logic by calling service methods based on the configured model.Flags.
 - `service/output` chooses between table and JSON rendering and owns spinner stop.
-- `service/update` handles `--update`.
+- `service/update` handles updates (invoked by `cmd/update.go`).
 
 ### Service Pattern
 
@@ -244,12 +246,14 @@ If a change makes documentation inaccurate or incomplete, treat the documentatio
 11. **Documentation**: Update the feature checklist in `README.md`.
 12. **Validation**: Run `go vet ./...` and `golangci-lint run` to ensure no regressions or interface mismatches were introduced.
 
-### Adding a New CLI Flag
+### Adding a New Command or Flag
 
-1. Add flag definition in `service/flag/service.go`
-2. Add field to `model.Flags` struct
-3. Handle flag in `service/orchestrator/service.go`
-4. Update README.md documentation
+The CLI uses the Cobra framework.
+1. **New Command**: Create a new file in `cmd/` (e.g., `cmd/myfeature.go`), define a `*cobra.Command`, and add it to `rootCmd` in its `init()` function.
+2. **New Flag**: Add persistent flags to `rootCmd` in `cmd/root.go` for global flags, or local flags to specific commands.
+3. Handle execution logic in the command's `RunE` method (often by instantiating the orchestrator and calling `orch.Orchestrate(flags)`).
+4. Update `model.Flags` struct if you need to pass new flag states into the orchestrator.
+5. Update `README.md` documentation.
 
 ## PR Checklist
 

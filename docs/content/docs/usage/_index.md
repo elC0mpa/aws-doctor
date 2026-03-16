@@ -1,25 +1,36 @@
 ---
 title: "Usage Guide"
-description: "Detailed guide on using AWS Doctor CLI flags, selecting regions and profiles, and managing MFA-protected roles."
+description: "Detailed guide on using AWS Doctor subcommands and flags, selecting regions and profiles, and managing MFA-protected roles."
 weight: 20
 type: docs
 prev: /docs/getting-started
 next: /docs/cost-analytics
 ---
 
-Learn how to control **AWS Doctor** using flags and configuration profiles.
+Learn how to control **AWS Doctor** using subcommands, flags, and configuration profiles.
 
-## CLI Flags
+## Subcommands
+
+These are the primary workflows of the tool.
+
+| Subcommand | Description |
+| :--- | :--- |
+| `cost` | Run comparative cost analytics (Current month vs. Last month). |
+| `waste` | Run the waste detection engine. |
+| `trend` | Generate a 6-month cost trend report. |
+| `update` | Self-update the tool to the latest version. |
+| `version` | Display version and build information. |
+| `help` | Display help for any subcommand. |
+
+## Global Flags
+
+These flags can be used with any subcommand (including the default cost analysis).
 
 | Flag | Default | Description |
 | :--- | :--- | :--- |
 | `--region` | `~/.aws/config` | Override the target AWS region. |
 | `--profile` | `default` | Specify which AWS profile to use. |
-| `--waste` | `false` | Run the waste detection engine. |
-| `--trend` | `false` | Generate a 6-month cost trend report. |
 | `--output` | `table` | Output format: `table` or `json`. |
-| `--update` | `false` | Self-update the tool to the latest version. |
-| `--version` | `false` | Display version and build information. |
 
 ---
 
@@ -35,7 +46,7 @@ If the `--region` flag is not provided, the tool attempts to find a region in th
 To run audits against a specific account or role defined in your AWS config:
 
 ```bash
-aws-doctor --waste --profile prod-account
+aws-doctor cost --profile prod-account
 ```
 
 ---
@@ -59,6 +70,6 @@ The assumed role session is managed by the tool. You don't need to manually run 
 Keep your diagnostic engine up to date with a single command:
 
 ```bash
-aws-doctor --update
+aws-doctor update
 ```
 This will check GitHub for the latest release, download the binary for your platform, and replace the existing one.

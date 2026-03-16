@@ -87,3 +87,9 @@ func TestGetCloudWatchLogsWaste(t *testing.T) {
 		})
 	}
 }
+
+func TestNewService(t *testing.T) {
+	cfg := aws.Config{}
+	svc := NewService(cfg)
+	assert.NotNil(t, svc)
+}

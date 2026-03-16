@@ -21,7 +21,7 @@ Welcome to the **AWS Doctor** documentation. This guide will help you set up, co
     icon="key"
     title="Usage Guide"
     link="usage/"
-    subtitle="Detailed explanation of CLI flags, MFA support, and profile management."
+    subtitle="Detailed explanation of CLI subcommands, global flags, MFA support, and profile management."
   >}}
   {{< hextra/feature-card
     icon="trending-up"
@@ -50,5 +50,5 @@ Welcome to the **AWS Doctor** documentation. This guide will help you set up, co
 - **Zero Config**: Works out-of-the-box with your existing `~/.aws/config`.
 
 {{< callout type="info" >}}
-Looking for something specific? Use the search bar at the top of the page to find details about a particular service or flag.
+Looking for something specific? Use the search bar at the top of the page to find details about a particular service or subcommand.
 {{< /callout >}}
