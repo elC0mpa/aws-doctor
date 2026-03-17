@@ -226,7 +226,8 @@ func populateEBSRows(volumes []types.Volume) []table.Row {
 	var rows []table.Row
 
 	for _, vol := range volumes {
-		cost := float64(*vol.Size) * pricing.EBSgp2CostPerGBMonth
+		cost := float64(*vol.Size) * pricing.EBSCostPerGBMonth(vol.VolumeType)
+
 		rows = append(rows, table.Row{
 			"",
 			*vol.VolumeId,
@@ -346,6 +347,7 @@ func populateLoadBalancerRows(loadBalancers []elbtypes.LoadBalancer) []table.Row
 	for _, lb := range loadBalancers {
 		name := aws.ToString(lb.LoadBalancerName)
 		lbType := string(lb.Type)
+
 		monthlyCost := pricing.ALBCostPerMonth
 		if lb.Type == "classic" {
 			monthlyCost = pricing.CLBCostPerMonth

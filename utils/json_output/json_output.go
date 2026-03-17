@@ -153,11 +153,12 @@ func mapEBSVolumes(volumes []types.Volume, status string) []model.EBSVolumeJSON 
 
 	for _, vol := range volumes {
 		size := aws.ToInt32(vol.Size)
+
 		result = append(result, model.EBSVolumeJSON{
 			VolumeID:             aws.ToString(vol.VolumeId),
 			Size:                 size,
 			Status:               status,
-			EstimatedMonthlyCost: float64(size) * pricing.EBSgp2CostPerGBMonth,
+			EstimatedMonthlyCost: float64(size) * pricing.EBSCostPerGBMonth(vol.VolumeType),
 		})
 	}
 
@@ -212,6 +213,7 @@ func mapLoadBalancers(loadBalancers []elbtypes.LoadBalancer) []model.LoadBalance
 		if lb.Type == "classic" {
 			monthlyCost = pricing.CLBCostPerMonth
 		}
+
 		result = append(result, model.LoadBalancerJSON{
 			Name:                 aws.ToString(lb.LoadBalancerName),
 			ARN:                  aws.ToString(lb.LoadBalancerArn),
