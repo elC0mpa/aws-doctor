@@ -68,9 +68,10 @@ type WasteReportJSON struct {
 
 // CloudWatchLogGroupJSON represents a CloudWatch Log Group without a retention policy
 type CloudWatchLogGroupJSON struct {
-	LogGroupName string `json:"log_group_name"`
-	CreationTime string `json:"creation_time"`
-	StoredBytes  int64  `json:"stored_bytes"`
+	LogGroupName         string  `json:"log_group_name"`
+	CreationTime         string  `json:"creation_time"`
+	StoredBytes          int64   `json:"stored_bytes"`
+	EstimatedMonthlyCost float64 `json:"estimated_monthly_cost"`
 }
 
 // S3BucketJSON represents an S3 bucket without lifecycle policy
@@ -87,15 +88,17 @@ type S3MultipartJSON struct {
 
 // ElasticIPJSON represents an unused Elastic IP
 type ElasticIPJSON struct {
-	PublicIP     string `json:"public_ip"`
-	AllocationID string `json:"allocation_id"`
+	PublicIP             string  `json:"public_ip"`
+	AllocationID         string  `json:"allocation_id"`
+	EstimatedMonthlyCost float64 `json:"estimated_monthly_cost"`
 }
 
 // EBSVolumeJSON represents an EBS volume
 type EBSVolumeJSON struct {
-	VolumeID string `json:"volume_id"`
-	Size     int32  `json:"size_gib"`
-	Status   string `json:"status"`
+	VolumeID             string  `json:"volume_id"`
+	Size                 int32   `json:"size_gib"`
+	Status               string  `json:"status"`
+	EstimatedMonthlyCost float64 `json:"estimated_monthly_cost"`
 }
 
 // StoppedInstanceJSON represents a stopped EC2 instance
@@ -117,9 +120,10 @@ type ReservedInstanceJSON struct {
 
 // LoadBalancerJSON represents an unused load balancer
 type LoadBalancerJSON struct {
-	Name string `json:"name"`
-	ARN  string `json:"arn"`
-	Type string `json:"type"`
+	Name                 string  `json:"name"`
+	ARN                  string  `json:"arn"`
+	Type                 string  `json:"type"`
+	EstimatedMonthlyCost float64 `json:"estimated_monthly_cost"`
 }
 
 // AMIJSON represents an unused AMI

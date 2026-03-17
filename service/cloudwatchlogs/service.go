@@ -9,6 +9,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/cloudwatchlogs"
 	"github.com/elC0mpa/aws-doctor/model"
+	"github.com/elC0mpa/aws-doctor/utils/pricing"
 )
 
 // NewService creates a new CloudWatch Logs service.
@@ -34,10 +35,13 @@ func (s *service) GetCloudWatchLogsWaste(ctx context.Context) ([]model.CloudWatc
 
 		for _, logGroup := range output.LogGroups {
 			if logGroup.RetentionInDays == nil {
+				storedBytes := aws.ToInt64(logGroup.StoredBytes)
+				storedGB := float64(storedBytes) / (1024 * 1024 * 1024)
 				wasteLogGroups = append(wasteLogGroups, model.CloudWatchLogsWasteInfo{
-					LogGroupName: *logGroup.LogGroupName,
-					CreationTime: time.Unix(0, *logGroup.CreationTime*int64(time.Millisecond)),
-					StoredBytes:  aws.ToInt64(logGroup.StoredBytes),
+					LogGroupName:         *logGroup.LogGroupName,
+					CreationTime:         time.Unix(0, *logGroup.CreationTime*int64(time.Millisecond)),
+					StoredBytes:          storedBytes,
+					EstimatedMonthlyCost: storedGB * pricing.CloudWatchLogsCostPerGBMonth,
 				})
 			}
 		}

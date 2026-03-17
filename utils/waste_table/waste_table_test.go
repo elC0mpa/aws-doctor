@@ -55,10 +55,10 @@ func TestPopulateEBSRows(t *testing.T) {
 				return
 			}
 
-			// Verify each row has 3 columns
+			// Verify each row has 4 columns
 			for i, row := range rows {
-				if len(row) != 3 {
-					t.Errorf("Row %d has %d columns, want 3", i, len(row))
+				if len(row) != 4 {
+					t.Errorf("Row %d has %d columns, want 4", i, len(row))
 				}
 			}
 
@@ -126,10 +126,10 @@ func TestPopulateElasticIPRows(t *testing.T) {
 				return
 			}
 
-			// Verify each row has 3 columns
+			// Verify each row has 4 columns
 			for i, row := range rows {
-				if len(row) != 3 {
-					t.Errorf("Row %d has %d columns, want 3", i, len(row))
+				if len(row) != 4 {
+					t.Errorf("Row %d has %d columns, want 4", i, len(row))
 				}
 			}
 		})
@@ -405,10 +405,10 @@ func TestPopulateLoadBalancerRows(t *testing.T) {
 				return
 			}
 
-			// Verify each row has 3 columns
+			// Verify each row has 4 columns
 			for i, row := range rows {
-				if len(row) != 3 {
-					t.Errorf("Row %d has %d columns, want 3", i, len(row))
+				if len(row) != 4 {
+					t.Errorf("Row %d has %d columns, want 4", i, len(row))
 				}
 			}
 		})
@@ -1464,8 +1464,8 @@ func TestPopulateCloudWatchLogsRows(t *testing.T) {
 			}
 
 			if tt.wantLen > 0 {
-				if len(rows[0]) != 4 {
-					t.Errorf("Row has %d columns, want 4", len(rows[0]))
+				if len(rows[0]) != 5 {
+					t.Errorf("Row has %d columns, want 5", len(rows[0]))
 				}
 
 				if rows[0][1] != "test-loggroup" {
