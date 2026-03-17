@@ -5,6 +5,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 
 	"github.com/aws/aws-sdk-go-v2/service/ec2/types"
 	elbtypes "github.com/aws/aws-sdk-go-v2/service/elasticloadbalancingv2/types"
@@ -52,7 +53,7 @@ func (s *service) Orchestrate(flags model.Flags) error {
 	}
 
 	if flags.Trend {
-		return s.trendWorkflow()
+		return s.trendWorkflow(flags.TrendChecks)
 	}
 
 	return s.defaultWorkflow()
@@ -113,8 +114,16 @@ func (s *service) defaultWorkflow() error {
 	return s.outputService.RenderCostComparison(input)
 }
 
-func (s *service) trendWorkflow() error {
-	costInfo, err := s.costService.GetLastSixMonthsCosts(context.Background())
+func (s *service) trendWorkflow(trendChecks []string) error {
+	var mappedServices []string
+
+	for _, svc := range trendChecks {
+		if mapped, ok := awscostexplorer.ServiceNameMap[strings.ToLower(svc)]; ok {
+			mappedServices = append(mappedServices, mapped)
+		}
+	}
+
+	costInfo, err := s.costService.GetLastSixMonthsCosts(context.Background(), mappedServices)
 	if err != nil {
 		return err
 	}

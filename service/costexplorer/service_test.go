@@ -488,12 +488,50 @@ func TestGetLastSixMonthsCosts(t *testing.T) {
 		},
 	}, nil)
 
-	costs, err := s.GetLastSixMonthsCosts(context.Background())
+	costs, err := s.GetLastSixMonthsCosts(context.Background(), nil)
 
 	assert.NoError(t, err)
 	assert.Len(t, costs, 2)
 	assert.Equal(t, 100.00, costs[0].CostGroup["Total"].Amount)
 	assert.Equal(t, 120.00, costs[1].CostGroup["Total"].Amount)
+	mockClient.AssertExpectations(t)
+}
+
+func TestGetLastSixMonthsCosts_WithServices(t *testing.T) {
+	mockClient := new(awsinterfaces.MockCostExplorerClient)
+	s := &service{client: mockClient}
+
+	services := []string{"Amazon Elastic Compute Cloud - Compute", "Amazon Simple Storage Service"}
+
+	mockClient.On("GetCostAndUsage", mock.Anything, mock.MatchedBy(func(input *costexplorer.GetCostAndUsageInput) bool {
+		if input.Filter == nil || input.Filter.Dimensions == nil {
+			return false
+		}
+
+		if string(input.Filter.Dimensions.Key) != "SERVICE" {
+			return false
+		}
+
+		if len(input.Filter.Dimensions.Values) != 2 {
+			return false
+		}
+
+		return input.Filter.Dimensions.Values[0] == services[0] && input.Filter.Dimensions.Values[1] == services[1]
+	}), mock.Anything).Return(&costexplorer.GetCostAndUsageOutput{
+		ResultsByTime: []types.ResultByTime{
+			{
+				TimePeriod: &types.DateInterval{Start: aws.String("2024-01-01"), End: aws.String("2024-02-01")},
+				Total: map[string]types.MetricValue{
+					"UnblendedCost": {Amount: aws.String("100.00"), Unit: aws.String("USD")},
+				},
+			},
+		},
+	}, nil)
+
+	costs, err := s.GetLastSixMonthsCosts(context.Background(), services)
+
+	assert.NoError(t, err)
+	assert.Len(t, costs, 1)
 	mockClient.AssertExpectations(t)
 }
 

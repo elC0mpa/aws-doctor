@@ -46,6 +46,36 @@ aws-doctor trend
 
 ![6-Month Trend Analysis](/images/demo/trend.gif)
 
+### Filtering by Service
+You can now focus your trend analysis on specific AWS services by passing them as arguments to the `trend` subcommand. This is useful for monitoring the cost evolution of a single service or a group of services.
+
+```bash
+# Analyze cost trend for EC2 and S3 only
+aws-doctor trend ec2 s3
+```
+
+You can pass multiple services separated by spaces or commas.
+
+### Available Service Shorthands
+**AWS Doctor** uses intuitive shorthands for filtering. Each shorthand maps to its official AWS Cost Explorer service name:
+
+| Shorthand | AWS Service | Shorthand | AWS Service |
+| :--- | :--- | :--- | :--- |
+| `ec2` | EC2 Compute | `s3` | S3 Storage |
+| `rds` | RDS Database | `lambda` | AWS Lambda |
+| `dynamodb` | DynamoDB | `eks` | EKS (Kubernetes) |
+| `ecs` | ECS (Containers) | `elb` | Elastic Load Balancing |
+| `vpc` | Virtual Private Cloud | `route53` | Route 53 |
+| `apigateway` | API Gateway | `cloudfront` | CloudFront |
+| `cloudwatch` | CloudWatch | `elasticache` | ElastiCache |
+| `redshift` | Redshift | `savingsplans` | Savings Plans |
+| `glue` | AWS Glue | `kinesis` | Kinesis |
+| `firehose` | Kinesis Firehose | `quicksight` | QuickSight |
+| `waf` | AWS WAF | `backup` | AWS Backup |
+| `stepfunctions`| Step Functions | `kms` | KMS |
+| `secretsmanager`| Secrets Manager | `ssm` | Systems Manager |
+| `location` | Location Service | `ecr` | ECR (Registry) |
+
 ### What it shows:
 - A high-fidelity ANSI bar chart in your terminal.
 - Monthly total costs for the last 6 completed billing cycles.
