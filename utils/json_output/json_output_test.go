@@ -325,14 +325,20 @@ func TestOutputWasteJSON(t *testing.T) {
 
 	if len(result.UnusedElasticIPs) != 1 {
 		t.Errorf("UnusedElasticIPs has %d items, want 1", len(result.UnusedElasticIPs))
+	} else if result.UnusedElasticIPs[0].EstimatedMonthlyCost == 0 {
+		t.Error("UnusedElasticIPs EstimatedMonthlyCost should not be zero")
 	}
 
 	if len(result.UnusedEBSVolumes) != 1 {
 		t.Errorf("UnusedEBSVolumes has %d items, want 1", len(result.UnusedEBSVolumes))
+	} else if result.UnusedEBSVolumes[0].EstimatedMonthlyCost == 0 {
+		t.Error("UnusedEBSVolumes EstimatedMonthlyCost should not be zero")
 	}
 
 	if len(result.StoppedVolumes) != 1 {
 		t.Errorf("StoppedVolumes has %d items, want 1", len(result.StoppedVolumes))
+	} else if result.StoppedVolumes[0].EstimatedMonthlyCost == 0 {
+		t.Error("StoppedVolumes EstimatedMonthlyCost should not be zero")
 	}
 
 	if len(result.StoppedInstances) != 1 {
@@ -345,6 +351,8 @@ func TestOutputWasteJSON(t *testing.T) {
 
 	if len(result.UnusedLoadBalancers) != 1 {
 		t.Errorf("UnusedLoadBalancers has %d items, want 1", len(result.UnusedLoadBalancers))
+	} else if result.UnusedLoadBalancers[0].EstimatedMonthlyCost == 0 {
+		t.Error("UnusedLoadBalancers EstimatedMonthlyCost should not be zero")
 	}
 
 	if len(result.UnusedKeyPairs) != 1 {

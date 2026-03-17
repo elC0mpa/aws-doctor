@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/aws/aws-sdk-go-v2/service/ec2/types"
+	elbtypes "github.com/aws/aws-sdk-go-v2/service/elasticloadbalancingv2/types"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -61,4 +62,24 @@ func TestEBSCostPerGBMonth(t *testing.T) {
 			assert.Equal(t, tt.want, got)
 		})
 	}
+}
+
+func TestCalculateEBSMonthlyCost(t *testing.T) {
+	assert.Equal(t, 10.0, CalculateEBSMonthlyCost(100, types.VolumeTypeGp2))
+	assert.Equal(t, 8.0, CalculateEBSMonthlyCost(100, types.VolumeTypeGp3))
+}
+
+func TestCalculateEIPMonthlyCost(t *testing.T) {
+	assert.Equal(t, EIPCostPerMonth, CalculateEIPMonthlyCost())
+}
+
+func TestCalculateLoadBalancerMonthlyCost(t *testing.T) {
+	assert.Equal(t, ALBCostPerMonth, CalculateLoadBalancerMonthlyCost(elbtypes.LoadBalancerTypeEnumApplication))
+	assert.Equal(t, CLBCostPerMonth, CalculateLoadBalancerMonthlyCost("classic"))
+}
+
+func TestCalculateCloudWatchLogsMonthlyCost(t *testing.T) {
+	// 100 GB = 100 * 1024 * 1024 * 1024 bytes
+	bytes := int64(100 * 1024 * 1024 * 1024)
+	assert.Equal(t, 3.0, CalculateCloudWatchLogsMonthlyCost(bytes))
 }

@@ -36,12 +36,11 @@ func (s *service) GetCloudWatchLogsWaste(ctx context.Context) ([]model.CloudWatc
 		for _, logGroup := range output.LogGroups {
 			if logGroup.RetentionInDays == nil {
 				storedBytes := aws.ToInt64(logGroup.StoredBytes)
-				storedGB := float64(storedBytes) / (1024 * 1024 * 1024)
 				wasteLogGroups = append(wasteLogGroups, model.CloudWatchLogsWasteInfo{
 					LogGroupName:         *logGroup.LogGroupName,
 					CreationTime:         time.Unix(0, *logGroup.CreationTime*int64(time.Millisecond)),
 					StoredBytes:          storedBytes,
-					EstimatedMonthlyCost: storedGB * pricing.CloudWatchLogsCostPerGBMonth,
+					EstimatedMonthlyCost: pricing.CalculateCloudWatchLogsMonthlyCost(storedBytes),
 				})
 			}
 		}
