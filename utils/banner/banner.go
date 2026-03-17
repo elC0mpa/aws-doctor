@@ -7,6 +7,7 @@ import (
 
 	"github.com/elC0mpa/aws-doctor/utils/ansi"
 	"github.com/elC0mpa/aws-doctor/utils/console"
+	"github.com/mattn/go-runewidth"
 	"golang.org/x/term"
 )
 
@@ -99,9 +100,10 @@ var titleLines = []string{
 func printCenteredLines(lines []string, width int) {
 	for _, line := range lines {
 		pad := 0
+		lineWidth := runewidth.StringWidth(line)
 
-		if width > len(line) {
-			pad = (width - len(line)) / 2
+		if width > lineWidth {
+			pad = (width - lineWidth) / 2
 		}
 
 		if pad > 0 {
