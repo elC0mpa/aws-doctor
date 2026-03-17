@@ -16,7 +16,7 @@ Estos son los flujos de trabajo principales de la herramienta.
 | :--- | :--- |
 | `cost` | Ejecutar analítica de costos comparativa (Mes actual vs. Mes anterior). |
 | `waste` | Ejecutar el motor de detección de desperdicio. |
-| `trend` | Generar un informe de tendencia de costos de 6 meses. |
+| `trend` | Generar un informe de tendencia de costos de 6 meses (opcionalmente filtrado por servicio). |
 | `update` | Actualizar la herramienta a la última versión. |
 | `version` | Mostrar información de versión y compilación. |
 | `help` | Mostrar ayuda para cualquier subcomando. |
