@@ -77,7 +77,7 @@ func (s *service) GetLastMonthTotalCosts(ctx context.Context) (*string, error) {
 	return s.GetMonthTotalCosts(ctx, time.Now().AddDate(0, -1, 0))
 }
 
-func (s *service) GetLastSixMonthsCosts(ctx context.Context) ([]model.CostInfo, error) {
+func (s *service) GetLastSixMonthsCosts(ctx context.Context, services []string) ([]model.CostInfo, error) {
 	firstOfMonth := s.getFirstDayOfMonth(time.Now().AddDate(0, -6, 0))
 	firstOfMonthStr := firstOfMonth.Format("2006-01-02")
 
@@ -88,6 +88,15 @@ func (s *service) GetLastSixMonthsCosts(ctx context.Context) ([]model.CostInfo, 
 			End:   aws.String(s.getFirstDayOfMonth(time.Now()).Format("2006-01-02")),
 		},
 		Metrics: []string{unblendedCost},
+	}
+
+	if len(services) > 0 {
+		input.Filter = &types.Expression{
+			Dimensions: &types.DimensionValues{
+				Key:    types.Dimension("SERVICE"),
+				Values: services,
+			},
+		}
 	}
 
 	output, err := s.client.GetCostAndUsage(ctx, input)

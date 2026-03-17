@@ -93,7 +93,7 @@ func TestOrchestrate_RouteToTrendWorkflow(t *testing.T) {
 	svc := NewService(mockSTS, mockCost, mockEC2, mockELB, mockS3, mockCloudWatch, mockOutput, mockUpdate, model.VersionInfo{Version: "dev", Commit: "none", Date: "unknown"})
 
 	// Setup expectations for trend workflow
-	mockCost.On("GetLastSixMonthsCosts", mock.Anything).Return([]model.CostInfo{}, nil)
+	mockCost.On("GetLastSixMonthsCosts", mock.Anything, mock.Anything).Return([]model.CostInfo{}, nil)
 	mockSTS.On("GetCallerIdentity", mock.Anything).Return(&sts.GetCallerIdentityOutput{
 		Account: aws.String("123456789012"),
 	}, nil)
@@ -191,7 +191,47 @@ func TestOrchestrate_WasteTakesPrecedenceOverTrend(t *testing.T) {
 
 	// Assert - cost service should NOT be called for trend
 	assert.NoError(t, err)
-	mockCost.AssertNotCalled(t, "GetLastSixMonthsCosts", mock.Anything)
+	mockCost.AssertNotCalled(t, "GetLastSixMonthsCosts", mock.Anything, mock.Anything)
+}
+
+func TestOrchestrate_TrendWorkflow_Mapping(t *testing.T) {
+	// Setup mocks
+	mockSTS := new(services.MockSTSService)
+	mockCost := new(services.MockCostService)
+	mockEC2 := new(services.MockEC2Service)
+	mockELB := new(services.MockELBService)
+	mockS3 := new(services.MockS3Service)
+	mockCloudWatch := new(services.MockCloudWatchLogsService)
+	mockOutput := new(services.MockOutputService)
+	mockUpdate := new(services.MockUpdateService)
+
+	// Create service
+	svc := NewService(mockSTS, mockCost, mockEC2, mockELB, mockS3, mockCloudWatch, mockOutput, mockUpdate, model.VersionInfo{Version: "dev", Commit: "none", Date: "unknown"})
+
+	// Shorthand services to check
+	trendChecks := []string{"ec2", "s3", "rds", "invalid"}
+	// Expected mapped services
+	expectedMapped := []string{
+		"Amazon Elastic Compute Cloud - Compute",
+		"Amazon Simple Storage Service",
+		"Amazon Relational Database Service",
+	}
+
+	// Setup expectations
+	mockCost.On("GetLastSixMonthsCosts", mock.Anything, expectedMapped).Return([]model.CostInfo{}, nil)
+	mockSTS.On("GetCallerIdentity", mock.Anything).Return(&sts.GetCallerIdentityOutput{
+		Account: aws.String("123456789012"),
+	}, nil)
+	mockOutput.On("StopSpinner").Return()
+	mockOutput.On("RenderTrend", "123456789012", mock.Anything).Return(nil)
+
+	// Execute with Trend flag and checks
+	flags := model.Flags{Trend: true, TrendChecks: trendChecks}
+	err := svc.Orchestrate(flags)
+
+	// Assert
+	assert.NoError(t, err)
+	mockCost.AssertExpectations(t)
 }
 
 func TestDefaultWorkflow_CostServiceError(t *testing.T) {
@@ -280,14 +320,14 @@ func TestTrendWorkflow_Error(t *testing.T) {
 		{
 			name: "GetLastSixMonthsCosts_fails",
 			setupMocks: func(mockCost *services.MockCostService, _ *services.MockSTSService) {
-				mockCost.On("GetLastSixMonthsCosts", mock.Anything).Return(([]model.CostInfo)(nil), errors.New("trend API error"))
+				mockCost.On("GetLastSixMonthsCosts", mock.Anything, mock.Anything).Return(([]model.CostInfo)(nil), errors.New("trend API error"))
 			},
 			expectedErr: "trend API error",
 		},
 		{
 			name: "GetCallerIdentity_fails",
 			setupMocks: func(mockCost *services.MockCostService, mockSTS *services.MockSTSService) {
-				mockCost.On("GetLastSixMonthsCosts", mock.Anything).Return([]model.CostInfo{}, nil)
+				mockCost.On("GetLastSixMonthsCosts", mock.Anything, mock.Anything).Return([]model.CostInfo{}, nil)
 				mockSTS.On("GetCallerIdentity", mock.Anything).Return((*sts.GetCallerIdentityOutput)(nil), errors.New("STS error"))
 			},
 			expectedErr: "STS error",
