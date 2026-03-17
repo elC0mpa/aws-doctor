@@ -2,6 +2,7 @@ package wastetable
 
 import (
 	"bytes"
+	"fmt"
 	"io"
 	"os"
 	"strings"
@@ -55,10 +56,16 @@ func TestPopulateEBSRows(t *testing.T) {
 				return
 			}
 
-			// Verify each row has 4 columns
+			// Verify each row has 4 columns and cost is present
 			for i, row := range rows {
 				if len(row) != 4 {
 					t.Errorf("Row %d has %d columns, want 4", i, len(row))
+				}
+
+				costStr := fmt.Sprintf("%v", row[3])
+
+				if !strings.HasPrefix(costStr, "$") {
+					t.Errorf("Row %d cost %q does not start with $", i, costStr)
 				}
 			}
 
@@ -126,10 +133,16 @@ func TestPopulateElasticIPRows(t *testing.T) {
 				return
 			}
 
-			// Verify each row has 4 columns
+			// Verify each row has 4 columns and cost is present
 			for i, row := range rows {
 				if len(row) != 4 {
 					t.Errorf("Row %d has %d columns, want 4", i, len(row))
+				}
+
+				costStr := fmt.Sprintf("%v", row[3])
+
+				if !strings.HasPrefix(costStr, "$") {
+					t.Errorf("Row %d cost %q does not start with $", i, costStr)
 				}
 			}
 		})
@@ -405,10 +418,16 @@ func TestPopulateLoadBalancerRows(t *testing.T) {
 				return
 			}
 
-			// Verify each row has 4 columns
+			// Verify each row has 4 columns and cost is present
 			for i, row := range rows {
 				if len(row) != 4 {
 					t.Errorf("Row %d has %d columns, want 4", i, len(row))
+				}
+
+				costStr := fmt.Sprintf("%v", row[3])
+
+				if !strings.HasPrefix(costStr, "$") {
+					t.Errorf("Row %d cost %q does not start with $", i, costStr)
 				}
 			}
 		})
@@ -1468,8 +1487,13 @@ func TestPopulateCloudWatchLogsRows(t *testing.T) {
 					t.Errorf("Row has %d columns, want 5", len(rows[0]))
 				}
 
+				costStr := fmt.Sprintf("%v", rows[0][4])
+				if !strings.HasPrefix(costStr, "$") {
+					t.Errorf("CloudWatch Logs cost %q does not start with $", costStr)
+				}
+
 				if rows[0][1] != "test-loggroup" {
-					t.Errorf("LogGroupName = %v, want 'test-loggroup'", rows[0][1])
+					t.Errorf("Log group name = %v, want 'test-loggroup'", rows[0][1])
 				}
 			}
 		})

@@ -141,7 +141,7 @@ func mapElasticIPs(elasticIPs []types.Address) []model.ElasticIPJSON {
 		result = append(result, model.ElasticIPJSON{
 			PublicIP:             aws.ToString(ip.PublicIp),
 			AllocationID:         aws.ToString(ip.AllocationId),
-			EstimatedMonthlyCost: pricing.EIPCostPerMonth,
+			EstimatedMonthlyCost: pricing.CalculateEIPMonthlyCost(),
 		})
 	}
 
@@ -158,7 +158,7 @@ func mapEBSVolumes(volumes []types.Volume, status string) []model.EBSVolumeJSON 
 			VolumeID:             aws.ToString(vol.VolumeId),
 			Size:                 size,
 			Status:               status,
-			EstimatedMonthlyCost: float64(size) * pricing.EBSCostPerGBMonth(vol.VolumeType),
+			EstimatedMonthlyCost: pricing.CalculateEBSMonthlyCost(size, vol.VolumeType),
 		})
 	}
 
@@ -209,16 +209,11 @@ func mapLoadBalancers(loadBalancers []elbtypes.LoadBalancer) []model.LoadBalance
 	var result []model.LoadBalancerJSON
 
 	for _, lb := range loadBalancers {
-		monthlyCost := pricing.ALBCostPerMonth
-		if lb.Type == "classic" {
-			monthlyCost = pricing.CLBCostPerMonth
-		}
-
 		result = append(result, model.LoadBalancerJSON{
 			Name:                 aws.ToString(lb.LoadBalancerName),
 			ARN:                  aws.ToString(lb.LoadBalancerArn),
 			Type:                 string(lb.Type),
-			EstimatedMonthlyCost: monthlyCost,
+			EstimatedMonthlyCost: pricing.CalculateLoadBalancerMonthlyCost(lb.Type),
 		})
 	}
 

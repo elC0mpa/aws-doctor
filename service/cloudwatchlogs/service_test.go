@@ -82,6 +82,8 @@ func TestGetCloudWatchLogsWaste(t *testing.T) {
 
 				if tt.wantCount > 0 {
 					assert.Equal(t, "waste-group", waste[0].LogGroupName)
+					// 1024 bytes / (1024^3) * 0.03 = small value
+					assert.Greater(t, waste[0].EstimatedMonthlyCost, 0.0)
 				}
 			}
 		})

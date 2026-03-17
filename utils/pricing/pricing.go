@@ -4,6 +4,7 @@ package pricing
 
 import (
 	"github.com/aws/aws-sdk-go-v2/service/ec2/types"
+	elbtypes "github.com/aws/aws-sdk-go-v2/service/elasticloadbalancingv2/types"
 )
 
 const (
@@ -49,4 +50,29 @@ func EBSCostPerGBMonth(volumeType types.VolumeType) float64 {
 	default:
 		return EBSgp2CostPerGBMonth
 	}
+}
+
+// CalculateEBSMonthlyCost calculates the estimated monthly cost for an EBS volume.
+func CalculateEBSMonthlyCost(sizeGiB int32, volumeType types.VolumeType) float64 {
+	return float64(sizeGiB) * EBSCostPerGBMonth(volumeType)
+}
+
+// CalculateEIPMonthlyCost returns the estimated monthly cost for an unassociated Elastic IP.
+func CalculateEIPMonthlyCost() float64 {
+	return EIPCostPerMonth
+}
+
+// CalculateLoadBalancerMonthlyCost calculates the estimated monthly cost for a load balancer.
+func CalculateLoadBalancerMonthlyCost(lbType elbtypes.LoadBalancerTypeEnum) float64 {
+	if lbType == "classic" {
+		return CLBCostPerMonth
+	}
+
+	return ALBCostPerMonth
+}
+
+// CalculateCloudWatchLogsMonthlyCost calculates the estimated monthly storage cost for CloudWatch Logs.
+func CalculateCloudWatchLogsMonthlyCost(storedBytes int64) float64 {
+	storedGB := float64(storedBytes) / (1024 * 1024 * 1024)
+	return storedGB * CloudWatchLogsCostPerGBMonth
 }
