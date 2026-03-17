@@ -23,6 +23,9 @@ const (
 	// EBSsc1CostPerGBMonth is the cost of sc1 EBS storage per GB per month.
 	EBSsc1CostPerGBMonth = 0.015
 
+	// CloudWatchLogsCostPerGBMonth is the cost of CloudWatch Logs storage per GB per month.
+	CloudWatchLogsCostPerGBMonth = 0.03
+
 	// ALBCostPerMonth is the base cost of an ALB/NLB (~$0.0225/hour * 730 hours)
 	ALBCostPerMonth = 16.43
 

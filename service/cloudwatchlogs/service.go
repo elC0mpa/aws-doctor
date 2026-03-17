@@ -9,6 +9,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/cloudwatchlogs"
 	"github.com/elC0mpa/aws-doctor/model"
+	"github.com/elC0mpa/aws-doctor/utils/pricing"
 )
 
 // NewService creates a new CloudWatch Logs service.
@@ -19,9 +20,6 @@ func NewService(awsconfig aws.Config) Service {
 		client: client,
 	}
 }
-
-// CloudWatch Logs storage pricing: ~$0.03 per GB per month
-const cloudwatchStorageCostPerGBMonth = 0.03
 
 // GetCloudWatchLogsWaste returns a list of CloudWatch Log Groups without a retention policy.
 func (s *service) GetCloudWatchLogsWaste(ctx context.Context) ([]model.CloudWatchLogsWasteInfo, error) {
@@ -43,7 +41,7 @@ func (s *service) GetCloudWatchLogsWaste(ctx context.Context) ([]model.CloudWatc
 					LogGroupName:         *logGroup.LogGroupName,
 					CreationTime:         time.Unix(0, *logGroup.CreationTime*int64(time.Millisecond)),
 					StoredBytes:          storedBytes,
-					EstimatedMonthlyCost: storedGB * cloudwatchStorageCostPerGBMonth,
+					EstimatedMonthlyCost: storedGB * pricing.CloudWatchLogsCostPerGBMonth,
 				})
 			}
 		}
