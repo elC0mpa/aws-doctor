@@ -11,6 +11,7 @@ import (
 	"github.com/elC0mpa/aws-doctor/model"
 	"github.com/elC0mpa/aws-doctor/utils/cost"
 	"github.com/elC0mpa/aws-doctor/utils/ec2"
+	"github.com/elC0mpa/aws-doctor/utils/pricing"
 )
 
 // OutputCostComparisonJSON outputs cost comparison data as JSON
@@ -138,8 +139,9 @@ func mapElasticIPs(elasticIPs []types.Address) []model.ElasticIPJSON {
 
 	for _, ip := range elasticIPs {
 		result = append(result, model.ElasticIPJSON{
-			PublicIP:     aws.ToString(ip.PublicIp),
-			AllocationID: aws.ToString(ip.AllocationId),
+			PublicIP:             aws.ToString(ip.PublicIp),
+			AllocationID:         aws.ToString(ip.AllocationId),
+			EstimatedMonthlyCost: pricing.EIPCostPerMonth,
 		})
 	}
 
@@ -150,10 +152,13 @@ func mapEBSVolumes(volumes []types.Volume, status string) []model.EBSVolumeJSON 
 	var result []model.EBSVolumeJSON
 
 	for _, vol := range volumes {
+		size := aws.ToInt32(vol.Size)
+
 		result = append(result, model.EBSVolumeJSON{
-			VolumeID: aws.ToString(vol.VolumeId),
-			Size:     aws.ToInt32(vol.Size),
-			Status:   status,
+			VolumeID:             aws.ToString(vol.VolumeId),
+			Size:                 size,
+			Status:               status,
+			EstimatedMonthlyCost: float64(size) * pricing.EBSCostPerGBMonth(vol.VolumeType),
 		})
 	}
 
@@ -204,10 +209,16 @@ func mapLoadBalancers(loadBalancers []elbtypes.LoadBalancer) []model.LoadBalance
 	var result []model.LoadBalancerJSON
 
 	for _, lb := range loadBalancers {
+		monthlyCost := pricing.ALBCostPerMonth
+		if lb.Type == "classic" {
+			monthlyCost = pricing.CLBCostPerMonth
+		}
+
 		result = append(result, model.LoadBalancerJSON{
-			Name: aws.ToString(lb.LoadBalancerName),
-			ARN:  aws.ToString(lb.LoadBalancerArn),
-			Type: string(lb.Type),
+			Name:                 aws.ToString(lb.LoadBalancerName),
+			ARN:                  aws.ToString(lb.LoadBalancerArn),
+			Type:                 string(lb.Type),
+			EstimatedMonthlyCost: monthlyCost,
 		})
 	}
 
@@ -284,9 +295,10 @@ func mapCloudWatchLogGroups(logGroups []model.CloudWatchLogsWasteInfo) []model.C
 
 	for _, lg := range logGroups {
 		result = append(result, model.CloudWatchLogGroupJSON{
-			LogGroupName: lg.LogGroupName,
-			CreationTime: lg.CreationTime.Format(time.RFC3339),
-			StoredBytes:  lg.StoredBytes,
+			LogGroupName:         lg.LogGroupName,
+			CreationTime:         lg.CreationTime.Format(time.RFC3339),
+			StoredBytes:          lg.StoredBytes,
+			EstimatedMonthlyCost: lg.EstimatedMonthlyCost,
 		})
 	}
 
