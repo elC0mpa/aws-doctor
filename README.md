@@ -68,3 +68,6 @@ I created ***\*aws-doctor\**** to fill that gap. It doesn't just show you the bi
 ## 🤝 Contributing
 
 We love contributions! Whether it's a new detection rule or a bug fix, check our [Community Dashboard](https://awsdoctor.compacompila.com/#join-the-community) to get started.
+
+> [!IMPORTANT]
+> **Always target your Pull Requests to the `development` branch.** The `main` branch is reserved for production-ready releases. Check our [Contributing Guidelines](CONTRIBUTING.md) for more details.
