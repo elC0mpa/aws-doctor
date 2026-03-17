@@ -12,6 +12,7 @@ import (
 	"github.com/elC0mpa/aws-doctor/utils/cost"
 	"github.com/elC0mpa/aws-doctor/utils/ec2"
 	"github.com/elC0mpa/aws-doctor/utils/pricing"
+	wastesummary "github.com/elC0mpa/aws-doctor/utils/waste_summary"
 )
 
 // OutputCostComparisonJSON outputs cost comparison data as JSON
@@ -107,6 +108,17 @@ func OutputWasteJSON(input model.RenderWasteInput) error {
 		len(output.S3Buckets) > 0 ||
 		len(output.S3MultipartUploads) > 0 ||
 		len(output.CloudWatchLogGroups) > 0
+
+	categories, total := wastesummary.Compute(input)
+	output.TotalEstimatedMonthlyCost = total
+
+	for _, cat := range categories {
+		output.Summary = append(output.Summary, model.WasteSummaryJSON{
+			Category:             cat.Name,
+			Count:                cat.Count,
+			EstimatedMonthlyCost: cat.Cost,
+		})
+	}
 
 	return printJSON(output)
 }
