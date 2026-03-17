@@ -17,7 +17,7 @@ These are the primary workflows of the tool.
 | :--- | :--- |
 | `cost` | Run comparative cost analytics (Current month vs. Last month). |
 | `waste` | Run the waste detection engine. |
-| `trend` | Generate a 6-month cost trend report. |
+| `trend` | Generate a 6-month cost trend report (optionally filtered by service). |
 | `update` | Self-update the tool to the latest version. |
 | `version` | Display version and build information. |
 | `help` | Display help for any subcommand. |

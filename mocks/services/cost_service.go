@@ -65,8 +65,8 @@ func (m *MockCostService) GetLastMonthTotalCosts(ctx context.Context) (*string, 
 }
 
 // GetLastSixMonthsCosts mocks the GetLastSixMonthsCosts method.
-func (m *MockCostService) GetLastSixMonthsCosts(ctx context.Context) ([]model.CostInfo, error) {
-	args := m.Called(ctx)
+func (m *MockCostService) GetLastSixMonthsCosts(ctx context.Context, services []string) ([]model.CostInfo, error) {
+	args := m.Called(ctx, services)
 	if args.Get(0) == nil {
 		return nil, args.Error(1)
 	}
