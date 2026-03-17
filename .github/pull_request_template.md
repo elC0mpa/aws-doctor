@@ -20,7 +20,6 @@ Please ensure your PR is targeting the **`development`** branch. PRs targeting `
 - [ ] I have added unit tests to cover my changes.
 - [ ] I have updated the documentation (if applicable).
 - [ ] All new and existing tests passed locally.
-- [ ] My PR title follows the [Conventional Commits](https://www.conventionalcommits.org/) format.
 
 ## Screenshots (if applicable)
 If your change affects the CLI output or documentation, please include screenshots or GIFs.
