@@ -90,13 +90,35 @@ func TestBannerTitleColor(t *testing.T) {
 }
 
 func TestPrintCenteredLines(t *testing.T) {
-	lines := []string{"ABC", "DEFG"}
-	output := captureOutput(func() {
-		printCenteredLines(lines, 10)
-	})
+	tests := []struct {
+		name  string
+		lines []string
+		width int
+	}{
+		{
+			name:  "ASCII lines",
+			lines: []string{"ABC", "DEFG"},
+			width: 10,
+		},
+		{
+			name:  "Unicode lines",
+			lines: []string{"┌─┐", "│A│", "└─┘"},
+			width: 10,
+		},
+	}
 
-	if !strings.Contains(output, "ABC") || !strings.Contains(output, "DEFG") {
-		t.Error("printCenteredLines() output missing lines")
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			output := captureOutput(func() {
+				printCenteredLines(tt.lines, tt.width)
+			})
+
+			for _, line := range tt.lines {
+				if !strings.Contains(output, line) {
+					t.Errorf("printCenteredLines() output missing line: %q", line)
+				}
+			}
+		})
 	}
 }
 
