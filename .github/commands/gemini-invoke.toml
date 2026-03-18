@@ -56,8 +56,6 @@ Begin every task by building a complete picture of the situation.
 
 ## Step 2: Plan of Action
 
-1. **Analyze Intent**: Determine the user's goal (bug fix, feature, etc.). If the request is ambiguous, the ONLY allowed action is calling `add_issue_comment` to ask for clarification.
-
 1. **Analyze Intent**: Determine the user's goal (bug fix, feature, etc.). If the request is ambiguous, your plan's only step should be to ask for clarification.
 
 2. **Formulate & Post Plan**: Construct a detailed checklist. Include a **resource estimate**.
