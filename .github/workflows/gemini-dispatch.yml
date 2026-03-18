@@ -50,6 +50,7 @@ jobs:
     if: |-
       (
         github.event_name == 'pull_request' &&
+        contains(fromJSON('["opened", "synchronize"]'), github.event.action) &&
         github.event.pull_request.head.repo.fork == false
       ) || (
         github.event_name == 'issues' &&
@@ -91,10 +92,10 @@ jobs:
         with:
           script: |
             const eventType = process.env.EVENT_TYPE;
-            const request = process.env.REQUEST;
+            const request = process.env.REQUEST || '';
             core.setOutput('request', request);
 
-            if (eventType === 'pull_request.opened') {
+            if (['pull_request.opened', 'pull_request.synchronize'].includes(eventType)) {
               core.setOutput('command', 'review');
             } else if (['issues.opened', 'issues.reopened'].includes(eventType)) {
               core.setOutput('command', 'triage');
