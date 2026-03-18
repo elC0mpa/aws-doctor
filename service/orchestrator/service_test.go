@@ -26,7 +26,8 @@ func TestOrchestrate_RouteToDefaultWorkflow(t *testing.T) {
 	mockUpdate := new(services.MockUpdateService)
 
 	// Create service
-	svc := NewService(mockSTS, mockCost, mockEC2, mockELB, mockS3, mockCloudWatch, mockOutput, mockUpdate, model.VersionInfo{Version: "dev", Commit: "none", Date: "unknown"})
+	mockRDS := new(services.MockRDSService)
+	svc := NewService(mockSTS, mockCost, mockEC2, mockELB, mockS3, mockCloudWatch, mockRDS, mockOutput, mockUpdate, model.VersionInfo{Version: "dev", Commit: "none", Date: "unknown"})
 
 	// Setup expectations for default workflow
 	mockCost.On("GetCurrentMonthCostsByService", mock.Anything).Return(&model.CostInfo{}, nil)
@@ -62,7 +63,8 @@ func TestOrchestrate_RouteToUpdateWorkflow(t *testing.T) {
 	mockUpdate := new(services.MockUpdateService)
 
 	// Create service
-	svc := NewService(mockSTS, mockCost, mockEC2, mockELB, mockS3, mockCloudWatch, mockOutput, mockUpdate, model.VersionInfo{Version: "dev", Commit: "none", Date: "unknown"})
+	mockRDS := new(services.MockRDSService)
+	svc := NewService(mockSTS, mockCost, mockEC2, mockELB, mockS3, mockCloudWatch, mockRDS, mockOutput, mockUpdate, model.VersionInfo{Version: "dev", Commit: "none", Date: "unknown"})
 
 	// Setup expectations
 	mockOutput.On("StopSpinner").Return()
@@ -90,7 +92,8 @@ func TestOrchestrate_RouteToTrendWorkflow(t *testing.T) {
 	mockUpdate := new(services.MockUpdateService)
 
 	// Create service
-	svc := NewService(mockSTS, mockCost, mockEC2, mockELB, mockS3, mockCloudWatch, mockOutput, mockUpdate, model.VersionInfo{Version: "dev", Commit: "none", Date: "unknown"})
+	mockRDS := new(services.MockRDSService)
+	svc := NewService(mockSTS, mockCost, mockEC2, mockELB, mockS3, mockCloudWatch, mockRDS, mockOutput, mockUpdate, model.VersionInfo{Version: "dev", Commit: "none", Date: "unknown"})
 
 	// Setup expectations for trend workflow
 	mockCost.On("GetLastSixMonthsCosts", mock.Anything, mock.Anything).Return([]model.CostInfo{}, nil)
@@ -123,7 +126,8 @@ func TestOrchestrate_RouteToWasteWorkflow(t *testing.T) {
 	mockUpdate := new(services.MockUpdateService)
 
 	// Create service
-	svc := NewService(mockSTS, mockCost, mockEC2, mockELB, mockS3, mockCloudWatch, mockOutput, mockUpdate, model.VersionInfo{Version: "dev", Commit: "none", Date: "unknown"})
+	mockRDS := new(services.MockRDSService)
+	svc := NewService(mockSTS, mockCost, mockEC2, mockELB, mockS3, mockCloudWatch, mockRDS, mockOutput, mockUpdate, model.VersionInfo{Version: "dev", Commit: "none", Date: "unknown"})
 
 	// Setup expectations for waste workflow
 	mockEC2.On("GetUnusedElasticIPAddressesInfo", mock.Anything).Return([]types.Address{}, nil)
@@ -135,6 +139,7 @@ func TestOrchestrate_RouteToWasteWorkflow(t *testing.T) {
 	mockEC2.On("GetUnusedKeyPairs", mock.Anything).Return([]model.KeyPairWasteInfo{}, nil)
 	mockS3.On("GetS3Waste", mock.Anything).Return([]model.S3BucketWasteInfo{}, []model.S3MultipartUploadWasteInfo{}, nil)
 	mockCloudWatch.On("GetCloudWatchLogsWaste", mock.Anything).Return([]model.CloudWatchLogsWasteInfo{}, nil)
+	mockRDS.On("GetRDSWaste", mock.Anything).Return([]model.RDSInstanceWasteInfo{}, []model.RDSSnapshotWasteInfo{}, []model.RDSIdleInstanceInfo{}, nil)
 	mockELB.On("GetUnusedLoadBalancers", mock.Anything).Return([]elbtypes.LoadBalancer{}, nil)
 	mockSTS.On("GetCallerIdentity", mock.Anything).Return(&sts.GetCallerIdentityOutput{
 		Account: aws.String("123456789012"),
@@ -166,7 +171,8 @@ func TestOrchestrate_WasteTakesPrecedenceOverTrend(t *testing.T) {
 	mockUpdate := new(services.MockUpdateService)
 
 	// Create service
-	svc := NewService(mockSTS, mockCost, mockEC2, mockELB, mockS3, mockCloudWatch, mockOutput, mockUpdate, model.VersionInfo{Version: "dev", Commit: "none", Date: "unknown"})
+	mockRDS := new(services.MockRDSService)
+	svc := NewService(mockSTS, mockCost, mockEC2, mockELB, mockS3, mockCloudWatch, mockRDS, mockOutput, mockUpdate, model.VersionInfo{Version: "dev", Commit: "none", Date: "unknown"})
 
 	// Setup expectations for waste workflow (should be called, not trend)
 	mockEC2.On("GetUnusedElasticIPAddressesInfo", mock.Anything).Return([]types.Address{}, nil)
@@ -178,6 +184,7 @@ func TestOrchestrate_WasteTakesPrecedenceOverTrend(t *testing.T) {
 	mockEC2.On("GetUnusedKeyPairs", mock.Anything).Return([]model.KeyPairWasteInfo{}, nil)
 	mockS3.On("GetS3Waste", mock.Anything).Return([]model.S3BucketWasteInfo{}, []model.S3MultipartUploadWasteInfo{}, nil)
 	mockCloudWatch.On("GetCloudWatchLogsWaste", mock.Anything).Return([]model.CloudWatchLogsWasteInfo{}, nil)
+	mockRDS.On("GetRDSWaste", mock.Anything).Return([]model.RDSInstanceWasteInfo{}, []model.RDSSnapshotWasteInfo{}, []model.RDSIdleInstanceInfo{}, nil)
 	mockELB.On("GetUnusedLoadBalancers", mock.Anything).Return([]elbtypes.LoadBalancer{}, nil)
 	mockSTS.On("GetCallerIdentity", mock.Anything).Return(&sts.GetCallerIdentityOutput{
 		Account: aws.String("123456789012"),
@@ -206,7 +213,8 @@ func TestOrchestrate_TrendWorkflow_Mapping(t *testing.T) {
 	mockUpdate := new(services.MockUpdateService)
 
 	// Create service
-	svc := NewService(mockSTS, mockCost, mockEC2, mockELB, mockS3, mockCloudWatch, mockOutput, mockUpdate, model.VersionInfo{Version: "dev", Commit: "none", Date: "unknown"})
+	mockRDS := new(services.MockRDSService)
+	svc := NewService(mockSTS, mockCost, mockEC2, mockELB, mockS3, mockCloudWatch, mockRDS, mockOutput, mockUpdate, model.VersionInfo{Version: "dev", Commit: "none", Date: "unknown"})
 
 	// Shorthand services to check
 	trendChecks := []string{"ec2", "s3", "rds", "invalid"}
@@ -302,7 +310,8 @@ func TestDefaultWorkflow_CostServiceError(t *testing.T) {
 			mockOutput.On("StopSpinner").Return().Maybe()
 			mockOutput.On("RenderCostComparison", mock.Anything).Return(nil).Maybe()
 
-			svc := NewService(mockSTS, mockCost, mockEC2, mockELB, mockS3, mockCloudWatch, mockOutput, mockUpdate, model.VersionInfo{Version: "dev", Commit: "none", Date: "unknown"})
+			mockRDS := new(services.MockRDSService)
+			svc := NewService(mockSTS, mockCost, mockEC2, mockELB, mockS3, mockCloudWatch, mockRDS, mockOutput, mockUpdate, model.VersionInfo{Version: "dev", Commit: "none", Date: "unknown"})
 			err := svc.Orchestrate(model.Flags{Output: "json"})
 
 			assert.Error(t, err)
@@ -349,7 +358,8 @@ func TestTrendWorkflow_Error(t *testing.T) {
 			mockOutput.On("StopSpinner").Return().Maybe()
 			mockOutput.On("RenderTrend", mock.Anything, mock.Anything).Return(nil).Maybe()
 
-			svc := NewService(mockSTS, mockCost, mockEC2, mockELB, mockS3, mockCloudWatch, mockOutput, mockUpdate, model.VersionInfo{Version: "dev", Commit: "none", Date: "unknown"})
+			mockRDS := new(services.MockRDSService)
+			svc := NewService(mockSTS, mockCost, mockEC2, mockELB, mockS3, mockCloudWatch, mockRDS, mockOutput, mockUpdate, model.VersionInfo{Version: "dev", Commit: "none", Date: "unknown"})
 			err := svc.Orchestrate(model.Flags{Trend: true, Output: "json"})
 
 			assert.Error(t, err)
@@ -361,12 +371,12 @@ func TestTrendWorkflow_Error(t *testing.T) {
 func TestWasteWorkflow_Error(t *testing.T) {
 	tests := []struct {
 		name        string
-		setupMocks  func(*services.MockEC2Service, *services.MockELBService, *services.MockS3Service, *services.MockCloudWatchLogsService, *services.MockSTSService)
+		setupMocks  func(*services.MockEC2Service, *services.MockELBService, *services.MockS3Service, *services.MockCloudWatchLogsService, *services.MockRDSService, *services.MockSTSService)
 		expectedErr string
 	}{
 		{
 			name: "GetUnusedElasticIpAddressesInfo_fails",
-			setupMocks: func(mockEC2 *services.MockEC2Service, mockELB *services.MockELBService, mockS3 *services.MockS3Service, mockCloudWatch *services.MockCloudWatchLogsService, mockSTS *services.MockSTSService) {
+			setupMocks: func(mockEC2 *services.MockEC2Service, mockELB *services.MockELBService, mockS3 *services.MockS3Service, mockCloudWatch *services.MockCloudWatchLogsService, mockRDS *services.MockRDSService, mockSTS *services.MockSTSService) {
 				mockEC2.On("GetUnusedElasticIPAddressesInfo", mock.Anything).Return(([]types.Address)(nil), errors.New("EIP error"))
 				mockEC2.On("GetUnusedEBSVolumes", mock.Anything).Return([]types.Volume{}, nil)
 				mockEC2.On("GetStoppedInstancesInfo", mock.Anything).Return([]types.Instance{}, []types.Volume{}, nil)
@@ -376,6 +386,7 @@ func TestWasteWorkflow_Error(t *testing.T) {
 				mockEC2.On("GetUnusedKeyPairs", mock.Anything).Return([]model.KeyPairWasteInfo{}, nil)
 				mockS3.On("GetS3Waste", mock.Anything).Return([]model.S3BucketWasteInfo{}, []model.S3MultipartUploadWasteInfo{}, nil)
 				mockCloudWatch.On("GetCloudWatchLogsWaste", mock.Anything).Return([]model.CloudWatchLogsWasteInfo{}, nil)
+				mockRDS.On("GetRDSWaste", mock.Anything).Return([]model.RDSInstanceWasteInfo{}, []model.RDSSnapshotWasteInfo{}, []model.RDSIdleInstanceInfo{}, nil)
 
 				mockELB.On("GetUnusedLoadBalancers", mock.Anything).Return([]elbtypes.LoadBalancer{}, nil)
 				mockSTS.On("GetCallerIdentity", mock.Anything).Return(&sts.GetCallerIdentityOutput{
@@ -386,7 +397,7 @@ func TestWasteWorkflow_Error(t *testing.T) {
 		},
 		{
 			name: "GetUnusedEBSVolumes_fails",
-			setupMocks: func(mockEC2 *services.MockEC2Service, mockELB *services.MockELBService, mockS3 *services.MockS3Service, mockCloudWatch *services.MockCloudWatchLogsService, mockSTS *services.MockSTSService) {
+			setupMocks: func(mockEC2 *services.MockEC2Service, mockELB *services.MockELBService, mockS3 *services.MockS3Service, mockCloudWatch *services.MockCloudWatchLogsService, mockRDS *services.MockRDSService, mockSTS *services.MockSTSService) {
 				mockEC2.On("GetUnusedElasticIPAddressesInfo", mock.Anything).Return([]types.Address{}, nil)
 				mockEC2.On("GetUnusedEBSVolumes", mock.Anything).Return(([]types.Volume)(nil), errors.New("EBS error"))
 				mockEC2.On("GetStoppedInstancesInfo", mock.Anything).Return([]types.Instance{}, []types.Volume{}, nil)
@@ -396,6 +407,7 @@ func TestWasteWorkflow_Error(t *testing.T) {
 				mockEC2.On("GetUnusedKeyPairs", mock.Anything).Return([]model.KeyPairWasteInfo{}, nil)
 				mockS3.On("GetS3Waste", mock.Anything).Return([]model.S3BucketWasteInfo{}, []model.S3MultipartUploadWasteInfo{}, nil)
 				mockCloudWatch.On("GetCloudWatchLogsWaste", mock.Anything).Return([]model.CloudWatchLogsWasteInfo{}, nil)
+				mockRDS.On("GetRDSWaste", mock.Anything).Return([]model.RDSInstanceWasteInfo{}, []model.RDSSnapshotWasteInfo{}, []model.RDSIdleInstanceInfo{}, nil)
 
 				mockELB.On("GetUnusedLoadBalancers", mock.Anything).Return([]elbtypes.LoadBalancer{}, nil)
 				mockSTS.On("GetCallerIdentity", mock.Anything).Return(&sts.GetCallerIdentityOutput{
@@ -406,7 +418,7 @@ func TestWasteWorkflow_Error(t *testing.T) {
 		},
 		{
 			name: "GetUnusedLoadBalancers_fails",
-			setupMocks: func(mockEC2 *services.MockEC2Service, mockELB *services.MockELBService, mockS3 *services.MockS3Service, mockCloudWatch *services.MockCloudWatchLogsService, mockSTS *services.MockSTSService) {
+			setupMocks: func(mockEC2 *services.MockEC2Service, mockELB *services.MockELBService, mockS3 *services.MockS3Service, mockCloudWatch *services.MockCloudWatchLogsService, mockRDS *services.MockRDSService, mockSTS *services.MockSTSService) {
 				mockEC2.On("GetUnusedElasticIPAddressesInfo", mock.Anything).Return([]types.Address{}, nil)
 				mockEC2.On("GetUnusedEBSVolumes", mock.Anything).Return([]types.Volume{}, nil)
 				mockEC2.On("GetStoppedInstancesInfo", mock.Anything).Return([]types.Instance{}, []types.Volume{}, nil)
@@ -416,6 +428,7 @@ func TestWasteWorkflow_Error(t *testing.T) {
 				mockEC2.On("GetUnusedKeyPairs", mock.Anything).Return([]model.KeyPairWasteInfo{}, nil)
 				mockS3.On("GetS3Waste", mock.Anything).Return([]model.S3BucketWasteInfo{}, []model.S3MultipartUploadWasteInfo{}, nil)
 				mockCloudWatch.On("GetCloudWatchLogsWaste", mock.Anything).Return([]model.CloudWatchLogsWasteInfo{}, nil)
+				mockRDS.On("GetRDSWaste", mock.Anything).Return([]model.RDSInstanceWasteInfo{}, []model.RDSSnapshotWasteInfo{}, []model.RDSIdleInstanceInfo{}, nil)
 
 				mockELB.On("GetUnusedLoadBalancers", mock.Anything).Return(([]elbtypes.LoadBalancer)(nil), errors.New("ELB error"))
 				mockSTS.On("GetCallerIdentity", mock.Anything).Return(&sts.GetCallerIdentityOutput{
@@ -436,12 +449,13 @@ func TestWasteWorkflow_Error(t *testing.T) {
 			mockCloudWatch := new(services.MockCloudWatchLogsService)
 			mockOutput := new(services.MockOutputService)
 			mockUpdate := new(services.MockUpdateService)
+			mockRDS := new(services.MockRDSService)
 
-			tt.setupMocks(mockEC2, mockELB, mockS3, mockCloudWatch, mockSTS)
+			tt.setupMocks(mockEC2, mockELB, mockS3, mockCloudWatch, mockRDS, mockSTS)
 			mockOutput.On("StopSpinner").Return().Maybe()
 			mockOutput.On("RenderWaste", mock.Anything).Return(nil).Maybe()
 
-			svc := NewService(mockSTS, mockCost, mockEC2, mockELB, mockS3, mockCloudWatch, mockOutput, mockUpdate, model.VersionInfo{Version: "dev", Commit: "none", Date: "unknown"})
+			svc := NewService(mockSTS, mockCost, mockEC2, mockELB, mockS3, mockCloudWatch, mockRDS, mockOutput, mockUpdate, model.VersionInfo{Version: "dev", Commit: "none", Date: "unknown"})
 			err := svc.Orchestrate(model.Flags{Waste: true, Output: "json"})
 
 			assert.Error(t, err)

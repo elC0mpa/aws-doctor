@@ -47,7 +47,10 @@ func hasAnyWaste(input model.RenderWasteInput) bool {
 		len(input.UnusedKeyPairs) > 0 ||
 		len(input.S3Buckets) > 0 ||
 		len(input.S3MultipartUploads) > 0 ||
-		len(input.CloudWatchLogGroups) > 0
+		len(input.CloudWatchLogGroups) > 0 ||
+		len(input.RDSInstances) > 0 ||
+		len(input.RDSSnapshots) > 0 ||
+		len(input.RDSIdleInstances) > 0
 }
 
 func drawWasteSections(input model.RenderWasteInput) {
@@ -85,6 +88,10 @@ func drawWasteSections(input model.RenderWasteInput) {
 
 	if len(input.UnusedKeyPairs) > 0 {
 		drawKeyPairTable(input.UnusedKeyPairs)
+	}
+
+	if len(input.RDSInstances) > 0 || len(input.RDSSnapshots) > 0 || len(input.RDSIdleInstances) > 0 {
+		drawRDSTable(input.RDSInstances, input.RDSSnapshots, input.RDSIdleInstances)
 	}
 }
 
@@ -668,4 +675,122 @@ func drawSummaryTable(input model.RenderWasteInput) {
 	t.Render()
 	fmt.Println(text.FgHiYellow.Sprint(" * Estimates based on us-east-1 pricing. Actual costs may vary by region."))
 	fmt.Println()
+}
+
+func drawRDSTable(instances []model.RDSInstanceWasteInfo, snapshots []model.RDSSnapshotWasteInfo, idleInstances []model.RDSIdleInstanceInfo) {
+	t := table.NewWriter()
+	t.SetOutputMirror(os.Stdout)
+	t.SetStyle(table.StyleRounded)
+	t.SetTitle("RDS Waste")
+
+	t.AppendHeader(table.Row{"Status", "Identifier", "Engine", "Info", "Est. Cost/Mo"})
+
+	t.SetColumnConfigs([]table.ColumnConfig{
+		{Number: 5, Align: text.AlignRight},
+	})
+
+	var hasPreviousRows bool
+
+	if len(instances) > 0 {
+		statusLabel := "Stopped Instance"
+		rows := populateRDSInstanceRows(instances)
+
+		halfRow := len(rows) / 2
+		rows[halfRow][0] = text.FgHiRed.Sprint(statusLabel)
+
+		t.AppendRows(rows)
+
+		hasPreviousRows = true
+	}
+
+	if len(snapshots) > 0 {
+		if hasPreviousRows {
+			t.AppendSeparator()
+		}
+
+		statusLabel := "Old Snapshot (> 30 days)"
+		rows := populateRDSSnapshotRows(snapshots)
+
+		halfRow := len(rows) / 2
+		rows[halfRow][0] = text.FgHiYellow.Sprint(statusLabel)
+
+		t.AppendRows(rows)
+
+		hasPreviousRows = true
+	}
+
+	if len(idleInstances) > 0 {
+		if hasPreviousRows {
+			t.AppendSeparator()
+		}
+
+		statusLabel := "Idle (0 connections)"
+		rows := populateRDSIdleRows(idleInstances)
+
+		halfRow := len(rows) / 2
+		rows[halfRow][0] = text.FgHiYellow.Sprint(statusLabel)
+
+		t.AppendRows(rows)
+	}
+
+	t.Render()
+	fmt.Println()
+}
+
+func populateRDSIdleRows(instances []model.RDSIdleInstanceInfo) []table.Row {
+	var rows []table.Row
+
+	for _, inst := range instances {
+		info := fmt.Sprintf("%s, %d GB, %dd checked", inst.DBInstanceClass, inst.AllocatedStorage, inst.DaysChecked)
+		if inst.MultiAZ {
+			info += ", Multi-AZ"
+		}
+
+		rows = append(rows, table.Row{
+			"",
+			inst.DBInstanceID,
+			inst.Engine,
+			info,
+			fmt.Sprintf("$%.2f", inst.EstimatedMonthlyCost),
+		})
+	}
+
+	return rows
+}
+
+func populateRDSInstanceRows(instances []model.RDSInstanceWasteInfo) []table.Row {
+	var rows []table.Row
+
+	for _, inst := range instances {
+		info := fmt.Sprintf("%s, %d GB", inst.DBInstanceClass, inst.AllocatedStorage)
+		if inst.MultiAZ {
+			info += ", Multi-AZ"
+		}
+
+		rows = append(rows, table.Row{
+			"",
+			inst.DBInstanceID,
+			inst.Engine,
+			info,
+			fmt.Sprintf("$%.2f", inst.EstimatedMonthlyCost),
+		})
+	}
+
+	return rows
+}
+
+func populateRDSSnapshotRows(snapshots []model.RDSSnapshotWasteInfo) []table.Row {
+	var rows []table.Row
+
+	for _, snap := range snapshots {
+		rows = append(rows, table.Row{
+			"",
+			snap.DBSnapshotID,
+			snap.Engine,
+			fmt.Sprintf("%d days old, %d GB", snap.DaysSinceCreate, snap.AllocatedStorage),
+			fmt.Sprintf("$%.2f", snap.EstimatedMonthlyCost),
+		})
+	}
+
+	return rows
 }
