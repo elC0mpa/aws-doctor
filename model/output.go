@@ -46,6 +46,13 @@ type MonthCostJSON struct {
 	Unit  string  `json:"unit"`
 }
 
+// CategorySummary holds the name, count, and estimated cost for a waste category.
+type CategorySummary struct {
+	Name  string
+	Count int
+	Cost  float64
+}
+
 // WasteSummaryJSON represents a single category in the waste summary.
 type WasteSummaryJSON struct {
 	Category             string  `json:"category"`

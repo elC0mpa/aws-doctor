@@ -8,15 +8,8 @@ import (
 	"github.com/elC0mpa/aws-doctor/utils/pricing"
 )
 
-// CategorySummary holds the name, count, and estimated cost for a waste category.
-type CategorySummary struct {
-	Name  string
-	Count int
-	Cost  float64
-}
-
 // Compute returns per-category summaries and the total estimated monthly cost.
-func Compute(input model.RenderWasteInput) ([]CategorySummary, float64) {
+func Compute(input model.RenderWasteInput) ([]model.CategorySummary, float64) {
 	categories := costCategories(input)
 	categories = append(categories, countOnlyCategories(input)...)
 
@@ -28,23 +21,23 @@ func Compute(input model.RenderWasteInput) ([]CategorySummary, float64) {
 	return categories, total
 }
 
-func costCategories(input model.RenderWasteInput) []CategorySummary {
-	var categories []CategorySummary
+func costCategories(input model.RenderWasteInput) []model.CategorySummary {
+	var categories []model.CategorySummary
 
 	if n := len(input.ElasticIPs); n > 0 {
-		categories = append(categories, CategorySummary{"Elastic IPs", n, float64(n) * pricing.EIPCostPerMonth})
+		categories = append(categories, model.CategorySummary{Name: "Elastic IPs", Count: n, Cost: float64(n) * pricing.EIPCostPerMonth})
 	}
 
 	if n := len(input.UnusedVolumes); n > 0 {
-		categories = append(categories, CategorySummary{"EBS Volumes (Unattached)", n, ebsVolumeCost(input.UnusedVolumes)})
+		categories = append(categories, model.CategorySummary{Name: "EBS Volumes (Unattached)", Count: n, Cost: ebsVolumeCost(input.UnusedVolumes)})
 	}
 
 	if n := len(input.StoppedVolumes); n > 0 {
-		categories = append(categories, CategorySummary{"EBS Volumes (Stopped Inst.)", n, ebsVolumeCost(input.StoppedVolumes)})
+		categories = append(categories, model.CategorySummary{Name: "EBS Volumes (Stopped Inst.)", Count: n, Cost: ebsVolumeCost(input.StoppedVolumes)})
 	}
 
 	if n := len(input.LoadBalancers); n > 0 {
-		categories = append(categories, CategorySummary{"Load Balancers", n, lbCost(input.LoadBalancers)})
+		categories = append(categories, model.CategorySummary{Name: "Load Balancers", Count: n, Cost: lbCost(input.LoadBalancers)})
 	}
 
 	if n := len(input.CloudWatchLogGroups); n > 0 {
@@ -53,7 +46,7 @@ func costCategories(input model.RenderWasteInput) []CategorySummary {
 			cost += lg.EstimatedMonthlyCost
 		}
 
-		categories = append(categories, CategorySummary{"CloudWatch Log Groups", n, cost})
+		categories = append(categories, model.CategorySummary{Name: "CloudWatch Log Groups", Count: n, Cost: cost})
 	}
 
 	if n := len(input.UnusedAMIs); n > 0 {
@@ -62,7 +55,7 @@ func costCategories(input model.RenderWasteInput) []CategorySummary {
 			cost += ami.MaxPotentialSaving
 		}
 
-		categories = append(categories, CategorySummary{"Unused AMIs", n, cost})
+		categories = append(categories, model.CategorySummary{Name: "Unused AMIs", Count: n, Cost: cost})
 	}
 
 	if n := len(input.OrphanedSnapshots); n > 0 {
@@ -71,33 +64,33 @@ func costCategories(input model.RenderWasteInput) []CategorySummary {
 			cost += snap.MaxPotentialSavings
 		}
 
-		categories = append(categories, CategorySummary{"EBS Snapshots", n, cost})
+		categories = append(categories, model.CategorySummary{Name: "EBS Snapshots", Count: n, Cost: cost})
 	}
 
 	return categories
 }
 
-func countOnlyCategories(input model.RenderWasteInput) []CategorySummary {
-	var categories []CategorySummary
+func countOnlyCategories(input model.RenderWasteInput) []model.CategorySummary {
+	var categories []model.CategorySummary
 
 	if n := len(input.StoppedInstances); n > 0 {
-		categories = append(categories, CategorySummary{"Stopped EC2 Instances", n, 0})
+		categories = append(categories, model.CategorySummary{Name: "Stopped EC2 Instances", Count: n})
 	}
 
 	if n := len(input.Ris); n > 0 {
-		categories = append(categories, CategorySummary{"Reserved Instances", n, 0})
+		categories = append(categories, model.CategorySummary{Name: "Reserved Instances", Count: n})
 	}
 
 	if n := len(input.S3Buckets); n > 0 {
-		categories = append(categories, CategorySummary{"S3 Buckets (No Lifecycle)", n, 0})
+		categories = append(categories, model.CategorySummary{Name: "S3 Buckets (No Lifecycle)", Count: n})
 	}
 
 	if n := len(input.S3MultipartUploads); n > 0 {
-		categories = append(categories, CategorySummary{"S3 Incomplete Multipart", n, 0})
+		categories = append(categories, model.CategorySummary{Name: "S3 Incomplete Multipart", Count: n})
 	}
 
 	if n := len(input.UnusedKeyPairs); n > 0 {
-		categories = append(categories, CategorySummary{"Unused Key Pairs", n, 0})
+		categories = append(categories, model.CategorySummary{Name: "Unused Key Pairs", Count: n})
 	}
 
 	return categories
