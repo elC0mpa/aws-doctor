@@ -11,6 +11,7 @@ import (
 	"github.com/elC0mpa/aws-doctor/model"
 	"github.com/elC0mpa/aws-doctor/utils/ec2"
 	"github.com/elC0mpa/aws-doctor/utils/pricing"
+	wastesummary "github.com/elC0mpa/aws-doctor/utils/waste_summary"
 	"github.com/jedib0t/go-pretty/v6/table"
 	"github.com/jedib0t/go-pretty/v6/text"
 )
@@ -25,6 +26,7 @@ func DrawWasteTable(input model.RenderWasteInput) {
 	}
 
 	drawWasteSections(input)
+	drawSummaryTable(input)
 }
 
 func drawHeader(accountID string) {
@@ -627,4 +629,43 @@ func populateCloudWatchLogsRows(logGroups []model.CloudWatchLogsWasteInfo) []tab
 	}
 
 	return rows
+}
+
+func drawSummaryTable(input model.RenderWasteInput) {
+	categories, totalCost := wastesummary.Compute(input)
+
+	if len(categories) == 0 {
+		return
+	}
+
+	t := table.NewWriter()
+	t.SetOutputMirror(os.Stdout)
+	t.SetStyle(table.StyleRounded)
+	t.SetTitle("Waste Summary")
+
+	t.AppendHeader(table.Row{"Category", "Count", "Est. Monthly Cost"})
+	t.SetColumnConfigs([]table.ColumnConfig{
+		{Number: 2, Align: text.AlignRight},
+		{Number: 3, Align: text.AlignRight},
+	})
+
+	for _, cat := range categories {
+		costStr := "-"
+		if cat.Cost > 0 {
+			costStr = fmt.Sprintf("$%.2f", cat.Cost)
+		}
+
+		t.AppendRow(table.Row{cat.Name, cat.Count, costStr})
+	}
+
+	t.AppendSeparator()
+	t.AppendRow(table.Row{
+		text.FgHiWhite.Sprint("Total Estimated Monthly Waste"),
+		"",
+		text.FgHiRed.Sprintf("$%.2f", totalCost),
+	})
+
+	t.Render()
+	fmt.Println(text.FgHiYellow.Sprint(" * Estimates based on us-east-1 pricing. Actual costs may vary by region."))
+	fmt.Println()
 }
