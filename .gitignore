@@ -23,3 +23,9 @@ go.work
 
 docs/public
 docs/public/
+
+# gemini-cli settings
+.gemini/
+
+# GitHub App credentials
+gha-creds-*.json
