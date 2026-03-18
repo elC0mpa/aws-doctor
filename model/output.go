@@ -46,24 +46,40 @@ type MonthCostJSON struct {
 	Unit  string  `json:"unit"`
 }
 
+// CategorySummary holds the name, count, and estimated cost for a waste category.
+type CategorySummary struct {
+	Name  string
+	Count int
+	Cost  float64
+}
+
+// WasteSummaryJSON represents a single category in the waste summary.
+type WasteSummaryJSON struct {
+	Category             string  `json:"category"`
+	Count                int     `json:"count"`
+	EstimatedMonthlyCost float64 `json:"estimated_monthly_cost"`
+}
+
 // WasteReportJSON represents the JSON output for waste detection
 type WasteReportJSON struct {
-	AccountID           string                   `json:"account_id"`
-	GeneratedAt         string                   `json:"generated_at"`
-	HasWaste            bool                     `json:"has_waste"`
-	UnusedElasticIPs    []ElasticIPJSON          `json:"unused_elastic_ips"`
-	UnusedEBSVolumes    []EBSVolumeJSON          `json:"unused_ebs_volumes"`
-	StoppedVolumes      []EBSVolumeJSON          `json:"stopped_instance_volumes"`
-	StoppedInstances    []StoppedInstanceJSON    `json:"stopped_instances"`
-	ReservedInstances   []ReservedInstanceJSON   `json:"reserved_instances"`
-	UnusedLoadBalancers []LoadBalancerJSON       `json:"unused_load_balancers"`
-	UnusedAMIs          []AMIJSON                `json:"unused_amis"`
-	OrphanedSnapshots   []SnapshotJSON           `json:"orphaned_snapshots"`
-	StaleSnapshots      []SnapshotJSON           `json:"stale_snapshots"`
-	UnusedKeyPairs      []KeyPairJSON            `json:"unused_key_pairs"`
-	S3Buckets           []S3BucketJSON           `json:"s3_buckets_without_lifecycle"`
-	S3MultipartUploads  []S3MultipartJSON        `json:"s3_buckets_with_incomplete_multipart_uploads"`
-	CloudWatchLogGroups []CloudWatchLogGroupJSON `json:"cloudwatch_log_groups_without_retention_policy"`
+	AccountID                 string                   `json:"account_id"`
+	GeneratedAt               string                   `json:"generated_at"`
+	HasWaste                  bool                     `json:"has_waste"`
+	TotalEstimatedMonthlyCost float64                  `json:"total_estimated_monthly_cost"`
+	Summary                   []WasteSummaryJSON       `json:"summary"`
+	UnusedElasticIPs          []ElasticIPJSON          `json:"unused_elastic_ips"`
+	UnusedEBSVolumes          []EBSVolumeJSON          `json:"unused_ebs_volumes"`
+	StoppedVolumes            []EBSVolumeJSON          `json:"stopped_instance_volumes"`
+	StoppedInstances          []StoppedInstanceJSON    `json:"stopped_instances"`
+	ReservedInstances         []ReservedInstanceJSON   `json:"reserved_instances"`
+	UnusedLoadBalancers       []LoadBalancerJSON       `json:"unused_load_balancers"`
+	UnusedAMIs                []AMIJSON                `json:"unused_amis"`
+	OrphanedSnapshots         []SnapshotJSON           `json:"orphaned_snapshots"`
+	StaleSnapshots            []SnapshotJSON           `json:"stale_snapshots"`
+	UnusedKeyPairs            []KeyPairJSON            `json:"unused_key_pairs"`
+	S3Buckets                 []S3BucketJSON           `json:"s3_buckets_without_lifecycle"`
+	S3MultipartUploads        []S3MultipartJSON        `json:"s3_buckets_with_incomplete_multipart_uploads"`
+	CloudWatchLogGroups       []CloudWatchLogGroupJSON `json:"cloudwatch_log_groups_without_retention_policy"`
 }
 
 // CloudWatchLogGroupJSON represents a CloudWatch Log Group without a retention policy
