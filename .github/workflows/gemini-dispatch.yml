@@ -10,6 +10,14 @@ on:
   pull_request:
     types:
       - 'opened'
+      - 'synchronize'
+  issue_comment:
+    types:
+      - 'created'
+  issues:
+    types:
+      - 'opened'
+      - 'reopened'
 
 defaults:
   run:
