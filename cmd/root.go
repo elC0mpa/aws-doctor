@@ -7,11 +7,13 @@ import (
 	"github.com/elC0mpa/aws-doctor/model"
 	awsconfig "github.com/elC0mpa/aws-doctor/service/aws_config"
 	"github.com/elC0mpa/aws-doctor/service/cloudwatchlogs"
+	"github.com/elC0mpa/aws-doctor/service/cloudwatchmetrics"
 	awscostexplorer "github.com/elC0mpa/aws-doctor/service/costexplorer"
 	awsec2 "github.com/elC0mpa/aws-doctor/service/ec2"
 	"github.com/elC0mpa/aws-doctor/service/elb"
 	"github.com/elC0mpa/aws-doctor/service/orchestrator"
 	"github.com/elC0mpa/aws-doctor/service/output"
+	"github.com/elC0mpa/aws-doctor/service/rds"
 	"github.com/elC0mpa/aws-doctor/service/s3"
 	awssts "github.com/elC0mpa/aws-doctor/service/sts"
 	"github.com/elC0mpa/aws-doctor/service/update"
@@ -33,7 +35,7 @@ func buildOrchestrator(needsAWS bool) (orchestrator.Service, error) {
 	updateService := update.NewService()
 
 	if !needsAWS {
-		return orchestrator.NewService(nil, nil, nil, nil, nil, nil, outputService, updateService, versionInfo), nil
+		return orchestrator.NewService(nil, nil, nil, nil, nil, nil, nil, outputService, updateService, versionInfo), nil
 	}
 
 	banner.DrawBannerTitle()
@@ -53,8 +55,10 @@ func buildOrchestrator(needsAWS bool) (orchestrator.Service, error) {
 	elbService := elb.NewService(awsCfg)
 	s3Service := s3.NewService(awsCfg)
 	cloudwatchlogsService := cloudwatchlogs.NewService(awsCfg)
+	cwMetricsService := cloudwatchmetrics.NewService(awsCfg)
+	rdsService := rds.NewService(awsCfg, cwMetricsService)
 
-	return orchestrator.NewService(stsService, costService, ec2Service, elbService, s3Service, cloudwatchlogsService, outputService, updateService, versionInfo), nil
+	return orchestrator.NewService(stsService, costService, ec2Service, elbService, s3Service, cloudwatchlogsService, rdsService, outputService, updateService, versionInfo), nil
 }
 
 var rootCmd = &cobra.Command{

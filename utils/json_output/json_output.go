@@ -91,6 +91,9 @@ func OutputWasteJSON(input model.RenderWasteInput) error {
 		S3Buckets:           mapS3Buckets(input.S3Buckets),
 		S3MultipartUploads:  mapS3MultipartUploads(input.S3MultipartUploads),
 		CloudWatchLogGroups: mapCloudWatchLogGroups(input.CloudWatchLogGroups),
+		StoppedRDSInstances: mapRDSInstances(input.RDSInstances),
+		OldRDSSnapshots:     mapRDSSnapshots(input.RDSSnapshots),
+		IdleRDSInstances:    mapRDSIdleInstances(input.RDSIdleInstances),
 	}
 
 	output.OrphanedSnapshots, output.StaleSnapshots = mapSnapshots(input.OrphanedSnapshots)
@@ -107,7 +110,10 @@ func OutputWasteJSON(input model.RenderWasteInput) error {
 		len(output.UnusedKeyPairs) > 0 ||
 		len(output.S3Buckets) > 0 ||
 		len(output.S3MultipartUploads) > 0 ||
-		len(output.CloudWatchLogGroups) > 0
+		len(output.CloudWatchLogGroups) > 0 ||
+		len(output.StoppedRDSInstances) > 0 ||
+		len(output.OldRDSSnapshots) > 0 ||
+		len(output.IdleRDSInstances) > 0
 
 	categories, total := wastesummary.Compute(input)
 	output.TotalEstimatedMonthlyCost = total
@@ -307,6 +313,44 @@ func mapCloudWatchLogGroups(logGroups []model.CloudWatchLogsWasteInfo) []model.C
 			StoredBytes:          lg.StoredBytes,
 			EstimatedMonthlyCost: lg.EstimatedMonthlyCost,
 		})
+	}
+
+	return result
+}
+
+func mapRDSInstances(instances []model.RDSInstanceWasteInfo) []model.RDSInstanceJSON {
+	var result []model.RDSInstanceJSON
+
+	for _, inst := range instances {
+		result = append(result, model.RDSInstanceJSON(inst))
+	}
+
+	return result
+}
+
+func mapRDSSnapshots(snapshots []model.RDSSnapshotWasteInfo) []model.RDSSnapshotJSON {
+	var result []model.RDSSnapshotJSON
+
+	for _, snap := range snapshots {
+		result = append(result, model.RDSSnapshotJSON{
+			DBSnapshotID:         snap.DBSnapshotID,
+			DBInstanceID:         snap.DBInstanceID,
+			Engine:               snap.Engine,
+			AllocatedStorage:     snap.AllocatedStorage,
+			SnapshotCreateTime:   snap.SnapshotCreateTime.Format(time.RFC3339),
+			DaysSinceCreate:      snap.DaysSinceCreate,
+			EstimatedMonthlyCost: snap.EstimatedMonthlyCost,
+		})
+	}
+
+	return result
+}
+
+func mapRDSIdleInstances(instances []model.RDSIdleInstanceInfo) []model.RDSIdleInstanceJSON {
+	var result []model.RDSIdleInstanceJSON
+
+	for _, inst := range instances {
+		result = append(result, model.RDSIdleInstanceJSON(inst))
 	}
 
 	return result

@@ -80,6 +80,42 @@ type WasteReportJSON struct {
 	S3Buckets                 []S3BucketJSON           `json:"s3_buckets_without_lifecycle"`
 	S3MultipartUploads        []S3MultipartJSON        `json:"s3_buckets_with_incomplete_multipart_uploads"`
 	CloudWatchLogGroups       []CloudWatchLogGroupJSON `json:"cloudwatch_log_groups_without_retention_policy"`
+	StoppedRDSInstances       []RDSInstanceJSON        `json:"stopped_rds_instances"`
+	OldRDSSnapshots           []RDSSnapshotJSON        `json:"old_rds_snapshots"`
+	IdleRDSInstances          []RDSIdleInstanceJSON    `json:"idle_rds_instances"`
+}
+
+// RDSInstanceJSON represents a stopped RDS instance.
+type RDSInstanceJSON struct {
+	DBInstanceID         string  `json:"db_instance_id"`
+	DBInstanceClass      string  `json:"db_instance_class"`
+	Engine               string  `json:"engine"`
+	Status               string  `json:"status"`
+	MultiAZ              bool    `json:"multi_az"`
+	AllocatedStorage     int32   `json:"allocated_storage_gb"`
+	EstimatedMonthlyCost float64 `json:"estimated_monthly_cost"`
+}
+
+// RDSSnapshotJSON represents an old manual RDS snapshot.
+type RDSSnapshotJSON struct {
+	DBSnapshotID         string  `json:"db_snapshot_id"`
+	DBInstanceID         string  `json:"db_instance_id"`
+	Engine               string  `json:"engine"`
+	AllocatedStorage     int32   `json:"allocated_storage_gb"`
+	SnapshotCreateTime   string  `json:"snapshot_create_time"`
+	DaysSinceCreate      int     `json:"days_since_create"`
+	EstimatedMonthlyCost float64 `json:"estimated_monthly_cost"`
+}
+
+// RDSIdleInstanceJSON represents an idle RDS instance with no connections.
+type RDSIdleInstanceJSON struct {
+	DBInstanceID         string  `json:"db_instance_id"`
+	DBInstanceClass      string  `json:"db_instance_class"`
+	Engine               string  `json:"engine"`
+	MultiAZ              bool    `json:"multi_az"`
+	AllocatedStorage     int32   `json:"allocated_storage_gb"`
+	DaysChecked          int     `json:"days_checked"`
+	EstimatedMonthlyCost float64 `json:"estimated_monthly_cost"`
 }
 
 // CloudWatchLogGroupJSON represents a CloudWatch Log Group without a retention policy
@@ -195,6 +231,9 @@ type RenderWasteInput struct {
 	S3Buckets           []S3BucketWasteInfo
 	S3MultipartUploads  []S3MultipartUploadWasteInfo
 	CloudWatchLogGroups []CloudWatchLogsWasteInfo
+	RDSInstances        []RDSInstanceWasteInfo
+	RDSSnapshots        []RDSSnapshotWasteInfo
+	RDSIdleInstances    []RDSIdleInstanceInfo
 }
 
 // RenderCostComparisonInput represents the input data for rendering the cost comparison report

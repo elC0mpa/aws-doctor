@@ -16,6 +16,7 @@ import (
 	awsec2 "github.com/elC0mpa/aws-doctor/service/ec2"
 	"github.com/elC0mpa/aws-doctor/service/elb"
 	"github.com/elC0mpa/aws-doctor/service/output"
+	"github.com/elC0mpa/aws-doctor/service/rds"
 	"github.com/elC0mpa/aws-doctor/service/s3"
 	awssts "github.com/elC0mpa/aws-doctor/service/sts"
 	"github.com/elC0mpa/aws-doctor/service/update"
@@ -25,7 +26,7 @@ import (
 )
 
 // NewService creates a new orchestrator service.
-func NewService(stsService awssts.Service, costService awscostexplorer.Service, ec2Service awsec2.Service, elbService elb.Service, s3Service s3.Service, cloudwatchlogsService cloudwatchlogs.Service, outputService output.Service, updateService update.Service, versionInfo model.VersionInfo) Service {
+func NewService(stsService awssts.Service, costService awscostexplorer.Service, ec2Service awsec2.Service, elbService elb.Service, s3Service s3.Service, cloudwatchlogsService cloudwatchlogs.Service, rdsService rds.Service, outputService output.Service, updateService update.Service, versionInfo model.VersionInfo) Service {
 	return &service{
 		stsService:            stsService,
 		costService:           costService,
@@ -33,6 +34,7 @@ func NewService(stsService awssts.Service, costService awscostexplorer.Service, 
 		elbService:            elbService,
 		s3Service:             s3Service,
 		cloudwatchlogsService: cloudwatchlogsService,
+		rdsService:            rdsService,
 		outputService:         outputService,
 		updateService:         updateService,
 		versionInfo:           versionInfo,
@@ -148,6 +150,7 @@ func (s *service) wasteWorkflow(wasteChecks []string) error {
 	runELB := runAll || slice.ContainsIgnoreCase(wasteChecks, "elb")
 	runS3 := runAll || slice.ContainsIgnoreCase(wasteChecks, "s3")
 	runCloudWatchLogs := runAll || slice.ContainsIgnoreCase(wasteChecks, "cloudwatch")
+	runRDS := runAll || slice.ContainsIgnoreCase(wasteChecks, "rds")
 
 	// Results from concurrent API calls
 	var (
@@ -163,6 +166,9 @@ func (s *service) wasteWorkflow(wasteChecks []string) error {
 		s3Buckets                                []model.S3BucketWasteInfo
 		s3MultipartUploads                       []model.S3MultipartUploadWasteInfo
 		cloudwatchLogs                           []model.CloudWatchLogsWasteInfo
+		rdsInstances                             []model.RDSInstanceWasteInfo
+		rdsSnapshots                             []model.RDSSnapshotWasteInfo
+		rdsIdleInstances                         []model.RDSIdleInstanceInfo
 		stsResult                                *sts.GetCallerIdentityOutput
 	)
 
@@ -264,6 +270,17 @@ func (s *service) wasteWorkflow(wasteChecks []string) error {
 		})
 	}
 
+	if runRDS {
+		// Fetch RDS waste concurrently
+		g.Go(func() error {
+			var err error
+
+			rdsInstances, rdsSnapshots, rdsIdleInstances, err = s.rdsService.GetRDSWaste(ctx)
+
+			return err
+		})
+	}
+
 	// Fetch caller identity concurrently (always required for output)
 	g.Go(func() error {
 		var err error
@@ -294,6 +311,9 @@ func (s *service) wasteWorkflow(wasteChecks []string) error {
 		S3Buckets:           s3Buckets,
 		S3MultipartUploads:  s3MultipartUploads,
 		CloudWatchLogGroups: cloudwatchLogs,
+		RDSInstances:        rdsInstances,
+		RDSSnapshots:        rdsSnapshots,
+		RDSIdleInstances:    rdsIdleInstances,
 	}
 
 	return s.outputService.RenderWaste(input)

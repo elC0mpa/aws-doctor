@@ -7,6 +7,7 @@ import (
 	awsec2 "github.com/elC0mpa/aws-doctor/service/ec2"
 	"github.com/elC0mpa/aws-doctor/service/elb"
 	"github.com/elC0mpa/aws-doctor/service/output"
+	"github.com/elC0mpa/aws-doctor/service/rds"
 	"github.com/elC0mpa/aws-doctor/service/s3"
 	awssts "github.com/elC0mpa/aws-doctor/service/sts"
 	"github.com/elC0mpa/aws-doctor/service/update"
@@ -19,6 +20,7 @@ type service struct {
 	elbService            elb.Service
 	s3Service             s3.Service
 	cloudwatchlogsService cloudwatchlogs.Service
+	rdsService            rds.Service
 	outputService         output.Service
 	updateService         update.Service
 	versionInfo           model.VersionInfo
