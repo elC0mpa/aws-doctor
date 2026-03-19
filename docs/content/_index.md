@@ -86,9 +86,19 @@ layout: "hextra-home"
     subtitle="Detect idle EC2 instances, unattached EBS volumes, and orphaned snapshots."
   >}}
   {{< hextra/feature-card
+    icon="database"
+    title="Databases"
+    subtitle="Identify stopped RDS instances, old manual snapshots, and idle database connections."
+  >}}
+  {{< hextra/feature-card
     icon="archive"
     title="S3 Storage"
     subtitle="Audit buckets without lifecycle policies and cleanup abandoned multipart uploads."
+  >}}
+  {{< hextra/feature-card
+    icon="terminal"
+    title="CloudWatch Logs"
+    subtitle="Detect Log Groups without retention policies and calculate potential storage savings."
   >}}
   {{< hextra/feature-card
     icon="share"

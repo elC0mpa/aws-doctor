@@ -85,9 +85,19 @@ layout: "hextra-home"
     subtitle="Detecta instancias EC2 inactivas, volúmenes EBS sin usar y snapshots huérfanos."
   >}}
   {{< hextra/feature-card
+    icon="database"
+    title="Bases de Datos"
+    subtitle="Identifica instancias RDS detenidas, snapshots manuales antiguos y conexiones de base de datos inactivas."
+  >}}
+  {{< hextra/feature-card
     icon="archive"
     title="Almacenamiento S3"
     subtitle="Audita buckets sin políticas de ciclo de vida y limpia cargas multipartes abandonadas."
+  >}}
+  {{< hextra/feature-card
+    icon="terminal"
+    title="CloudWatch Logs"
+    subtitle="Detecta grupos de logs sin políticas de retención y calcula ahorros potenciales de almacenamiento."
   >}}
   {{< hextra/feature-card
     icon="share"
