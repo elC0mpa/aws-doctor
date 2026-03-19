@@ -66,6 +66,7 @@ jobs:
         contains(fromJSON('["opened", "reopened"]'), github.event.action)
       ) || (
         github.event.sender.type == 'User' &&
+        github.event.sender.login != 'github-actions[bot]' &&
         startsWith(github.event.comment.body || github.event.review.body || github.event.issue.body, '@gemini-cli') &&
         contains(fromJSON('["OWNER", "MEMBER", "COLLABORATOR"]'), github.event.comment.author_association || github.event.review.author_association || github.event.issue.author_association)
       )
@@ -229,21 +230,20 @@ jobs:
       - 'invoke'
       - 'plan-execute'
     if: |-
-      ${{ 
-        always() && !cancelled() && needs.dispatch.result == 'success' && 
+      ${{
+        always() && !cancelled() &&
+        needs.dispatch.result != 'skipped' &&
         (
-          needs.dispatch.outputs.command == 'fallthrough' || 
+          needs.dispatch.result == 'failure' ||
           (
-            needs.dispatch.outputs.command != 'review' && 
-            needs.dispatch.outputs.command != 'triage' && 
-            needs.dispatch.outputs.command != 'invoke' && 
-            needs.dispatch.outputs.command != 'approve' && 
-            needs.dispatch.outputs.command != 'notify_only'
-          ) ||
-          (needs.dispatch.outputs.command == 'review' && needs.review.result == 'failure') ||
-          (needs.dispatch.outputs.command == 'triage' && needs.triage.result == 'failure') ||
-          (needs.dispatch.outputs.command == 'invoke' && needs.invoke.result == 'failure') ||
-          (needs.dispatch.outputs.command == 'approve' && needs.plan-execute.result == 'failure')
+            needs.dispatch.result == 'success' &&
+            (
+              (needs.dispatch.outputs.command == 'review' && needs.review.result == 'failure') ||
+              (needs.dispatch.outputs.command == 'triage' && needs.triage.result == 'failure') ||
+              (needs.dispatch.outputs.command == 'invoke' && needs.invoke.result == 'failure') ||
+              (needs.dispatch.outputs.command == 'approve' && needs['plan-execute'].result == 'failure')
+            )
+          )
         )
       }}
     runs-on: 'ubuntu-latest'
