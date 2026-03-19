@@ -11,6 +11,11 @@ on:
     types:
       - 'opened'
       - 'synchronize'
+  pull_request_target:
+    types:
+      - 'opened'
+      - 'synchronize'
+      - 'labeled'
   issue_comment:
     types:
       - 'created'
@@ -44,7 +49,7 @@ jobs:
           env | grep '^DEBUG_'
 
   dispatch:
-    # For PRs: only if not from a fork
+    # For PRs: triggered on opened/synchronize
     # For issues: only on open/reopen
     # For comments: only if user types @gemini-cli and is OWNER/MEMBER/COLLABORATOR
     if: |-
@@ -52,6 +57,10 @@ jobs:
         github.event_name == 'pull_request' &&
         contains(fromJSON('["opened", "synchronize"]'), github.event.action) &&
         github.event.pull_request.head.repo.fork == false
+      ) || (
+        github.event_name == 'pull_request_target' &&
+        contains(fromJSON('["opened", "synchronize", "labeled"]'), github.event.action) &&
+        github.event.pull_request.head.repo.fork == true
       ) || (
         github.event_name == 'issues' &&
         contains(fromJSON('["opened", "reopened"]'), github.event.action)
@@ -89,6 +98,7 @@ jobs:
         env:
           EVENT_TYPE: '${{ github.event_name }}.${{ github.event.action }}'
           REQUEST: '${{ github.event.comment.body || github.event.review.body || github.event.issue.body }}'
+          LABEL_NAME: '${{ github.event.label.name }}'
         with:
           script: |
             const eventType = process.env.EVENT_TYPE;
@@ -97,6 +107,10 @@ jobs:
 
             if (['pull_request.opened', 'pull_request.synchronize'].includes(eventType)) {
               core.setOutput('command', 'review');
+            } else if (eventType === 'pull_request_target.labeled' && process.env.LABEL_NAME === 'gemini-review') {
+              core.setOutput('command', 'review');
+            } else if (['pull_request_target.opened', 'pull_request_target.synchronize'].includes(eventType)) {
+              core.setOutput('command', 'notify_only');
             } else if (['issues.opened', 'issues.reopened'].includes(eventType)) {
               core.setOutput('command', 'triage');
             } else if (request.startsWith("@gemini-cli /review")) {
@@ -121,6 +135,22 @@ jobs:
           ISSUE_NUMBER: '${{ github.event.pull_request.number || github.event.issue.number }}'
           MESSAGE: |-
             🤖 Hi @${{ github.actor }}, I've received your request, and I'm working on it now! You can track my progress [in the logs](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}) for more details.
+          REPOSITORY: '${{ github.repository }}'
+        run: |-
+          gh issue comment "${ISSUE_NUMBER}" \
+            --body "${MESSAGE}" \
+            --repo "${REPOSITORY}"
+
+      - name: 'Notify about fork review process'
+        if: |-
+          github.event_name == 'pull_request_target' &&
+          contains(fromJSON('["opened", "synchronize"]'), github.event.action) &&
+          github.event.pull_request.head.repo.fork == true
+        env:
+          GITHUB_TOKEN: '${{ steps.mint_identity_token.outputs.token || secrets.GITHUB_TOKEN || github.token }}'
+          ISSUE_NUMBER: '${{ github.event.pull_request.number }}'
+          MESSAGE: |-
+            👋 Hi @${{ github.actor }}! Since this is a pull request from a fork, I will perform a review once a maintainer adds the `gemini-review` label to this PR.
           REPOSITORY: '${{ github.repository }}'
         run: |-
           gh issue comment "${ISSUE_NUMBER}" \
@@ -191,7 +221,7 @@ jobs:
       - 'invoke'
       - 'plan-execute'
     if: |-
-      ${{ always() && !cancelled() && (failure() || needs.dispatch.outputs.command == 'fallthrough') }}
+      ${{ always() && !cancelled() && (failure() || (needs.dispatch.outputs.command == 'fallthrough' || (needs.dispatch.outputs.command != 'review' && needs.dispatch.outputs.command != 'triage' && needs.dispatch.outputs.command != 'invoke' && needs.dispatch.outputs.command != 'approve' && needs.dispatch.outputs.command != 'notify_only'))) }}
     runs-on: 'ubuntu-latest'
     permissions:
       contents: 'read'
