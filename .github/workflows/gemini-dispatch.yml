@@ -63,7 +63,7 @@ jobs:
         github.event.pull_request.head.repo.fork == true
       ) || (
         github.event_name == 'issues' &&
-        github.event.action == 'opened'
+        contains(fromJSON('["opened", "reopened"]'), github.event.action)
       ) || (
         github.event.sender.type == 'User' &&
         startsWith(github.event.comment.body || github.event.review.body || github.event.issue.body, '@gemini-cli') &&
@@ -113,9 +113,9 @@ jobs:
               core.setOutput('command', 'review');
             } else if (eventType === 'pull_request_target.synchronize' && hasReviewLabel) {
               core.setOutput('command', 'review');
-            } else if (['pull_request_target.opened', 'pull_request_target.synchronize'].includes(eventType)) {
+            } else if (['pull_request_target.opened'].includes(eventType)) {
               core.setOutput('command', 'notify_only');
-            } else if (eventType === 'issues.opened') {
+            } else if (['issues.opened', 'issues.reopened'].includes(eventType)) {
               core.setOutput('command', 'triage');
             } else if (request.startsWith("@gemini-cli /review")) {
               core.setOutput('command', 'review');
@@ -151,7 +151,7 @@ jobs:
       - name: 'Notify about fork review process'
         if: |-
           github.event_name == 'pull_request_target' &&
-          contains(fromJSON('["opened", "synchronize"]'), github.event.action) &&
+          contains(fromJSON('["opened"]'), github.event.action) &&
           github.event.pull_request.head.repo.fork == true &&
           steps.extract_command.outputs.command == 'notify_only'
         env:
@@ -229,7 +229,7 @@ jobs:
       - 'invoke'
       - 'plan-execute'
     if: |-
-      ${{ always() && !cancelled() && needs.dispatch.result != 'skipped' && (failure() || (needs.dispatch.outputs.command == 'fallthrough' || (needs.dispatch.outputs.command != 'review' && needs.dispatch.outputs.command != 'triage' && needs.dispatch.outputs.command != 'invoke' && needs.dispatch.outputs.command != 'approve' && needs.dispatch.outputs.command != 'notify_only'))) }}
+      ${{ always() && !cancelled() && needs.dispatch.result != 'skipped' && startsWith(github.event.comment.body || github.event.review.body || github.event.issue.body || '', '@gemini-cli') && (failure() || (needs.dispatch.outputs.command == 'fallthrough' || (needs.dispatch.outputs.command != 'review' && needs.dispatch.outputs.command != 'triage' && needs.dispatch.outputs.command != 'invoke' && needs.dispatch.outputs.command != 'approve' && needs.dispatch.outputs.command != 'notify_only'))) }}
     runs-on: 'ubuntu-latest'
     permissions:
       contents: 'read'
