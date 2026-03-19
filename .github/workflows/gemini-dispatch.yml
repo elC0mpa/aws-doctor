@@ -66,6 +66,7 @@ jobs:
         contains(fromJSON('["opened", "reopened"]'), github.event.action)
       ) || (
         github.event.sender.type == 'User' &&
+        github.event.sender.login != 'github-actions[bot]' &&
         startsWith(github.event.comment.body || github.event.review.body || github.event.issue.body, '@gemini-cli') &&
         contains(fromJSON('["OWNER", "MEMBER", "COLLABORATOR"]'), github.event.comment.author_association || github.event.review.author_association || github.event.issue.author_association)
       )
@@ -103,13 +104,17 @@ jobs:
           script: |
             const eventType = process.env.EVENT_TYPE;
             const request = process.env.REQUEST || '';
+            const labels = context.payload.pull_request ? (context.payload.pull_request.labels || []).map(l => l.name) : [];
+            const hasReviewLabel = labels.includes('gemini-review');
             core.setOutput('request', request);
 
             if (['pull_request.opened', 'pull_request.synchronize'].includes(eventType)) {
               core.setOutput('command', 'review');
             } else if (eventType === 'pull_request_target.labeled' && process.env.LABEL_NAME === 'gemini-review') {
               core.setOutput('command', 'review');
-            } else if (['pull_request_target.opened', 'pull_request_target.synchronize'].includes(eventType)) {
+            } else if (eventType === 'pull_request_target.synchronize' && hasReviewLabel) {
+              core.setOutput('command', 'review');
+            } else if (['pull_request_target.opened'].includes(eventType)) {
               core.setOutput('command', 'notify_only');
             } else if (['issues.opened', 'issues.reopened'].includes(eventType)) {
               core.setOutput('command', 'triage');
@@ -130,6 +135,9 @@ jobs:
             }
 
       - name: 'Acknowledge request'
+        if: |-
+          steps.extract_command.outputs.command != 'notify_only' &&
+          steps.extract_command.outputs.command != 'fallthrough'
         env:
           GITHUB_TOKEN: '${{ steps.mint_identity_token.outputs.token || secrets.GITHUB_TOKEN || github.token }}'
           ISSUE_NUMBER: '${{ github.event.pull_request.number || github.event.issue.number }}'
@@ -144,13 +152,14 @@ jobs:
       - name: 'Notify about fork review process'
         if: |-
           github.event_name == 'pull_request_target' &&
-          contains(fromJSON('["opened", "synchronize"]'), github.event.action) &&
-          github.event.pull_request.head.repo.fork == true
+          contains(fromJSON('["opened"]'), github.event.action) &&
+          github.event.pull_request.head.repo.fork == true &&
+          steps.extract_command.outputs.command == 'notify_only'
         env:
           GITHUB_TOKEN: '${{ steps.mint_identity_token.outputs.token || secrets.GITHUB_TOKEN || github.token }}'
           ISSUE_NUMBER: '${{ github.event.pull_request.number }}'
           MESSAGE: |-
-            👋 Hi @${{ github.actor }}! Since this is a pull request from a fork, I will perform a review once a maintainer adds the `gemini-review` label to this PR.
+            👋 Hi @${{ github.actor }}! Since this is a pull request from a fork, I will perform a review once a maintainer adds the `gemini-review` label to this PR. Once added, I will automatically review every new commit. To stop the automated reviews, simply remove the label.
           REPOSITORY: '${{ github.repository }}'
         run: |-
           gh issue comment "${ISSUE_NUMBER}" \
@@ -221,7 +230,22 @@ jobs:
       - 'invoke'
       - 'plan-execute'
     if: |-
-      ${{ always() && !cancelled() && (failure() || (needs.dispatch.outputs.command == 'fallthrough' || (needs.dispatch.outputs.command != 'review' && needs.dispatch.outputs.command != 'triage' && needs.dispatch.outputs.command != 'invoke' && needs.dispatch.outputs.command != 'approve' && needs.dispatch.outputs.command != 'notify_only'))) }}
+      ${{
+        always() && !cancelled() &&
+        needs.dispatch.result != 'skipped' &&
+        (
+          needs.dispatch.result == 'failure' ||
+          (
+            needs.dispatch.result == 'success' &&
+            (
+              (needs.dispatch.outputs.command == 'review' && needs.review.result == 'failure') ||
+              (needs.dispatch.outputs.command == 'triage' && needs.triage.result == 'failure') ||
+              (needs.dispatch.outputs.command == 'invoke' && needs.invoke.result == 'failure') ||
+              (needs.dispatch.outputs.command == 'approve' && needs['plan-execute'].result == 'failure')
+            )
+          )
+        )
+      }}
     runs-on: 'ubuntu-latest'
     permissions:
       contents: 'read'
