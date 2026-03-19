@@ -59,8 +59,7 @@ jobs:
         github.event.pull_request.head.repo.fork == false
       ) || (
         github.event_name == 'pull_request_target' &&
-        github.event.action == 'labeled' &&
-        github.event.label.name == 'gemini-review' &&
+        contains(fromJSON('["opened", "synchronize", "labeled"]'), github.event.action) &&
         github.event.pull_request.head.repo.fork == true
       ) || (
         github.event_name == 'issues' &&
@@ -99,14 +98,19 @@ jobs:
         env:
           EVENT_TYPE: '${{ github.event_name }}.${{ github.event.action }}'
           REQUEST: '${{ github.event.comment.body || github.event.review.body || github.event.issue.body }}'
+          LABEL_NAME: '${{ github.event.label.name }}'
         with:
           script: |
             const eventType = process.env.EVENT_TYPE;
             const request = process.env.REQUEST || '';
             core.setOutput('request', request);
 
-            if (['pull_request.opened', 'pull_request.synchronize', 'pull_request_target.opened', 'pull_request_target.synchronize', 'pull_request_target.labeled'].includes(eventType)) {
+            if (['pull_request.opened', 'pull_request.synchronize'].includes(eventType)) {
               core.setOutput('command', 'review');
+            } else if (eventType === 'pull_request_target.labeled' && process.env.LABEL_NAME === 'gemini-review') {
+              core.setOutput('command', 'review');
+            } else if (['pull_request_target.opened', 'pull_request_target.synchronize'].includes(eventType)) {
+              core.setOutput('command', 'notify_only');
             } else if (['issues.opened', 'issues.reopened'].includes(eventType)) {
               core.setOutput('command', 'triage');
             } else if (request.startsWith("@gemini-cli /review")) {
@@ -217,7 +221,7 @@ jobs:
       - 'invoke'
       - 'plan-execute'
     if: |-
-      ${{ always() && !cancelled() && (failure() || needs.dispatch.outputs.command == 'fallthrough') }}
+      ${{ always() && !cancelled() && (failure() || (needs.dispatch.outputs.command == 'fallthrough' || (needs.dispatch.outputs.command != 'review' && needs.dispatch.outputs.command != 'triage' && needs.dispatch.outputs.command != 'invoke' && needs.dispatch.outputs.command != 'approve' && needs.dispatch.outputs.command != 'notify_only'))) }}
     runs-on: 'ubuntu-latest'
     permissions:
       contents: 'read'
