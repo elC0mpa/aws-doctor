@@ -7,6 +7,10 @@ on:
   pull_request_review:
     types:
       - 'submitted'
+  pull_request:
+    types:
+      - 'opened'
+      - 'synchronize'
   pull_request_target:
     types:
       - 'opened'
@@ -49,8 +53,13 @@ jobs:
     # For comments: only if user types @gemini-cli and is OWNER/MEMBER/COLLABORATOR
     if: |-
       (
-        contains(fromJSON('["pull_request", "pull_request_target"]'), github.event_name) &&
-        contains(fromJSON('["opened", "synchronize"]'), github.event.action)
+        github.event_name == 'pull_request' &&
+        contains(fromJSON('["opened", "synchronize"]'), github.event.action) &&
+        github.event.pull_request.head.repo.fork == false
+      ) || (
+        github.event_name == 'pull_request_target' &&
+        contains(fromJSON('["opened", "synchronize"]'), github.event.action) &&
+        github.event.pull_request.head.repo.fork == true
       ) || (
         github.event_name == 'issues' &&
         contains(fromJSON('["opened", "reopened"]'), github.event.action)
