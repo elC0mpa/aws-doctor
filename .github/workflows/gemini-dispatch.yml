@@ -15,6 +15,7 @@ on:
     types:
       - 'opened'
       - 'synchronize'
+      - 'labeled'
   issue_comment:
     types:
       - 'created'
@@ -58,7 +59,8 @@ jobs:
         github.event.pull_request.head.repo.fork == false
       ) || (
         github.event_name == 'pull_request_target' &&
-        contains(fromJSON('["opened", "synchronize"]'), github.event.action) &&
+        github.event.action == 'labeled' &&
+        github.event.label.name == 'gemini-review' &&
         github.event.pull_request.head.repo.fork == true
       ) || (
         github.event_name == 'issues' &&
@@ -103,7 +105,7 @@ jobs:
             const request = process.env.REQUEST || '';
             core.setOutput('request', request);
 
-            if (['pull_request.opened', 'pull_request.synchronize', 'pull_request_target.opened', 'pull_request_target.synchronize'].includes(eventType)) {
+            if (['pull_request.opened', 'pull_request.synchronize', 'pull_request_target.opened', 'pull_request_target.synchronize', 'pull_request_target.labeled'].includes(eventType)) {
               core.setOutput('command', 'review');
             } else if (['issues.opened', 'issues.reopened'].includes(eventType)) {
               core.setOutput('command', 'triage');
@@ -129,6 +131,22 @@ jobs:
           ISSUE_NUMBER: '${{ github.event.pull_request.number || github.event.issue.number }}'
           MESSAGE: |-
             🤖 Hi @${{ github.actor }}, I've received your request, and I'm working on it now! You can track my progress [in the logs](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}) for more details.
+          REPOSITORY: '${{ github.repository }}'
+        run: |-
+          gh issue comment "${ISSUE_NUMBER}" \
+            --body "${MESSAGE}" \
+            --repo "${REPOSITORY}"
+
+      - name: 'Notify about fork review process'
+        if: |-
+          github.event_name == 'pull_request_target' &&
+          contains(fromJSON('["opened", "synchronize"]'), github.event.action) &&
+          github.event.pull_request.head.repo.fork == true
+        env:
+          GITHUB_TOKEN: '${{ steps.mint_identity_token.outputs.token || secrets.GITHUB_TOKEN || github.token }}'
+          ISSUE_NUMBER: '${{ github.event.pull_request.number }}'
+          MESSAGE: |-
+            👋 Hi @${{ github.actor }}! Since this is a pull request from a fork, I will perform a review once a maintainer adds the `gemini-review` label to this PR.
           REPOSITORY: '${{ github.repository }}'
         run: |-
           gh issue comment "${ISSUE_NUMBER}" \
