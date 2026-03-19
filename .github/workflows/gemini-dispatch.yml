@@ -63,7 +63,7 @@ jobs:
         github.event.pull_request.head.repo.fork == true
       ) || (
         github.event_name == 'issues' &&
-        contains(fromJSON('["opened", "reopened"]'), github.event.action)
+        github.event.action == 'opened'
       ) || (
         github.event.sender.type == 'User' &&
         startsWith(github.event.comment.body || github.event.review.body || github.event.issue.body, '@gemini-cli') &&
@@ -115,7 +115,7 @@ jobs:
               core.setOutput('command', 'review');
             } else if (['pull_request_target.opened', 'pull_request_target.synchronize'].includes(eventType)) {
               core.setOutput('command', 'notify_only');
-            } else if (['issues.opened', 'issues.reopened'].includes(eventType)) {
+            } else if (eventType === 'issues.opened') {
               core.setOutput('command', 'triage');
             } else if (request.startsWith("@gemini-cli /review")) {
               core.setOutput('command', 'review');
@@ -229,7 +229,7 @@ jobs:
       - 'invoke'
       - 'plan-execute'
     if: |-
-      ${{ always() && !cancelled() && (failure() || (needs.dispatch.outputs.command == 'fallthrough' || (needs.dispatch.outputs.command != 'review' && needs.dispatch.outputs.command != 'triage' && needs.dispatch.outputs.command != 'invoke' && needs.dispatch.outputs.command != 'approve' && needs.dispatch.outputs.command != 'notify_only'))) }}
+      ${{ always() && !cancelled() && needs.dispatch.result != 'skipped' && (failure() || (needs.dispatch.outputs.command == 'fallthrough' || (needs.dispatch.outputs.command != 'review' && needs.dispatch.outputs.command != 'triage' && needs.dispatch.outputs.command != 'invoke' && needs.dispatch.outputs.command != 'approve' && needs.dispatch.outputs.command != 'notify_only'))) }}
     runs-on: 'ubuntu-latest'
     permissions:
       contents: 'read'
