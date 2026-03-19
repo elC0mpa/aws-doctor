@@ -39,6 +39,9 @@ jobs:
 
       - name: 'Checkout Code'
         uses: 'actions/checkout@v4' # ratchet:exclude
+        with:
+          ref: '${{ github.event.pull_request.head.sha || github.sha }}'
+          repository: '${{ github.event.pull_request.head.repo.full_name || github.repository }}'
 
       - name: 'Run Gemini CLI'
         id: 'run_gemini'

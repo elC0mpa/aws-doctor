@@ -7,7 +7,7 @@ on:
   pull_request_review:
     types:
       - 'submitted'
-  pull_request:
+  pull_request_target:
     types:
       - 'opened'
       - 'synchronize'
@@ -44,14 +44,13 @@ jobs:
           env | grep '^DEBUG_'
 
   dispatch:
-    # For PRs: only if not from a fork
+    # For PRs: triggered on opened/synchronize
     # For issues: only on open/reopen
     # For comments: only if user types @gemini-cli and is OWNER/MEMBER/COLLABORATOR
     if: |-
       (
-        github.event_name == 'pull_request' &&
-        contains(fromJSON('["opened", "synchronize"]'), github.event.action) &&
-        github.event.pull_request.head.repo.fork == false
+        contains(fromJSON('["pull_request", "pull_request_target"]'), github.event_name) &&
+        contains(fromJSON('["opened", "synchronize"]'), github.event.action)
       ) || (
         github.event_name == 'issues' &&
         contains(fromJSON('["opened", "reopened"]'), github.event.action)
@@ -95,7 +94,7 @@ jobs:
             const request = process.env.REQUEST || '';
             core.setOutput('request', request);
 
-            if (['pull_request.opened', 'pull_request.synchronize'].includes(eventType)) {
+            if (['pull_request.opened', 'pull_request.synchronize', 'pull_request_target.opened', 'pull_request_target.synchronize'].includes(eventType)) {
               core.setOutput('command', 'review');
             } else if (['issues.opened', 'issues.reopened'].includes(eventType)) {
               core.setOutput('command', 'triage');
