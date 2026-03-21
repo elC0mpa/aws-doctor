@@ -4,6 +4,7 @@ import (
 	"github.com/elC0mpa/aws-doctor/model"
 	"github.com/elC0mpa/aws-doctor/utils/barchart"
 	costtable "github.com/elC0mpa/aws-doctor/utils/cost_table"
+	"github.com/elC0mpa/aws-doctor/utils/csv_output"
 	jsonoutput "github.com/elC0mpa/aws-doctor/utils/json_output"
 	"github.com/elC0mpa/aws-doctor/utils/spinner"
 	wastetable "github.com/elC0mpa/aws-doctor/utils/waste_table"
@@ -16,6 +17,7 @@ type Format string
 const (
 	FormatTable Format = "table"
 	FormatJSON  Format = "json"
+	FormatCSV   Format = "csv"
 )
 
 // Renderer defines the interface for drawing tables and charts
@@ -26,6 +28,7 @@ type Renderer interface {
 	OutputTrendJSON(accountID string, costInfo []model.CostInfo) error
 	DrawWasteTable(input model.RenderWasteInput)
 	OutputWasteJSON(input model.RenderWasteInput) error
+	OutputWasteCSV(input model.RenderWasteInput) error
 	StopSpinner()
 }
 
@@ -53,6 +56,10 @@ func (r *realRenderer) DrawWasteTable(input model.RenderWasteInput) {
 
 func (r *realRenderer) OutputWasteJSON(input model.RenderWasteInput) error {
 	return jsonoutput.OutputWasteJSON(input)
+}
+
+func (r *realRenderer) OutputWasteCSV(input model.RenderWasteInput) error {
+	return csvoutput.OutputWasteCSV(input)
 }
 
 func (r *realRenderer) StopSpinner() {
