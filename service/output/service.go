@@ -8,8 +8,12 @@ import (
 // NewService creates a new output service with the specified format
 func NewService(format string) Service {
 	f := FormatTable
-	if format == "json" {
+
+	switch format {
+	case "json":
 		f = FormatJSON
+	case "csv":
+		f = FormatCSV
 	}
 
 	return &service{
@@ -19,33 +23,39 @@ func NewService(format string) Service {
 }
 
 func (s *service) RenderCostComparison(input model.RenderCostComparisonInput) error {
-	if s.format == FormatJSON {
+	switch s.format {
+	case FormatJSON:
 		return s.renderer.OutputCostComparisonJSON(input)
+	case FormatCSV:
+		return s.renderer.OutputCostComparisonCSV(input)
+	default:
+		s.renderer.DrawCostTable(input)
+		return nil
 	}
-
-	s.renderer.DrawCostTable(input)
-
-	return nil
 }
 
-func (s *service) RenderTrend(accountID string, costInfo []model.CostInfo) error {
-	if s.format == FormatJSON {
-		return s.renderer.OutputTrendJSON(accountID, costInfo)
+func (s *service) RenderTrend(accountID string, costInfo []model.CostInfo, services []string) error {
+	switch s.format {
+	case FormatJSON:
+		return s.renderer.OutputTrendJSON(accountID, costInfo, services)
+	case FormatCSV:
+		return s.renderer.OutputTrendCSV(costInfo, services)
+	default:
+		s.renderer.DrawTrendChart(accountID, costInfo)
+		return nil
 	}
-
-	s.renderer.DrawTrendChart(accountID, costInfo)
-
-	return nil
 }
 
 func (s *service) RenderWaste(input model.RenderWasteInput) error {
-	if s.format == FormatJSON {
+	switch s.format {
+	case FormatJSON:
 		return s.renderer.OutputWasteJSON(input)
+	case FormatCSV:
+		return s.renderer.OutputWasteCSV(input)
+	default:
+		s.renderer.DrawWasteTable(input)
+		return nil
 	}
-
-	s.renderer.DrawWasteTable(input)
-
-	return nil
 }
 
 func (s *service) StopSpinner() {

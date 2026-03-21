@@ -80,5 +80,5 @@ func Execute(version, commit, date string) error {
 func init() {
 	rootCmd.PersistentFlags().StringVar(&region, "region", "", "AWS region (defaults to AWS_REGION, AWS_DEFAULT_REGION, or ~/.aws/config)")
 	rootCmd.PersistentFlags().StringVar(&profile, "profile", "", "AWS profile configuration")
-	rootCmd.PersistentFlags().StringVar(&outputFormat, "output", "table", "Output format: table or json")
+	rootCmd.PersistentFlags().StringVar(&outputFormat, "output", "table", "Output format: table, json or csv")
 }

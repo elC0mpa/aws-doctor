@@ -2,10 +2,13 @@ package awsconfig
 
 import (
 	"context"
+	"errors"
+	"fmt"
 	"os"
 	"testing"
 
 	"github.com/aws/aws-sdk-go-v2/config"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestNewService(t *testing.T) {
@@ -200,6 +203,119 @@ func TestGetAWSCfg_WithMFAProfile(t *testing.T) {
 
 		_, _ = s.(*service).loadConfigWithManualMFA(context.Background(), "", "any")
 	})
+
+	t.Run("loadConfigWithManualMFA sourceProfile fallback", func(t *testing.T) {
+		loadSharedConfigProfile = func(ctx context.Context, profileName string, optFns ...func(*config.LoadSharedConfigOptions)) (config.SharedConfig, error) {
+			return config.SharedConfig{
+				RoleARN:           "arn:aws:iam::123456789012:role/test-role",
+				MFASerial:         "arn:aws:iam::123456789012:mfa/test-user",
+				SourceProfileName: "", // Trigger fallback to "default"
+			}, nil
+		}
+
+		_, _ = s.(*service).loadConfigWithManualMFA(context.Background(), "", "any")
+	})
+
+	t.Run("loadConfigWithManualMFA with cancelled context", func(t *testing.T) {
+		ctx, cancel := context.WithCancel(context.Background())
+		cancel()
+
+		loadSharedConfigProfile = func(ctx context.Context, profileName string, optFns ...func(*config.LoadSharedConfigOptions)) (config.SharedConfig, error) {
+			return config.SharedConfig{
+				RoleARN:   "arn:aws:iam::123456789012:role/test-role",
+				MFASerial: "arn:aws:iam::123456789012:mfa/test-user",
+			}, nil
+		}
+
+		_, err := s.(*service).loadConfigWithManualMFA(ctx, "", "any")
+		if err == nil {
+			t.Log("Context cancellation might not be checked by LoadDefaultConfig immediately")
+		}
+	})
+}
+
+func TestMFATokenProvider(t *testing.T) {
+	s := &service{}
+
+	t.Run("without serial", func(t *testing.T) {
+		r, w, _ := os.Pipe()
+		oldStdin := os.Stdin
+		os.Stdin = r
+
+		defer func() { os.Stdin = oldStdin }()
+
+		go func() {
+			_, _ = fmt.Fprintln(w, "123456")
+			_ = w.Close()
+		}()
+
+		provider := s.mfaTokenProvider("")
+		token, err := provider()
+		assert.NoError(t, err)
+		assert.Equal(t, "123456", token)
+	})
+
+	t.Run("with serial", func(t *testing.T) {
+		r, w, _ := os.Pipe()
+		oldStdin := os.Stdin
+		os.Stdin = r
+
+		defer func() { os.Stdin = oldStdin }()
+
+		go func() {
+			_, _ = fmt.Fprintln(w, "654321")
+			_ = w.Close()
+		}()
+
+		provider := s.mfaTokenProvider("arn:aws:iam::123456789012:mfa/user")
+		token, err := provider()
+		assert.NoError(t, err)
+		assert.Equal(t, "654321", token)
+	})
+}
+
+func TestGetAWSCfg_WithMFATokenInput(t *testing.T) {
+	origLoadShared := loadSharedConfigProfile
+
+	defer func() { loadSharedConfigProfile = origLoadShared }()
+
+	loadSharedConfigProfile = func(ctx context.Context, profileName string, optFns ...func(*config.LoadSharedConfigOptions)) (config.SharedConfig, error) {
+		return config.SharedConfig{
+			RoleARN:   "arn:aws:iam::123456789012:role/test-role",
+			MFASerial: "arn:aws:iam::123456789012:mfa/test-user",
+		}, nil
+	}
+
+	s := NewService()
+
+	// Mock stdin for Scanln
+	r, w, _ := os.Pipe()
+	oldStdin := os.Stdin
+	os.Stdin = r
+
+	defer func() { os.Stdin = oldStdin }()
+
+	go func() {
+		_, _ = fmt.Fprintln(w, "123456")
+		_ = w.Close()
+	}()
+
+	// This will still fail later because STS is not real, but it hits the token provider code
+	_, _ = s.GetAWSCfg(context.Background(), "us-east-1", "mfa-test")
+}
+
+func TestGetAWSCfg_LoadSharedConfigError(t *testing.T) {
+	origLoadShared := loadSharedConfigProfile
+
+	defer func() { loadSharedConfigProfile = origLoadShared }()
+
+	loadSharedConfigProfile = func(ctx context.Context, profileName string, optFns ...func(*config.LoadSharedConfigOptions)) (config.SharedConfig, error) {
+		return config.SharedConfig{}, errors.New("mock error")
+	}
+
+	s := NewService()
+	// Should continue to default path if shared config fails
+	_, _ = s.GetAWSCfg(context.Background(), "", "any")
 }
 
 func TestGetAWSCfg_LoadConfigError(t *testing.T) {

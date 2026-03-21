@@ -48,15 +48,7 @@ func (s *service) GetAWSCfg(ctx context.Context, region, profile string) (aws.Co
 	// This prompts the user to enter their MFA code when required.
 	// We use a custom provider that writes to stderr to avoid corrupting stdout (e.g. when using --output json)
 	opts = append(opts, config.WithAssumeRoleCredentialOptions(func(options *stscreds.AssumeRoleOptions) {
-		options.TokenProvider = func() (string, error) {
-			var v string
-
-			fmt.Fprint(os.Stderr, "Enter MFA code: ")
-
-			_, err := fmt.Scanln(&v)
-
-			return v, err
-		}
+		options.TokenProvider = s.mfaTokenProvider("")
 	}))
 
 	cfg, err := config.LoadDefaultConfig(ctx, opts...)
@@ -73,6 +65,22 @@ func (s *service) GetAWSCfg(ctx context.Context, region, profile string) (aws.Co
 	}
 
 	return cfg, nil
+}
+
+func (s *service) mfaTokenProvider(mfaSerial string) func() (string, error) {
+	return func() (string, error) {
+		var v string
+
+		if mfaSerial != "" {
+			fmt.Fprintf(os.Stderr, "Enter MFA code for %s: ", mfaSerial)
+		} else {
+			fmt.Fprint(os.Stderr, "Enter MFA code: ")
+		}
+
+		_, err := fmt.Scanln(&v)
+
+		return v, err
+	}
 }
 
 // loadConfigWithManualMFA manually constructs the configuration for a profile with MFA
@@ -123,15 +131,7 @@ func (s *service) loadConfigWithManualMFA(ctx context.Context, region, profile s
 	// 4. Create AssumeRoleProvider with the MFA token provider
 	provider := stscreds.NewAssumeRoleProvider(stsClient, sharedCfg.RoleARN, func(o *stscreds.AssumeRoleOptions) {
 		o.SerialNumber = aws.String(sharedCfg.MFASerial)
-		o.TokenProvider = func() (string, error) {
-			var v string
-
-			fmt.Fprintf(os.Stderr, "Enter MFA code for %s: ", sharedCfg.MFASerial)
-
-			_, err := fmt.Scanln(&v)
-
-			return v, err
-		}
+		o.TokenProvider = s.mfaTokenProvider(sharedCfg.MFASerial)
 	})
 
 	// 5. Create the final config

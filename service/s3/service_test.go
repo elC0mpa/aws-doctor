@@ -15,6 +15,30 @@ import (
 	"github.com/stretchr/testify/mock"
 )
 
+func TestNewService(t *testing.T) {
+	s := NewService(aws.Config{})
+	assert.NotNil(t, s)
+}
+
+func TestGetS3Waste_MultipartError(t *testing.T) {
+	ctx := context.Background()
+	mockClient := new(awsinterfaces.MockS3Client)
+
+	mockClient.On("ListBuckets", mock.Anything, mock.Anything, mock.Anything).Return(&s3.ListBucketsOutput{
+		Buckets: []types.Bucket{
+			{Name: aws.String("test-bucket"), CreationDate: aws.Time(time.Now())},
+		},
+	}, nil)
+	mockClient.On("GetBucketLifecycleConfiguration", mock.Anything, mock.Anything, mock.Anything).Return(&s3.GetBucketLifecycleConfigurationOutput{}, nil)
+	mockClient.On("ListMultipartUploads", mock.Anything, mock.Anything, mock.Anything).Return((*s3.ListMultipartUploadsOutput)(nil), errors.New("multipart error"))
+
+	svc := &service{client: mockClient}
+	_, _, err := svc.GetS3Waste(ctx)
+
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "multipart error")
+}
+
 func TestGetS3Waste(t *testing.T) {
 	ctx := context.Background()
 	creationDate := time.Now()

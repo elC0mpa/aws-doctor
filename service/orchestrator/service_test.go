@@ -101,7 +101,7 @@ func TestOrchestrate_RouteToTrendWorkflow(t *testing.T) {
 		Account: aws.String("123456789012"),
 	}, nil)
 	mockOutput.On("StopSpinner").Return()
-	mockOutput.On("RenderTrend", mock.Anything, mock.Anything).Return(nil)
+	mockOutput.On("RenderTrend", mock.Anything, mock.Anything, mock.Anything).Return(nil)
 
 	// Execute with Trend flag
 	flags := model.Flags{Trend: true, Output: "json"}
@@ -231,7 +231,7 @@ func TestOrchestrate_TrendWorkflow_Mapping(t *testing.T) {
 		Account: aws.String("123456789012"),
 	}, nil)
 	mockOutput.On("StopSpinner").Return()
-	mockOutput.On("RenderTrend", "123456789012", mock.Anything).Return(nil)
+	mockOutput.On("RenderTrend", "123456789012", mock.Anything, mock.Anything).Return(nil)
 
 	// Execute with Trend flag and checks
 	flags := model.Flags{Trend: true, TrendChecks: trendChecks}
@@ -356,7 +356,7 @@ func TestTrendWorkflow_Error(t *testing.T) {
 
 			tt.setupMocks(mockCost, mockSTS)
 			mockOutput.On("StopSpinner").Return().Maybe()
-			mockOutput.On("RenderTrend", mock.Anything, mock.Anything).Return(nil).Maybe()
+			mockOutput.On("RenderTrend", mock.Anything, mock.Anything, mock.Anything).Return(nil).Maybe()
 
 			mockRDS := new(services.MockRDSService)
 			svc := NewService(mockSTS, mockCost, mockEC2, mockELB, mockS3, mockCloudWatch, mockRDS, mockOutput, mockUpdate, model.VersionInfo{Version: "dev", Commit: "none", Date: "unknown"})

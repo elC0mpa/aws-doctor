@@ -8,6 +8,47 @@ import (
 	"testing"
 )
 
+func TestMain(t *testing.T) {
+	// Root command without args should show help and exit with 0
+	if os.Getenv("BE_MAIN") == "1" {
+		main()
+
+		return
+	}
+
+	cmd := exec.Command(os.Args[0], "-test.run=TestMain")
+
+	cmd.Env = append(os.Environ(), "BE_MAIN=1")
+
+	err := cmd.Run()
+	if err != nil {
+		t.Fatalf("process ran with err %v, want exit status 0", err)
+	}
+}
+
+func TestMainError(t *testing.T) {
+	// Invalid subcommand should exit with 1
+	if os.Getenv("BE_MAIN_ERROR") == "1" {
+		os.Args = []string{"aws-doctor", "invalid"}
+
+		main()
+
+		return
+	}
+
+	cmd := exec.Command(os.Args[0], "-test.run=TestMainError")
+
+	cmd.Env = append(os.Environ(), "BE_MAIN_ERROR=1")
+
+	err := cmd.Run()
+
+	if e, ok := err.(*exec.ExitError); ok && !e.Success() {
+		return
+	}
+
+	t.Fatalf("process ran with err %v, want exit status 1", err)
+}
+
 func TestVersionVariablesHaveDefaults(t *testing.T) {
 	if version == "" {
 		t.Error("version variable should have a default value")
