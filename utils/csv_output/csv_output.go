@@ -2,6 +2,7 @@ package csvoutput
 
 import (
 	"encoding/csv"
+	"errors"
 	"os"
 
 	"github.com/elC0mpa/aws-doctor/model"
@@ -23,6 +24,10 @@ func OutputCostComparisonCSV(input model.RenderCostComparisonInput) error {
 	rows = append(rows, mapTotalRow(input.LastTotalCost, input.CurrentTotalCost))
 
 	// Service breakdown
+	if input.LastMonth == nil || input.CurrentMonth == nil {
+		return errors.New("both LastMonth and CurrentMonth data must be provided for service breakdown")
+	}
+
 	orderedServices := orderCostServices(&input.CurrentMonth.CostGroup)
 	for _, service := range orderedServices {
 		rows = append(rows, mapServiceRow(*input.LastMonth, service))

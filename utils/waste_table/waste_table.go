@@ -245,7 +245,7 @@ func populateElasticIPRows(ips []types.Address) []table.Row {
 
 	for _, ip := range ips {
 		p := outputshared.PresentElasticIP(ip)
-		rows = append(rows, table.Row{"", p.Identifier, p.Details[15:], p.EstimatedCost})
+		rows = append(rows, table.Row{"", p.Identifier, aws.ToString(ip.AllocationId), p.EstimatedCost})
 	}
 
 	return rows
@@ -256,7 +256,13 @@ func populateInstanceRows(instances []types.Instance) []table.Row {
 
 	for _, instance := range instances {
 		p := outputshared.PresentStoppedInstance(instance)
-		rows = append(rows, table.Row{"", p.Identifier, p.Age + " days ago"})
+		timeInfo := outputshared.NAValue
+
+		if p.Age != outputshared.NAValue {
+			timeInfo = p.Age + " days ago"
+		}
+
+		rows = append(rows, table.Row{"", p.Identifier, timeInfo})
 	}
 
 	return rows
