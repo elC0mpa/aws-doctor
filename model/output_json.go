@@ -30,6 +30,7 @@ type ServiceCostCompareJSON struct {
 type TrendJSON struct {
 	AccountID   string          `json:"account_id"`
 	GeneratedAt string          `json:"generated_at"`
+	Services    []string        `json:"services,omitempty"`
 	Months      []MonthCostJSON `json:"months"`
 }
 

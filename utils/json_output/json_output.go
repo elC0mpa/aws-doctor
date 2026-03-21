@@ -54,10 +54,11 @@ func OutputCostComparisonJSON(input model.RenderCostComparisonInput) error {
 }
 
 // OutputTrendJSON outputs trend data as JSON
-func OutputTrendJSON(accountID string, costInfo []model.CostInfo) error {
+func OutputTrendJSON(accountID string, costInfo []model.CostInfo, services []string) error {
 	output := model.TrendJSON{
 		AccountID:   accountID,
 		GeneratedAt: time.Now().UTC().Format(time.RFC3339),
+		Services:    services,
 		Months:      []model.MonthCostJSON{},
 	}
 

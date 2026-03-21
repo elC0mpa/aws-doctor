@@ -33,14 +33,16 @@ func (s *service) RenderCostComparison(input model.RenderCostComparisonInput) er
 	}
 }
 
-func (s *service) RenderTrend(accountID string, costInfo []model.CostInfo) error {
-	if s.format == FormatJSON {
-		return s.renderer.OutputTrendJSON(accountID, costInfo)
+func (s *service) RenderTrend(accountID string, costInfo []model.CostInfo, services []string) error {
+	switch s.format {
+	case FormatJSON:
+		return s.renderer.OutputTrendJSON(accountID, costInfo, services)
+	case FormatCSV:
+		return s.renderer.OutputTrendCSV(costInfo, services)
+	default:
+		s.renderer.DrawTrendChart(accountID, costInfo)
+		return nil
 	}
-
-	s.renderer.DrawTrendChart(accountID, costInfo)
-
-	return nil
 }
 
 func (s *service) RenderWaste(input model.RenderWasteInput) error {

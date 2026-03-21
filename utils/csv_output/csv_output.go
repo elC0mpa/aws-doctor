@@ -31,6 +31,25 @@ func OutputCostComparisonCSV(input model.RenderCostComparisonInput) error {
 	return w.WriteAll(rows)
 }
 
+// OutputTrendCSV outputs trend data as CSV
+func OutputTrendCSV(monthlyCosts []model.CostInfo, services []string) error {
+	w := csv.NewWriter(os.Stdout)
+	defer w.Flush()
+
+	headers := []string{"Period Start", "Period End", "Total Cost", "Unit"}
+	if len(services) > 0 {
+		headers = append(headers, "Services")
+	}
+
+	if err := w.Write(headers); err != nil {
+		return err
+	}
+
+	rows := mapTrendRows(monthlyCosts, services)
+
+	return w.WriteAll(rows)
+}
+
 // OutputWasteCSV outputs waste detection data as CSV
 func OutputWasteCSV(input model.RenderWasteInput) error {
 	w := csv.NewWriter(os.Stdout)

@@ -33,8 +33,14 @@ func (m *MockRenderer) DrawTrendChart(accountID string, costInfo []model.CostInf
 }
 
 // OutputTrendJSON mocks OutputTrendJSON
-func (m *MockRenderer) OutputTrendJSON(accountID string, costInfo []model.CostInfo) error {
-	args := m.Called(accountID, costInfo)
+func (m *MockRenderer) OutputTrendJSON(accountID string, costInfo []model.CostInfo, services []string) error {
+	args := m.Called(accountID, costInfo, services)
+	return args.Error(0)
+}
+
+// OutputTrendCSV mocks OutputTrendCSV
+func (m *MockRenderer) OutputTrendCSV(costInfo []model.CostInfo, services []string) error {
+	args := m.Called(costInfo, services)
 	return args.Error(0)
 }
 

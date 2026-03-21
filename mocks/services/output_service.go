@@ -17,8 +17,8 @@ func (m *MockOutputService) RenderCostComparison(input model.RenderCostCompariso
 }
 
 // RenderTrend mocks the RenderTrend method.
-func (m *MockOutputService) RenderTrend(accountID string, costInfo []model.CostInfo) error {
-	args := m.Called(accountID, costInfo)
+func (m *MockOutputService) RenderTrend(accountID string, costInfo []model.CostInfo, services []string) error {
+	args := m.Called(accountID, costInfo, services)
 	return args.Error(0)
 }
 

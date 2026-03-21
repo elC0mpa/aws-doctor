@@ -111,7 +111,7 @@ func TestRealRenderer_OutputTrendJSON(t *testing.T) {
 		},
 	}
 
-	err := r.OutputTrendJSON("123456789012", costInfo)
+	err := r.OutputTrendJSON("123456789012", costInfo, []string{})
 	assert.NoError(t, err)
 }
 

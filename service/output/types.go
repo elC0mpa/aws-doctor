@@ -26,7 +26,8 @@ type Renderer interface {
 	OutputCostComparisonJSON(input model.RenderCostComparisonInput) error
 	OutputCostComparisonCSV(input model.RenderCostComparisonInput) error
 	DrawTrendChart(accountID string, costInfo []model.CostInfo)
-	OutputTrendJSON(accountID string, costInfo []model.CostInfo) error
+	OutputTrendJSON(accountID string, costInfo []model.CostInfo, services []string) error
+	OutputTrendCSV(monthlyCosts []model.CostInfo, services []string) error
 	DrawWasteTable(input model.RenderWasteInput)
 	OutputWasteJSON(input model.RenderWasteInput) error
 	OutputWasteCSV(input model.RenderWasteInput) error
@@ -51,8 +52,12 @@ func (r *realRenderer) DrawTrendChart(accountID string, costInfo []model.CostInf
 	barchart.DrawTrendChart(accountID, costInfo)
 }
 
-func (r *realRenderer) OutputTrendJSON(accountID string, costInfo []model.CostInfo) error {
-	return jsonoutput.OutputTrendJSON(accountID, costInfo)
+func (r *realRenderer) OutputTrendJSON(accountID string, costInfo []model.CostInfo, services []string) error {
+	return jsonoutput.OutputTrendJSON(accountID, costInfo, services)
+}
+
+func (r *realRenderer) OutputTrendCSV(monthlyCosts []model.CostInfo, services []string) error {
+	return csvoutput.OutputTrendCSV(monthlyCosts, services)
 }
 
 func (r *realRenderer) DrawWasteTable(input model.RenderWasteInput) {
@@ -83,7 +88,7 @@ type Service interface {
 	RenderCostComparison(input model.RenderCostComparisonInput) error
 
 	// RenderTrend outputs trend data in the configured format
-	RenderTrend(accountID string, costInfo []model.CostInfo) error
+	RenderTrend(accountID string, costInfo []model.CostInfo, services []string) error
 
 	// RenderWaste outputs waste report data in the configured format
 	RenderWaste(input model.RenderWasteInput) error
