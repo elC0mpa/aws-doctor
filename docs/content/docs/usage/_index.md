@@ -30,7 +30,7 @@ These flags can be used with any subcommand (including the default cost analysis
 | :--- | :--- | :--- |
 | `--region` | `~/.aws/config` | Override the target AWS region. |
 | `--profile` | `default` | Specify which AWS profile to use. |
-| `--output` | `table` | Output format: `table` or `json`. |
+| `--output` | `table` | Output format: `table`, `json`, or `csv`. |
 
 ---
 
