@@ -52,6 +52,7 @@ func TestGetAWSCfg(t *testing.T) {
 
 func TestGetAWSCfg_WithMFAProfile(t *testing.T) {
 	origLoadShared := loadSharedConfigProfile
+
 	defer func() { loadSharedConfigProfile = origLoadShared }()
 
 	s := NewService().(*service)
@@ -126,6 +127,7 @@ func TestMFATokenProvider(t *testing.T) {
 
 func TestGetAWSCfg_WithMFATokenInput(t *testing.T) {
 	origLoadShared := loadSharedConfigProfile
+
 	defer func() { loadSharedConfigProfile = origLoadShared }()
 
 	loadSharedConfigProfile = func(ctx context.Context, profileName string, optFns ...func(*config.LoadSharedConfigOptions)) (config.SharedConfig, error) {
@@ -145,6 +147,7 @@ func TestGetAWSCfg_WithMFATokenInput(t *testing.T) {
 
 func TestGetAWSCfg_LoadSharedConfigError(t *testing.T) {
 	origLoadShared := loadSharedConfigProfile
+
 	defer func() { loadSharedConfigProfile = origLoadShared }()
 
 	loadSharedConfigProfile = func(ctx context.Context, profileName string, optFns ...func(*config.LoadSharedConfigOptions)) (config.SharedConfig, error) {
