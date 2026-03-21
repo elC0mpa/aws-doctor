@@ -24,6 +24,7 @@ const (
 type Renderer interface {
 	DrawCostTable(input model.RenderCostComparisonInput)
 	OutputCostComparisonJSON(input model.RenderCostComparisonInput) error
+	OutputCostComparisonCSV(input model.RenderCostComparisonInput) error
 	DrawTrendChart(accountID string, costInfo []model.CostInfo)
 	OutputTrendJSON(accountID string, costInfo []model.CostInfo) error
 	DrawWasteTable(input model.RenderWasteInput)
@@ -40,6 +41,10 @@ func (r *realRenderer) DrawCostTable(input model.RenderCostComparisonInput) {
 
 func (r *realRenderer) OutputCostComparisonJSON(input model.RenderCostComparisonInput) error {
 	return jsonoutput.OutputCostComparisonJSON(input)
+}
+
+func (r *realRenderer) OutputCostComparisonCSV(input model.RenderCostComparisonInput) error {
+	return csvoutput.OutputCostComparisonCSV(input)
 }
 
 func (r *realRenderer) DrawTrendChart(accountID string, costInfo []model.CostInfo) {

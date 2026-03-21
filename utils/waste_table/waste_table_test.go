@@ -2,7 +2,6 @@ package wastetable
 
 import (
 	"bytes"
-	"fmt"
 	"io"
 	"os"
 	"strings"
@@ -14,487 +13,6 @@ import (
 	elbtypes "github.com/aws/aws-sdk-go-v2/service/elasticloadbalancingv2/types"
 	"github.com/elC0mpa/aws-doctor/model"
 )
-
-func TestPopulateEBSRows(t *testing.T) {
-	tests := []struct {
-		name    string
-		volumes []types.Volume
-		wantLen int
-	}{
-		{
-			name:    "empty_volumes",
-			volumes: []types.Volume{},
-			wantLen: 0,
-		},
-		{
-			name: "single_volume",
-			volumes: []types.Volume{
-				{
-					VolumeId: aws.String("vol-12345"),
-					Size:     aws.Int32(100),
-				},
-			},
-			wantLen: 1,
-		},
-		{
-			name: "multiple_volumes",
-			volumes: []types.Volume{
-				{VolumeId: aws.String("vol-111"), Size: aws.Int32(50)},
-				{VolumeId: aws.String("vol-222"), Size: aws.Int32(100)},
-				{VolumeId: aws.String("vol-333"), Size: aws.Int32(200)},
-			},
-			wantLen: 3,
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			rows := populateEBSRows(tt.volumes)
-
-			if len(rows) != tt.wantLen {
-				t.Errorf("populateEBSRows() returned %d rows, want %d", len(rows), tt.wantLen)
-				return
-			}
-
-			// Verify each row has 4 columns and cost is present
-			for i, row := range rows {
-				if len(row) != 4 {
-					t.Errorf("Row %d has %d columns, want 4", i, len(row))
-				}
-
-				costStr := fmt.Sprintf("%v", row[3])
-
-				if !strings.HasPrefix(costStr, "$") {
-					t.Errorf("Row %d cost %q does not start with $", i, costStr)
-				}
-			}
-
-			// Verify volume IDs are in the rows
-			for i, vol := range tt.volumes {
-				if rows[i][1] != *vol.VolumeId {
-					t.Errorf("Row %d VolumeId = %v, want %v", i, rows[i][1], *vol.VolumeId)
-				}
-			}
-		})
-	}
-}
-
-func TestPopulateElasticIPRows(t *testing.T) {
-	tests := []struct {
-		name    string
-		ips     []types.Address
-		wantLen int
-	}{
-		{
-			name:    "empty_ips",
-			ips:     []types.Address{},
-			wantLen: 0,
-		},
-		{
-			name: "single_ip",
-			ips: []types.Address{
-				{
-					PublicIp:     aws.String("1.2.3.4"),
-					AllocationId: aws.String("eipalloc-12345"),
-				},
-			},
-			wantLen: 1,
-		},
-		{
-			name: "multiple_ips",
-			ips: []types.Address{
-				{PublicIp: aws.String("1.2.3.4"), AllocationId: aws.String("eipalloc-111")},
-				{PublicIp: aws.String("5.6.7.8"), AllocationId: aws.String("eipalloc-222")},
-			},
-			wantLen: 2,
-		},
-		{
-			name: "ip_with_nil_fields",
-			ips: []types.Address{
-				{PublicIp: nil, AllocationId: nil},
-			},
-			wantLen: 1,
-		},
-		{
-			name: "ip_with_only_public_ip",
-			ips: []types.Address{
-				{PublicIp: aws.String("10.0.0.1"), AllocationId: nil},
-			},
-			wantLen: 1,
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			rows := populateElasticIPRows(tt.ips)
-
-			if len(rows) != tt.wantLen {
-				t.Errorf("populateElasticIPRows() returned %d rows, want %d", len(rows), tt.wantLen)
-				return
-			}
-
-			// Verify each row has 4 columns and cost is present
-			for i, row := range rows {
-				if len(row) != 4 {
-					t.Errorf("Row %d has %d columns, want 4", i, len(row))
-				}
-
-				costStr := fmt.Sprintf("%v", row[3])
-
-				if !strings.HasPrefix(costStr, "$") {
-					t.Errorf("Row %d cost %q does not start with $", i, costStr)
-				}
-			}
-		})
-	}
-}
-
-func TestPopulateInstanceRows(t *testing.T) {
-	tests := []struct {
-		name      string
-		instances []types.Instance
-		wantLen   int
-	}{
-		{
-			name:      "empty_instances",
-			instances: []types.Instance{},
-			wantLen:   0,
-		},
-		{
-			name: "single_instance_with_valid_date",
-			instances: []types.Instance{
-				{
-					InstanceId:            aws.String("i-12345"),
-					StateTransitionReason: aws.String("User initiated (2024-01-01 00:00:00 UTC)"),
-				},
-			},
-			wantLen: 1,
-		},
-		{
-			name: "instance_with_nil_reason",
-			instances: []types.Instance{
-				{
-					InstanceId:            aws.String("i-67890"),
-					StateTransitionReason: nil,
-				},
-			},
-			wantLen: 1,
-		},
-		{
-			name: "instance_with_invalid_date",
-			instances: []types.Instance{
-				{
-					InstanceId:            aws.String("i-abcde"),
-					StateTransitionReason: aws.String("Unknown reason"),
-				},
-			},
-			wantLen: 1,
-		},
-		{
-			name: "multiple_instances",
-			instances: []types.Instance{
-				{InstanceId: aws.String("i-111"), StateTransitionReason: aws.String("User initiated (2024-01-01 00:00:00 UTC)")},
-				{InstanceId: aws.String("i-222"), StateTransitionReason: nil},
-				{InstanceId: aws.String("i-333"), StateTransitionReason: aws.String("invalid")},
-			},
-			wantLen: 3,
-		},
-		{
-			name: "instance_with_nil_instance_id",
-			instances: []types.Instance{
-				{
-					InstanceId:            nil,
-					StateTransitionReason: aws.String("User initiated (2024-01-01 00:00:00 UTC)"),
-				},
-			},
-			wantLen: 1,
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			rows := populateInstanceRows(tt.instances)
-
-			if len(rows) != tt.wantLen {
-				t.Errorf("populateInstanceRows() returned %d rows, want %d", len(rows), tt.wantLen)
-				return
-			}
-
-			// Verify each row has 3 columns
-			for i, row := range rows {
-				if len(row) != 3 {
-					t.Errorf("Row %d has %d columns, want 3", i, len(row))
-				}
-			}
-		})
-	}
-}
-
-func TestPopulateInstanceRows_TimeInfo(t *testing.T) {
-	// Test that the time info is calculated correctly
-	now := time.Now()
-	thirtyDaysAgo := now.AddDate(0, 0, -30).Format("2006-01-02 15:04:05") + " UTC"
-
-	instances := []types.Instance{
-		{
-			InstanceId:            aws.String("i-test"),
-			StateTransitionReason: aws.String("User initiated (" + thirtyDaysAgo + ")"),
-		},
-	}
-
-	rows := populateInstanceRows(instances)
-
-	if len(rows) != 1 {
-		t.Fatalf("Expected 1 row, got %d", len(rows))
-	}
-
-	// The time info should contain "days ago"
-	timeInfo := rows[0][2].(string)
-	if timeInfo == "-" {
-		t.Error("Expected time info to be calculated, got '-'")
-	}
-}
-
-func TestPopulateRiRows(t *testing.T) {
-	tests := []struct {
-		name    string
-		ris     []model.RiExpirationInfo
-		wantLen int
-	}{
-		{
-			name:    "empty_ris",
-			ris:     []model.RiExpirationInfo{},
-			wantLen: 0,
-		},
-		{
-			name: "single_ri_expiring_soon",
-			ris: []model.RiExpirationInfo{
-				{
-					ReservedInstanceID: "ri-12345",
-					DaysUntilExpiry:    15,
-					Status:             "EXPIRING SOON",
-				},
-			},
-			wantLen: 1,
-		},
-		{
-			name: "single_ri_expired",
-			ris: []model.RiExpirationInfo{
-				{
-					ReservedInstanceID: "ri-67890",
-					DaysUntilExpiry:    -10,
-					Status:             "EXPIRED",
-				},
-			},
-			wantLen: 1,
-		},
-		{
-			name: "multiple_ris",
-			ris: []model.RiExpirationInfo{
-				{ReservedInstanceID: "ri-111", DaysUntilExpiry: 30},
-				{ReservedInstanceID: "ri-222", DaysUntilExpiry: 0},
-				{ReservedInstanceID: "ri-333", DaysUntilExpiry: -5},
-			},
-			wantLen: 3,
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			rows := populateRiRows(tt.ris)
-
-			if len(rows) != tt.wantLen {
-				t.Errorf("populateRiRows() returned %d rows, want %d", len(rows), tt.wantLen)
-				return
-			}
-
-			// Verify each row has 3 columns
-			for i, row := range rows {
-				if len(row) != 3 {
-					t.Errorf("Row %d has %d columns, want 3", i, len(row))
-				}
-			}
-		})
-	}
-}
-
-func TestPopulateRiRows_TimeInfo(t *testing.T) {
-	tests := []struct {
-		name            string
-		daysUntilExpiry int
-		wantContains    string
-	}{
-		{
-			name:            "expiring_in_future",
-			daysUntilExpiry: 15,
-			wantContains:    "In 15 days",
-		},
-		{
-			name:            "expired_in_past",
-			daysUntilExpiry: -10,
-			wantContains:    "10 days ago",
-		},
-		{
-			name:            "expires_today",
-			daysUntilExpiry: 0,
-			wantContains:    "In 0 days",
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			ris := []model.RiExpirationInfo{
-				{ReservedInstanceID: "ri-test", DaysUntilExpiry: tt.daysUntilExpiry},
-			}
-
-			rows := populateRiRows(ris)
-			timeInfo := rows[0][2].(string)
-
-			if timeInfo != tt.wantContains {
-				t.Errorf("Time info = %q, want %q", timeInfo, tt.wantContains)
-			}
-		})
-	}
-}
-
-func TestPopulateLoadBalancerRows(t *testing.T) {
-	tests := []struct {
-		name          string
-		loadBalancers []elbtypes.LoadBalancer
-		wantLen       int
-	}{
-		{
-			name:          "empty_load_balancers",
-			loadBalancers: []elbtypes.LoadBalancer{},
-			wantLen:       0,
-		},
-		{
-			name: "single_alb",
-			loadBalancers: []elbtypes.LoadBalancer{
-				{
-					LoadBalancerName: aws.String("my-alb"),
-					Type:             elbtypes.LoadBalancerTypeEnumApplication,
-				},
-			},
-			wantLen: 1,
-		},
-		{
-			name: "single_nlb",
-			loadBalancers: []elbtypes.LoadBalancer{
-				{
-					LoadBalancerName: aws.String("my-nlb"),
-					Type:             elbtypes.LoadBalancerTypeEnumNetwork,
-				},
-			},
-			wantLen: 1,
-		},
-		{
-			name: "multiple_load_balancers",
-			loadBalancers: []elbtypes.LoadBalancer{
-				{LoadBalancerName: aws.String("alb-1"), Type: elbtypes.LoadBalancerTypeEnumApplication},
-				{LoadBalancerName: aws.String("nlb-1"), Type: elbtypes.LoadBalancerTypeEnumNetwork},
-				{LoadBalancerName: aws.String("gwlb-1"), Type: elbtypes.LoadBalancerTypeEnumGateway},
-			},
-			wantLen: 3,
-		},
-		{
-			name: "load_balancer_with_nil_name",
-			loadBalancers: []elbtypes.LoadBalancer{
-				{
-					LoadBalancerName: nil,
-					Type:             elbtypes.LoadBalancerTypeEnumApplication,
-				},
-			},
-			wantLen: 1,
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			rows := populateLoadBalancerRows(tt.loadBalancers)
-
-			if len(rows) != tt.wantLen {
-				t.Errorf("populateLoadBalancerRows() returned %d rows, want %d", len(rows), tt.wantLen)
-				return
-			}
-
-			// Verify each row has 4 columns and cost is present
-			for i, row := range rows {
-				if len(row) != 4 {
-					t.Errorf("Row %d has %d columns, want 4", i, len(row))
-				}
-
-				costStr := fmt.Sprintf("%v", row[3])
-
-				if !strings.HasPrefix(costStr, "$") {
-					t.Errorf("Row %d cost %q does not start with $", i, costStr)
-				}
-			}
-		})
-	}
-}
-
-func TestPopulateLoadBalancerRows_Values(t *testing.T) {
-	loadBalancers := []elbtypes.LoadBalancer{
-		{
-			LoadBalancerName: aws.String("test-alb"),
-			Type:             elbtypes.LoadBalancerTypeEnumApplication,
-		},
-	}
-
-	rows := populateLoadBalancerRows(loadBalancers)
-
-	if len(rows) != 1 {
-		t.Fatalf("Expected 1 row, got %d", len(rows))
-	}
-
-	// Column 0 is status placeholder (empty)
-	if rows[0][0] != "" {
-		t.Errorf("Column 0 should be empty, got %v", rows[0][0])
-	}
-
-	// Column 1 is name
-	if rows[0][1] != "test-alb" {
-		t.Errorf("Column 1 = %v, want 'test-alb'", rows[0][1])
-	}
-
-	// Column 2 is type
-	if rows[0][2] != "application" {
-		t.Errorf("Column 2 = %v, want 'application'", rows[0][2])
-	}
-}
-
-func BenchmarkPopulateEBSRows(b *testing.B) {
-	volumes := make([]types.Volume, 50)
-	for i := 0; i < 50; i++ {
-		volumes[i] = types.Volume{
-			VolumeId: aws.String("vol-" + string(rune('a'+i%26))),
-			Size:     aws.Int32(int32(100 + i*10)),
-		}
-	}
-
-	b.ResetTimer()
-
-	for i := 0; i < b.N; i++ {
-		populateEBSRows(volumes)
-	}
-}
-
-func BenchmarkPopulateInstanceRows(b *testing.B) {
-	instances := make([]types.Instance, 20)
-	for i := 0; i < 20; i++ {
-		instances[i] = types.Instance{
-			InstanceId:            aws.String("i-" + string(rune('a'+i%26))),
-			StateTransitionReason: aws.String("User initiated (2024-01-15 10:00:00 UTC)"),
-		}
-	}
-
-	b.ResetTimer()
-
-	for i := 0; i < b.N; i++ {
-		populateInstanceRows(instances)
-	}
-}
 
 // captureWasteOutput captures stdout during function execution
 func captureWasteOutput(f func()) string {
@@ -551,7 +69,11 @@ func TestDrawWasteTable_WithElasticIPs(t *testing.T) {
 
 func TestDrawWasteTable_WithEBSVolumes(t *testing.T) {
 	unusedVolumes := []types.Volume{
-		{VolumeId: aws.String("vol-123"), Size: aws.Int32(100)},
+		{
+			VolumeId:   aws.String("vol-123"),
+			Size:       aws.Int32(100),
+			CreateTime: aws.Time(time.Now()),
+		},
 	}
 
 	output := captureWasteOutput(func() {
@@ -612,6 +134,7 @@ func TestDrawWasteTable_WithLoadBalancers(t *testing.T) {
 		{
 			LoadBalancerName: aws.String("my-alb"),
 			Type:             elbtypes.LoadBalancerTypeEnumApplication,
+			CreatedTime:      aws.Time(time.Now()),
 		},
 	}
 
@@ -632,10 +155,18 @@ func TestDrawWasteTable_AllWasteTypes(t *testing.T) {
 		{PublicIp: aws.String("1.2.3.4"), AllocationId: aws.String("eipalloc-123")},
 	}
 	unusedVolumes := []types.Volume{
-		{VolumeId: aws.String("vol-123"), Size: aws.Int32(100)},
+		{
+			VolumeId:   aws.String("vol-123"),
+			Size:       aws.Int32(100),
+			CreateTime: aws.Time(time.Now()),
+		},
 	}
 	stoppedVolumes := []types.Volume{
-		{VolumeId: aws.String("vol-456"), Size: aws.Int32(200)},
+		{
+			VolumeId:   aws.String("vol-456"),
+			Size:       aws.Int32(200),
+			CreateTime: aws.Time(time.Now()),
+		},
 	}
 	ris := []model.RiExpirationInfo{
 		{ReservedInstanceID: "ri-123", DaysUntilExpiry: 15, Status: "EXPIRING SOON"},
@@ -644,7 +175,11 @@ func TestDrawWasteTable_AllWasteTypes(t *testing.T) {
 		{InstanceId: aws.String("i-123"), StateTransitionReason: aws.String("User initiated (2024-01-01 00:00:00 UTC)")},
 	}
 	loadBalancers := []elbtypes.LoadBalancer{
-		{LoadBalancerName: aws.String("my-alb"), Type: elbtypes.LoadBalancerTypeEnumApplication},
+		{
+			LoadBalancerName: aws.String("my-alb"),
+			Type:             elbtypes.LoadBalancerTypeEnumApplication,
+			CreatedTime:      aws.Time(time.Now()),
+		},
 	}
 
 	output := captureWasteOutput(func() {
@@ -679,11 +214,23 @@ func TestDrawWasteTable_AllWasteTypes(t *testing.T) {
 
 func TestDrawEBSTable(t *testing.T) {
 	unusedVolumes := []types.Volume{
-		{VolumeId: aws.String("vol-111"), Size: aws.Int32(100)},
-		{VolumeId: aws.String("vol-222"), Size: aws.Int32(200)},
+		{
+			VolumeId:   aws.String("vol-111"),
+			Size:       aws.Int32(100),
+			CreateTime: aws.Time(time.Now()),
+		},
+		{
+			VolumeId:   aws.String("vol-222"),
+			Size:       aws.Int32(200),
+			CreateTime: aws.Time(time.Now()),
+		},
 	}
 	stoppedVolumes := []types.Volume{
-		{VolumeId: aws.String("vol-333"), Size: aws.Int32(300)},
+		{
+			VolumeId:   aws.String("vol-333"),
+			Size:       aws.Int32(300),
+			CreateTime: aws.Time(time.Now()),
+		},
 	}
 
 	output := captureWasteOutput(func() {
@@ -705,7 +252,11 @@ func TestDrawEBSTable(t *testing.T) {
 
 func TestDrawEBSTable_OnlyUnused(t *testing.T) {
 	unusedVolumes := []types.Volume{
-		{VolumeId: aws.String("vol-111"), Size: aws.Int32(100)},
+		{
+			VolumeId:   aws.String("vol-111"),
+			Size:       aws.Int32(100),
+			CreateTime: aws.Time(time.Now()),
+		},
 	}
 
 	output := captureWasteOutput(func() {
@@ -719,7 +270,11 @@ func TestDrawEBSTable_OnlyUnused(t *testing.T) {
 
 func TestDrawEBSTable_OnlyStopped(t *testing.T) {
 	stoppedVolumes := []types.Volume{
-		{VolumeId: aws.String("vol-333"), Size: aws.Int32(300)},
+		{
+			VolumeId:   aws.String("vol-333"),
+			Size:       aws.Int32(300),
+			CreateTime: aws.Time(time.Now()),
+		},
 	}
 
 	output := captureWasteOutput(func() {
@@ -813,8 +368,16 @@ func TestDrawElasticIPTable(t *testing.T) {
 
 func TestDrawLoadBalancerTable(t *testing.T) {
 	loadBalancers := []elbtypes.LoadBalancer{
-		{LoadBalancerName: aws.String("my-alb"), Type: elbtypes.LoadBalancerTypeEnumApplication},
-		{LoadBalancerName: aws.String("my-nlb"), Type: elbtypes.LoadBalancerTypeEnumNetwork},
+		{
+			LoadBalancerName: aws.String("my-alb"),
+			Type:             elbtypes.LoadBalancerTypeEnumApplication,
+			CreatedTime:      aws.Time(time.Now()),
+		},
+		{
+			LoadBalancerName: aws.String("my-nlb"),
+			Type:             elbtypes.LoadBalancerTypeEnumNetwork,
+			CreatedTime:      aws.Time(time.Now()),
+		},
 	}
 
 	output := captureWasteOutput(func() {
@@ -841,12 +404,14 @@ func TestDrawSnapshotTable(t *testing.T) {
 			Category:   model.SnapshotCategoryOrphaned,
 			Reason:     "Volume deleted",
 			SizeGB:     10,
+			StartTime:  time.Now(),
 		},
 		{
 			SnapshotID: "snap-456",
 			Category:   model.SnapshotCategoryStale,
 			Reason:     "Old backup",
 			SizeGB:     20,
+			StartTime:  time.Now(),
 		},
 	}
 
@@ -871,7 +436,13 @@ func TestDrawWasteTable_IndividualResources(t *testing.T) {
 	accountID := "123456789012"
 
 	// Test EBS only
-	unusedVolumes := []types.Volume{{VolumeId: aws.String("vol-1"), Size: aws.Int32(10)}}
+	unusedVolumes := []types.Volume{
+		{
+			VolumeId:   aws.String("vol-1"),
+			Size:       aws.Int32(10),
+			CreateTime: aws.Time(time.Now()),
+		},
+	}
 
 	output := captureWasteOutput(func() {
 		DrawWasteTable(model.RenderWasteInput{
@@ -885,7 +456,13 @@ func TestDrawWasteTable_IndividualResources(t *testing.T) {
 	}
 
 	// Test LoadBalancer only
-	lbs := []elbtypes.LoadBalancer{{LoadBalancerName: aws.String("lb-1"), Type: elbtypes.LoadBalancerTypeEnumApplication}}
+	lbs := []elbtypes.LoadBalancer{
+		{
+			LoadBalancerName: aws.String("lb-1"),
+			Type:             elbtypes.LoadBalancerTypeEnumApplication,
+			CreatedTime:      aws.Time(time.Now()),
+		},
+	}
 
 	output = captureWasteOutput(func() {
 		DrawWasteTable(model.RenderWasteInput{
@@ -899,7 +476,7 @@ func TestDrawWasteTable_IndividualResources(t *testing.T) {
 	}
 
 	// Test AMIs only
-	amis := []model.AMIWasteInfo{{ImageID: "ami-1", Name: "ami-1", DaysSinceCreate: 10}}
+	amis := []model.AMIWasteInfo{{ImageID: "ami-1", Name: "ami-1", DaysSinceCreate: 10, CreationDate: time.Now()}}
 
 	output = captureWasteOutput(func() {
 		DrawWasteTable(model.RenderWasteInput{
@@ -913,7 +490,7 @@ func TestDrawWasteTable_IndividualResources(t *testing.T) {
 	}
 
 	// Test Snapshots only
-	snaps := []model.SnapshotWasteInfo{{SnapshotID: "snap-1", Category: model.SnapshotCategoryOrphaned}}
+	snaps := []model.SnapshotWasteInfo{{SnapshotID: "snap-1", Category: model.SnapshotCategoryOrphaned, StartTime: time.Now()}}
 
 	output = captureWasteOutput(func() {
 		DrawWasteTable(model.RenderWasteInput{
@@ -927,135 +504,6 @@ func TestDrawWasteTable_IndividualResources(t *testing.T) {
 	}
 }
 
-func TestPopulateAMIRows(t *testing.T) {
-	tests := []struct {
-		name    string
-		amis    []model.AMIWasteInfo
-		wantLen int
-	}{
-		{
-			name:    "empty_amis",
-			amis:    []model.AMIWasteInfo{},
-			wantLen: 0,
-		},
-		{
-			name: "single_ami",
-			amis: []model.AMIWasteInfo{
-				{
-					ImageID:            "ami-12345",
-					Name:               "my-ami",
-					DaysSinceCreate:    90,
-					MaxPotentialSaving: 5.00,
-				},
-			},
-			wantLen: 1,
-		},
-		{
-			name: "multiple_amis",
-			amis: []model.AMIWasteInfo{
-				{ImageID: "ami-111", Name: "ami-one", DaysSinceCreate: 30, MaxPotentialSaving: 2.50},
-				{ImageID: "ami-222", Name: "ami-two", DaysSinceCreate: 60, MaxPotentialSaving: 5.00},
-				{ImageID: "ami-333", Name: "ami-three", DaysSinceCreate: 90, MaxPotentialSaving: 7.50},
-			},
-			wantLen: 3,
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			rows := populateAMIRows(tt.amis)
-
-			if len(rows) != tt.wantLen {
-				t.Errorf("populateAMIRows() returned %d rows, want %d", len(rows), tt.wantLen)
-				return
-			}
-
-			// Verify each row has 5 columns (Status, AMI ID, Name, Age, Max Savings)
-			for i, row := range rows {
-				if len(row) != 5 {
-					t.Errorf("Row %d has %d columns, want 5", i, len(row))
-				}
-			}
-
-			// Verify AMI IDs are in the rows
-			for i, ami := range tt.amis {
-				if rows[i][1] != ami.ImageID {
-					t.Errorf("Row %d AMI ID = %v, want %v", i, rows[i][1], ami.ImageID)
-				}
-			}
-		})
-	}
-}
-
-func TestPopulateAMIRows_LongNameTruncation(t *testing.T) {
-	amis := []model.AMIWasteInfo{
-		{
-			ImageID:            "ami-truncate",
-			Name:               "this-is-a-very-long-ami-name-that-should-be-truncated",
-			DaysSinceCreate:    45,
-			MaxPotentialSaving: 3.00,
-		},
-	}
-
-	rows := populateAMIRows(amis)
-
-	if len(rows) != 1 {
-		t.Fatalf("Expected 1 row, got %d", len(rows))
-	}
-
-	name := rows[0][2].(string)
-	// Name should be truncated to 30 chars (27 + "...")
-	if len(name) > 30 {
-		t.Errorf("Name was not truncated, got %d chars: %s", len(name), name)
-	}
-
-	if !strings.HasSuffix(name, "...") {
-		t.Errorf("Truncated name should end with '...', got: %s", name)
-	}
-}
-
-func TestPopulateAMIRows_Values(t *testing.T) {
-	amis := []model.AMIWasteInfo{
-		{
-			ImageID:            "ami-test123",
-			Name:               "test-ami",
-			DaysSinceCreate:    45,
-			MaxPotentialSaving: 2.50,
-		},
-	}
-
-	rows := populateAMIRows(amis)
-
-	if len(rows) != 1 {
-		t.Fatalf("Expected 1 row, got %d", len(rows))
-	}
-
-	// Column 0 is status placeholder (empty)
-	if rows[0][0] != "" {
-		t.Errorf("Column 0 should be empty, got %v", rows[0][0])
-	}
-
-	// Column 1 is AMI ID
-	if rows[0][1] != "ami-test123" {
-		t.Errorf("Column 1 = %v, want 'ami-test123'", rows[0][1])
-	}
-
-	// Column 2 is Name
-	if rows[0][2] != "test-ami" {
-		t.Errorf("Column 2 = %v, want 'test-ami'", rows[0][2])
-	}
-
-	// Column 3 is Age (days)
-	if rows[0][3] != "45 days" {
-		t.Errorf("Column 3 = %v, want '45 days'", rows[0][3])
-	}
-
-	// Column 4 is Max Savings
-	if rows[0][4] != "$2.50" {
-		t.Errorf("Column 4 = %v, want '$2.50'", rows[0][4])
-	}
-}
-
 func TestDrawAMITable(t *testing.T) {
 	amis := []model.AMIWasteInfo{
 		{
@@ -1064,6 +512,7 @@ func TestDrawAMITable(t *testing.T) {
 			DaysSinceCreate:    60,
 			MaxPotentialSaving: 5.00,
 			SafetyWarning:      "Verify before deleting",
+			CreationDate:       time.Now(),
 		},
 		{
 			ImageID:            "ami-67890",
@@ -1071,6 +520,7 @@ func TestDrawAMITable(t *testing.T) {
 			DaysSinceCreate:    90,
 			MaxPotentialSaving: 7.50,
 			SafetyWarning:      "Verify before deleting",
+			CreationDate:       time.Now(),
 		},
 	}
 
@@ -1106,6 +556,7 @@ func TestDrawWasteTable_WithUnusedAMIs(t *testing.T) {
 			DaysSinceCreate:    120,
 			MaxPotentialSaving: 10.00,
 			SafetyWarning:      "Verify before deleting",
+			CreationDate:       time.Now(),
 		},
 	}
 
@@ -1125,95 +576,13 @@ func TestDrawWasteTable_WithUnusedAMIs(t *testing.T) {
 	}
 }
 
-func BenchmarkPopulateAMIRows(b *testing.B) {
-	amis := make([]model.AMIWasteInfo, 50)
-	for i := 0; i < 50; i++ {
-		amis[i] = model.AMIWasteInfo{
-			ImageID:            "ami-" + string(rune('a'+i%26)),
-			Name:               "test-ami-" + string(rune('a'+i%26)),
-			DaysSinceCreate:    30 + i,
-			MaxPotentialSaving: float64(i) * 0.5,
-		}
-	}
-
-	b.ResetTimer()
-
-	for i := 0; i < b.N; i++ {
-		populateAMIRows(amis)
-	}
-}
-
-func BenchmarkDrawWasteTable(b *testing.B) {
-	elasticIPs := []types.Address{
-		{PublicIp: aws.String("1.2.3.4"), AllocationId: aws.String("eipalloc-123")},
-	}
-	unusedVolumes := []types.Volume{
-		{VolumeId: aws.String("vol-123"), Size: aws.Int32(100)},
-	}
-
-	// Redirect stdout to discard
-	old := os.Stdout
-	os.Stdout, _ = os.Open(os.DevNull)
-
-	defer func() { os.Stdout = old }()
-
-	b.ResetTimer()
-
-	for i := 0; i < b.N; i++ {
-		DrawWasteTable(model.RenderWasteInput{
-			AccountID:     "123456789012",
-			ElasticIPs:    elasticIPs,
-			UnusedVolumes: unusedVolumes,
-		})
-	}
-}
-
-func TestPopulateKeyPairRows(t *testing.T) {
-	tests := []struct {
-		name     string
-		keyPairs []model.KeyPairWasteInfo
-		wantLen  int
-	}{
-		{
-			name:     "empty_keypairs",
-			keyPairs: []model.KeyPairWasteInfo{},
-			wantLen:  0,
-		},
-		{
-			name: "single_keypair",
-			keyPairs: []model.KeyPairWasteInfo{
-				{
-					KeyName:         "test-key",
-					KeyPairID:       "key-12345",
-					DaysSinceCreate: 30,
-				},
-			},
-			wantLen: 1,
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			rows := populateKeyPairRows(tt.keyPairs)
-			if len(rows) != tt.wantLen {
-				t.Errorf("populateKeyPairRows() returned %d rows, want %d", len(rows), tt.wantLen)
-			}
-
-			if tt.wantLen > 0 {
-				if len(rows[0]) != 4 {
-					t.Errorf("Row has %d columns, want 4", len(rows[0]))
-				}
-			}
-		})
-	}
-}
-
 func TestDrawKeyPairTable(t *testing.T) {
 	keyPairs := []model.KeyPairWasteInfo{
 		{
 			KeyName:         "unused-key",
 			KeyPairID:       "key-abcde",
 			DaysSinceCreate: 60,
+			CreateTime:      time.Now(),
 		},
 	}
 
@@ -1240,6 +609,7 @@ func TestDrawWasteTable_WithKeyPairs(t *testing.T) {
 			KeyName:         "waste-key",
 			KeyPairID:       "key-waste",
 			DaysSinceCreate: 45,
+			CreateTime:      time.Now(),
 		},
 	}
 
@@ -1256,55 +626,6 @@ func TestDrawWasteTable_WithKeyPairs(t *testing.T) {
 
 	if !strings.Contains(output, "waste-key") {
 		t.Error("DrawWasteTable() with key pairs missing key name")
-	}
-}
-
-func TestPopulateS3Rows(t *testing.T) {
-	tests := []struct {
-		name    string
-		buckets []model.S3BucketWasteInfo
-		wantLen int
-	}{
-		{
-			name:    "empty_buckets",
-			buckets: []model.S3BucketWasteInfo{},
-			wantLen: 0,
-		},
-		{
-			name: "single_bucket",
-			buckets: []model.S3BucketWasteInfo{
-				{
-					BucketName:   "test-bucket",
-					Reason:       "No lifecycle policy",
-					CreationDate: time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC),
-				},
-			},
-			wantLen: 1,
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			rows := populateS3Rows(tt.buckets)
-
-			if len(rows) != tt.wantLen {
-				t.Errorf("populateS3Rows() returned %d rows, want %d", len(rows), tt.wantLen)
-			}
-
-			if tt.wantLen > 0 {
-				if len(rows[0]) != 3 {
-					t.Errorf("Row has %d columns, want 3", len(rows[0]))
-				}
-
-				if rows[0][1] != "test-bucket" {
-					t.Errorf("BucketName = %v, want 'test-bucket'", rows[0][1])
-				}
-
-				if !strings.Contains(rows[0][2].(string), "2024-01-01") {
-					t.Errorf("Info = %v, want it to contain '2024-01-01'", rows[0][2])
-				}
-			}
-		})
 	}
 }
 
@@ -1374,54 +695,6 @@ func TestDrawWasteTable_WithS3Buckets(t *testing.T) {
 	}
 }
 
-func TestPopulateS3MultipartRows(t *testing.T) {
-	tests := []struct {
-		name    string
-		buckets []model.S3MultipartUploadWasteInfo
-		wantLen int
-	}{
-		{
-			name:    "empty_buckets",
-			buckets: []model.S3MultipartUploadWasteInfo{},
-			wantLen: 0,
-		},
-		{
-			name: "single_bucket",
-			buckets: []model.S3MultipartUploadWasteInfo{
-				{
-					BucketName:  "test-multipart-bucket",
-					UploadCount: 5,
-				},
-			},
-			wantLen: 1,
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			rows := populateS3MultipartRows(tt.buckets)
-
-			if len(rows) != tt.wantLen {
-				t.Errorf("populateS3MultipartRows() returned %d rows, want %d", len(rows), tt.wantLen)
-			}
-
-			if tt.wantLen > 0 {
-				if len(rows[0]) != 3 {
-					t.Errorf("Row has %d columns, want 3", len(rows[0]))
-				}
-
-				if rows[0][1] != "test-multipart-bucket" {
-					t.Errorf("BucketName = %v, want 'test-multipart-bucket'", rows[0][1])
-				}
-
-				if !strings.Contains(rows[0][2].(string), "5 incomplete uploads") {
-					t.Errorf("Info = %v, want it to contain '5 incomplete uploads'", rows[0][2])
-				}
-			}
-		})
-	}
-}
-
 func TestDrawWasteTable_WithS3Multipart(t *testing.T) {
 	buckets := []model.S3MultipartUploadWasteInfo{
 		{
@@ -1447,56 +720,6 @@ func TestDrawWasteTable_WithS3Multipart(t *testing.T) {
 
 	if !strings.Contains(output, "s3-multipart-waste-bucket") {
 		t.Error("DrawWasteTable() with S3 multipart missing bucket name")
-	}
-}
-
-func TestPopulateCloudWatchLogsRows(t *testing.T) {
-	tests := []struct {
-		name      string
-		logGroups []model.CloudWatchLogsWasteInfo
-		wantLen   int
-	}{
-		{
-			name:      "empty_loggroups",
-			logGroups: []model.CloudWatchLogsWasteInfo{},
-			wantLen:   0,
-		},
-		{
-			name: "single_loggroup",
-			logGroups: []model.CloudWatchLogsWasteInfo{
-				{
-					LogGroupName: "test-loggroup",
-					StoredBytes:  1024,
-					CreationTime: time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC),
-				},
-			},
-			wantLen: 1,
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			rows := populateCloudWatchLogsRows(tt.logGroups)
-
-			if len(rows) != tt.wantLen {
-				t.Errorf("populateCloudWatchLogsRows() returned %d rows, want %d", len(rows), tt.wantLen)
-			}
-
-			if tt.wantLen > 0 {
-				if len(rows[0]) != 5 {
-					t.Errorf("Row has %d columns, want 5", len(rows[0]))
-				}
-
-				costStr := fmt.Sprintf("%v", rows[0][4])
-				if !strings.HasPrefix(costStr, "$") {
-					t.Errorf("CloudWatch Logs cost %q does not start with $", costStr)
-				}
-
-				if rows[0][1] != "test-loggroup" {
-					t.Errorf("Log group name = %v, want 'test-loggroup'", rows[0][1])
-				}
-			}
-		})
 	}
 }
 

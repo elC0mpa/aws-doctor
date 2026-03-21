@@ -3,14 +3,12 @@ package wastetable
 import (
 	"fmt"
 	"os"
-	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/ec2/types"
 	elbtypes "github.com/aws/aws-sdk-go-v2/service/elasticloadbalancingv2/types"
 	"github.com/elC0mpa/aws-doctor/model"
-	"github.com/elC0mpa/aws-doctor/utils/ec2"
-	"github.com/elC0mpa/aws-doctor/utils/pricing"
+	outputshared "github.com/elC0mpa/aws-doctor/utils/output_shared"
 	wastesummary "github.com/elC0mpa/aws-doctor/utils/waste_summary"
 	"github.com/jedib0t/go-pretty/v6/table"
 	"github.com/jedib0t/go-pretty/v6/text"
@@ -110,7 +108,7 @@ func drawEBSTable(unusedEBSVolumeInfo []types.Volume, attachedToStoppedInstances
 
 	if len(unusedEBSVolumeInfo) > 0 {
 		statusAvailable := "Available (Unattached)"
-		rows := populateEBSRows(unusedEBSVolumeInfo)
+		rows := populateEBSRows(unusedEBSVolumeInfo, "unattached")
 
 		halfRow := len(rows) / 2
 		rows[halfRow][0] = text.FgHiRed.Sprint(statusAvailable)
@@ -124,7 +122,7 @@ func drawEBSTable(unusedEBSVolumeInfo []types.Volume, attachedToStoppedInstances
 
 	if len(attachedToStoppedInstancesEBSVolumeInfo) > 0 {
 		statusStopped := "Attached to Stopped Instance"
-		rows := populateEBSRows(attachedToStoppedInstancesEBSVolumeInfo)
+		rows := populateEBSRows(attachedToStoppedInstancesEBSVolumeInfo, "stopped")
 
 		halfRow := len(rows) / 2
 		rows[halfRow][0] = text.FgHiRed.Sprint(statusStopped)
@@ -231,99 +229,53 @@ func drawElasticIPTable(elasticIPInfo []types.Address) {
 	fmt.Println()
 }
 
-func populateEBSRows(volumes []types.Volume) []table.Row {
-	var rows []table.Row
+func populateEBSRows(volumes []types.Volume, status string) []table.Row {
+	rows := make([]table.Row, 0, len(volumes))
 
 	for _, vol := range volumes {
-		cost := pricing.CalculateEBSMonthlyCost(*vol.Size, vol.VolumeType)
-
-		rows = append(rows, table.Row{
-			"",
-			*vol.VolumeId,
-			fmt.Sprintf("%d GiB", *vol.Size),
-			fmt.Sprintf("$%.2f", cost),
-		})
+		p := outputshared.PresentEBSVolume(vol, status)
+		rows = append(rows, table.Row{"", p.Identifier, p.Metric, p.EstimatedCost})
 	}
 
 	return rows
 }
 
 func populateElasticIPRows(ips []types.Address) []table.Row {
-	var rows []table.Row
+	rows := make([]table.Row, 0, len(ips))
 
 	for _, ip := range ips {
-		publicIP := ""
-		if ip.PublicIp != nil {
-			publicIP = *ip.PublicIp
-		}
-
-		allocationID := ""
-		if ip.AllocationId != nil {
-			allocationID = *ip.AllocationId
-		}
-
-		rows = append(rows, table.Row{
-			"",
-			publicIP,
-			allocationID,
-			fmt.Sprintf("$%.2f", pricing.CalculateEIPMonthlyCost()),
-		})
+		p := outputshared.PresentElasticIP(ip)
+		rows = append(rows, table.Row{"", p.Identifier, p.Details[15:], p.EstimatedCost})
 	}
 
 	return rows
 }
 
 func populateInstanceRows(instances []types.Instance) []table.Row {
-	var rows []table.Row
-
-	now := time.Now()
+	rows := make([]table.Row, 0, len(instances))
 
 	for _, instance := range instances {
-		// Parse date for display
-		reason := ""
-		if instance.StateTransitionReason != nil {
-			reason = *instance.StateTransitionReason
-		}
-
-		timeInfo := "-"
-
-		stoppedAt, err := ec2.ParseTransitionDate(reason)
-		if err == nil {
-			days := int(now.Sub(stoppedAt).Hours() / 24)
-			timeInfo = fmt.Sprintf("%d days ago", days)
-		}
-
-		instanceID := ""
-		if instance.InstanceId != nil {
-			instanceID = *instance.InstanceId
-		}
-
-		rows = append(rows, table.Row{
-			"", // Placeholder for Status
-			instanceID,
-			timeInfo,
-		})
+		p := outputshared.PresentStoppedInstance(instance)
+		rows = append(rows, table.Row{"", p.Identifier, p.Age + " days ago"})
 	}
 
 	return rows
 }
 
 func populateRiRows(ris []model.RiExpirationInfo) []table.Row {
-	var rows []table.Row
+	rows := make([]table.Row, 0, len(ris))
 
 	for _, ri := range ris {
+		p := outputshared.PresentReservedInstance(ri)
 		timeInfo := ""
-		if ri.DaysUntilExpiry >= 0 {
-			timeInfo = fmt.Sprintf("In %d days", ri.DaysUntilExpiry)
+		days := ri.DaysUntilExpiry
+		if days >= 0 {
+			timeInfo = fmt.Sprintf("In %d days", days)
 		} else {
-			timeInfo = fmt.Sprintf("%d days ago", -ri.DaysUntilExpiry)
+			timeInfo = fmt.Sprintf("%d days ago", -days)
 		}
 
-		rows = append(rows, table.Row{
-			"",
-			ri.ReservedInstanceID,
-			timeInfo,
-		})
+		rows = append(rows, table.Row{"", p.Identifier, timeInfo})
 	}
 
 	return rows
@@ -351,18 +303,14 @@ func drawLoadBalancerTable(loadBalancers []elbtypes.LoadBalancer) {
 }
 
 func populateLoadBalancerRows(loadBalancers []elbtypes.LoadBalancer) []table.Row {
-	var rows []table.Row
+	rows := make([]table.Row, 0, len(loadBalancers))
 
 	for _, lb := range loadBalancers {
-		name := aws.ToString(lb.LoadBalancerName)
-		lbType := string(lb.Type)
-
-		rows = append(rows, table.Row{
-			"",
-			name,
-			lbType,
-			fmt.Sprintf("$%.2f", pricing.CalculateLoadBalancerMonthlyCost(lb.Type)),
-		})
+		p := outputshared.PresentLoadBalancer(lb)
+		// Details: "Created on 2026-03-21T08:00:00Z"
+		// We want the name which is not in ResourceRow, oh wait, Identifier is LoadBalancerArn
+		// In DrawLoadBalancerTable it used lb.LoadBalancerName
+		rows = append(rows, table.Row{"", aws.ToString(lb.LoadBalancerName), p.Metric, p.EstimatedCost})
 	}
 
 	return rows
@@ -395,19 +343,20 @@ func drawAMITable(amis []model.AMIWasteInfo) {
 }
 
 func populateAMIRows(amis []model.AMIWasteInfo) []table.Row {
-	var rows []table.Row
+	rows := make([]table.Row, 0, len(amis))
 
 	for _, ami := range amis {
 		name := ami.Name
 		if len(name) > 30 {
 			name = name[:27] + "..."
 		}
+		p := outputshared.PresentAMI(ami)
 
 		rows = append(rows, table.Row{
 			"",
-			ami.ImageID,
+			p.Identifier,
 			name,
-			fmt.Sprintf("%d days", ami.DaysSinceCreate),
+			p.Age + " days",
 			fmt.Sprintf("$%.2f", ami.MaxPotentialSaving),
 		})
 	}
@@ -472,15 +421,16 @@ func drawSnapshotTable(snapshots []model.SnapshotWasteInfo) {
 }
 
 func populateSnapshotRows(snapshots []model.SnapshotWasteInfo) []table.Row {
-	var rows []table.Row
+	rows := make([]table.Row, 0, len(snapshots))
 
 	for _, snap := range snapshots {
+		p := outputshared.PresentSnapshot(snap)
 		rows = append(rows, table.Row{
 			"",
-			snap.SnapshotID,
+			p.Identifier,
 			snap.Reason,
-			fmt.Sprintf("%d GB", snap.SizeGB),
-			fmt.Sprintf("$%.2f/mo", snap.MaxPotentialSavings),
+			p.Metric,
+			p.EstimatedCost + "/mo",
 		})
 	}
 
@@ -513,14 +463,15 @@ func drawKeyPairTable(keyPairs []model.KeyPairWasteInfo) {
 }
 
 func populateKeyPairRows(keyPairs []model.KeyPairWasteInfo) []table.Row {
-	var rows []table.Row
+	rows := make([]table.Row, 0, len(keyPairs))
 
 	for _, kp := range keyPairs {
+		p := outputshared.PresentKeyPair(kp)
 		rows = append(rows, table.Row{
 			"",
-			kp.KeyName,
+			p.Identifier,
 			kp.KeyPairID,
-			fmt.Sprintf("%d days", kp.DaysSinceCreate),
+			p.Age + " days",
 		})
 	}
 
@@ -568,12 +519,13 @@ func drawS3Table(buckets []model.S3BucketWasteInfo, multipartBuckets []model.S3M
 }
 
 func populateS3Rows(buckets []model.S3BucketWasteInfo) []table.Row {
-	var rows []table.Row
+	rows := make([]table.Row, 0, len(buckets))
 
 	for _, bucket := range buckets {
+		p := outputshared.PresentS3Bucket(bucket)
 		rows = append(rows, table.Row{
 			"",
-			bucket.BucketName,
+			p.Identifier,
 			fmt.Sprintf("Created on %s", bucket.CreationDate.Format("2006-01-02")),
 		})
 	}
@@ -582,13 +534,14 @@ func populateS3Rows(buckets []model.S3BucketWasteInfo) []table.Row {
 }
 
 func populateS3MultipartRows(buckets []model.S3MultipartUploadWasteInfo) []table.Row {
-	var rows []table.Row
+	rows := make([]table.Row, 0, len(buckets))
 
 	for _, bucket := range buckets {
+		p := outputshared.PresentS3MultipartUpload(bucket)
 		rows = append(rows, table.Row{
 			"",
-			bucket.BucketName,
-			fmt.Sprintf("%d incomplete uploads", bucket.UploadCount),
+			p.Identifier,
+			p.Metric,
 		})
 	}
 
@@ -601,7 +554,7 @@ func drawCloudWatchLogsTable(logGroups []model.CloudWatchLogsWasteInfo) {
 	t.SetStyle(table.StyleRounded)
 	t.SetTitle("CloudWatch Log Group Waste")
 
-	t.AppendHeader(table.Row{"Status", "Log Group Name", "Size (MB)", "Created On", "Est. Cost/Mo"})
+	t.AppendHeader(table.Row{"Status", "Log Group Name", "Size", "Created On", "Est. Cost/Mo"})
 
 	t.SetColumnConfigs([]table.ColumnConfig{
 		{Number: 3, Align: text.AlignRight},
@@ -622,16 +575,16 @@ func drawCloudWatchLogsTable(logGroups []model.CloudWatchLogsWasteInfo) {
 }
 
 func populateCloudWatchLogsRows(logGroups []model.CloudWatchLogsWasteInfo) []table.Row {
-	var rows []table.Row
+	rows := make([]table.Row, 0, len(logGroups))
 
 	for _, lg := range logGroups {
-		sizeMB := float64(lg.StoredBytes) / (1024 * 1024)
+		p := outputshared.PresentCloudWatchLogGroup(lg)
 		rows = append(rows, table.Row{
 			"",
-			lg.LogGroupName,
-			fmt.Sprintf("%.2f MB", sizeMB),
+			p.Identifier,
+			p.Metric,
 			lg.CreationTime.Format("2006-01-02"),
-			fmt.Sprintf("$%.2f", lg.EstimatedMonthlyCost),
+			p.EstimatedCost,
 		})
 	}
 
@@ -657,7 +610,7 @@ func drawSummaryTable(input model.RenderWasteInput) {
 	})
 
 	for _, cat := range categories {
-		costStr := "-"
+		costStr := outputshared.NAValue
 		if cat.Cost > 0 {
 			costStr = fmt.Sprintf("$%.2f", cat.Cost)
 		}
@@ -738,20 +691,16 @@ func drawRDSTable(instances []model.RDSInstanceWasteInfo, snapshots []model.RDSS
 }
 
 func populateRDSIdleRows(instances []model.RDSIdleInstanceInfo) []table.Row {
-	var rows []table.Row
+	rows := make([]table.Row, 0, len(instances))
 
 	for _, inst := range instances {
-		info := fmt.Sprintf("%s, %d GB, %dd checked", inst.DBInstanceClass, inst.AllocatedStorage, inst.DaysChecked)
-		if inst.MultiAZ {
-			info += ", Multi-AZ"
-		}
-
+		p := outputshared.PresentRDSIdleInstance(inst)
 		rows = append(rows, table.Row{
 			"",
-			inst.DBInstanceID,
+			p.Identifier,
 			inst.Engine,
-			info,
-			fmt.Sprintf("$%.2f", inst.EstimatedMonthlyCost),
+			p.Metric,
+			p.EstimatedCost,
 		})
 	}
 
@@ -759,20 +708,16 @@ func populateRDSIdleRows(instances []model.RDSIdleInstanceInfo) []table.Row {
 }
 
 func populateRDSInstanceRows(instances []model.RDSInstanceWasteInfo) []table.Row {
-	var rows []table.Row
+	rows := make([]table.Row, 0, len(instances))
 
 	for _, inst := range instances {
-		info := fmt.Sprintf("%s, %d GB", inst.DBInstanceClass, inst.AllocatedStorage)
-		if inst.MultiAZ {
-			info += ", Multi-AZ"
-		}
-
+		p := outputshared.PresentRDSInstance(inst)
 		rows = append(rows, table.Row{
 			"",
-			inst.DBInstanceID,
+			p.Identifier,
 			inst.Engine,
-			info,
-			fmt.Sprintf("$%.2f", inst.EstimatedMonthlyCost),
+			p.Metric,
+			p.EstimatedCost,
 		})
 	}
 
@@ -780,15 +725,16 @@ func populateRDSInstanceRows(instances []model.RDSInstanceWasteInfo) []table.Row
 }
 
 func populateRDSSnapshotRows(snapshots []model.RDSSnapshotWasteInfo) []table.Row {
-	var rows []table.Row
+	rows := make([]table.Row, 0, len(snapshots))
 
 	for _, snap := range snapshots {
+		p := outputshared.PresentRDSSnapshot(snap)
 		rows = append(rows, table.Row{
 			"",
-			snap.DBSnapshotID,
+			p.Identifier,
 			snap.Engine,
-			fmt.Sprintf("%d days old, %d GB", snap.DaysSinceCreate, snap.AllocatedStorage),
-			fmt.Sprintf("$%.2f", snap.EstimatedMonthlyCost),
+			fmt.Sprintf("%s days old, %d GB", p.Age, snap.AllocatedStorage),
+			p.EstimatedCost,
 		})
 	}
 

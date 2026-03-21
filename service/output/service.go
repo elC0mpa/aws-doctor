@@ -22,13 +22,15 @@ func NewService(format string) Service {
 }
 
 func (s *service) RenderCostComparison(input model.RenderCostComparisonInput) error {
-	if s.format == FormatJSON {
+	switch s.format {
+	case FormatJSON:
 		return s.renderer.OutputCostComparisonJSON(input)
+	case FormatCSV:
+		return s.renderer.OutputCostComparisonCSV(input)
+	default:
+		s.renderer.DrawCostTable(input)
+		return nil
 	}
-
-	s.renderer.DrawCostTable(input)
-
-	return nil
 }
 
 func (s *service) RenderTrend(accountID string, costInfo []model.CostInfo) error {

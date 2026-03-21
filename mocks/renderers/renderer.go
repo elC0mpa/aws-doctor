@@ -21,6 +21,12 @@ func (m *MockRenderer) OutputCostComparisonJSON(input model.RenderCostComparison
 	return args.Error(0)
 }
 
+// OutputCostComparisonCSV mocks OutputCostComparisonCSV
+func (m *MockRenderer) OutputCostComparisonCSV(input model.RenderCostComparisonInput) error {
+	args := m.Called(input)
+	return args.Error(0)
+}
+
 // DrawTrendChart mocks DrawTrendChart
 func (m *MockRenderer) DrawTrendChart(accountID string, costInfo []model.CostInfo) {
 	m.Called(accountID, costInfo)
@@ -39,6 +45,12 @@ func (m *MockRenderer) DrawWasteTable(input model.RenderWasteInput) {
 
 // OutputWasteJSON mocks OutputWasteJSON
 func (m *MockRenderer) OutputWasteJSON(input model.RenderWasteInput) error {
+	args := m.Called(input)
+	return args.Error(0)
+}
+
+// OutputWasteCSV mocks OutputWasteCSV
+func (m *MockRenderer) OutputWasteCSV(input model.RenderWasteInput) error {
 	args := m.Called(input)
 	return args.Error(0)
 }
