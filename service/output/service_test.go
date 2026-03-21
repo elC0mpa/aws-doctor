@@ -6,7 +6,6 @@ import (
 	"github.com/elC0mpa/aws-doctor/mocks/renderers"
 	"github.com/elC0mpa/aws-doctor/model"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/mock"
 )
 
 func TestNewService(t *testing.T) {
@@ -19,6 +18,11 @@ func TestNewService(t *testing.T) {
 			name:           "json format",
 			inputFormat:    "json",
 			expectedFormat: FormatJSON,
+		},
+		{
+			name:           "csv format",
+			inputFormat:    "csv",
+			expectedFormat: FormatCSV,
 		},
 		{
 			name:           "table format explicit",
@@ -59,17 +63,17 @@ func TestNewService(t *testing.T) {
 }
 
 func TestRenderCostComparison(t *testing.T) {
+	input := model.RenderCostComparisonInput{
+		AccountID:        "123",
+		LastTotalCost:    "100.00 USD",
+		CurrentTotalCost: "120.00 USD",
+		LastMonth:        &model.CostInfo{},
+		CurrentMonth:     &model.CostInfo{},
+	}
+
 	t.Run("TableFormat", func(t *testing.T) {
 		mr := new(renderers.MockRenderer)
 		s := &service{format: FormatTable, renderer: mr}
-
-		input := model.RenderCostComparisonInput{
-			AccountID:        "123",
-			LastTotalCost:    "100.00 USD",
-			CurrentTotalCost: "120.00 USD",
-			LastMonth:        &model.CostInfo{},
-			CurrentMonth:     &model.CostInfo{},
-		}
 		mr.On("DrawCostTable", input).Return()
 
 		err := s.RenderCostComparison(input)
@@ -80,15 +84,17 @@ func TestRenderCostComparison(t *testing.T) {
 	t.Run("JSONFormat", func(t *testing.T) {
 		mr := new(renderers.MockRenderer)
 		s := &service{format: FormatJSON, renderer: mr}
-
-		input := model.RenderCostComparisonInput{
-			AccountID:        "123",
-			LastTotalCost:    "100.00 USD",
-			CurrentTotalCost: "120.00 USD",
-			LastMonth:        &model.CostInfo{},
-			CurrentMonth:     &model.CostInfo{},
-		}
 		mr.On("OutputCostComparisonJSON", input).Return(nil)
+
+		err := s.RenderCostComparison(input)
+		assert.NoError(t, err)
+		mr.AssertExpectations(t)
+	})
+
+	t.Run("CSVFormat", func(t *testing.T) {
+		mr := new(renderers.MockRenderer)
+		s := &service{format: FormatCSV, renderer: mr}
+		mr.On("OutputCostComparisonCSV", input).Return(nil)
 
 		err := s.RenderCostComparison(input)
 		assert.NoError(t, err)
@@ -97,13 +103,15 @@ func TestRenderCostComparison(t *testing.T) {
 }
 
 func TestRenderTrend(t *testing.T) {
+	costs := []model.CostInfo{}
+	services := []string{"redshift"}
+
 	t.Run("TableFormat", func(t *testing.T) {
 		mr := new(renderers.MockRenderer)
 		s := &service{format: FormatTable, renderer: mr}
+		mr.On("DrawTrendChart", "123", costs).Return()
 
-		mr.On("DrawTrendChart", "123", mock.Anything).Return()
-
-		err := s.RenderTrend("123", []model.CostInfo{})
+		err := s.RenderTrend("123", costs, services)
 		assert.NoError(t, err)
 		mr.AssertExpectations(t)
 	})
@@ -111,21 +119,30 @@ func TestRenderTrend(t *testing.T) {
 	t.Run("JSONFormat", func(t *testing.T) {
 		mr := new(renderers.MockRenderer)
 		s := &service{format: FormatJSON, renderer: mr}
+		mr.On("OutputTrendJSON", "123", costs, services).Return(nil)
 
-		mr.On("OutputTrendJSON", "123", mock.Anything).Return(nil)
+		err := s.RenderTrend("123", costs, services)
+		assert.NoError(t, err)
+		mr.AssertExpectations(t)
+	})
 
-		err := s.RenderTrend("123", []model.CostInfo{})
+	t.Run("CSVFormat", func(t *testing.T) {
+		mr := new(renderers.MockRenderer)
+		s := &service{format: FormatCSV, renderer: mr}
+		mr.On("OutputTrendCSV", costs, services).Return(nil)
+
+		err := s.RenderTrend("123", costs, services)
 		assert.NoError(t, err)
 		mr.AssertExpectations(t)
 	})
 }
 
 func TestRenderWaste(t *testing.T) {
+	input := model.RenderWasteInput{AccountID: "123"}
+
 	t.Run("TableFormat", func(t *testing.T) {
 		mr := new(renderers.MockRenderer)
 		s := &service{format: FormatTable, renderer: mr}
-
-		input := model.RenderWasteInput{AccountID: "123"}
 		mr.On("DrawWasteTable", input).Return()
 
 		err := s.RenderWaste(input)
@@ -136,9 +153,17 @@ func TestRenderWaste(t *testing.T) {
 	t.Run("JSONFormat", func(t *testing.T) {
 		mr := new(renderers.MockRenderer)
 		s := &service{format: FormatJSON, renderer: mr}
-
-		input := model.RenderWasteInput{AccountID: "123"}
 		mr.On("OutputWasteJSON", input).Return(nil)
+
+		err := s.RenderWaste(input)
+		assert.NoError(t, err)
+		mr.AssertExpectations(t)
+	})
+
+	t.Run("CSVFormat", func(t *testing.T) {
+		mr := new(renderers.MockRenderer)
+		s := &service{format: FormatCSV, renderer: mr}
+		mr.On("OutputWasteCSV", input).Return(nil)
 
 		err := s.RenderWaste(input)
 		assert.NoError(t, err)
@@ -163,5 +188,9 @@ func TestFormatConstants(t *testing.T) {
 
 	if FormatJSON != "json" {
 		t.Errorf("FormatJSON should be 'json', got %q", FormatJSON)
+	}
+
+	if FormatCSV != "csv" {
+		t.Errorf("FormatCSV should be 'csv', got %q", FormatCSV)
 	}
 }

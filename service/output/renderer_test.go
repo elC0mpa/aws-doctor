@@ -1,6 +1,7 @@
 package output
 
 import (
+	"os"
 	"testing"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -111,7 +112,64 @@ func TestRealRenderer_OutputTrendJSON(t *testing.T) {
 		},
 	}
 
-	err := r.OutputTrendJSON("123456789012", costInfo)
+	err := r.OutputTrendJSON("123456789012", costInfo, []string{})
+	assert.NoError(t, err)
+}
+
+func TestRealRenderer_OutputCostComparisonCSV(t *testing.T) {
+	r := &realRenderer{}
+	input := model.RenderCostComparisonInput{
+		LastMonth:    &model.CostInfo{CostGroup: model.CostGroup{}},
+		CurrentMonth: &model.CostInfo{CostGroup: model.CostGroup{}},
+	}
+
+	// Redirect stdout
+	old := os.Stdout
+	f, _ := os.OpenFile(os.DevNull, os.O_WRONLY, 0)
+	os.Stdout = f
+
+	defer func() {
+		os.Stdout = old
+		_ = f.Close()
+	}()
+
+	err := r.OutputCostComparisonCSV(input)
+	assert.NoError(t, err)
+}
+
+func TestRealRenderer_OutputTrendCSV(t *testing.T) {
+	r := &realRenderer{}
+	costInfo := []model.CostInfo{}
+
+	// Redirect stdout
+	old := os.Stdout
+	f, _ := os.OpenFile(os.DevNull, os.O_WRONLY, 0)
+	os.Stdout = f
+
+	defer func() {
+		os.Stdout = old
+		_ = f.Close()
+	}()
+
+	err := r.OutputTrendCSV(costInfo, []string{})
+	assert.NoError(t, err)
+}
+
+func TestRealRenderer_OutputWasteCSV(t *testing.T) {
+	r := &realRenderer{}
+	input := model.RenderWasteInput{}
+
+	// Redirect stdout
+	old := os.Stdout
+	f, _ := os.OpenFile(os.DevNull, os.O_WRONLY, 0)
+	os.Stdout = f
+
+	defer func() {
+		os.Stdout = old
+		_ = f.Close()
+	}()
+
+	err := r.OutputWasteCSV(input)
 	assert.NoError(t, err)
 }
 

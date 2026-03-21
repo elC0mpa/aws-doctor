@@ -137,7 +137,7 @@ func (s *service) trendWorkflow(trendChecks []string) error {
 
 	s.outputService.StopSpinner()
 
-	return s.outputService.RenderTrend(*stsResult.Account, costInfo)
+	return s.outputService.RenderTrend(*stsResult.Account, costInfo, trendChecks)
 }
 
 func (s *service) wasteWorkflow(wasteChecks []string) error {

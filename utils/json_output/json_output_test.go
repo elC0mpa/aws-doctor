@@ -171,7 +171,7 @@ func TestOutputTrendJSON(t *testing.T) {
 	var err error
 
 	output := captureStdout(func() {
-		err = OutputTrendJSON("123456789012", costInfo)
+		err = OutputTrendJSON("123456789012", costInfo, []string{})
 	})
 
 	if err != nil {
@@ -207,7 +207,7 @@ func TestOutputTrendJSON_SkipsNonTotal(t *testing.T) {
 	var err error
 
 	output := captureStdout(func() {
-		err = OutputTrendJSON("123456789012", costInfo)
+		err = OutputTrendJSON("123456789012", costInfo, []string{})
 	})
 
 	if err != nil {

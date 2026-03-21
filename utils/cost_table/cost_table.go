@@ -3,11 +3,9 @@ package costtable
 import (
 	"fmt"
 	"os"
-	"sort"
-	"strconv"
-	"strings"
 
 	"github.com/elC0mpa/aws-doctor/model"
+	outputshared "github.com/elC0mpa/aws-doctor/utils/output_shared"
 	"github.com/jedib0t/go-pretty/v6/table"
 	"github.com/jedib0t/go-pretty/v6/text"
 )
@@ -36,7 +34,7 @@ func DrawCostTable(input model.RenderCostComparisonInput) {
 
 	rows = append(rows, populateFirstRow(input.LastTotalCost, input.CurrentTotalCost))
 
-	orderedServicesCosts := orderCostServices(&input.CurrentMonth.CostGroup)
+	orderedServicesCosts := outputshared.OrderCostServices(&input.CurrentMonth.CostGroup)
 
 	for _, group := range orderedServicesCosts {
 		rows = append(rows, populateRow(*input.LastMonth, group))
@@ -67,36 +65,9 @@ func DrawCostTable(input model.RenderCostComparisonInput) {
 	tw.Render()
 }
 
-func orderCostServices(costGroups *model.CostGroup) []model.ServiceCost {
-	sortedServices := make([]model.ServiceCost, 0, len(*costGroups))
-	for key, group := range *costGroups {
-		sortedServices = append(sortedServices, model.ServiceCost{
-			Name:   key,
-			Amount: group.Amount,
-			Unit:   group.Unit,
-		})
-	}
-
-	sort.Slice(sortedServices, func(i, j int) bool {
-		return sortedServices[i].Amount > sortedServices[j].Amount
-	})
-
-	return sortedServices
-}
-
 func populateFirstRow(lastTotalCost, currentTotalCost string) table.Row {
-	currentTotalSplitted := strings.Split(currentTotalCost, " ")
-	lastTotalSplitted := strings.Split(lastTotalCost, " ")
-
-	currentTotalAmount, err := strconv.ParseFloat(currentTotalSplitted[0], 64)
-	if err != nil {
-		panic("Error parsing current month total cost")
-	}
-
-	lastTotalAmount, err := strconv.ParseFloat(lastTotalSplitted[0], 64)
-	if err != nil {
-		panic("Error parsing last month total cost")
-	}
+	lastTotalAmount, _ := outputshared.ParseCostString(lastTotalCost)
+	currentTotalAmount, unit := outputshared.ParseCostString(currentTotalCost)
 
 	difference := currentTotalAmount - lastTotalAmount
 
@@ -104,12 +75,12 @@ func populateFirstRow(lastTotalCost, currentTotalCost string) table.Row {
 	row[0] = text.FgHiGreen.Sprint("Total Costs")
 	row[1] = text.FgHiYellow.Sprintf("%s", lastTotalCost)
 	row[2] = text.FgHiGreen.Sprintf("%s", currentTotalCost)
-	row[3] = text.FgHiGreen.Sprintf("%.2f %s", difference, currentTotalSplitted[1])
+	row[3] = text.FgHiGreen.Sprintf("%s", outputshared.FormatCost(difference, unit))
 
 	if difference > 0 {
 		row[2] = text.FgHiRed.Sprintf("%s", currentTotalCost)
 		row[0] = text.FgHiRed.Sprintf("Total Costs")
-		row[3] = text.FgHiRed.Sprintf("%.2f %s", difference, currentTotalSplitted[1])
+		row[3] = text.FgHiRed.Sprintf("%s", outputshared.FormatCost(difference, unit))
 	}
 
 	return row
@@ -121,20 +92,20 @@ func populateRow(lastMonthGroups model.CostInfo, currentMonthGroup model.Service
 	serviceName := currentMonthGroup.Name
 	lastMonthGroup := lastMonthGroups.CostGroup[serviceName]
 
-	currentServiceCost := fmt.Sprintf("%.2f %s", currentMonthGroup.Amount, currentMonthGroup.Unit)
-	lastServiceCost := fmt.Sprintf("%.2f %s", lastMonthGroup.Amount, lastMonthGroup.Unit)
+	currentServiceCost := outputshared.FormatCost(currentMonthGroup.Amount, currentMonthGroup.Unit)
+	lastServiceCost := outputshared.FormatCost(lastMonthGroup.Amount, lastMonthGroup.Unit)
 
 	difference := currentMonthGroup.Amount - lastMonthGroup.Amount
 
 	row[0] = text.FgGreen.Sprintf("%s", serviceName)
 	row[1] = text.FgYellow.Sprintf("%s", lastServiceCost)
 	row[2] = text.FgGreen.Sprintf("%s", currentServiceCost)
-	row[3] = text.FgGreen.Sprintf("%.2f %s", difference, currentMonthGroup.Unit)
+	row[3] = text.FgGreen.Sprintf("%s", outputshared.FormatCost(difference, currentMonthGroup.Unit))
 
 	if difference > 0 {
 		row[0] = text.FgRed.Sprintf("%s", serviceName)
 		row[2] = text.FgRed.Sprintf("%s", currentServiceCost)
-		row[3] = text.FgRed.Sprintf("%.2f %s", difference, currentMonthGroup.Unit)
+		row[3] = text.FgRed.Sprintf("%s", outputshared.FormatCost(difference, currentMonthGroup.Unit))
 	}
 
 	return row
