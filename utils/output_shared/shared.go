@@ -67,5 +67,5 @@ func ParseCostString(costStr string) (float64, string) {
 
 // FormatCost returns a formatted cost string
 func FormatCost(amount float64, unit string) string {
-	return fmt.Sprintf("%.2f %s", amount, unit)
+	return strings.TrimSpace(fmt.Sprintf("%.2f %s", amount, unit))
 }

@@ -69,7 +69,11 @@ func (s *service) GetS3Waste(ctx context.Context) ([]model.S3BucketWasteInfo, []
 
 				// Check Incomplete Multipart Uploads
 				uploadCount, err := s.countMultipartUploads(ctx, bucketName)
-				if err == nil && uploadCount > 0 {
+				if err != nil {
+					return fmt.Errorf("failed to count multipart uploads for bucket %s: %w", aws.ToString(bucketName), err)
+				}
+
+				if uploadCount > 0 {
 					mu.Lock()
 
 					bucketsWithMultipart = append(bucketsWithMultipart, model.S3MultipartUploadWasteInfo{

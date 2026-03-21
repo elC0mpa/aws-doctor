@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"errors"
 	"testing"
 
 	"github.com/elC0mpa/aws-doctor/model"
@@ -140,8 +141,58 @@ func TestPersistentFlags(t *testing.T) {
 	mockOrch.AssertExpectations(t)
 }
 
+func TestExecuteTrendArgs(t *testing.T) {
+	mockOrch, teardown := setupTest()
+	defer teardown()
+
+	mockOrch.On("Orchestrate", mock.MatchedBy(func(f model.Flags) bool {
+		return f.Trend == true && len(f.TrendChecks) == 2 && f.TrendChecks[0] == "ec2" && f.TrendChecks[1] == "s3"
+	})).Return(nil)
+
+	rootCmd.SetArgs([]string{"trend", "ec2,s3"})
+
+	err := Execute("dev", "none", "unknown")
+	assert.NoError(t, err)
+	mockOrch.AssertExpectations(t)
+}
+
+func TestCommandFailures(t *testing.T) {
+	originalBuilder := orchestratorBuilder
+	orchestratorBuilder = func(needsAWS bool) (orchestrator.Service, error) {
+		return nil, errors.New("builder error")
+	}
+	defer func() { orchestratorBuilder = originalBuilder }()
+
+	commands := [][]string{
+		{"cost"},
+		{"trend"},
+		{"waste"},
+		{"update"},
+		{"version"},
+	}
+
+	for _, cmdArgs := range commands {
+		t.Run(cmdArgs[0], func(t *testing.T) {
+			rootCmd.SetArgs(cmdArgs)
+			err := Execute("dev", "none", "unknown")
+			assert.Error(t, err)
+			assert.Contains(t, err.Error(), "builder error")
+		})
+	}
+}
+
 func TestBuildOrchestratorNoAWS(t *testing.T) {
 	orch, err := buildOrchestrator(false)
+	assert.NoError(t, err)
+	assert.NotNil(t, orch)
+}
+
+func TestBuildOrchestratorAWS(t *testing.T) {
+	t.Setenv("AWS_ACCESS_KEY_ID", "test")
+	t.Setenv("AWS_SECRET_ACCESS_KEY", "test")
+	t.Setenv("AWS_REGION", "us-east-1")
+
+	orch, err := buildOrchestrator(true)
 	assert.NoError(t, err)
 	assert.NotNil(t, orch)
 }

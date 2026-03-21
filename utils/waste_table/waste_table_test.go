@@ -773,3 +773,32 @@ func TestDrawWasteTable_WithCloudWatchLogs(t *testing.T) {
 		t.Error("DrawWasteTable() with CloudWatch logs missing log group name")
 	}
 }
+
+func TestDrawRDSTable(t *testing.T) {
+	instances := []model.RDSInstanceWasteInfo{
+		{DBInstanceID: "stopped-rds", Engine: "mysql", Status: "stopped", MultiAZ: true, EstimatedMonthlyCost: 10.0},
+	}
+	snapshots := []model.RDSSnapshotWasteInfo{
+		{DBSnapshotID: "old-snap", Engine: "postgres", AllocatedStorage: 20, SnapshotCreateTime: time.Now()},
+	}
+	idleInstances := []model.RDSIdleInstanceInfo{
+		{DBInstanceID: "idle-rds", Engine: "aurora", DaysChecked: 7, EstimatedMonthlyCost: 50.0},
+	}
+
+	output := captureWasteOutput(func() {
+		drawRDSTable(instances, snapshots, idleInstances)
+	})
+
+	if !strings.Contains(output, "RDS Waste") {
+		t.Error("drawRDSTable() missing title")
+	}
+	if !strings.Contains(output, "stopped-rds") {
+		t.Error("drawRDSTable() missing stopped instance ID")
+	}
+	if !strings.Contains(output, "old-snap") {
+		t.Error("drawRDSTable() missing snapshot ID")
+	}
+	if !strings.Contains(output, "idle-rds") {
+		t.Error("drawRDSTable() missing idle instance ID")
+	}
+}

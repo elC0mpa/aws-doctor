@@ -11,6 +11,39 @@ import (
 	"github.com/elC0mpa/aws-doctor/model"
 )
 
+func TestPresentS3Bucket(t *testing.T) {
+	b := model.S3BucketWasteInfo{
+		BucketName:   "test-bucket",
+		Reason:       "No lifecycle policy",
+		CreationDate: time.Now(),
+	}
+
+	p := PresentS3Bucket(b)
+
+	if p.Identifier != "test-bucket" {
+		t.Errorf("Identifier = %v, want 'test-bucket'", p.Identifier)
+	}
+	if !strings.Contains(p.Category, "No lifecycle policy") {
+		t.Errorf("Category %q missing reason", p.Category)
+	}
+}
+
+func TestPresentS3MultipartUpload(t *testing.T) {
+	b := model.S3MultipartUploadWasteInfo{
+		BucketName:  "test-bucket",
+		UploadCount: 10,
+	}
+
+	p := PresentS3MultipartUpload(b)
+
+	if p.Identifier != "test-bucket" {
+		t.Errorf("Identifier = %v, want 'test-bucket'", p.Identifier)
+	}
+	if !strings.Contains(p.Metric, "10") {
+		t.Errorf("Metric %q missing count", p.Metric)
+	}
+}
+
 func TestPresentEBSVolume(t *testing.T) {
 	tests := []struct {
 		name   string
