@@ -8,6 +8,7 @@ import (
 // NewService creates a new output service with the specified format
 func NewService(format string) Service {
 	f := FormatTable
+
 	switch format {
 	case "json":
 		f = FormatJSON

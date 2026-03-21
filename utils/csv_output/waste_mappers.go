@@ -12,6 +12,7 @@ func mapS3Buckets(buckets []model.S3BucketWasteInfo) [][]string {
 	for _, b := range buckets {
 		result = append(result, outputshared.PresentS3Bucket(b).ToSlice())
 	}
+
 	return result
 }
 
@@ -20,6 +21,7 @@ func mapS3MultipartUploads(buckets []model.S3MultipartUploadWasteInfo) [][]strin
 	for _, b := range buckets {
 		result = append(result, outputshared.PresentS3MultipartUpload(b).ToSlice())
 	}
+
 	return result
 }
 
@@ -28,6 +30,7 @@ func mapElasticIPs(elasticIPs []types.Address) [][]string {
 	for _, ip := range elasticIPs {
 		result = append(result, outputshared.PresentElasticIP(ip).ToSlice())
 	}
+
 	return result
 }
 
@@ -36,6 +39,7 @@ func mapEBSVolumes(volumes []types.Volume, status string) [][]string {
 	for _, vol := range volumes {
 		result = append(result, outputshared.PresentEBSVolume(vol, status).ToSlice())
 	}
+
 	return result
 }
 
@@ -44,6 +48,7 @@ func mapStoppedInstances(stoppedInstances []types.Instance) [][]string {
 	for _, instance := range stoppedInstances {
 		result = append(result, outputshared.PresentStoppedInstance(instance).ToSlice())
 	}
+
 	return result
 }
 
@@ -52,6 +57,7 @@ func mapReservedInstances(ris []model.RiExpirationInfo) [][]string {
 	for _, ri := range ris {
 		result = append(result, outputshared.PresentReservedInstance(ri).ToSlice())
 	}
+
 	return result
 }
 
@@ -60,6 +66,7 @@ func mapLoadBalancers(loadBalancers []elbtypes.LoadBalancer) [][]string {
 	for _, lb := range loadBalancers {
 		result = append(result, outputshared.PresentLoadBalancer(lb).ToSlice())
 	}
+
 	return result
 }
 
@@ -68,11 +75,13 @@ func mapAMIs(unusedAMIs []model.AMIWasteInfo) [][]string {
 	for _, ami := range unusedAMIs {
 		result = append(result, outputshared.PresentAMI(ami).ToSlice())
 	}
+
 	return result
 }
 
 func mapSnapshots(snapshots []model.SnapshotWasteInfo) ([][]string, [][]string) {
 	orphaned := make([][]string, 0, len(snapshots))
+
 	stale := make([][]string, 0, len(snapshots))
 	for _, snap := range snapshots {
 		row := outputshared.PresentSnapshot(snap).ToSlice()
@@ -82,6 +91,7 @@ func mapSnapshots(snapshots []model.SnapshotWasteInfo) ([][]string, [][]string) 
 			stale = append(stale, row)
 		}
 	}
+
 	return orphaned, stale
 }
 
@@ -90,6 +100,7 @@ func mapKeyPairs(unusedKeyPairs []model.KeyPairWasteInfo) [][]string {
 	for _, kp := range unusedKeyPairs {
 		result = append(result, outputshared.PresentKeyPair(kp).ToSlice())
 	}
+
 	return result
 }
 
@@ -98,6 +109,7 @@ func mapCloudWatchLogGroups(logGroups []model.CloudWatchLogsWasteInfo) [][]strin
 	for _, lg := range logGroups {
 		result = append(result, outputshared.PresentCloudWatchLogGroup(lg).ToSlice())
 	}
+
 	return result
 }
 
@@ -106,6 +118,7 @@ func mapRDSInstances(instances []model.RDSInstanceWasteInfo) [][]string {
 	for _, inst := range instances {
 		result = append(result, outputshared.PresentRDSInstance(inst).ToSlice())
 	}
+
 	return result
 }
 
@@ -114,6 +127,7 @@ func mapRDSSnapshots(snapshots []model.RDSSnapshotWasteInfo) [][]string {
 	for _, snap := range snapshots {
 		result = append(result, outputshared.PresentRDSSnapshot(snap).ToSlice())
 	}
+
 	return result
 }
 
@@ -122,5 +136,6 @@ func mapRDSIdleInstances(instances []model.RDSIdleInstanceInfo) [][]string {
 	for _, inst := range instances {
 		result = append(result, outputshared.PresentRDSIdleInstance(inst).ToSlice())
 	}
+
 	return result
 }

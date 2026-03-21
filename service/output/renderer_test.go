@@ -127,9 +127,10 @@ func TestRealRenderer_OutputCostComparisonCSV(t *testing.T) {
 	old := os.Stdout
 	f, _ := os.OpenFile(os.DevNull, os.O_WRONLY, 0)
 	os.Stdout = f
+
 	defer func() {
 		os.Stdout = old
-		f.Close()
+		_ = f.Close()
 	}()
 
 	err := r.OutputCostComparisonCSV(input)
@@ -144,9 +145,10 @@ func TestRealRenderer_OutputTrendCSV(t *testing.T) {
 	old := os.Stdout
 	f, _ := os.OpenFile(os.DevNull, os.O_WRONLY, 0)
 	os.Stdout = f
+
 	defer func() {
 		os.Stdout = old
-		f.Close()
+		_ = f.Close()
 	}()
 
 	err := r.OutputTrendCSV(costInfo, []string{})
@@ -161,9 +163,10 @@ func TestRealRenderer_OutputWasteCSV(t *testing.T) {
 	old := os.Stdout
 	f, _ := os.OpenFile(os.DevNull, os.O_WRONLY, 0)
 	os.Stdout = f
+
 	defer func() {
 		os.Stdout = old
-		f.Close()
+		_ = f.Close()
 	}()
 
 	err := r.OutputWasteCSV(input)

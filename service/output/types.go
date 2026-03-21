@@ -4,7 +4,7 @@ import (
 	"github.com/elC0mpa/aws-doctor/model"
 	"github.com/elC0mpa/aws-doctor/utils/barchart"
 	costtable "github.com/elC0mpa/aws-doctor/utils/cost_table"
-	"github.com/elC0mpa/aws-doctor/utils/csv_output"
+	csvoutput "github.com/elC0mpa/aws-doctor/utils/csv_output"
 	jsonoutput "github.com/elC0mpa/aws-doctor/utils/json_output"
 	"github.com/elC0mpa/aws-doctor/utils/spinner"
 	wastetable "github.com/elC0mpa/aws-doctor/utils/waste_table"

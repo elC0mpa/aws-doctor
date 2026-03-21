@@ -23,6 +23,7 @@ func TestPresentS3Bucket(t *testing.T) {
 	if p.Identifier != "test-bucket" {
 		t.Errorf("Identifier = %v, want 'test-bucket'", p.Identifier)
 	}
+
 	if !strings.Contains(p.Category, "No lifecycle policy") {
 		t.Errorf("Category %q missing reason", p.Category)
 	}
@@ -39,6 +40,7 @@ func TestPresentS3MultipartUpload(t *testing.T) {
 	if p.Identifier != "test-bucket" {
 		t.Errorf("Identifier = %v, want 'test-bucket'", p.Identifier)
 	}
+
 	if !strings.Contains(p.Metric, "10") {
 		t.Errorf("Metric %q missing count", p.Metric)
 	}

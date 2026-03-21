@@ -146,6 +146,7 @@ func PresentKeyPair(kp model.KeyPairWasteInfo) ResourceRow {
 // PresentCloudWatchLogGroup returns a ResourceRow for a CloudWatch Log Group
 func PresentCloudWatchLogGroup(lg model.CloudWatchLogsWasteInfo) ResourceRow {
 	sizeGB := float64(lg.StoredBytes) / (1024 * 1024 * 1024)
+
 	return ResourceRow{
 		Category:      "CloudWatch Log Group",
 		Identifier:    lg.LogGroupName,

@@ -241,11 +241,12 @@ func TestMFATokenProvider(t *testing.T) {
 		r, w, _ := os.Pipe()
 		oldStdin := os.Stdin
 		os.Stdin = r
+
 		defer func() { os.Stdin = oldStdin }()
 
 		go func() {
-			fmt.Fprintln(w, "123456")
-			w.Close()
+			_, _ = fmt.Fprintln(w, "123456")
+			_ = w.Close()
 		}()
 
 		provider := s.mfaTokenProvider("")
@@ -258,11 +259,12 @@ func TestMFATokenProvider(t *testing.T) {
 		r, w, _ := os.Pipe()
 		oldStdin := os.Stdin
 		os.Stdin = r
+
 		defer func() { os.Stdin = oldStdin }()
 
 		go func() {
-			fmt.Fprintln(w, "654321")
-			w.Close()
+			_, _ = fmt.Fprintln(w, "654321")
+			_ = w.Close()
 		}()
 
 		provider := s.mfaTokenProvider("arn:aws:iam::123456789012:mfa/user")
@@ -274,6 +276,7 @@ func TestMFATokenProvider(t *testing.T) {
 
 func TestGetAWSCfg_WithMFATokenInput(t *testing.T) {
 	origLoadShared := loadSharedConfigProfile
+
 	defer func() { loadSharedConfigProfile = origLoadShared }()
 
 	loadSharedConfigProfile = func(ctx context.Context, profileName string, optFns ...func(*config.LoadSharedConfigOptions)) (config.SharedConfig, error) {
@@ -289,11 +292,12 @@ func TestGetAWSCfg_WithMFATokenInput(t *testing.T) {
 	r, w, _ := os.Pipe()
 	oldStdin := os.Stdin
 	os.Stdin = r
+
 	defer func() { os.Stdin = oldStdin }()
 
 	go func() {
-		fmt.Fprintln(w, "123456")
-		w.Close()
+		_, _ = fmt.Fprintln(w, "123456")
+		_ = w.Close()
 	}()
 
 	// This will still fail later because STS is not real, but it hits the token provider code
@@ -302,6 +306,7 @@ func TestGetAWSCfg_WithMFATokenInput(t *testing.T) {
 
 func TestGetAWSCfg_LoadSharedConfigError(t *testing.T) {
 	origLoadShared := loadSharedConfigProfile
+
 	defer func() { loadSharedConfigProfile = origLoadShared }()
 
 	loadSharedConfigProfile = func(ctx context.Context, profileName string, optFns ...func(*config.LoadSharedConfigOptions)) (config.SharedConfig, error) {

@@ -10,6 +10,14 @@ import (
 	"github.com/stretchr/testify/mock"
 )
 
+const (
+	ec2     = "ec2"
+	s3Const = "s3"
+	dev     = "dev"
+	none    = "none"
+	unknown = "unknown"
+)
+
 // MockOrchestrator is a mock implementation of the orchestrator service.
 type MockOrchestrator struct {
 	mock.Mock
@@ -17,6 +25,7 @@ type MockOrchestrator struct {
 
 func (m *MockOrchestrator) Orchestrate(flags model.Flags) error {
 	args := m.Called(flags)
+
 	return args.Error(0)
 }
 
@@ -46,7 +55,7 @@ func TestExecuteVersion(t *testing.T) {
 
 	rootCmd.SetArgs([]string{"version"})
 
-	err := Execute("dev", "none", "unknown")
+	err := Execute(dev, none, unknown)
 	assert.NoError(t, err)
 	mockOrch.AssertExpectations(t)
 }
@@ -61,7 +70,7 @@ func TestExecuteUpdate(t *testing.T) {
 
 	rootCmd.SetArgs([]string{"update"})
 
-	err := Execute("dev", "none", "unknown")
+	err := Execute(dev, none, unknown)
 	assert.NoError(t, err)
 	mockOrch.AssertExpectations(t)
 }
@@ -76,7 +85,7 @@ func TestExecuteTrend(t *testing.T) {
 
 	rootCmd.SetArgs([]string{"trend"})
 
-	err := Execute("dev", "none", "unknown")
+	err := Execute(dev, none, unknown)
 	assert.NoError(t, err)
 	mockOrch.AssertExpectations(t)
 }
@@ -86,12 +95,12 @@ func TestExecuteWaste(t *testing.T) {
 	defer teardown()
 
 	mockOrch.On("Orchestrate", mock.MatchedBy(func(f model.Flags) bool {
-		return f.Waste == true && len(f.WasteChecks) == 2 && f.WasteChecks[0] == "ec2" && f.WasteChecks[1] == "s3"
+		return f.Waste == true && len(f.WasteChecks) == 2 && f.WasteChecks[0] == ec2 && f.WasteChecks[1] == s3Const
 	})).Return(nil)
 
-	rootCmd.SetArgs([]string{"waste", "ec2", "s3"})
+	rootCmd.SetArgs([]string{"waste", ec2, s3Const})
 
-	err := Execute("dev", "none", "unknown")
+	err := Execute(dev, none, unknown)
 	assert.NoError(t, err)
 	mockOrch.AssertExpectations(t)
 }
@@ -101,12 +110,12 @@ func TestExecuteWasteComma(t *testing.T) {
 	defer teardown()
 
 	mockOrch.On("Orchestrate", mock.MatchedBy(func(f model.Flags) bool {
-		return f.Waste == true && len(f.WasteChecks) == 2 && f.WasteChecks[0] == "ec2" && f.WasteChecks[1] == "s3"
+		return f.Waste == true && len(f.WasteChecks) == 2 && f.WasteChecks[0] == ec2 && f.WasteChecks[1] == s3Const
 	})).Return(nil)
 
-	rootCmd.SetArgs([]string{"waste", "ec2,s3"})
+	rootCmd.SetArgs([]string{"waste", ec2 + "," + s3Const})
 
-	err := Execute("dev", "none", "unknown")
+	err := Execute(dev, none, unknown)
 	assert.NoError(t, err)
 	mockOrch.AssertExpectations(t)
 }
@@ -121,7 +130,7 @@ func TestExecuteCost(t *testing.T) {
 
 	rootCmd.SetArgs([]string{"cost"})
 
-	err := Execute("dev", "none", "unknown")
+	err := Execute(dev, none, unknown)
 	assert.NoError(t, err)
 	mockOrch.AssertExpectations(t)
 }
@@ -136,7 +145,7 @@ func TestPersistentFlags(t *testing.T) {
 
 	rootCmd.SetArgs([]string{"cost", "--region", "us-west-2", "--profile", "test-profile", "--output", "json"})
 
-	err := Execute("dev", "none", "unknown")
+	err := Execute(dev, none, unknown)
 	assert.NoError(t, err)
 	mockOrch.AssertExpectations(t)
 }
@@ -146,12 +155,12 @@ func TestExecuteTrendArgs(t *testing.T) {
 	defer teardown()
 
 	mockOrch.On("Orchestrate", mock.MatchedBy(func(f model.Flags) bool {
-		return f.Trend == true && len(f.TrendChecks) == 2 && f.TrendChecks[0] == "ec2" && f.TrendChecks[1] == "s3"
+		return f.Trend == true && len(f.TrendChecks) == 2 && f.TrendChecks[0] == ec2 && f.TrendChecks[1] == s3Const
 	})).Return(nil)
 
-	rootCmd.SetArgs([]string{"trend", "ec2,s3"})
+	rootCmd.SetArgs([]string{"trend", ec2 + "," + s3Const})
 
-	err := Execute("dev", "none", "unknown")
+	err := Execute(dev, none, unknown)
 	assert.NoError(t, err)
 	mockOrch.AssertExpectations(t)
 }
@@ -161,6 +170,7 @@ func TestCommandFailures(t *testing.T) {
 	orchestratorBuilder = func(needsAWS bool) (orchestrator.Service, error) {
 		return nil, errors.New("builder error")
 	}
+
 	defer func() { orchestratorBuilder = originalBuilder }()
 
 	commands := [][]string{
@@ -174,7 +184,8 @@ func TestCommandFailures(t *testing.T) {
 	for _, cmdArgs := range commands {
 		t.Run(cmdArgs[0], func(t *testing.T) {
 			rootCmd.SetArgs(cmdArgs)
-			err := Execute("dev", "none", "unknown")
+
+			err := Execute(dev, none, unknown)
 			assert.Error(t, err)
 			assert.Contains(t, err.Error(), "builder error")
 		})

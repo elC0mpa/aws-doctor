@@ -18,6 +18,7 @@ func mapTrendRows(monthlyCosts []model.CostInfo, services []string) [][]string {
 		if len(services) > 0 {
 			csvRow = append(csvRow, servicesStr)
 		}
+
 		result = append(result, csvRow)
 	}
 

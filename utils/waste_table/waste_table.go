@@ -268,6 +268,7 @@ func populateRiRows(ris []model.RiExpirationInfo) []table.Row {
 	for _, ri := range ris {
 		p := outputshared.PresentReservedInstance(ri)
 		timeInfo := ""
+
 		days := ri.DaysUntilExpiry
 		if days >= 0 {
 			timeInfo = fmt.Sprintf("In %d days", days)
@@ -350,6 +351,7 @@ func populateAMIRows(amis []model.AMIWasteInfo) []table.Row {
 		if len(name) > 30 {
 			name = name[:27] + "..."
 		}
+
 		p := outputshared.PresentAMI(ami)
 
 		rows = append(rows, table.Row{

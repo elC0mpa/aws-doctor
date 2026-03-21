@@ -61,6 +61,7 @@ func OutputWasteCSV(input model.RenderWasteInput) error {
 	}
 
 	var rows [][]string
+
 	rows = append(rows, mapEBSVolumes(input.StoppedVolumes, "stopped")...)
 	rows = append(rows, mapEBSVolumes(input.UnusedVolumes, "unattached")...)
 	rows = append(rows, mapElasticIPs(input.ElasticIPs)...)

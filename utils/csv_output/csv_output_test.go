@@ -25,6 +25,7 @@ func captureStdout(f func()) string {
 	os.Stdout = old
 
 	var buf bytes.Buffer
+
 	_, _ = io.Copy(&buf, r)
 
 	return buf.String()
@@ -54,9 +55,11 @@ func TestOutputCostComparisonCSV(t *testing.T) {
 	if !strings.Contains(output, "Service,Last Month,Current Month,Difference") {
 		t.Error("Output missing headers")
 	}
+
 	if !strings.Contains(output, "Total Costs,100.00 USD,120.00 USD,20.00 USD") {
 		t.Error("Output missing total row")
 	}
+
 	if !strings.Contains(output, "Amazon EC2,100.00 USD,120.00 USD,20.00 USD") {
 		t.Error("Output missing service row")
 	}
@@ -81,6 +84,7 @@ func TestOutputTrendCSV(t *testing.T) {
 		if !strings.Contains(output, "Period Start,Period End,Total Cost,Unit") {
 			t.Error("Output missing headers")
 		}
+
 		if !strings.Contains(output, "2024-01-01,2024-01-31,100.50,USD") {
 			t.Error("Output missing trend row")
 		}
@@ -94,6 +98,7 @@ func TestOutputTrendCSV(t *testing.T) {
 		if !strings.Contains(output, "Period Start,Period End,Total Cost,Unit,Services") {
 			t.Error("Output missing services header")
 		}
+
 		if !strings.Contains(output, "2024-01-01,2024-01-31,100.50,USD,ec2") {
 			t.Error("Output missing services value")
 		}
@@ -140,30 +145,39 @@ func TestOutputWasteCSV(t *testing.T) {
 	if !strings.Contains(output, "Resource Category,Resource Identifier,Estimated Monthly Cost (USD),Metric / Size,Age (Days),Additional Details") {
 		t.Error("Output missing headers")
 	}
+
 	if !strings.Contains(output, "EBS Volume (stopped),vol-123") {
 		t.Error("Output missing EBS volume row")
 	}
+
 	if !strings.Contains(output, "Elastic IP,1.2.3.4") {
 		t.Error("Output missing EIP row")
 	}
+
 	if !strings.Contains(output, "S3 Bucket (No lifecycle policy),test-bucket") {
 		t.Error("Output missing S3 bucket row")
 	}
+
 	if !strings.Contains(output, "S3 Multipart Uploads,multipart-bucket") {
 		t.Error("Output missing S3 multipart row")
 	}
+
 	if !strings.Contains(output, "Stopped RDS Instance,test-rds") {
 		t.Error("Output missing RDS row")
 	}
+
 	if !strings.Contains(output, "Elastic Load Balancer") {
 		t.Error("Output missing LB row")
 	}
+
 	if !strings.Contains(output, "EBS Snapshot (orphaned),snap-orphaned") {
 		t.Error("Output missing orphaned snapshot row")
 	}
+
 	if !strings.Contains(output, "EBS Snapshot (stale),snap-stale") {
 		t.Error("Output missing stale snapshot row")
 	}
+
 	if !strings.Contains(output, "Unused Key Pair,test-key") {
 		t.Error("Output missing key pair row")
 	}

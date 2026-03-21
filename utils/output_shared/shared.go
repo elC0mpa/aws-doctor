@@ -58,10 +58,12 @@ func OrderCostServices(costGroups *model.CostGroup) []model.ServiceCost {
 func ParseCostString(costStr string) (float64, string) {
 	parts := strings.Split(costStr, " ")
 	amount, _ := strconv.ParseFloat(parts[0], 64)
+
 	unit := ""
 	if len(parts) > 1 {
 		unit = parts[1]
 	}
+
 	return amount, unit
 }
 

@@ -792,12 +792,15 @@ func TestDrawRDSTable(t *testing.T) {
 	if !strings.Contains(output, "RDS Waste") {
 		t.Error("drawRDSTable() missing title")
 	}
+
 	if !strings.Contains(output, "stopped-rds") {
 		t.Error("drawRDSTable() missing stopped instance ID")
 	}
+
 	if !strings.Contains(output, "old-snap") {
 		t.Error("drawRDSTable() missing snapshot ID")
 	}
+
 	if !strings.Contains(output, "idle-rds") {
 		t.Error("drawRDSTable() missing idle instance ID")
 	}
