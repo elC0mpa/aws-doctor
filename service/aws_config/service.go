@@ -17,7 +17,10 @@ var loadSharedConfigProfile = config.LoadSharedConfigProfile
 
 // NewService creates a new AWS configuration service.
 func NewService() Service {
-	return &service{}
+	return &service{
+		input:  os.Stdin,
+		output: os.Stderr,
+	}
 }
 
 func (s *service) GetAWSCfg(ctx context.Context, region, profile string) (aws.Config, error) {
@@ -72,12 +75,12 @@ func (s *service) mfaTokenProvider(mfaSerial string) func() (string, error) {
 		var v string
 
 		if mfaSerial != "" {
-			fmt.Fprintf(os.Stderr, "Enter MFA code for %s: ", mfaSerial)
+			_, _ = fmt.Fprintf(s.output, "Enter MFA code for %s: ", mfaSerial)
 		} else {
-			fmt.Fprint(os.Stderr, "Enter MFA code: ")
+			_, _ = fmt.Fprint(s.output, "Enter MFA code: ")
 		}
 
-		_, err := fmt.Scanln(&v)
+		_, err := fmt.Fscanln(s.input, &v)
 
 		return v, err
 	}
@@ -140,6 +143,7 @@ func (s *service) loadConfigWithManualMFA(ctx context.Context, region, profile s
 	finalOpts := []func(*config.LoadOptions) error{
 		config.WithCredentialsProvider(aws.NewCredentialsCache(provider)),
 	}
+
 	if region != "" {
 		finalOpts = append(finalOpts, config.WithRegion(region))
 	} else if sharedCfg.Region != "" {

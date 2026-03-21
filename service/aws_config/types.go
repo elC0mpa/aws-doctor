@@ -2,11 +2,15 @@ package awsconfig
 
 import (
 	"context"
+	"io"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 )
 
-type service struct{}
+type service struct {
+	input  io.Reader
+	output io.Writer
+}
 
 // Service is the interface for AWS configuration service.
 type Service interface {
