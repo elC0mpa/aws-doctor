@@ -14,6 +14,7 @@ import (
 	"github.com/elC0mpa/aws-doctor/service/orchestrator"
 	"github.com/elC0mpa/aws-doctor/service/output"
 	"github.com/elC0mpa/aws-doctor/service/rds"
+	"github.com/elC0mpa/aws-doctor/service/report"
 	"github.com/elC0mpa/aws-doctor/service/s3"
 	awssts "github.com/elC0mpa/aws-doctor/service/sts"
 	"github.com/elC0mpa/aws-doctor/service/update"
@@ -26,6 +27,7 @@ var (
 	region              string
 	profile             string
 	outputFormat        string
+	reportPath          string
 	versionInfo         model.VersionInfo
 	orchestratorBuilder = buildOrchestrator
 )
@@ -34,8 +36,14 @@ func buildOrchestrator(needsAWS bool) (orchestrator.Service, error) {
 	outputService := output.NewService(outputFormat)
 	updateService := update.NewService()
 
+	config := orchestrator.Config{
+		OutputService: outputService,
+		UpdateService: updateService,
+		VersionInfo:   versionInfo,
+	}
+
 	if !needsAWS {
-		return orchestrator.NewService(nil, nil, nil, nil, nil, nil, nil, outputService, updateService, versionInfo), nil
+		return orchestrator.NewService(config), nil
 	}
 
 	banner.DrawBannerTitle()
@@ -49,16 +57,16 @@ func buildOrchestrator(needsAWS bool) (orchestrator.Service, error) {
 
 	spinner.StartSpinner()
 
-	costService := awscostexplorer.NewService(awsCfg)
-	stsService := awssts.NewService(awsCfg)
-	ec2Service := awsec2.NewService(awsCfg)
-	elbService := elb.NewService(awsCfg)
-	s3Service := s3.NewService(awsCfg)
-	cloudwatchlogsService := cloudwatchlogs.NewService(awsCfg)
-	cwMetricsService := cloudwatchmetrics.NewService(awsCfg)
-	rdsService := rds.NewService(awsCfg, cwMetricsService)
+	config.STSService = awssts.NewService(awsCfg)
+	config.CostService = awscostexplorer.NewService(awsCfg)
+	config.EC2Service = awsec2.NewService(awsCfg)
+	config.ELBService = elb.NewService(awsCfg)
+	config.S3Service = s3.NewService(awsCfg)
+	config.CloudWatchLogsService = cloudwatchlogs.NewService(awsCfg)
+	config.RDSService = rds.NewService(awsCfg, cloudwatchmetrics.NewService(awsCfg))
+	config.ReportService = report.NewService()
 
-	return orchestrator.NewService(stsService, costService, ec2Service, elbService, s3Service, cloudwatchlogsService, rdsService, outputService, updateService, versionInfo), nil
+	return orchestrator.NewService(config), nil
 }
 
 var rootCmd = &cobra.Command{
@@ -81,4 +89,6 @@ func init() {
 	rootCmd.PersistentFlags().StringVar(&region, "region", "", "AWS region (defaults to AWS_REGION, AWS_DEFAULT_REGION, or ~/.aws/config)")
 	rootCmd.PersistentFlags().StringVar(&profile, "profile", "", "AWS profile configuration")
 	rootCmd.PersistentFlags().StringVar(&outputFormat, "output", "table", "Output format: table, json or csv")
+	rootCmd.PersistentFlags().StringVar(&reportPath, "report", "", "Generate a PDF report at the specified path (defaults to a name with timestamp)")
+	rootCmd.PersistentFlags().Lookup("report").NoOptDefVal = "DEFAULT"
 }
