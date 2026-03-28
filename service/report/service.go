@@ -6,7 +6,6 @@ import (
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/elC0mpa/aws-doctor/model"
-	outputshared "github.com/elC0mpa/aws-doctor/utils/output_shared"
 	"github.com/johnfercher/maroto/v2"
 	"github.com/johnfercher/maroto/v2/pkg/components/col"
 	"github.com/johnfercher/maroto/v2/pkg/components/image"
@@ -32,64 +31,7 @@ func (s *service) GenerateCostComparisonReport(input model.RenderCostComparisonI
 
 	s.addHeader(m, CostReport, input.AccountID)
 
-	// Get unit from data
-	_, unit := outputshared.ParseCostString(input.CurrentTotalCost)
-
-	// Format months
-	lastMonthLabel := s.formatDateToMonthYear(input.LastMonth.Start)
-	currentMonthLabel := s.formatDateToMonthYear(input.CurrentMonth.Start)
-
-	// Table Header
-	m.AddRow(12,
-		text.NewCol(4, "Service", props.Text{Style: fontstyle.Bold, Size: 10}),
-		col.New(3).Add(
-			text.New(fmt.Sprintf("%s (%s)", lastMonthLabel, unit), props.Text{Style: fontstyle.Bold, Size: 10, Align: align.Right}),
-			text.New(s.formatDayRange(input.LastMonth.Start, input.LastMonth.End), props.Text{Size: 8, Align: align.Right, Top: 5}),
-		),
-		col.New(3).Add(
-			text.New(fmt.Sprintf("%s (%s)", currentMonthLabel, unit), props.Text{Style: fontstyle.Bold, Size: 10, Align: align.Right}),
-			text.New(s.formatDayRange(input.CurrentMonth.Start, input.CurrentMonth.End), props.Text{Size: 8, Align: align.Right, Top: 5}),
-		),
-		text.NewCol(2, fmt.Sprintf("Diff (%s)", unit), props.Text{Style: fontstyle.Bold, Size: 10, Align: align.Right}),
-	)
-	m.AddRow(2, line.NewCol(12))
-
-	// Total Row
-	lastTotalAmount, _ := outputshared.ParseCostString(input.LastTotalCost)
-	currentTotalAmount, _ := outputshared.ParseCostString(input.CurrentTotalCost)
-	difference := currentTotalAmount - lastTotalAmount
-
-	totalColor := &props.Color{Red: 0, Green: 150, Blue: 0} // Green
-	if difference > 0 {
-		totalColor = &props.Color{Red: 200, Green: 0, Blue: 0} // Red
-	}
-
-	m.AddRow(8,
-		text.NewCol(4, "Total Costs", props.Text{Style: fontstyle.Bold, Size: 10, Color: totalColor}),
-		text.NewCol(3, fmt.Sprintf("%.2f", lastTotalAmount), props.Text{Size: 10, Align: align.Right}),
-		text.NewCol(3, fmt.Sprintf("%.2f", currentTotalAmount), props.Text{Size: 10, Align: align.Right, Color: totalColor}),
-		text.NewCol(2, fmt.Sprintf("%.2f", difference), props.Text{Size: 10, Align: align.Right, Color: totalColor}),
-	)
-	m.AddRow(2, line.NewCol(12))
-
-	// Service Breakdown
-	orderedServices := outputshared.OrderCostServices(&input.CurrentMonth.CostGroup)
-	for _, currentSvc := range orderedServices {
-		lastMonthGroup := input.LastMonth.CostGroup[currentSvc.Name]
-		diff := currentSvc.Amount - lastMonthGroup.Amount
-
-		rowColor := &props.Color{Red: 0, Green: 150, Blue: 0} // Green
-		if diff > 0 {
-			rowColor = &props.Color{Red: 200, Green: 0, Blue: 0} // Red
-		}
-
-		m.AddRow(8,
-			text.NewCol(4, currentSvc.Name, props.Text{Size: 9, Color: rowColor}),
-			text.NewCol(3, fmt.Sprintf("%.2f", lastMonthGroup.Amount), props.Text{Size: 9, Align: align.Right}),
-			text.NewCol(3, fmt.Sprintf("%.2f", currentSvc.Amount), props.Text{Size: 9, Align: align.Right, Color: rowColor}),
-			text.NewCol(2, fmt.Sprintf("%.2f", diff), props.Text{Size: 9, Align: align.Right, Color: rowColor}),
-		)
-	}
+	s.addCostComparisonTable(m, input)
 
 	s.addFooter(m, CostReport)
 
@@ -106,8 +48,29 @@ func (s *service) GenerateTrendReport(accountID string, costInfo []model.CostInf
 func (s *service) GenerateWasteReport(input model.RenderWasteInput, reportPath string) error {
 	path := s.getReportPath(reportPath, "waste")
 	fmt.Printf("Generating waste report at: %s\n", path)
-	// PDF generation logic to be implemented by the user
-	return nil
+
+	m := maroto.New()
+
+	s.addHeader(m, WasteReport, input.AccountID)
+
+	hasWaste := s.addWasteSections(m, input)
+
+	if !hasWaste {
+		m.AddRow(20,
+			text.NewCol(12, "✅ Your account is healthy! No waste found.", props.Text{
+				Size:  12,
+				Style: fontstyle.Bold,
+				Align: align.Center,
+				Color: &props.Color{Red: 0, Green: 150, Blue: 0},
+			}),
+		)
+	} else {
+		s.addWasteSummary(m, input)
+	}
+
+	s.addFooter(m, WasteReport)
+
+	return s.generateAndSave(m, path)
 }
 
 func (s *service) getReportPath(reportPath, flow string) string {
