@@ -40,9 +40,18 @@ func (s *service) GenerateCostComparisonReport(input model.RenderCostComparisonI
 
 func (s *service) GenerateTrendReport(accountID string, costInfo []model.CostInfo, services []string, reportPath string) error {
 	path := s.getReportPath(reportPath, "trend")
-	fmt.Printf("Generating trend report at: %s\n", path)
-	// PDF generation logic to be implemented by the user
-	return nil
+
+	m := maroto.New()
+
+	s.addHeader(m, TrendReport, accountID)
+
+	if err := s.addTrendContent(m, costInfo, services); err != nil {
+		return err
+	}
+
+	s.addFooter(m, TrendReport)
+
+	return s.generateAndSave(m, path)
 }
 
 func (s *service) GenerateWasteReport(input model.RenderWasteInput, reportPath string) error {
@@ -177,7 +186,7 @@ func (s *service) addFooter(m core.Maroto, reportType ReportType) {
 	m.AddRow(10, line.NewCol(12))
 
 	var leftCol core.Col = col.New(6)
-	if reportType == CostReport || reportType == TrendReport {
+	if reportType == CostReport {
 		leftCol = text.NewCol(6, "All costs shown in this report are Unblended.", props.Text{
 			Size:  8,
 			Align: align.Left,
