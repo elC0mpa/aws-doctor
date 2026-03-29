@@ -32,3 +32,8 @@ func (m *MockOutputService) RenderWaste(input model.RenderWasteInput) error {
 func (m *MockOutputService) StopSpinner() {
 	m.Called()
 }
+
+// PrintReportSuccess mocks the PrintReportSuccess method.
+func (m *MockOutputService) PrintReportSuccess(path string) {
+	m.Called(path)
+}

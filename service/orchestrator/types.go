@@ -8,6 +8,7 @@ import (
 	"github.com/elC0mpa/aws-doctor/service/elb"
 	"github.com/elC0mpa/aws-doctor/service/output"
 	"github.com/elC0mpa/aws-doctor/service/rds"
+	"github.com/elC0mpa/aws-doctor/service/report"
 	"github.com/elC0mpa/aws-doctor/service/s3"
 	awssts "github.com/elC0mpa/aws-doctor/service/sts"
 	"github.com/elC0mpa/aws-doctor/service/update"
@@ -23,7 +24,23 @@ type service struct {
 	rdsService            rds.Service
 	outputService         output.Service
 	updateService         update.Service
+	reportService         report.Service
 	versionInfo           model.VersionInfo
+}
+
+// Config holds the dependencies for the orchestrator service.
+type Config struct {
+	STSService            awssts.Service
+	CostService           awscostexplorer.Service
+	EC2Service            awsec2.Service
+	ELBService            elb.Service
+	S3Service             s3.Service
+	CloudWatchLogsService cloudwatchlogs.Service
+	RDSService            rds.Service
+	OutputService         output.Service
+	UpdateService         update.Service
+	ReportService         report.Service
+	VersionInfo           model.VersionInfo
 }
 
 // Service is the interface for orchestrator service.

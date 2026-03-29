@@ -11,33 +11,26 @@ import (
 	elbtypes "github.com/aws/aws-sdk-go-v2/service/elasticloadbalancingv2/types"
 	"github.com/aws/aws-sdk-go-v2/service/sts"
 	"github.com/elC0mpa/aws-doctor/model"
-	"github.com/elC0mpa/aws-doctor/service/cloudwatchlogs"
 	awscostexplorer "github.com/elC0mpa/aws-doctor/service/costexplorer"
-	awsec2 "github.com/elC0mpa/aws-doctor/service/ec2"
-	"github.com/elC0mpa/aws-doctor/service/elb"
-	"github.com/elC0mpa/aws-doctor/service/output"
-	"github.com/elC0mpa/aws-doctor/service/rds"
-	"github.com/elC0mpa/aws-doctor/service/s3"
-	awssts "github.com/elC0mpa/aws-doctor/service/sts"
-	"github.com/elC0mpa/aws-doctor/service/update"
 	"github.com/elC0mpa/aws-doctor/utils/slice"
 	"github.com/jedib0t/go-pretty/v6/text"
 	"golang.org/x/sync/errgroup"
 )
 
 // NewService creates a new orchestrator service.
-func NewService(stsService awssts.Service, costService awscostexplorer.Service, ec2Service awsec2.Service, elbService elb.Service, s3Service s3.Service, cloudwatchlogsService cloudwatchlogs.Service, rdsService rds.Service, outputService output.Service, updateService update.Service, versionInfo model.VersionInfo) Service {
+func NewService(cfg Config) Service {
 	return &service{
-		stsService:            stsService,
-		costService:           costService,
-		ec2Service:            ec2Service,
-		elbService:            elbService,
-		s3Service:             s3Service,
-		cloudwatchlogsService: cloudwatchlogsService,
-		rdsService:            rdsService,
-		outputService:         outputService,
-		updateService:         updateService,
-		versionInfo:           versionInfo,
+		stsService:            cfg.STSService,
+		costService:           cfg.CostService,
+		ec2Service:            cfg.EC2Service,
+		elbService:            cfg.ELBService,
+		s3Service:             cfg.S3Service,
+		cloudwatchlogsService: cfg.CloudWatchLogsService,
+		rdsService:            cfg.RDSService,
+		outputService:         cfg.OutputService,
+		updateService:         cfg.UpdateService,
+		reportService:         cfg.ReportService,
+		versionInfo:           cfg.VersionInfo,
 	}
 }
 
@@ -51,14 +44,14 @@ func (s *service) Orchestrate(flags model.Flags) error {
 	}
 
 	if flags.Waste {
-		return s.wasteWorkflow(flags.WasteChecks)
+		return s.wasteWorkflow(flags.WasteChecks, flags.Report, flags.ReportPath)
 	}
 
 	if flags.Trend {
-		return s.trendWorkflow(flags.TrendChecks)
+		return s.trendWorkflow(flags.TrendChecks, flags.Report, flags.ReportPath)
 	}
 
-	return s.defaultWorkflow()
+	return s.defaultWorkflow(flags.Report, flags.ReportPath)
 }
 
 func (s *service) versionWorkflow() error {
@@ -77,7 +70,7 @@ func (s *service) updateWorkflow() error {
 	return s.updateService.Update()
 }
 
-func (s *service) defaultWorkflow() error {
+func (s *service) defaultWorkflow(generateReport bool, reportPath string) error {
 	currentMonthData, err := s.costService.GetCurrentMonthCostsByService(context.Background())
 	if err != nil {
 		return s.handleCostError(err)
@@ -113,10 +106,21 @@ func (s *service) defaultWorkflow() error {
 		CurrentMonth:     currentMonthData,
 	}
 
+	if generateReport {
+		path, err := s.reportService.GenerateCostComparisonReport(input, reportPath)
+		if err != nil {
+			return err
+		}
+
+		s.outputService.PrintReportSuccess(*path)
+
+		return nil
+	}
+
 	return s.outputService.RenderCostComparison(input)
 }
 
-func (s *service) trendWorkflow(trendChecks []string) error {
+func (s *service) trendWorkflow(trendChecks []string, generateReport bool, reportPath string) error {
 	var mappedServices []string
 
 	for _, svc := range trendChecks {
@@ -137,10 +141,21 @@ func (s *service) trendWorkflow(trendChecks []string) error {
 
 	s.outputService.StopSpinner()
 
+	if generateReport {
+		path, err := s.reportService.GenerateTrendReport(*stsResult.Account, costInfo, trendChecks, reportPath)
+		if err != nil {
+			return err
+		}
+
+		s.outputService.PrintReportSuccess(*path)
+
+		return nil
+	}
+
 	return s.outputService.RenderTrend(*stsResult.Account, costInfo, trendChecks)
 }
 
-func (s *service) wasteWorkflow(wasteChecks []string) error {
+func (s *service) wasteWorkflow(wasteChecks []string, generateReport bool, reportPath string) error {
 	ctx := context.Background()
 	g, ctx := errgroup.WithContext(ctx)
 
@@ -314,6 +329,17 @@ func (s *service) wasteWorkflow(wasteChecks []string) error {
 		RDSInstances:        rdsInstances,
 		RDSSnapshots:        rdsSnapshots,
 		RDSIdleInstances:    rdsIdleInstances,
+	}
+
+	if generateReport {
+		path, err := s.reportService.GenerateWasteReport(input, reportPath)
+		if err != nil {
+			return err
+		}
+
+		s.outputService.PrintReportSuccess(*path)
+
+		return nil
 	}
 
 	return s.outputService.RenderWaste(input)

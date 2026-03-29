@@ -1,8 +1,8 @@
 ---
 title: "Automatización y CI/CD"
-weight: 50
+weight: 60
 type: docs
-prev: /docs/waste-detection
+prev: /docs/reporting
 ---
 
 **AWS Doctor** está diseñado para ser parte de un ecosistema más grande. Con soporte nativo para JSON, puede integrarlo en sus flujos de trabajo automatizados.

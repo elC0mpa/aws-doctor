@@ -221,7 +221,7 @@ jobs:
           settings: |-
             {
               "model": {
-                "maxSessionTurns": 25
+                "maxSessionTurns": 50
               },
               "telemetry": {
                 "enabled": true,
@@ -326,7 +326,7 @@ jobs:
           settings: |-
             {
               "model": {
-                "maxSessionTurns": 25
+                "maxSessionTurns": 50
               },
               "telemetry": {
                 "enabled": true,
@@ -442,7 +442,7 @@ jobs:
           settings: |-
             {
               "model": {
-                "maxSessionTurns": 25
+                "maxSessionTurns": 50
               },
               "telemetry": {
                 "enabled": true,
