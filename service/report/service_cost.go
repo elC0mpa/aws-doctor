@@ -18,7 +18,7 @@ func (s *service) addCostComparisonTable(m core.Maroto, input model.RenderCostCo
 	_, unit := outputshared.ParseCostString(input.CurrentTotalCost)
 
 	s.addCostTableHeader(m, input, unit)
-	s.addCostTotalRow(m, input, unit)
+	s.addCostTotalRow(m, input)
 	s.addCostServiceBreakdown(m, input)
 }
 
@@ -41,7 +41,7 @@ func (s *service) addCostTableHeader(m core.Maroto, input model.RenderCostCompar
 	m.AddRow(2, line.NewCol(12))
 }
 
-func (s *service) addCostTotalRow(m core.Maroto, input model.RenderCostComparisonInput, unit string) {
+func (s *service) addCostTotalRow(m core.Maroto, input model.RenderCostComparisonInput) {
 	lastTotalAmount, _ := outputshared.ParseCostString(input.LastTotalCost)
 	currentTotalAmount, _ := outputshared.ParseCostString(input.CurrentTotalCost)
 	difference := currentTotalAmount - lastTotalAmount

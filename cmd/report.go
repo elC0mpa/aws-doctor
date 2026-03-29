@@ -7,9 +7,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var (
-	reportOutPath string
-)
+var reportOutPath string
 
 var reportCmd = &cobra.Command{
 	Use:   "report",

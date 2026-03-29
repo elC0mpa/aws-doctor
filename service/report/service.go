@@ -101,6 +101,7 @@ func (s *service) getReportPath(reportPath, flow string) string {
 
 	timestamp := time.Now().Format("20060102-150405")
 	fileName := fmt.Sprintf("aws-doctor-%s-%s.pdf", flow, timestamp)
+
 	return filepath.Join(documents, fileName)
 }
 
@@ -127,10 +128,12 @@ func (s *service) formatDateToMonthYear(dateStr *string) string {
 	if dateStr == nil {
 		return ""
 	}
+
 	t, err := time.Parse("2006-01-02", *dateStr)
 	if err != nil {
 		return *dateStr
 	}
+
 	return t.Format("January 2006")
 }
 
@@ -151,6 +154,7 @@ func (s *service) formatDayRange(start, end *string) string {
 
 func (s *service) getDayWithSuffix(day int) string {
 	suffix := "th"
+
 	switch day % 10 {
 	case 1:
 		if day%100 != 11 {
@@ -165,11 +169,13 @@ func (s *service) getDayWithSuffix(day int) string {
 			suffix = "rd"
 		}
 	}
+
 	return fmt.Sprintf("%d%s", day, suffix)
 }
 
-func (s *service) addHeader(m core.Maroto, reportType ReportType, accountID string) {
+func (s *service) addHeader(m core.Maroto, reportType Type, accountID string) {
 	title := "AWS COST DIAGNOSIS"
+
 	switch reportType {
 	case TrendReport:
 		title = "AWS COST TREND"
@@ -200,10 +206,11 @@ func (s *service) addHeader(m core.Maroto, reportType ReportType, accountID stri
 	m.AddRow(5, line.NewCol(12))
 }
 
-func (s *service) addFooter(m core.Maroto, reportType ReportType) {
+func (s *service) addFooter(m core.Maroto, reportType Type) {
 	m.AddRow(10, line.NewCol(12))
 
-	var leftCol core.Col = col.New(6)
+	leftCol := col.New(6)
+
 	if reportType == CostReport {
 		leftCol = text.NewCol(6, "All costs shown in this report are Unblended.", props.Text{
 			Size:  8,

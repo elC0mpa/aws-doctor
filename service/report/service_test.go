@@ -114,11 +114,15 @@ func TestFormatDayRange(t *testing.T) {
 
 func TestGenerateReports(t *testing.T) {
 	s := NewService()
+
 	tempDir, err := os.MkdirTemp("", "aws-doctor-tests")
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer os.RemoveAll(tempDir)
+
+	defer func() {
+		_ = os.RemoveAll(tempDir)
+	}()
 
 	t.Run("CostComparisonReport", func(t *testing.T) {
 		path := filepath.Join(tempDir, "cost.pdf")

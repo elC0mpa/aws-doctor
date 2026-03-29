@@ -17,35 +17,40 @@ import (
 )
 
 func (s *service) addWasteSections(m core.Maroto, input model.RenderWasteInput) bool {
-	hasWaste := false
+	hasWaste := s.addEBSWaste(m, input)
 
-	if s.addEBSWaste(m, input) {
-		hasWaste = true
-	}
 	if s.addElasticIPWaste(m, input) {
 		hasWaste = true
 	}
+
 	if s.addEC2Waste(m, input) {
 		hasWaste = true
 	}
+
 	if s.addLBWaste(m, input) {
 		hasWaste = true
 	}
+
 	if s.addS3Waste(m, input) {
 		hasWaste = true
 	}
+
 	if s.addCloudWatchWaste(m, input) {
 		hasWaste = true
 	}
+
 	if s.addAMIWaste(m, input) {
 		hasWaste = true
 	}
+
 	if s.addSnapshotWaste(m, input) {
 		hasWaste = true
 	}
+
 	if s.addKeyPairWaste(m, input) {
 		hasWaste = true
 	}
+
 	if s.addRDSWaste(m, input) {
 		hasWaste = true
 	}
@@ -58,16 +63,20 @@ func (s *service) addEBSWaste(m core.Maroto, input model.RenderWasteInput) bool 
 		return false
 	}
 
-	s.addWasteSection(m, "EBS Volume Waste", []string{"Status", "Volume ID", "Size", "Est. Cost"}, 10)
+	s.addWasteSection(m, "EBS Volume Waste", []string{"Status", "Volume ID", "Size", "Est. Cost"})
+
 	for _, v := range input.UnusedVolumes {
 		p := outputshared.PresentEBSVolume(v, "unattached")
 		s.addWasteRow(m, []string{"Unattached", p.Identifier, p.Metric, p.EstimatedCost})
 	}
+
 	for _, v := range input.StoppedVolumes {
 		p := outputshared.PresentEBSVolume(v, "stopped")
 		s.addWasteRow(m, []string{"Stopped Inst.", p.Identifier, p.Metric, p.EstimatedCost})
 	}
+
 	m.AddRow(5, col.New(12))
+
 	return true
 }
 
@@ -76,12 +85,15 @@ func (s *service) addElasticIPWaste(m core.Maroto, input model.RenderWasteInput)
 		return false
 	}
 
-	s.addWasteSection(m, "Elastic IP Waste", []string{"Status", "IP Address", "Allocation ID", "Est. Cost"}, 10)
+	s.addWasteSection(m, "Elastic IP Waste", []string{"Status", "IP Address", "Allocation ID", "Est. Cost"})
+
 	for _, ip := range input.ElasticIPs {
 		p := outputshared.PresentElasticIP(ip)
 		s.addWasteRow(m, []string{"Unassociated", p.Identifier, aws.ToString(ip.AllocationId), p.EstimatedCost})
 	}
+
 	m.AddRow(5, col.New(12))
+
 	return true
 }
 
@@ -90,26 +102,34 @@ func (s *service) addEC2Waste(m core.Maroto, input model.RenderWasteInput) bool 
 		return false
 	}
 
-	s.addWasteSection(m, "EC2 & Reserved Instance Waste", []string{"Status", "Instance ID", "Time Info"}, 10)
+	s.addWasteSection(m, "EC2 & Reserved Instance Waste", []string{"Status", "Instance ID", "Time Info"})
+
 	for _, inst := range input.StoppedInstances {
 		p := outputshared.PresentStoppedInstance(inst)
 		timeInfo := outputshared.NAValue
+
 		if p.Age != outputshared.NAValue {
 			timeInfo = p.Age + " days ago"
 		}
+
 		s.addWasteRow(m, []string{"Stopped (>30d)", p.Identifier, timeInfo})
 	}
+
 	for _, ri := range input.Ris {
 		p := outputshared.PresentReservedInstance(ri)
 		timeInfo := ""
+
 		if ri.DaysUntilExpiry >= 0 {
 			timeInfo = fmt.Sprintf("In %d days", ri.DaysUntilExpiry)
 		} else {
 			timeInfo = fmt.Sprintf("%d days ago", -ri.DaysUntilExpiry)
 		}
+
 		s.addWasteRow(m, []string{fmt.Sprintf("RI (%s)", ri.Status), p.Identifier, timeInfo})
 	}
+
 	m.AddRow(5, col.New(12))
+
 	return true
 }
 
@@ -118,12 +138,15 @@ func (s *service) addLBWaste(m core.Maroto, input model.RenderWasteInput) bool {
 		return false
 	}
 
-	s.addWasteSection(m, "Load Balancer Waste", []string{"Status", "Name", "Type", "Est. Cost"}, 10)
+	s.addWasteSection(m, "Load Balancer Waste", []string{"Status", "Name", "Type", "Est. Cost"})
+
 	for _, lb := range input.LoadBalancers {
 		p := outputshared.PresentLoadBalancer(lb)
 		s.addWasteRow(m, []string{"Unused", aws.ToString(lb.LoadBalancerName), p.Metric, p.EstimatedCost})
 	}
+
 	m.AddRow(5, col.New(12))
+
 	return true
 }
 
@@ -132,16 +155,20 @@ func (s *service) addS3Waste(m core.Maroto, input model.RenderWasteInput) bool {
 		return false
 	}
 
-	s.addWasteSection(m, "S3 Bucket Waste", []string{"Status", "Bucket Name", "Info"}, 10)
+	s.addWasteSection(m, "S3 Bucket Waste", []string{"Status", "Bucket Name", "Info"})
+
 	for _, b := range input.S3Buckets {
 		p := outputshared.PresentS3Bucket(b)
 		s.addWasteRow(m, []string{"No Lifecycle", p.Identifier, fmt.Sprintf("Created: %s", b.CreationDate.Format("2006-01-02"))})
 	}
+
 	for _, b := range input.S3MultipartUploads {
 		p := outputshared.PresentS3MultipartUpload(b)
 		s.addWasteRow(m, []string{"Incomplete MP", p.Identifier, p.Metric})
 	}
+
 	m.AddRow(5, col.New(12))
+
 	return true
 }
 
@@ -150,12 +177,15 @@ func (s *service) addCloudWatchWaste(m core.Maroto, input model.RenderWasteInput
 		return false
 	}
 
-	s.addWasteSection(m, "CloudWatch Log Group Waste", []string{"Status", "Log Group Name", "Size", "Est. Cost"}, 10)
+	s.addWasteSection(m, "CloudWatch Log Group Waste", []string{"Status", "Log Group Name", "Size", "Est. Cost"})
+
 	for _, lg := range input.CloudWatchLogGroups {
 		p := outputshared.PresentCloudWatchLogGroup(lg)
 		s.addWasteRow(m, []string{"No Retention", p.Identifier, p.Metric, p.EstimatedCost})
 	}
+
 	m.AddRow(5, col.New(12))
+
 	return true
 }
 
@@ -164,12 +194,15 @@ func (s *service) addAMIWaste(m core.Maroto, input model.RenderWasteInput) bool 
 		return false
 	}
 
-	s.addWasteSection(m, "Unused AMI Waste", []string{"Status", "AMI ID", "Age", "Max Savings"}, 10)
+	s.addWasteSection(m, "Unused AMI Waste", []string{"Status", "AMI ID", "Age", "Max Savings"})
+
 	for _, ami := range input.UnusedAMIs {
 		p := outputshared.PresentAMI(ami)
 		s.addWasteRow(m, []string{"Unused", p.Identifier, p.Age + " days", fmt.Sprintf("$%.2f", ami.MaxPotentialSaving)})
 	}
+
 	m.AddRow(5, col.New(12))
+
 	return true
 }
 
@@ -178,12 +211,15 @@ func (s *service) addSnapshotWaste(m core.Maroto, input model.RenderWasteInput) 
 		return false
 	}
 
-	s.addWasteSection(m, "EBS Snapshot Waste", []string{"Status", "Snapshot ID", "Size", "Max Savings"}, 10)
+	s.addWasteSection(m, "EBS Snapshot Waste", []string{"Status", "Snapshot ID", "Size", "Max Savings"})
+
 	for _, snap := range input.OrphanedSnapshots {
 		p := outputshared.PresentSnapshot(snap)
 		s.addWasteRow(m, []string{string(snap.Category), p.Identifier, p.Metric, p.EstimatedCost})
 	}
+
 	m.AddRow(5, col.New(12))
+
 	return true
 }
 
@@ -192,12 +228,15 @@ func (s *service) addKeyPairWaste(m core.Maroto, input model.RenderWasteInput) b
 		return false
 	}
 
-	s.addWasteSection(m, "Unused Key Pair Waste", []string{"Status", "Key Name", "Age"}, 10)
+	s.addWasteSection(m, "Unused Key Pair Waste", []string{"Status", "Key Name", "Age"})
+
 	for _, kp := range input.UnusedKeyPairs {
 		p := outputshared.PresentKeyPair(kp)
 		s.addWasteRow(m, []string{"Unused", p.Identifier, p.Age + " days"})
 	}
+
 	m.AddRow(5, col.New(12))
+
 	return true
 }
 
@@ -206,38 +245,49 @@ func (s *service) addRDSWaste(m core.Maroto, input model.RenderWasteInput) bool 
 		return false
 	}
 
-	s.addWasteSection(m, "RDS Waste", []string{"Status", "Identifier", "Engine", "Est. Cost"}, 10)
+	s.addWasteSection(m, "RDS Waste", []string{"Status", "Identifier", "Engine", "Est. Cost"})
+
 	for _, inst := range input.RDSInstances {
 		p := outputshared.PresentRDSInstance(inst)
 		s.addWasteRow(m, []string{"Stopped", p.Identifier, inst.Engine, p.EstimatedCost})
 	}
+
 	for _, snap := range input.RDSSnapshots {
 		p := outputshared.PresentRDSSnapshot(snap)
 		s.addWasteRow(m, []string{"Old Snapshot", p.Identifier, snap.Engine, p.EstimatedCost})
 	}
+
 	for _, inst := range input.RDSIdleInstances {
 		p := outputshared.PresentRDSIdleInstance(inst)
 		s.addWasteRow(m, []string{"Idle", p.Identifier, inst.Engine, p.EstimatedCost})
 	}
+
 	m.AddRow(5, col.New(12))
+
 	return true
 }
 
 func (s *service) addWasteSummary(m core.Maroto, input model.RenderWasteInput) {
 	categories, totalCost := wastesummary.Compute(input)
+
 	if len(categories) == 0 {
 		return
 	}
 
-	s.addWasteSection(m, "Waste Summary", []string{"Category", "Count", "Est. Monthly Cost"}, 10)
+	s.addWasteSection(m, "Waste Summary", []string{"Category", "Count", "Est. Monthly Cost"})
+
 	for _, cat := range categories {
 		costStr := outputshared.NAValue
+
 		if cat.Cost > 0 {
 			costStr = fmt.Sprintf("$%.2f", cat.Cost)
 		}
+
 		s.addWasteRow(m, []string{cat.Name, fmt.Sprintf("%d", cat.Count), costStr})
 	}
+
 	m.AddRow(2, line.NewCol(12))
+
 	m.AddRow(10,
 		text.NewCol(4, "Total Estimated Monthly Waste", props.Text{Style: fontstyle.Bold, Size: 10}),
 		text.NewCol(4, "", props.Text{}),
@@ -245,25 +295,26 @@ func (s *service) addWasteSummary(m core.Maroto, input model.RenderWasteInput) {
 	)
 }
 
-func (s *service) addWasteSection(m core.Maroto, title string, headers []string, height float64) {
-	m.AddRow(height,
+func (s *service) addWasteSection(m core.Maroto, title string, headers []string) {
+	m.AddRow(10,
 		text.NewCol(12, title, props.Text{Style: fontstyle.Bold, Size: 11}),
 	)
 
 	if len(headers) == 3 {
-		m.AddRow(height,
+		m.AddRow(10,
 			text.NewCol(4, headers[0], props.Text{Style: fontstyle.Bold, Size: 9}),
 			text.NewCol(4, headers[1], props.Text{Style: fontstyle.Bold, Size: 9}),
 			text.NewCol(4, headers[2], props.Text{Style: fontstyle.Bold, Size: 9, Align: align.Right}),
 		)
 	} else {
-		m.AddRow(height,
+		m.AddRow(10,
 			text.NewCol(3, headers[0], props.Text{Style: fontstyle.Bold, Size: 9}),
 			text.NewCol(4, headers[1], props.Text{Style: fontstyle.Bold, Size: 9}),
 			text.NewCol(3, headers[2], props.Text{Style: fontstyle.Bold, Size: 9, Align: align.Right}),
 			text.NewCol(2, headers[3], props.Text{Style: fontstyle.Bold, Size: 9, Align: align.Right}),
 		)
 	}
+
 	m.AddRow(2, line.NewCol(12))
 }
 

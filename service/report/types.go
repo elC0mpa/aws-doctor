@@ -4,16 +4,16 @@ import (
 	"github.com/elC0mpa/aws-doctor/model"
 )
 
-// ReportType represents the type of report being generated.
-type ReportType string
+// Type represents the type of report being generated.
+type Type string
 
 const (
 	// CostReport represents a cost comparison report.
-	CostReport ReportType = "cost"
+	CostReport Type = "cost"
 	// TrendReport represents a cost trend report.
-	TrendReport ReportType = "trend"
+	TrendReport Type = "trend"
 	// WasteReport represents an AWS waste report.
-	WasteReport ReportType = "waste"
+	WasteReport Type = "waste"
 )
 
 // Service defines the interface for generating PDF reports.

@@ -585,59 +585,59 @@ func TestWasteWorkflow_Error(t *testing.T) {
 }
 
 func TestOrchestrate_RouteToReportWorkflow(t *testing.T) {
-        // Setup mocks
-        mockSTS := new(services.MockSTSService)
-        mockCost := new(services.MockCostService)
-        mockEC2 := new(services.MockEC2Service)
-        mockELB := new(services.MockELBService)
-        mockS3 := new(services.MockS3Service)
-        mockCloudWatch := new(services.MockCloudWatchLogsService)
-        mockOutput := new(services.MockOutputService)
-        mockUpdate := new(services.MockUpdateService)
-        mockReport := new(services.MockReportService)
-        mockRDS := new(services.MockRDSService)
+	// Setup mocks
+	mockSTS := new(services.MockSTSService)
+	mockCost := new(services.MockCostService)
+	mockEC2 := new(services.MockEC2Service)
+	mockELB := new(services.MockELBService)
+	mockS3 := new(services.MockS3Service)
+	mockCloudWatch := new(services.MockCloudWatchLogsService)
+	mockOutput := new(services.MockOutputService)
+	mockUpdate := new(services.MockUpdateService)
+	mockReport := new(services.MockReportService)
+	mockRDS := new(services.MockRDSService)
 
-        // Create service
-        config := Config{
-                STSService:            mockSTS,
-                CostService:           mockCost,
-                EC2Service:            mockEC2,
-                ELBService:            mockELB,
-                S3Service:             mockS3,
-                CloudWatchLogsService: mockCloudWatch,
-                RDSService:            mockRDS,
-                OutputService:         mockOutput,
-                UpdateService:         mockUpdate,
-                ReportService:         mockReport,
-                VersionInfo:           model.VersionInfo{Version: "dev", Commit: "none", Date: "unknown"},
-        }
-        svc := NewService(config)
+	// Create service
+	config := Config{
+		STSService:            mockSTS,
+		CostService:           mockCost,
+		EC2Service:            mockEC2,
+		ELBService:            mockELB,
+		S3Service:             mockS3,
+		CloudWatchLogsService: mockCloudWatch,
+		RDSService:            mockRDS,
+		OutputService:         mockOutput,
+		UpdateService:         mockUpdate,
+		ReportService:         mockReport,
+		VersionInfo:           model.VersionInfo{Version: "dev", Commit: "none", Date: "unknown"},
+	}
+	svc := NewService(config)
 
-        // Setup expectations for default workflow + report
-        mockCost.On("GetCurrentMonthCostsByService", mock.Anything).Return(&model.CostInfo{}, nil)
-        mockCost.On("GetLastMonthCostsByService", mock.Anything).Return(&model.CostInfo{}, nil)
-        mockCost.On("GetCurrentMonthTotalCosts", mock.Anything).Return(aws.String("100.00"), nil)
-        mockCost.On("GetLastMonthTotalCosts", mock.Anything).Return(aws.String("90.00"), nil)
-        mockSTS.On("GetCallerIdentity", mock.Anything).Return(&sts.GetCallerIdentityOutput{
-                Account: aws.String("123456789012"),
-        }, nil)
-        mockOutput.On("StopSpinner").Return()
-        
-        // Mock report call
-        reportPath := "report.pdf"
-        mockReport.On("GenerateCostComparisonReport", mock.Anything, "report.html").Return(&reportPath, nil)
-        mockOutput.On("PrintReportSuccess", reportPath).Return()
+	// Setup expectations for default workflow + report
+	mockCost.On("GetCurrentMonthCostsByService", mock.Anything).Return(&model.CostInfo{}, nil)
+	mockCost.On("GetLastMonthCostsByService", mock.Anything).Return(&model.CostInfo{}, nil)
+	mockCost.On("GetCurrentMonthTotalCosts", mock.Anything).Return(aws.String("100.00"), nil)
+	mockCost.On("GetLastMonthTotalCosts", mock.Anything).Return(aws.String("90.00"), nil)
+	mockSTS.On("GetCallerIdentity", mock.Anything).Return(&sts.GetCallerIdentityOutput{
+		Account: aws.String("123456789012"),
+	}, nil)
+	mockOutput.On("StopSpinner").Return()
 
-        // Execute with Report flag
-        flags := model.Flags{Report: true, ReportPath: "report.html"}
-        err := svc.Orchestrate(flags)
+	// Mock report call
+	reportPath := "report.pdf"
+	mockReport.On("GenerateCostComparisonReport", mock.Anything, "report.html").Return(&reportPath, nil)
+	mockOutput.On("PrintReportSuccess", reportPath).Return()
 
-        // Assert
-        assert.NoError(t, err)
-        mockCost.AssertExpectations(t)
-        mockSTS.AssertExpectations(t)
-        mockOutput.AssertExpectations(t)
-        mockReport.AssertExpectations(t)
-        // Verify RenderCostComparison was NOT called
-        mockOutput.AssertNotCalled(t, "RenderCostComparison", mock.Anything)
+	// Execute with Report flag
+	flags := model.Flags{Report: true, ReportPath: "report.html"}
+	err := svc.Orchestrate(flags)
+
+	// Assert
+	assert.NoError(t, err)
+	mockCost.AssertExpectations(t)
+	mockSTS.AssertExpectations(t)
+	mockOutput.AssertExpectations(t)
+	mockReport.AssertExpectations(t)
+	// Verify RenderCostComparison was NOT called
+	mockOutput.AssertNotCalled(t, "RenderCostComparison", mock.Anything)
 }

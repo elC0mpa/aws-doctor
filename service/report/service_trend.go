@@ -23,6 +23,7 @@ func (s *service) addTrendContent(m core.Maroto, costInfo []model.CostInfo, serv
 	// Services info (Maroto layer for wrapping support)
 	if len(services) > 0 {
 		var fullNames []string
+
 		for _, svc := range services {
 			if fullName, ok := awscostexplorer.ServiceNameMap[strings.ToLower(svc)]; ok {
 				fullNames = append(fullNames, fullName)
@@ -30,6 +31,7 @@ func (s *service) addTrendContent(m core.Maroto, costInfo []model.CostInfo, serv
 				fullNames = append(fullNames, svc)
 			}
 		}
+
 		servicesLabel := "Services Included: " + strings.Join(fullNames, ", ")
 
 		// Calculate dynamic height (approx 100 chars per line at size 9)
@@ -69,11 +71,14 @@ func (s *service) generateTrendChartImage(costInfo []model.CostInfo) ([]byte, er
 	// Find min and max amounts for scaling colors
 	maxAmount := 0.0
 	minAmount := -1.0
+
 	for _, info := range costInfo {
 		amt := info.CostGroup["Total"].Amount
+
 		if amt > maxAmount {
 			maxAmount = amt
 		}
+
 		if minAmount == -1.0 || amt < minAmount {
 			minAmount = amt
 		}
@@ -87,12 +92,15 @@ func (s *service) generateTrendChartImage(costInfo []model.CostInfo) ([]byte, er
 
 	for i, info := range costInfo {
 		month := ""
+
 		if info.Start != nil {
 			if t, err := time.Parse("2006-01-02", *info.Start); err == nil {
 				month = t.Format("Jan")
 			}
 		}
+
 		amount := info.CostGroup["Total"].Amount
+
 		xAxisData = append(xAxisData, fmt.Sprintf("%s: %.0f", month, amount))
 
 		// Calculate color interpolation factor (0.0 to 1.0)
@@ -158,13 +166,17 @@ func (s *service) addTrendBreakdownTable(m core.Maroto, costInfo []model.CostInf
 	}
 
 	serviceColSize := 3
+
 	monthColSize := (12 - serviceColSize) / len(costInfo)
+
 	if monthColSize == 0 {
 		monthColSize = 1
 	}
 
 	headerRow := make([]core.Col, 0, len(headerCols))
+
 	headerRow = append(headerRow, text.NewCol(serviceColSize, "Metric", props.Text{Style: fontstyle.Bold, Size: 9}))
+
 	for i := 1; i < len(headerCols); i++ {
 		headerRow = append(headerRow, text.NewCol(monthColSize, headerCols[i], props.Text{Style: fontstyle.Bold, Size: 8, Align: align.Right}))
 	}
@@ -174,10 +186,13 @@ func (s *service) addTrendBreakdownTable(m core.Maroto, costInfo []model.CostInf
 
 	// Total Row
 	totalRow := make([]core.Col, 0, len(costInfo)+1)
+
 	totalRow = append(totalRow, text.NewCol(serviceColSize, "Total Cost", props.Text{Style: fontstyle.Bold, Size: 9}))
+
 	for _, info := range costInfo {
 		totalRow = append(totalRow, text.NewCol(monthColSize, fmt.Sprintf("%.2f", info.CostGroup["Total"].Amount), props.Text{Size: 8, Align: align.Right}))
 	}
+
 	m.AddRow(10, totalRow...)
 
 	m.AddRow(5, text.NewCol(12, fmt.Sprintf("All amounts in %s", unit), props.Text{Size: 7, Align: align.Right, Top: 2}))
