@@ -32,6 +32,40 @@ A terminal-based tool that acts as a comprehensive health check for your AWS acc
 
 *Supports selective scanning: `aws-doctor waste ec2 s3 cloudwatch rds`*
 
+## 📄 Professional Reporting
+
+`aws-doctor` can now generate detailed, professional PDF reports ready for stakeholders. Reports include branded headers, styled tables, and comprehensive cost/waste analyses.
+
+### Generate a Cost Comparison Report
+```bash
+aws-doctor report cost
+```
+
+### Generate a Waste Analysis Report
+```bash
+# Full waste report
+aws-doctor report waste
+
+# Selective checks (e.g., ec2 and s3 only)
+aws-doctor report waste ec2 s3
+```
+
+### Generate a Trend Report
+```bash
+# Full trend report (all services)
+aws-doctor report trend
+
+# Selective services (e.g., ec2 and rds only)
+aws-doctor report trend ec2 rds
+```
+
+> [!TIP]
+> **Subcommand Arguments:** Just like the terminal commands, `report waste` accepts specific checks (e.g., `ec2`, `s3`, `rds`) and `report trend` accepts specific service names.
+
+> [!TIP]
+> By default, reports are saved in your **Documents** folder. Use the `--path` flag to specify a custom directory or filename:
+> `aws-doctor report cost --path ./billing-analysis.pdf`
+
 ## 🚀 Installation
 
 **Homebrew (macOS/Linux):**
@@ -54,6 +88,7 @@ go install github.com/elC0mpa/aws-doctor@latest
 
 ## ✨ Key Features
 
+- **📄 Professional PDF Reports:** Generate branded, ready-to-share PDF documents for costs, trends, and waste analysis.
 - **📉 Fair Cost Comparison:** Compares identical time windows between months to spot real anomalies.
 - **🧟 Zombie Discovery:** Scans for idle EIPs, stopped instances, orphaned snapshots, idle RDS instances, and more. Supports selective service filtering (`ec2`, `s3`, `elb`, `cloudwatch`, `rds`).
 - **📊 6-Month Trends:** High-fidelity ANSI visualization of your spending velocity.
