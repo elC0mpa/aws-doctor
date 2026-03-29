@@ -44,7 +44,7 @@ layout: "hextra-home"
 
 <div class="hx:mt-4"></div>
 
-{{< hextra/feature-grid cols="4" >}}
+{{< hextra/feature-grid cols="3" >}}
   {{< hextra/feature-card
     icon="trending-up"
     title="Análisis de Costos"
@@ -55,6 +55,12 @@ layout: "hextra-home"
     icon="trash"
     title="Detección 'Zombie'"
     subtitle="Obtenga un chequeo de salud de alto nivel de toda su cuenta de AWS. La herramienta escanea múltiples servicios simultáneamente para identificar recursos inactivos, desconectados u olvidados."
+  >}}
+
+  {{< hextra/feature-card
+    icon="printer"
+    title="Reportes PDF"
+    subtitle="Genere reportes PDF profesionales para las partes interesadas. AWS Doctor ahora puede exportar todos los hallazgos, tendencias de costos y resúmenes de desperdicio en un documento limpio y listo para compartir."
   >}}
 
   {{< hextra/feature-card

@@ -2,7 +2,10 @@
 package output
 
 import (
+	"fmt"
+
 	"github.com/elC0mpa/aws-doctor/model"
+	"github.com/jedib0t/go-pretty/v6/text"
 )
 
 // NewService creates a new output service with the specified format
@@ -60,4 +63,10 @@ func (s *service) RenderWaste(input model.RenderWasteInput) error {
 
 func (s *service) StopSpinner() {
 	s.renderer.StopSpinner()
+}
+
+func (s *service) PrintReportSuccess(path string) {
+	fmt.Println()
+	fmt.Println(text.FgGreen.Sprint("✅ Report generated successfully!"))
+	fmt.Println(text.FgHiWhite.Sprintf("📄 Path: %s", path))
 }

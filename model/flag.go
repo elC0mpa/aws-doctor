@@ -11,4 +11,6 @@ type Flags struct {
 	Version     bool
 	Update      bool
 	Output      string // Output format: "table" (default) or "json"
+	Report      bool   // Whether to generate a report
+	ReportPath  string // Path to save the report (optional)
 }

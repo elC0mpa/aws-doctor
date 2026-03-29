@@ -95,4 +95,7 @@ type Service interface {
 
 	// StopSpinner stops the loading spinner before rendering output
 	StopSpinner()
+
+	// PrintReportSuccess outputs a success message with the report path
+	PrintReportSuccess(path string)
 }

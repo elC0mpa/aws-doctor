@@ -38,9 +38,15 @@ Bienvenido a la documentación de **AWS Doctor**. Esta guía le ayudará a confi
     icon="server"
     title="Automatización"
     link="automation/"
-    subtitle="Guía para la salida JSON e integración con GitHub Actions o Jenkins."
+    subtitle="Guía sobre la salida JSON e integración con GitHub Actions o Jenkins."
   >}}
-{{< /hextra/feature-grid >}}
+  {{< hextra/feature-card
+    icon="printer"
+    title="Reportes PDF"
+    link="reporting/"
+    subtitle="Genera reportes PDF profesionales para las partes interesadas con un comando."
+  >}}
+  {{< /hextra/feature-grid >}}
 
 ## Contexto Rápido
 

@@ -24,11 +24,24 @@ func TestOrchestrate_RouteToDefaultWorkflow(t *testing.T) {
 	mockCloudWatch := new(services.MockCloudWatchLogsService)
 	mockOutput := new(services.MockOutputService)
 	mockUpdate := new(services.MockUpdateService)
+	mockReport := new(services.MockReportService)
 
 	// Create service
 	mockRDS := new(services.MockRDSService)
-	svc := NewService(mockSTS, mockCost, mockEC2, mockELB, mockS3, mockCloudWatch, mockRDS, mockOutput, mockUpdate, model.VersionInfo{Version: "dev", Commit: "none", Date: "unknown"})
-
+	config := Config{
+		STSService:            mockSTS,
+		CostService:           mockCost,
+		EC2Service:            mockEC2,
+		ELBService:            mockELB,
+		S3Service:             mockS3,
+		CloudWatchLogsService: mockCloudWatch,
+		RDSService:            mockRDS,
+		OutputService:         mockOutput,
+		UpdateService:         mockUpdate,
+		ReportService:         mockReport,
+		VersionInfo:           model.VersionInfo{Version: "dev", Commit: "none", Date: "unknown"},
+	}
+	svc := NewService(config)
 	// Setup expectations for default workflow
 	mockCost.On("GetCurrentMonthCostsByService", mock.Anything).Return(&model.CostInfo{}, nil)
 	mockCost.On("GetLastMonthCostsByService", mock.Anything).Return(&model.CostInfo{}, nil)
@@ -61,11 +74,24 @@ func TestOrchestrate_RouteToUpdateWorkflow(t *testing.T) {
 	mockCloudWatch := new(services.MockCloudWatchLogsService)
 	mockOutput := new(services.MockOutputService)
 	mockUpdate := new(services.MockUpdateService)
+	mockReport := new(services.MockReportService)
 
 	// Create service
 	mockRDS := new(services.MockRDSService)
-	svc := NewService(mockSTS, mockCost, mockEC2, mockELB, mockS3, mockCloudWatch, mockRDS, mockOutput, mockUpdate, model.VersionInfo{Version: "dev", Commit: "none", Date: "unknown"})
-
+	config := Config{
+		STSService:            mockSTS,
+		CostService:           mockCost,
+		EC2Service:            mockEC2,
+		ELBService:            mockELB,
+		S3Service:             mockS3,
+		CloudWatchLogsService: mockCloudWatch,
+		RDSService:            mockRDS,
+		OutputService:         mockOutput,
+		UpdateService:         mockUpdate,
+		ReportService:         mockReport,
+		VersionInfo:           model.VersionInfo{Version: "dev", Commit: "none", Date: "unknown"},
+	}
+	svc := NewService(config)
 	// Setup expectations
 	mockOutput.On("StopSpinner").Return()
 	mockUpdate.On("Update").Return(nil)
@@ -90,11 +116,24 @@ func TestOrchestrate_RouteToTrendWorkflow(t *testing.T) {
 	mockCloudWatch := new(services.MockCloudWatchLogsService)
 	mockOutput := new(services.MockOutputService)
 	mockUpdate := new(services.MockUpdateService)
+	mockReport := new(services.MockReportService)
 
 	// Create service
 	mockRDS := new(services.MockRDSService)
-	svc := NewService(mockSTS, mockCost, mockEC2, mockELB, mockS3, mockCloudWatch, mockRDS, mockOutput, mockUpdate, model.VersionInfo{Version: "dev", Commit: "none", Date: "unknown"})
-
+	config := Config{
+		STSService:            mockSTS,
+		CostService:           mockCost,
+		EC2Service:            mockEC2,
+		ELBService:            mockELB,
+		S3Service:             mockS3,
+		CloudWatchLogsService: mockCloudWatch,
+		RDSService:            mockRDS,
+		OutputService:         mockOutput,
+		UpdateService:         mockUpdate,
+		ReportService:         mockReport,
+		VersionInfo:           model.VersionInfo{Version: "dev", Commit: "none", Date: "unknown"},
+	}
+	svc := NewService(config)
 	// Setup expectations for trend workflow
 	mockCost.On("GetLastSixMonthsCosts", mock.Anything, mock.Anything).Return([]model.CostInfo{}, nil)
 	mockSTS.On("GetCallerIdentity", mock.Anything).Return(&sts.GetCallerIdentityOutput{
@@ -124,11 +163,24 @@ func TestOrchestrate_RouteToWasteWorkflow(t *testing.T) {
 	mockCloudWatch := new(services.MockCloudWatchLogsService)
 	mockOutput := new(services.MockOutputService)
 	mockUpdate := new(services.MockUpdateService)
+	mockReport := new(services.MockReportService)
 
 	// Create service
 	mockRDS := new(services.MockRDSService)
-	svc := NewService(mockSTS, mockCost, mockEC2, mockELB, mockS3, mockCloudWatch, mockRDS, mockOutput, mockUpdate, model.VersionInfo{Version: "dev", Commit: "none", Date: "unknown"})
-
+	config := Config{
+		STSService:            mockSTS,
+		CostService:           mockCost,
+		EC2Service:            mockEC2,
+		ELBService:            mockELB,
+		S3Service:             mockS3,
+		CloudWatchLogsService: mockCloudWatch,
+		RDSService:            mockRDS,
+		OutputService:         mockOutput,
+		UpdateService:         mockUpdate,
+		ReportService:         mockReport,
+		VersionInfo:           model.VersionInfo{Version: "dev", Commit: "none", Date: "unknown"},
+	}
+	svc := NewService(config)
 	// Setup expectations for waste workflow
 	mockEC2.On("GetUnusedElasticIPAddressesInfo", mock.Anything).Return([]types.Address{}, nil)
 	mockEC2.On("GetUnusedEBSVolumes", mock.Anything).Return([]types.Volume{}, nil)
@@ -169,11 +221,24 @@ func TestOrchestrate_WasteTakesPrecedenceOverTrend(t *testing.T) {
 	mockCloudWatch := new(services.MockCloudWatchLogsService)
 	mockOutput := new(services.MockOutputService)
 	mockUpdate := new(services.MockUpdateService)
+	mockReport := new(services.MockReportService)
 
 	// Create service
 	mockRDS := new(services.MockRDSService)
-	svc := NewService(mockSTS, mockCost, mockEC2, mockELB, mockS3, mockCloudWatch, mockRDS, mockOutput, mockUpdate, model.VersionInfo{Version: "dev", Commit: "none", Date: "unknown"})
-
+	config := Config{
+		STSService:            mockSTS,
+		CostService:           mockCost,
+		EC2Service:            mockEC2,
+		ELBService:            mockELB,
+		S3Service:             mockS3,
+		CloudWatchLogsService: mockCloudWatch,
+		RDSService:            mockRDS,
+		OutputService:         mockOutput,
+		UpdateService:         mockUpdate,
+		ReportService:         mockReport,
+		VersionInfo:           model.VersionInfo{Version: "dev", Commit: "none", Date: "unknown"},
+	}
+	svc := NewService(config)
 	// Setup expectations for waste workflow (should be called, not trend)
 	mockEC2.On("GetUnusedElasticIPAddressesInfo", mock.Anything).Return([]types.Address{}, nil)
 	mockEC2.On("GetUnusedEBSVolumes", mock.Anything).Return([]types.Volume{}, nil)
@@ -211,11 +276,24 @@ func TestOrchestrate_TrendWorkflow_Mapping(t *testing.T) {
 	mockCloudWatch := new(services.MockCloudWatchLogsService)
 	mockOutput := new(services.MockOutputService)
 	mockUpdate := new(services.MockUpdateService)
+	mockReport := new(services.MockReportService)
 
 	// Create service
 	mockRDS := new(services.MockRDSService)
-	svc := NewService(mockSTS, mockCost, mockEC2, mockELB, mockS3, mockCloudWatch, mockRDS, mockOutput, mockUpdate, model.VersionInfo{Version: "dev", Commit: "none", Date: "unknown"})
-
+	config := Config{
+		STSService:            mockSTS,
+		CostService:           mockCost,
+		EC2Service:            mockEC2,
+		ELBService:            mockELB,
+		S3Service:             mockS3,
+		CloudWatchLogsService: mockCloudWatch,
+		RDSService:            mockRDS,
+		OutputService:         mockOutput,
+		UpdateService:         mockUpdate,
+		ReportService:         mockReport,
+		VersionInfo:           model.VersionInfo{Version: "dev", Commit: "none", Date: "unknown"},
+	}
+	svc := NewService(config)
 	// Shorthand services to check
 	trendChecks := []string{"ec2", "s3", "rds", "invalid"}
 	// Expected mapped services
@@ -305,13 +383,27 @@ func TestDefaultWorkflow_CostServiceError(t *testing.T) {
 			mockCloudWatch := new(services.MockCloudWatchLogsService)
 			mockOutput := new(services.MockOutputService)
 			mockUpdate := new(services.MockUpdateService)
+			mockReport := new(services.MockReportService)
 
 			tt.setupMocks(mockCost, mockSTS)
 			mockOutput.On("StopSpinner").Return().Maybe()
 			mockOutput.On("RenderCostComparison", mock.Anything).Return(nil).Maybe()
 
 			mockRDS := new(services.MockRDSService)
-			svc := NewService(mockSTS, mockCost, mockEC2, mockELB, mockS3, mockCloudWatch, mockRDS, mockOutput, mockUpdate, model.VersionInfo{Version: "dev", Commit: "none", Date: "unknown"})
+			config := Config{
+				STSService:            mockSTS,
+				CostService:           mockCost,
+				EC2Service:            mockEC2,
+				ELBService:            mockELB,
+				S3Service:             mockS3,
+				CloudWatchLogsService: mockCloudWatch,
+				RDSService:            mockRDS,
+				OutputService:         mockOutput,
+				UpdateService:         mockUpdate,
+				ReportService:         mockReport,
+				VersionInfo:           model.VersionInfo{Version: "dev", Commit: "none", Date: "unknown"},
+			}
+			svc := NewService(config)
 			err := svc.Orchestrate(model.Flags{Output: "json"})
 
 			assert.Error(t, err)
@@ -353,13 +445,27 @@ func TestTrendWorkflow_Error(t *testing.T) {
 			mockCloudWatch := new(services.MockCloudWatchLogsService)
 			mockOutput := new(services.MockOutputService)
 			mockUpdate := new(services.MockUpdateService)
+			mockReport := new(services.MockReportService)
 
 			tt.setupMocks(mockCost, mockSTS)
 			mockOutput.On("StopSpinner").Return().Maybe()
 			mockOutput.On("RenderTrend", mock.Anything, mock.Anything, mock.Anything).Return(nil).Maybe()
 
 			mockRDS := new(services.MockRDSService)
-			svc := NewService(mockSTS, mockCost, mockEC2, mockELB, mockS3, mockCloudWatch, mockRDS, mockOutput, mockUpdate, model.VersionInfo{Version: "dev", Commit: "none", Date: "unknown"})
+			config := Config{
+				STSService:            mockSTS,
+				CostService:           mockCost,
+				EC2Service:            mockEC2,
+				ELBService:            mockELB,
+				S3Service:             mockS3,
+				CloudWatchLogsService: mockCloudWatch,
+				RDSService:            mockRDS,
+				OutputService:         mockOutput,
+				UpdateService:         mockUpdate,
+				ReportService:         mockReport,
+				VersionInfo:           model.VersionInfo{Version: "dev", Commit: "none", Date: "unknown"},
+			}
+			svc := NewService(config)
 			err := svc.Orchestrate(model.Flags{Trend: true, Output: "json"})
 
 			assert.Error(t, err)
@@ -450,16 +556,88 @@ func TestWasteWorkflow_Error(t *testing.T) {
 			mockOutput := new(services.MockOutputService)
 			mockUpdate := new(services.MockUpdateService)
 			mockRDS := new(services.MockRDSService)
+			mockReport := new(services.MockReportService)
 
 			tt.setupMocks(mockEC2, mockELB, mockS3, mockCloudWatch, mockRDS, mockSTS)
 			mockOutput.On("StopSpinner").Return().Maybe()
 			mockOutput.On("RenderWaste", mock.Anything).Return(nil).Maybe()
 
-			svc := NewService(mockSTS, mockCost, mockEC2, mockELB, mockS3, mockCloudWatch, mockRDS, mockOutput, mockUpdate, model.VersionInfo{Version: "dev", Commit: "none", Date: "unknown"})
+			config := Config{
+				STSService:            mockSTS,
+				CostService:           mockCost,
+				EC2Service:            mockEC2,
+				ELBService:            mockELB,
+				S3Service:             mockS3,
+				CloudWatchLogsService: mockCloudWatch,
+				RDSService:            mockRDS,
+				OutputService:         mockOutput,
+				UpdateService:         mockUpdate,
+				ReportService:         mockReport,
+				VersionInfo:           model.VersionInfo{Version: "dev", Commit: "none", Date: "unknown"},
+			}
+			svc := NewService(config)
 			err := svc.Orchestrate(model.Flags{Waste: true, Output: "json"})
 
 			assert.Error(t, err)
 			assert.Contains(t, err.Error(), tt.expectedErr)
 		})
 	}
+}
+
+func TestOrchestrate_RouteToReportWorkflow(t *testing.T) {
+	// Setup mocks
+	mockSTS := new(services.MockSTSService)
+	mockCost := new(services.MockCostService)
+	mockEC2 := new(services.MockEC2Service)
+	mockELB := new(services.MockELBService)
+	mockS3 := new(services.MockS3Service)
+	mockCloudWatch := new(services.MockCloudWatchLogsService)
+	mockOutput := new(services.MockOutputService)
+	mockUpdate := new(services.MockUpdateService)
+	mockReport := new(services.MockReportService)
+	mockRDS := new(services.MockRDSService)
+
+	// Create service
+	config := Config{
+		STSService:            mockSTS,
+		CostService:           mockCost,
+		EC2Service:            mockEC2,
+		ELBService:            mockELB,
+		S3Service:             mockS3,
+		CloudWatchLogsService: mockCloudWatch,
+		RDSService:            mockRDS,
+		OutputService:         mockOutput,
+		UpdateService:         mockUpdate,
+		ReportService:         mockReport,
+		VersionInfo:           model.VersionInfo{Version: "dev", Commit: "none", Date: "unknown"},
+	}
+	svc := NewService(config)
+
+	// Setup expectations for default workflow + report
+	mockCost.On("GetCurrentMonthCostsByService", mock.Anything).Return(&model.CostInfo{}, nil)
+	mockCost.On("GetLastMonthCostsByService", mock.Anything).Return(&model.CostInfo{}, nil)
+	mockCost.On("GetCurrentMonthTotalCosts", mock.Anything).Return(aws.String("100.00"), nil)
+	mockCost.On("GetLastMonthTotalCosts", mock.Anything).Return(aws.String("90.00"), nil)
+	mockSTS.On("GetCallerIdentity", mock.Anything).Return(&sts.GetCallerIdentityOutput{
+		Account: aws.String("123456789012"),
+	}, nil)
+	mockOutput.On("StopSpinner").Return()
+
+	// Mock report call
+	reportPath := "report.pdf"
+	mockReport.On("GenerateCostComparisonReport", mock.Anything, "report.html").Return(&reportPath, nil)
+	mockOutput.On("PrintReportSuccess", reportPath).Return()
+
+	// Execute with Report flag
+	flags := model.Flags{Report: true, ReportPath: "report.html"}
+	err := svc.Orchestrate(flags)
+
+	// Assert
+	assert.NoError(t, err)
+	mockCost.AssertExpectations(t)
+	mockSTS.AssertExpectations(t)
+	mockOutput.AssertExpectations(t)
+	mockReport.AssertExpectations(t)
+	// Verify RenderCostComparison was NOT called
+	mockOutput.AssertNotCalled(t, "RenderCostComparison", mock.Anything)
 }
