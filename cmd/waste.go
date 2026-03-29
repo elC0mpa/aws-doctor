@@ -26,8 +26,6 @@ var wasteCmd = &cobra.Command{
 			Region:      region,
 			Profile:     profile,
 			Output:      outputFormat,
-			Report:      reportPath != "",
-			ReportPath:  reportPath,
 			Waste:       true,
 			WasteChecks: parsedChecks,
 		}

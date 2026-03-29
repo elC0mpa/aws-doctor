@@ -107,9 +107,14 @@ func (s *service) defaultWorkflow(generateReport bool, reportPath string) error 
 	}
 
 	if generateReport {
-		if err := s.reportService.GenerateCostComparisonReport(input, reportPath); err != nil {
+		path, err := s.reportService.GenerateCostComparisonReport(input, reportPath)
+		if err != nil {
 			return err
 		}
+
+		s.outputService.PrintReportSuccess(*path)
+
+		return nil
 	}
 
 	return s.outputService.RenderCostComparison(input)
@@ -137,9 +142,14 @@ func (s *service) trendWorkflow(trendChecks []string, generateReport bool, repor
 	s.outputService.StopSpinner()
 
 	if generateReport {
-		if err := s.reportService.GenerateTrendReport(*stsResult.Account, costInfo, trendChecks, reportPath); err != nil {
+		path, err := s.reportService.GenerateTrendReport(*stsResult.Account, costInfo, trendChecks, reportPath)
+		if err != nil {
 			return err
 		}
+
+		s.outputService.PrintReportSuccess(*path)
+
+		return nil
 	}
 
 	return s.outputService.RenderTrend(*stsResult.Account, costInfo, trendChecks)
@@ -322,9 +332,14 @@ func (s *service) wasteWorkflow(wasteChecks []string, generateReport bool, repor
 	}
 
 	if generateReport {
-		if err := s.reportService.GenerateWasteReport(input, reportPath); err != nil {
+		path, err := s.reportService.GenerateWasteReport(input, reportPath)
+		if err != nil {
 			return err
 		}
+
+		s.outputService.PrintReportSuccess(*path)
+
+		return nil
 	}
 
 	return s.outputService.RenderWaste(input)

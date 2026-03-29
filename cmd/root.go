@@ -27,7 +27,6 @@ var (
 	region              string
 	profile             string
 	outputFormat        string
-	reportPath          string
 	versionInfo         model.VersionInfo
 	orchestratorBuilder = buildOrchestrator
 )
@@ -89,6 +88,4 @@ func init() {
 	rootCmd.PersistentFlags().StringVar(&region, "region", "", "AWS region (defaults to AWS_REGION, AWS_DEFAULT_REGION, or ~/.aws/config)")
 	rootCmd.PersistentFlags().StringVar(&profile, "profile", "", "AWS profile configuration")
 	rootCmd.PersistentFlags().StringVar(&outputFormat, "output", "table", "Output format: table, json or csv")
-	rootCmd.PersistentFlags().StringVar(&reportPath, "report", "", "Generate a PDF report at the specified path (defaults to a name with timestamp)")
-	rootCmd.PersistentFlags().Lookup("report").NoOptDefVal = "DEFAULT"
 }

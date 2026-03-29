@@ -2,6 +2,8 @@ package report
 
 import (
 	"fmt"
+	"os"
+	"path/filepath"
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -24,7 +26,7 @@ func NewService() Service {
 	return &service{}
 }
 
-func (s *service) GenerateCostComparisonReport(input model.RenderCostComparisonInput, reportPath string) error {
+func (s *service) GenerateCostComparisonReport(input model.RenderCostComparisonInput, reportPath string) (*string, error) {
 	path := s.getReportPath(reportPath, "cost")
 
 	m := maroto.New()
@@ -38,7 +40,7 @@ func (s *service) GenerateCostComparisonReport(input model.RenderCostComparisonI
 	return s.generateAndSave(m, path)
 }
 
-func (s *service) GenerateTrendReport(accountID string, costInfo []model.CostInfo, services []string, reportPath string) error {
+func (s *service) GenerateTrendReport(accountID string, costInfo []model.CostInfo, services []string, reportPath string) (*string, error) {
 	path := s.getReportPath(reportPath, "trend")
 
 	m := maroto.New()
@@ -46,7 +48,7 @@ func (s *service) GenerateTrendReport(accountID string, costInfo []model.CostInf
 	s.addHeader(m, TrendReport, accountID)
 
 	if err := s.addTrendContent(m, costInfo, services); err != nil {
-		return err
+		return nil, err
 	}
 
 	s.addFooter(m, TrendReport)
@@ -54,9 +56,8 @@ func (s *service) GenerateTrendReport(accountID string, costInfo []model.CostInf
 	return s.generateAndSave(m, path)
 }
 
-func (s *service) GenerateWasteReport(input model.RenderWasteInput, reportPath string) error {
+func (s *service) GenerateWasteReport(input model.RenderWasteInput, reportPath string) (*string, error) {
 	path := s.getReportPath(reportPath, "waste")
-	fmt.Printf("Generating waste report at: %s\n", path)
 
 	m := maroto.New()
 
@@ -87,22 +88,39 @@ func (s *service) getReportPath(reportPath, flow string) string {
 		return reportPath
 	}
 
+	home, err := os.UserHomeDir()
+	if err != nil {
+		home = "."
+	}
+
+	documents := filepath.Join(home, "Documents")
+	// If Documents folder doesn't exist (some Linux distros), use home
+	if _, err := os.Stat(documents); os.IsNotExist(err) {
+		documents = home
+	}
+
 	timestamp := time.Now().Format("20060102-150405")
-	return fmt.Sprintf("aws-doctor-%s-%s.pdf", flow, timestamp)
+	fileName := fmt.Sprintf("aws-doctor-%s-%s.pdf", flow, timestamp)
+	return filepath.Join(documents, fileName)
 }
 
-func (s *service) generateAndSave(m core.Maroto, path string) error {
+func (s *service) generateAndSave(m core.Maroto, path string) (*string, error) {
+	absPath, err := filepath.Abs(path)
+	if err != nil {
+		absPath = path
+	}
+
 	document, err := m.Generate()
 	if err != nil {
-		return fmt.Errorf("failed to generate PDF: %w", err)
+		return nil, fmt.Errorf("failed to generate PDF: %w", err)
 	}
 
-	err = document.Save(path)
+	err = document.Save(absPath)
 	if err != nil {
-		return fmt.Errorf("failed to save PDF: %w", err)
+		return nil, fmt.Errorf("failed to save PDF: %w", err)
 	}
 
-	return nil
+	return &absPath, nil
 }
 
 func (s *service) formatDateToMonthYear(dateStr *string) string {

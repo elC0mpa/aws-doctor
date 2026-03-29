@@ -26,8 +26,6 @@ var trendCmd = &cobra.Command{
 			Region:      region,
 			Profile:     profile,
 			Output:      outputFormat,
-			Report:      reportPath != "",
-			ReportPath:  reportPath,
 			Trend:       true,
 			TrendChecks: parsedChecks,
 		}

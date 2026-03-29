@@ -622,10 +622,11 @@ func TestOrchestrate_RouteToReportWorkflow(t *testing.T) {
                 Account: aws.String("123456789012"),
         }, nil)
         mockOutput.On("StopSpinner").Return()
-        mockOutput.On("RenderCostComparison", mock.Anything).Return(nil)
         
         // Mock report call
-        mockReport.On("GenerateCostComparisonReport", mock.Anything, "report.html").Return(nil)
+        reportPath := "report.pdf"
+        mockReport.On("GenerateCostComparisonReport", mock.Anything, "report.html").Return(&reportPath, nil)
+        mockOutput.On("PrintReportSuccess", reportPath).Return()
 
         // Execute with Report flag
         flags := model.Flags{Report: true, ReportPath: "report.html"}
@@ -637,4 +638,6 @@ func TestOrchestrate_RouteToReportWorkflow(t *testing.T) {
         mockSTS.AssertExpectations(t)
         mockOutput.AssertExpectations(t)
         mockReport.AssertExpectations(t)
+        // Verify RenderCostComparison was NOT called
+        mockOutput.AssertNotCalled(t, "RenderCostComparison", mock.Anything)
 }

@@ -19,11 +19,11 @@ const (
 // Service defines the interface for generating PDF reports.
 type Service interface {
 	// GenerateCostComparisonReport creates a PDF report for cost comparison.
-	GenerateCostComparisonReport(input model.RenderCostComparisonInput, reportPath string) error
+	GenerateCostComparisonReport(input model.RenderCostComparisonInput, reportPath string) (*string, error)
 
 	// GenerateTrendReport creates a PDF report for cost trends.
-	GenerateTrendReport(accountID string, costInfo []model.CostInfo, services []string, reportPath string) error
+	GenerateTrendReport(accountID string, costInfo []model.CostInfo, services []string, reportPath string) (*string, error)
 
 	// GenerateWasteReport creates a PDF report for AWS waste detection.
-	GenerateWasteReport(input model.RenderWasteInput, reportPath string) error
+	GenerateWasteReport(input model.RenderWasteInput, reportPath string) (*string, error)
 }

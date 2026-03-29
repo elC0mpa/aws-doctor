@@ -78,13 +78,13 @@ func TestGetReportPath(t *testing.T) {
 
 	t.Run("DefaultPath", func(t *testing.T) {
 		result := s.getReportPath("DEFAULT", "cost")
-		assert.True(t, strings.HasPrefix(result, "aws-doctor-cost-"))
+		assert.True(t, strings.Contains(result, "aws-doctor-cost-"))
 		assert.True(t, strings.HasSuffix(result, ".pdf"))
 	})
 
 	t.Run("EmptyPath", func(t *testing.T) {
 		result := s.getReportPath("", "waste")
-		assert.True(t, strings.HasPrefix(result, "aws-doctor-waste-"))
+		assert.True(t, strings.Contains(result, "aws-doctor-waste-"))
 		assert.True(t, strings.HasSuffix(result, ".pdf"))
 	})
 }
@@ -142,9 +142,11 @@ func TestGenerateReports(t *testing.T) {
 			},
 		}
 
-		err := s.GenerateCostComparisonReport(input, path)
+		absPath, _ := filepath.Abs(path)
+		gotPath, err := s.GenerateCostComparisonReport(input, path)
 		assert.NoError(t, err)
-		_, err = os.Stat(path)
+		assert.Equal(t, absPath, *gotPath)
+		_, err = os.Stat(absPath)
 		assert.NoError(t, err)
 	})
 
@@ -214,9 +216,11 @@ func TestGenerateReports(t *testing.T) {
 			},
 		}
 
-		err := s.GenerateWasteReport(input, path)
+		absPath, _ := filepath.Abs(path)
+		gotPath, err := s.GenerateWasteReport(input, path)
 		assert.NoError(t, err)
-		_, err = os.Stat(path)
+		assert.Equal(t, absPath, *gotPath)
+		_, err = os.Stat(absPath)
 		assert.NoError(t, err)
 	})
 
@@ -226,9 +230,11 @@ func TestGenerateReports(t *testing.T) {
 			AccountID: "123456789012",
 		}
 
-		err := s.GenerateWasteReport(input, path)
+		absPath, _ := filepath.Abs(path)
+		gotPath, err := s.GenerateWasteReport(input, path)
 		assert.NoError(t, err)
-		_, err = os.Stat(path)
+		assert.Equal(t, absPath, *gotPath)
+		_, err = os.Stat(absPath)
 		assert.NoError(t, err)
 	})
 
@@ -241,9 +247,11 @@ func TestGenerateReports(t *testing.T) {
 			},
 		}
 
-		err := s.GenerateTrendReport("123456789012", costInfo, []string{}, path)
+		absPath, _ := filepath.Abs(path)
+		gotPath, err := s.GenerateTrendReport("123456789012", costInfo, []string{}, path)
 		assert.NoError(t, err)
-		_, err = os.Stat(path)
+		assert.Equal(t, absPath, *gotPath)
+		_, err = os.Stat(absPath)
 		assert.NoError(t, err)
 	})
 
@@ -256,9 +264,11 @@ func TestGenerateReports(t *testing.T) {
 			},
 		}
 
-		err := s.GenerateTrendReport("123456789012", costInfo, []string{"s3"}, path)
+		absPath, _ := filepath.Abs(path)
+		gotPath, err := s.GenerateTrendReport("123456789012", costInfo, []string{"s3"}, path)
 		assert.NoError(t, err)
-		_, err = os.Stat(path)
+		assert.Equal(t, absPath, *gotPath)
+		_, err = os.Stat(absPath)
 		assert.NoError(t, err)
 	})
 
@@ -278,8 +288,9 @@ func TestGenerateReports(t *testing.T) {
 			},
 		}
 
-		err := s.GenerateCostComparisonReport(input, path)
+		gotPath, err := s.GenerateCostComparisonReport(input, path)
 		assert.Error(t, err)
+		assert.Nil(t, gotPath)
 		assert.Contains(t, err.Error(), "failed to save PDF")
 	})
 }

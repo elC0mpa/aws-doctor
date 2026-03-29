@@ -31,7 +31,13 @@ func (s *service) GetCurrentMonthCostsByService(ctx context.Context) (*model.Cos
 }
 
 func (s *service) GetLastMonthCostsByService(ctx context.Context) (*model.CostInfo, error) {
-	oneMonthAgo := time.Now().AddDate(0, -1, 0)
+	now := time.Now()
+	oneMonthAgo := now.AddDate(0, -1, 0)
+
+	if now.Month() == oneMonthAgo.Month() {
+		oneMonthAgo = s.getLastDayOfMonth(oneMonthAgo.AddDate(0, -1, 0))
+	}
+
 	return s.GetMonthCostsByService(ctx, oneMonthAgo)
 }
 

@@ -15,11 +15,9 @@ var costCmd = &cobra.Command{
 		}
 
 		flags := model.Flags{
-			Region:     region,
-			Profile:    profile,
-			Output:     outputFormat,
-			Report:     reportPath != "",
-			ReportPath: reportPath,
+			Region:  region,
+			Profile: profile,
+			Output:  outputFormat,
 		}
 
 		return orch.Orchestrate(flags)
