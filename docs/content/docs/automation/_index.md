@@ -1,9 +1,9 @@
 ---
 title: "Automation & CI/CD"
 description: "Integrate AWS Doctor into your automated workflows using JSON output and CI/CD pipelines like GitHub Actions or Jenkins."
-weight: 50
+weight: 60
 type: docs
-prev: /docs/waste-detection
+prev: /docs/reporting
 ---
 
 **AWS Doctor** is designed to be part of a larger ecosystem. With native JSON support, you can integrate it into your automated workflows.

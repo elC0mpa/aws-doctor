@@ -3,7 +3,7 @@ title: "Detección de Desperdicio"
 weight: 40
 type: docs
 prev: /docs/cost-analytics
-next: /docs/automation
+next: /docs/reporting
 sidebar:
   collapsed: false
 ---

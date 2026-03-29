@@ -44,7 +44,7 @@ layout: "hextra-home"
 
 <div class="hx:mt-4"></div>
 
-{{< hextra/feature-grid cols="4" >}}
+{{< hextra/feature-grid cols="3" >}}
   {{< hextra/feature-card
     icon="trending-up"
     title="Cost Analytics"
@@ -55,6 +55,12 @@ layout: "hextra-home"
     icon="trash"
     title="Zombie Discovery"
     subtitle="Get a high-level health check of your entire AWS account. The tool scans multiple services simultaneously to identify idle, unattached, and forgotten resources, providing a unified view of infrastructure waste in seconds."
+  >}}
+
+  {{< hextra/feature-card
+    icon="printer"
+    title="PDF Reporting"
+    subtitle="Generate professional, brandable PDF reports for stakeholders. AWS Doctor can now export all audit findings, cost trends, and waste summaries into a clean, ready-to-share document."
   >}}
 
   {{< hextra/feature-card

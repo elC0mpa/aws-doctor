@@ -41,6 +41,12 @@ Welcome to the **AWS Doctor** documentation. This guide will help you set up, co
     link="automation/"
     subtitle="Guide to JSON output and integration with GitHub Actions or Jenkins."
   >}}
+  {{< hextra/feature-card
+    icon="printer"
+    title="PDF Reporting"
+    link="reporting/"
+    subtitle="Generate professional, brandable PDF reports for stakeholders with one command."
+  >}}
 {{< /hextra/feature-grid >}}
 
 ## Quick Context

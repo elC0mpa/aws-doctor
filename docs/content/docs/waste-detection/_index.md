@@ -4,7 +4,7 @@ description: "Scan your AWS account for 'zombie' resources. Learn about the dete
 weight: 40
 type: docs
 prev: /docs/cost-analytics
-next: /docs/automation
+next: /docs/reporting
 sidebar:
   collapsed: false
 ---
