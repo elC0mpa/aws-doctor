@@ -27,18 +27,44 @@ func NewService(awsconfig aws.Config) Service {
 }
 
 func (s *service) GetCurrentMonthCostsByService(ctx context.Context) (*model.CostInfo, error) {
-	return s.GetMonthCostsByService(ctx, time.Now())
+	now := time.Now()
+	// AWS TimePeriod End is exclusive. To include today, we must use tomorrow in the API.
+	tomorrow := now.AddDate(0, 0, 1)
+	
+	costInfo, err := s.GetMonthCostsByService(ctx, tomorrow)
+	if err != nil {
+		return nil, err
+	}
+
+	// Adjust the metadata so the UI shows today as the end date
+	costInfo.DateInterval.End = aws.String(now.Format("2006-01-02"))
+	return costInfo, nil
 }
 
 func (s *service) GetLastMonthCostsByService(ctx context.Context) (*model.CostInfo, error) {
 	now := time.Now()
-	oneMonthAgo := now.AddDate(0, -1, 0)
+	firstOfCurrentMonth := s.getFirstDayOfMonth(now)
+	firstOfLastMonth := firstOfCurrentMonth.AddDate(0, -1, 0)
+	lastOfLastMonth := s.getLastDayOfMonth(firstOfLastMonth)
 
-	if now.Month() == oneMonthAgo.Month() {
-		oneMonthAgo = s.getLastDayOfMonth(oneMonthAgo.AddDate(0, -1, 0))
+	day := now.Day()
+	if day > lastOfLastMonth.Day() {
+		day = lastOfLastMonth.Day()
 	}
 
-	return s.GetMonthCostsByService(ctx, oneMonthAgo)
+	// To include 'day', we use 'day + 1' as the exclusive end date for the API
+	endOfLastMonthAPI := firstOfLastMonth.AddDate(0, 0, day)
+	
+	costInfo, err := s.getCostsByPeriod(ctx, firstOfLastMonth, endOfLastMonthAPI)
+	if err != nil {
+		return nil, err
+	}
+
+	// Adjust metadata so the UI shows the intended day
+	displayEnd := firstOfLastMonth.AddDate(0, 0, day-1)
+	costInfo.DateInterval.End = aws.String(displayEnd.Format("2006-01-02"))
+
+	return costInfo, nil
 }
 
 func (s *service) GetMonthCostsByService(ctx context.Context, endDate time.Time) (*model.CostInfo, error) {
@@ -47,13 +73,29 @@ func (s *service) GetMonthCostsByService(ctx context.Context, endDate time.Time)
 	}
 
 	firstOfMonth := s.getFirstDayOfMonth(endDate)
-	firstOfMonthStr := firstOfMonth.Format("2006-01-02")
+
+	return s.getCostsByPeriod(ctx, firstOfMonth, endDate)
+}
+
+func (s *service) getCostsByPeriod(ctx context.Context, start, end time.Time) (*model.CostInfo, error) {
+	startStr := start.Format("2006-01-02")
+	endStr := end.Format("2006-01-02")
+
+	if startStr == endStr {
+		return &model.CostInfo{
+			CostGroup: make(model.CostGroup),
+			DateInterval: types.DateInterval{
+				Start: aws.String(startStr),
+				End:   aws.String(endStr),
+			},
+		}, nil
+	}
 
 	input := &costexplorer.GetCostAndUsageInput{
 		Granularity: types.GranularityMonthly,
 		TimePeriod: &types.DateInterval{
-			Start: aws.String(firstOfMonthStr),
-			End:   aws.String(endDate.Format("2006-01-02")),
+			Start: aws.String(startStr),
+			End:   aws.String(endStr),
 		},
 		Metrics: []string{unblendedCost},
 		GroupBy: []types.GroupDefinition{
@@ -69,6 +111,16 @@ func (s *service) GetMonthCostsByService(ctx context.Context, endDate time.Time)
 		return nil, err
 	}
 
+	if len(output.ResultsByTime) == 0 {
+		return &model.CostInfo{
+			CostGroup: make(model.CostGroup),
+			DateInterval: types.DateInterval{
+				Start: aws.String(startStr),
+				End:   aws.String(endStr),
+			},
+		}, nil
+	}
+
 	return &model.CostInfo{
 		CostGroup:    s.filterGroups(output.ResultsByTime[0].Groups, unblendedCost),
 		DateInterval: *output.ResultsByTime[0].TimePeriod,
@@ -76,22 +128,40 @@ func (s *service) GetMonthCostsByService(ctx context.Context, endDate time.Time)
 }
 
 func (s *service) GetCurrentMonthTotalCosts(ctx context.Context) (*string, error) {
-	return s.GetMonthTotalCosts(ctx, time.Now())
+	now := time.Now()
+	// AWS TimePeriod End is exclusive. To include today, we must use tomorrow in the API.
+	tomorrow := now.AddDate(0, 0, 1)
+	return s.getTotalCostsByPeriod(ctx, s.getFirstDayOfMonth(now), tomorrow)
 }
 
 func (s *service) GetLastMonthTotalCosts(ctx context.Context) (*string, error) {
-	return s.GetMonthTotalCosts(ctx, time.Now().AddDate(0, -1, 0))
+	now := time.Now()
+	firstOfCurrentMonth := s.getFirstDayOfMonth(now)
+	firstOfLastMonth := firstOfCurrentMonth.AddDate(0, -1, 0)
+	lastOfLastMonth := s.getLastDayOfMonth(firstOfLastMonth)
+
+	day := now.Day()
+	if day > lastOfLastMonth.Day() {
+		day = lastOfLastMonth.Day()
+	}
+
+	// To include 'day', we use 'day + 1' as the exclusive end date for the API
+	endOfLastMonthAPI := firstOfLastMonth.AddDate(0, 0, day)
+
+	return s.getTotalCostsByPeriod(ctx, firstOfLastMonth, endOfLastMonthAPI)
 }
 
 func (s *service) GetLastSixMonthsCosts(ctx context.Context, services []string) ([]model.CostInfo, error) {
-	firstOfMonth := s.getFirstDayOfMonth(time.Now().AddDate(0, -6, 0))
+	now := time.Now()
+	firstOfCurrentMonth := s.getFirstDayOfMonth(now)
+	firstOfMonth := firstOfCurrentMonth.AddDate(0, -6, 0)
 	firstOfMonthStr := firstOfMonth.Format("2006-01-02")
 
 	input := &costexplorer.GetCostAndUsageInput{
 		Granularity: types.GranularityMonthly,
 		TimePeriod: &types.DateInterval{
 			Start: aws.String(firstOfMonthStr),
-			End:   aws.String(s.getFirstDayOfMonth(time.Now()).Format("2006-01-02")),
+			End:   aws.String(firstOfCurrentMonth.Format("2006-01-02")),
 		},
 		Metrics: []string{unblendedCost},
 	}
@@ -139,13 +209,24 @@ func (s *service) GetLastSixMonthsCosts(ctx context.Context, services []string) 
 
 func (s *service) GetMonthTotalCosts(ctx context.Context, endDate time.Time) (*string, error) {
 	firstOfMonth := s.getFirstDayOfMonth(endDate)
-	firstOfMonthStr := firstOfMonth.Format("2006-01-02")
+
+	return s.getTotalCostsByPeriod(ctx, firstOfMonth, endDate)
+}
+
+func (s *service) getTotalCostsByPeriod(ctx context.Context, start, end time.Time) (*string, error) {
+	startStr := start.Format("2006-01-02")
+	endStr := end.Format("2006-01-02")
+
+	if startStr == endStr {
+		zero := "0.00 USD"
+		return &zero, nil
+	}
 
 	input := &costexplorer.GetCostAndUsageInput{
 		Granularity: types.GranularityMonthly,
 		TimePeriod: &types.DateInterval{
-			Start: aws.String(firstOfMonthStr),
-			End:   aws.String(endDate.Format("2006-01-02")),
+			Start: aws.String(startStr),
+			End:   aws.String(endStr),
 		},
 		Metrics: []string{unblendedCost},
 	}
