@@ -36,6 +36,9 @@ A terminal-based tool that acts as a comprehensive health check for your AWS acc
 
 `aws-doctor` can now generate detailed, professional PDF reports ready for stakeholders. Reports include branded headers, styled tables, and comprehensive cost/waste analyses.
 
+> [!TIP]
+> **View PDF reporting examples and details at [awsdoctor.compacompila.com/docs/reporting/](https://awsdoctor.compacompila.com/docs/reporting/)**
+
 ### Generate a Cost Comparison Report
 ```bash
 aws-doctor report cost
