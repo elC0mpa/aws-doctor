@@ -1,6 +1,7 @@
 package report
 
 import (
+	_ "embed"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -14,10 +15,14 @@ import (
 	"github.com/johnfercher/maroto/v2/pkg/components/line"
 	"github.com/johnfercher/maroto/v2/pkg/components/text"
 	"github.com/johnfercher/maroto/v2/pkg/consts/align"
+	"github.com/johnfercher/maroto/v2/pkg/consts/extension"
 	"github.com/johnfercher/maroto/v2/pkg/consts/fontstyle"
 	"github.com/johnfercher/maroto/v2/pkg/core"
 	"github.com/johnfercher/maroto/v2/pkg/props"
 )
+
+//go:embed assets/logo-pdf.png
+var logoBytes []byte
 
 type service struct{}
 
@@ -184,7 +189,7 @@ func (s *service) addHeader(m core.Maroto, reportType Type, accountID string) {
 	}
 
 	m.AddRow(15,
-		image.NewFromFileCol(3, "assets/logo-pdf.png"),
+		image.NewFromBytesCol(3, logoBytes, extension.Png),
 		text.NewCol(6, title, props.Text{
 			Size:  16,
 			Style: fontstyle.Bold,
@@ -197,12 +202,14 @@ func (s *service) addHeader(m core.Maroto, reportType Type, accountID string) {
 			Top:   7,
 		}),
 	)
+
 	m.AddRow(10,
 		text.NewCol(12, fmt.Sprintf("Account ID: %s", accountID), props.Text{
 			Size:  12,
 			Align: align.Center,
 		}),
 	)
+
 	m.AddRow(5, line.NewCol(12))
 }
 
