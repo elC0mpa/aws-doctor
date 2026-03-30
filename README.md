@@ -5,6 +5,10 @@
 </p>
 
 <p align="center">
+  <a href="https://github.com/avelino/awesome-go"><img src="https://awesome.re/mentioned-badge.svg" alt="awesome-go"></a>
+</p>
+
+<p align="center">
   <a href="https://github.com/elC0mpa/aws-doctor/blob/main/go.mod"><img src="https://img.shields.io/github/go-mod/go-version/elC0mpa/aws-doctor" alt="Go Version"></a>
   <a href="https://pkg.go.dev/github.com/elC0mpa/aws-doctor"><img src="https://pkg.go.dev/badge/github.com/elC0mpa/aws-doctor.svg" alt="Go Reference"></a>
   <a href="https://goreportcard.com/report/github.com/elC0mpa/aws-doctor"><img src="https://goreportcard.com/badge/github.com/elC0mpa/aws-doctor" alt="Go Report Card"></a>
