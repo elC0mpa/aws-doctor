@@ -20,6 +20,7 @@ func NewService(awsconfig aws.Config) Service {
 
 	return &service{
 		client: client,
+		region: awsconfig.Region,
 	}
 }
 
@@ -33,7 +34,9 @@ func (s *service) GetS3Waste(ctx context.Context) ([]model.S3BucketWasteInfo, []
 	g, ctx := errgroup.WithContext(ctx)
 	g.SetLimit(10) // Limit concurrency to avoid hitting rate limits
 
-	paginator := s3.NewListBucketsPaginator(s.client, &s3.ListBucketsInput{})
+	paginator := s3.NewListBucketsPaginator(s.client, &s3.ListBucketsInput{
+		BucketRegion: &s.region,
+	})
 
 	for paginator.HasMorePages() {
 		output, err := paginator.NextPage(ctx)
@@ -46,15 +49,10 @@ func (s *service) GetS3Waste(ctx context.Context) ([]model.S3BucketWasteInfo, []
 			creationDate := bucket.CreationDate
 
 			g.Go(func() error {
-				regionOpt, err := s.regionOptForBucket(ctx, bucketName)
-				if err != nil {
-					return fmt.Errorf("failed to get location for bucket %s: %w", aws.ToString(bucketName), err)
-				}
-
 				// Check Lifecycle Policy
-				_, err = s.client.GetBucketLifecycleConfiguration(ctx, &s3.GetBucketLifecycleConfigurationInput{
+				_, err := s.client.GetBucketLifecycleConfiguration(ctx, &s3.GetBucketLifecycleConfigurationInput{
 					Bucket: bucketName,
-				}, regionOpt)
+				})
 				if err != nil {
 					var apiErr smithy.APIError
 					if errors.As(err, &apiErr) {
@@ -73,7 +71,7 @@ func (s *service) GetS3Waste(ctx context.Context) ([]model.S3BucketWasteInfo, []
 				}
 
 				// Check Incomplete Multipart Uploads
-				uploadCount, err := s.countMultipartUploads(ctx, bucketName, regionOpt)
+				uploadCount, err := s.countMultipartUploads(ctx, bucketName)
 				if err != nil {
 					return fmt.Errorf("failed to count multipart uploads for bucket %s: %w", aws.ToString(bucketName), err)
 				}
@@ -101,23 +99,7 @@ func (s *service) GetS3Waste(ctx context.Context) ([]model.S3BucketWasteInfo, []
 	return bucketsWithoutPolicy, bucketsWithMultipart, nil
 }
 
-func (s *service) regionOptForBucket(ctx context.Context, bucketName *string) (func(*s3.Options), error) {
-	loc, err := s.client.GetBucketLocation(ctx, &s3.GetBucketLocationInput{
-		Bucket: bucketName,
-	})
-	if err != nil {
-		return nil, err
-	}
-
-	region := string(loc.LocationConstraint)
-	if region == "" {
-		region = "us-east-1"
-	}
-
-	return func(o *s3.Options) { o.Region = region }, nil
-}
-
-func (s *service) countMultipartUploads(ctx context.Context, bucketName *string, optFn func(*s3.Options)) (int, error) {
+func (s *service) countMultipartUploads(ctx context.Context, bucketName *string) (int, error) {
 	paginator := s3.NewListMultipartUploadsPaginator(s.client, &s3.ListMultipartUploadsInput{
 		Bucket: bucketName,
 	})
@@ -125,7 +107,7 @@ func (s *service) countMultipartUploads(ctx context.Context, bucketName *string,
 	uploadCount := 0
 
 	for paginator.HasMorePages() {
-		output, err := paginator.NextPage(ctx, optFn)
+		output, err := paginator.NextPage(ctx)
 		if err != nil {
 			return 0, err
 		}
