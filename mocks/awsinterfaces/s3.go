@@ -22,6 +22,16 @@ func (m *MockS3Client) ListBuckets(ctx context.Context, params *s3.ListBucketsIn
 	return args.Get(0).(*s3.ListBucketsOutput), args.Error(1)
 }
 
+// GetBucketLocation mocks the GetBucketLocation API call.
+func (m *MockS3Client) GetBucketLocation(ctx context.Context, params *s3.GetBucketLocationInput, optFns ...func(*s3.Options)) (*s3.GetBucketLocationOutput, error) {
+	args := m.Called(ctx, params, optFns)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+
+	return args.Get(0).(*s3.GetBucketLocationOutput), args.Error(1)
+}
+
 // GetBucketLifecycleConfiguration mocks the GetBucketLifecycleConfiguration API call.
 func (m *MockS3Client) GetBucketLifecycleConfiguration(ctx context.Context, params *s3.GetBucketLifecycleConfigurationInput, optFns ...func(*s3.Options)) (*s3.GetBucketLifecycleConfigurationOutput, error) {
 	args := m.Called(ctx, params, optFns)

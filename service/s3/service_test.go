@@ -29,6 +29,7 @@ func TestGetS3Waste_MultipartError(t *testing.T) {
 			{Name: aws.String("test-bucket"), CreationDate: aws.Time(time.Now())},
 		},
 	}, nil)
+	mockClient.On("GetBucketLocation", mock.Anything, mock.Anything, mock.Anything).Return(&s3.GetBucketLocationOutput{}, nil)
 	mockClient.On("GetBucketLifecycleConfiguration", mock.Anything, mock.Anything, mock.Anything).Return(&s3.GetBucketLifecycleConfigurationOutput{}, nil)
 	mockClient.On("ListMultipartUploads", mock.Anything, mock.Anything, mock.Anything).Return((*s3.ListMultipartUploadsOutput)(nil), errors.New("multipart error"))
 
@@ -58,6 +59,7 @@ func TestGetS3Waste(t *testing.T) {
 						{Name: aws.String("waste-bucket"), CreationDate: &creationDate},
 					},
 				}, nil)
+				m.On("GetBucketLocation", mock.Anything, mock.Anything, mock.Anything).Return(&s3.GetBucketLocationOutput{}, nil)
 				// Lifecycle check
 				m.On("GetBucketLifecycleConfiguration", mock.Anything, mock.Anything, mock.Anything).Return((*s3.GetBucketLifecycleConfigurationOutput)(nil), &smithy.GenericAPIError{
 					Code: "NoSuchLifecycleConfiguration",
@@ -81,6 +83,7 @@ func TestGetS3Waste(t *testing.T) {
 						{Name: aws.String("clean-bucket"), CreationDate: &creationDate},
 					},
 				}, nil)
+				m.On("GetBucketLocation", mock.Anything, mock.Anything, mock.Anything).Return(&s3.GetBucketLocationOutput{}, nil)
 				// Lifecycle check - success means it has policy
 				m.On("GetBucketLifecycleConfiguration", mock.Anything, mock.Anything, mock.Anything).Return(&s3.GetBucketLifecycleConfigurationOutput{}, nil)
 				// Multipart check - empty means no waste
