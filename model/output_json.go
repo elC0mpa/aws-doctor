@@ -137,6 +137,7 @@ type ElasticIPJSON struct {
 // EBSVolumeJSON represents an EBS volume
 type EBSVolumeJSON struct {
 	VolumeID             string  `json:"volume_id"`
+	AttachedInstanceID   string  `json:"attached_instance_id,omitempty"`
 	Size                 int32   `json:"size_gib"`
 	Status               string  `json:"status"`
 	EstimatedMonthlyCost float64 `json:"estimated_monthly_cost"`

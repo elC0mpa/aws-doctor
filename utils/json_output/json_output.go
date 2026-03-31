@@ -173,12 +173,18 @@ func mapEBSVolumes(volumes []types.Volume, status string) []model.EBSVolumeJSON 
 	for _, vol := range volumes {
 		size := aws.ToInt32(vol.Size)
 
-		result = append(result, model.EBSVolumeJSON{
+		entry := model.EBSVolumeJSON{
 			VolumeID:             aws.ToString(vol.VolumeId),
 			Size:                 size,
 			Status:               status,
 			EstimatedMonthlyCost: pricing.CalculateEBSMonthlyCost(size, vol.VolumeType),
-		})
+		}
+
+		if len(vol.Attachments) > 0 && vol.Attachments[0].InstanceId != nil {
+			entry.AttachedInstanceID = aws.ToString(vol.Attachments[0].InstanceId)
+		}
+
+		result = append(result, entry)
 	}
 
 	return result

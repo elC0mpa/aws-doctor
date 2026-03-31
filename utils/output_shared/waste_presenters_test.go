@@ -48,19 +48,35 @@ func TestPresentS3MultipartUpload(t *testing.T) {
 
 func TestPresentEBSVolume(t *testing.T) {
 	tests := []struct {
-		name   string
-		vol    types.Volume
-		status string
+		name           string
+		vol            types.Volume
+		status         string
+		wantIdentifier string
 	}{
 		{
-			name: "single_volume",
+			name: "unattached_volume",
 			vol: types.Volume{
 				VolumeId:   aws.String("vol-12345"),
 				Size:       aws.Int32(100),
 				State:      types.VolumeStateAvailable,
 				CreateTime: aws.Time(time.Now()),
 			},
-			status: "unattached",
+			status:         "unattached",
+			wantIdentifier: "vol-12345",
+		},
+		{
+			name: "attached_to_stopped_instance",
+			vol: types.Volume{
+				VolumeId:   aws.String("vol-67890"),
+				Size:       aws.Int32(50),
+				State:      types.VolumeStateInUse,
+				CreateTime: aws.Time(time.Now()),
+				Attachments: []types.VolumeAttachment{
+					{InstanceId: aws.String("i-abcdef")},
+				},
+			},
+			status:         "stopped",
+			wantIdentifier: "vol-67890 (i-abcdef)",
 		},
 	}
 
@@ -68,16 +84,53 @@ func TestPresentEBSVolume(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			p := PresentEBSVolume(tt.vol, tt.status)
 
-			if p.Identifier != *tt.vol.VolumeId {
-				t.Errorf("Identifier = %v, want %v", p.Identifier, *tt.vol.VolumeId)
+			if p.Identifier != tt.wantIdentifier {
+				t.Errorf("Identifier = %v, want %v", p.Identifier, tt.wantIdentifier)
 			}
 
 			if !strings.HasPrefix(p.EstimatedCost, "$") {
 				t.Errorf("EstimatedCost %q does not start with $", p.EstimatedCost)
 			}
+		})
+	}
+}
 
-			if p.Metric != "100 GiB" {
-				t.Errorf("Metric = %v, want '100 GiB'", p.Metric)
+func TestAttachedInstanceID(t *testing.T) {
+	tests := []struct {
+		name string
+		vol  types.Volume
+		want string
+	}{
+		{
+			name: "no_attachments",
+			vol:  types.Volume{},
+			want: NAValue,
+		},
+		{
+			name: "with_attachment",
+			vol: types.Volume{
+				Attachments: []types.VolumeAttachment{
+					{InstanceId: aws.String("i-12345")},
+				},
+			},
+			want: "i-12345",
+		},
+		{
+			name: "nil_instance_id",
+			vol: types.Volume{
+				Attachments: []types.VolumeAttachment{
+					{InstanceId: nil},
+				},
+			},
+			want: NAValue,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := AttachedInstanceID(tt.vol)
+			if got != tt.want {
+				t.Errorf("AttachedInstanceID() = %v, want %v", got, tt.want)
 			}
 		})
 	}

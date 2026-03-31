@@ -48,16 +48,31 @@ func PresentElasticIP(ip types.Address) ResourceRow {
 	}
 }
 
-// PresentEBSVolume returns a ResourceRow for an EBS volume
+// PresentEBSVolume returns a ResourceRow for an EBS volume.
+// When the volume is attached to an instance, the instance ID is appended to the identifier.
 func PresentEBSVolume(vol types.Volume, status string) ResourceRow {
+	identifier := aws.ToString(vol.VolumeId)
+	if instanceID := AttachedInstanceID(vol); instanceID != NAValue {
+		identifier = fmt.Sprintf("%s (%s)", identifier, instanceID)
+	}
+
 	return ResourceRow{
 		Category:      fmt.Sprintf("EBS Volume (%s)", status),
-		Identifier:    aws.ToString(vol.VolumeId),
+		Identifier:    identifier,
 		EstimatedCost: fmt.Sprintf("$%.2f", pricing.CalculateEBSMonthlyCost(aws.ToInt32(vol.Size), vol.VolumeType)),
 		Metric:        fmt.Sprintf("%d GiB", aws.ToInt32(vol.Size)),
 		Age:           NAValue,
 		Details:       fmt.Sprintf("State: %s, Created on %s", vol.State, vol.CreateTime.Format(time.RFC3339)),
 	}
+}
+
+// AttachedInstanceID returns the instance ID a volume is attached to, or NAValue if none.
+func AttachedInstanceID(vol types.Volume) string {
+	if len(vol.Attachments) > 0 && vol.Attachments[0].InstanceId != nil {
+		return aws.ToString(vol.Attachments[0].InstanceId)
+	}
+
+	return NAValue
 }
 
 // PresentStoppedInstance returns a ResourceRow for a stopped EC2 instance
