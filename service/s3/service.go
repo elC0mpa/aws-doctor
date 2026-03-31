@@ -20,7 +20,6 @@ func NewService(awsconfig aws.Config) Service {
 
 	return &service{
 		client: client,
-		region: awsconfig.Region,
 	}
 }
 
@@ -35,8 +34,8 @@ func (s *service) GetS3Waste(ctx context.Context) ([]model.S3BucketWasteInfo, []
 	g.SetLimit(10) // Limit concurrency to avoid hitting rate limits
 
 	input := &s3.ListBucketsInput{}
-	if s.region != "" {
-		input.BucketRegion = &s.region
+	if region := s.client.Options().Region; region != "" {
+		input.BucketRegion = &region
 	}
 
 	paginator := s3.NewListBucketsPaginator(s.client, input)

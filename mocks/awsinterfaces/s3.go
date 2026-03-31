@@ -12,6 +12,13 @@ type MockS3Client struct {
 	mock.Mock
 }
 
+// Options mocks the Options method.
+func (m *MockS3Client) Options() s3.Options {
+	args := m.Called()
+
+	return args.Get(0).(s3.Options)
+}
+
 // ListBuckets mocks the ListBuckets API call.
 func (m *MockS3Client) ListBuckets(ctx context.Context, params *s3.ListBucketsInput, optFns ...func(*s3.Options)) (*s3.ListBucketsOutput, error) {
 	args := m.Called(ctx, params, optFns)

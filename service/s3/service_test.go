@@ -24,6 +24,7 @@ func TestGetS3Waste_MultipartError(t *testing.T) {
 	ctx := context.Background()
 	mockClient := new(awsinterfaces.MockS3Client)
 
+	mockClient.On("Options").Return(s3.Options{Region: "us-east-1"})
 	mockClient.On("ListBuckets", mock.Anything, mock.Anything, mock.Anything).Return(&s3.ListBucketsOutput{
 		Buckets: []types.Bucket{
 			{Name: aws.String("test-bucket"), CreationDate: aws.Time(time.Now())},
@@ -106,6 +107,7 @@ func TestGetS3Waste(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			mockClient := new(awsinterfaces.MockS3Client)
+			mockClient.On("Options").Return(s3.Options{Region: "us-east-1"})
 			tt.setupMocks(mockClient)
 
 			svc := &service{client: mockClient}
