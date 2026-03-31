@@ -45,11 +45,21 @@ func (s *service) GetS3Waste(ctx context.Context) ([]model.S3BucketWasteInfo, []
 			bucketName := bucket.Name
 			creationDate := bucket.CreationDate
 
+			var regionOptFns []func(*s3.Options)
+
+			if bucket.BucketRegion != nil {
+				region := *bucket.BucketRegion
+
+				regionOptFns = append(regionOptFns, func(o *s3.Options) {
+					o.Region = region
+				})
+			}
+
 			g.Go(func() error {
 				// Check Lifecycle Policy
 				_, err := s.client.GetBucketLifecycleConfiguration(ctx, &s3.GetBucketLifecycleConfigurationInput{
 					Bucket: bucketName,
-				})
+				}, regionOptFns...)
 				if err != nil {
 					var apiErr smithy.APIError
 					if errors.As(err, &apiErr) {
@@ -68,7 +78,7 @@ func (s *service) GetS3Waste(ctx context.Context) ([]model.S3BucketWasteInfo, []
 				}
 
 				// Check Incomplete Multipart Uploads
-				uploadCount, err := s.countMultipartUploads(ctx, bucketName)
+				uploadCount, err := s.countMultipartUploads(ctx, bucketName, regionOptFns...)
 				if err != nil {
 					return fmt.Errorf("failed to count multipart uploads for bucket %s: %w", aws.ToString(bucketName), err)
 				}
@@ -96,7 +106,7 @@ func (s *service) GetS3Waste(ctx context.Context) ([]model.S3BucketWasteInfo, []
 	return bucketsWithoutPolicy, bucketsWithMultipart, nil
 }
 
-func (s *service) countMultipartUploads(ctx context.Context, bucketName *string) (int, error) {
+func (s *service) countMultipartUploads(ctx context.Context, bucketName *string, optFns ...func(*s3.Options)) (int, error) {
 	paginator := s3.NewListMultipartUploadsPaginator(s.client, &s3.ListMultipartUploadsInput{
 		Bucket: bucketName,
 	})
@@ -104,7 +114,7 @@ func (s *service) countMultipartUploads(ctx context.Context, bucketName *string)
 	uploadCount := 0
 
 	for paginator.HasMorePages() {
-		output, err := paginator.NextPage(ctx)
+		output, err := paginator.NextPage(ctx, optFns...)
 		if err != nil {
 			return 0, err
 		}
