@@ -34,9 +34,12 @@ func (s *service) GetS3Waste(ctx context.Context) ([]model.S3BucketWasteInfo, []
 	g, ctx := errgroup.WithContext(ctx)
 	g.SetLimit(10) // Limit concurrency to avoid hitting rate limits
 
-	paginator := s3.NewListBucketsPaginator(s.client, &s3.ListBucketsInput{
-		BucketRegion: &s.region,
-	})
+	input := &s3.ListBucketsInput{}
+	if s.region != "" {
+		input.BucketRegion = &s.region
+	}
+
+	paginator := s3.NewListBucketsPaginator(s.client, input)
 
 	for paginator.HasMorePages() {
 		output, err := paginator.NextPage(ctx)
@@ -55,18 +58,18 @@ func (s *service) GetS3Waste(ctx context.Context) ([]model.S3BucketWasteInfo, []
 				})
 				if err != nil {
 					var apiErr smithy.APIError
-					if errors.As(err, &apiErr) {
-						if apiErr.ErrorCode() == "NoSuchLifecycleConfiguration" {
-							mu.Lock()
+					if errors.As(err, &apiErr) && apiErr.ErrorCode() == "NoSuchLifecycleConfiguration" {
+						mu.Lock()
 
-							bucketsWithoutPolicy = append(bucketsWithoutPolicy, model.S3BucketWasteInfo{
-								BucketName:   aws.ToString(bucketName),
-								CreationDate: aws.ToTime(creationDate),
-								Reason:       "No lifecycle policy",
-							})
+						bucketsWithoutPolicy = append(bucketsWithoutPolicy, model.S3BucketWasteInfo{
+							BucketName:   aws.ToString(bucketName),
+							CreationDate: aws.ToTime(creationDate),
+							Reason:       "No lifecycle policy",
+						})
 
-							mu.Unlock()
-						}
+						mu.Unlock()
+					} else {
+						return fmt.Errorf("failed to get lifecycle configuration for bucket %s: %w", aws.ToString(bucketName), err)
 					}
 				}
 
