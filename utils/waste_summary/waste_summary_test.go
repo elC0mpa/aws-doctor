@@ -117,6 +117,34 @@ func TestCompute_Snapshots(t *testing.T) {
 	assert.Equal(t, 5.0, total)
 }
 
+func TestCompute_RDS(t *testing.T) {
+	input := model.RenderWasteInput{
+		RDSInstances: []model.RDSInstanceWasteInfo{
+			{DBInstanceID: "inst-1", EstimatedMonthlyCost: 10.0},
+		},
+		RDSIdleInstances: []model.RDSIdleInstanceInfo{
+			{DBInstanceID: "idle-1", EstimatedMonthlyCost: 20.0},
+		},
+		RDSSnapshots: []model.RDSSnapshotWasteInfo{
+			{DBSnapshotID: "snap-1", EstimatedMonthlyCost: 5.0},
+		},
+	}
+
+	categories, total := Compute(input)
+
+	assert.Len(t, categories, 3)
+	assert.Equal(t, 35.0, total)
+
+	assert.Equal(t, "RDS Instances (Stopped)", categories[0].Name)
+	assert.Equal(t, 10.0, categories[0].Cost)
+
+	assert.Equal(t, "RDS Instances (Idle)", categories[1].Name)
+	assert.Equal(t, 20.0, categories[1].Cost)
+
+	assert.Equal(t, "RDS Snapshots", categories[2].Name)
+	assert.Equal(t, 5.0, categories[2].Cost)
+}
+
 func TestCompute_CountOnlyItems(t *testing.T) {
 	input := model.RenderWasteInput{
 		StoppedInstances:   []types.Instance{{InstanceId: aws.String("i-1")}},
