@@ -555,7 +555,7 @@ func TestGetMonthCostsByService_Error(t *testing.T) {
 func TestGetMonthTotalCosts_Errors(t *testing.T) {
 	mockClient := new(awsinterfaces.MockCostExplorerClient)
 	s := &service{client: mockClient}
-	date := time.Now()
+	date := time.Date(2024, 2, 15, 0, 0, 0, 0, time.UTC)
 
 	t.Run("EmptyResults", func(t *testing.T) {
 		mockClient.On("GetCostAndUsage", mock.Anything, mock.Anything, mock.Anything).Return(&costexplorer.GetCostAndUsageOutput{

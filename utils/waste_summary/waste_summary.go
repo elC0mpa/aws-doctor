@@ -67,6 +67,33 @@ func costCategories(input model.RenderWasteInput) []model.CategorySummary {
 		categories = append(categories, model.CategorySummary{Name: "EBS Snapshots", Count: n, Cost: cost})
 	}
 
+	if n := len(input.RDSInstances); n > 0 {
+		var cost float64
+		for _, inst := range input.RDSInstances {
+			cost += inst.EstimatedMonthlyCost
+		}
+
+		categories = append(categories, model.CategorySummary{Name: "RDS Instances (Stopped)", Count: n, Cost: cost})
+	}
+
+	if n := len(input.RDSIdleInstances); n > 0 {
+		var cost float64
+		for _, inst := range input.RDSIdleInstances {
+			cost += inst.EstimatedMonthlyCost
+		}
+
+		categories = append(categories, model.CategorySummary{Name: "RDS Instances (Idle)", Count: n, Cost: cost})
+	}
+
+	if n := len(input.RDSSnapshots); n > 0 {
+		var cost float64
+		for _, snap := range input.RDSSnapshots {
+			cost += snap.EstimatedMonthlyCost
+		}
+
+		categories = append(categories, model.CategorySummary{Name: "RDS Snapshots", Count: n, Cost: cost})
+	}
+
 	return categories
 }
 
