@@ -180,7 +180,7 @@ func mapEBSVolumes(volumes []types.Volume, status string) []model.EBSVolumeJSON 
 			EstimatedMonthlyCost: pricing.CalculateEBSMonthlyCost(size, vol.VolumeType),
 		}
 
-		if len(vol.Attachments) > 0 && vol.Attachments[0].InstanceId != nil {
+		if len(vol.Attachments) > 0 {
 			entry.AttachedInstanceID = aws.ToString(vol.Attachments[0].InstanceId)
 		}
 
