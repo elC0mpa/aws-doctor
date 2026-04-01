@@ -68,8 +68,10 @@ func PresentEBSVolume(vol types.Volume, status string) ResourceRow {
 
 // AttachedInstanceID returns the instance ID a volume is attached to, or NAValue if none.
 func AttachedInstanceID(vol types.Volume) string {
-	if len(vol.Attachments) > 0 && vol.Attachments[0].InstanceId != nil {
-		return aws.ToString(vol.Attachments[0].InstanceId)
+	if len(vol.Attachments) > 0 {
+		if id := aws.ToString(vol.Attachments[0].InstanceId); id != "" {
+			return id
+		}
 	}
 
 	return NAValue

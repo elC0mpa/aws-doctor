@@ -52,6 +52,7 @@ func TestPresentEBSVolume(t *testing.T) {
 		vol            types.Volume
 		status         string
 		wantIdentifier string
+		wantMetric     string
 	}{
 		{
 			name: "unattached_volume",
@@ -63,6 +64,7 @@ func TestPresentEBSVolume(t *testing.T) {
 			},
 			status:         "unattached",
 			wantIdentifier: "vol-12345",
+			wantMetric:     "100 GiB",
 		},
 		{
 			name: "attached_to_stopped_instance",
@@ -77,6 +79,7 @@ func TestPresentEBSVolume(t *testing.T) {
 			},
 			status:         "stopped",
 			wantIdentifier: "vol-67890 (i-abcdef)",
+			wantMetric:     "50 GiB",
 		},
 	}
 
@@ -90,6 +93,10 @@ func TestPresentEBSVolume(t *testing.T) {
 
 			if !strings.HasPrefix(p.EstimatedCost, "$") {
 				t.Errorf("EstimatedCost %q does not start with $", p.EstimatedCost)
+			}
+
+			if p.Metric != tt.wantMetric {
+				t.Errorf("Metric = %v, want %v", p.Metric, tt.wantMetric)
 			}
 		})
 	}
@@ -114,6 +121,15 @@ func TestAttachedInstanceID(t *testing.T) {
 				},
 			},
 			want: "i-12345",
+		},
+		{
+			name: "empty_instance_id",
+			vol: types.Volume{
+				Attachments: []types.VolumeAttachment{
+					{InstanceId: aws.String("")},
+				},
+			},
+			want: NAValue,
 		},
 		{
 			name: "nil_instance_id",
