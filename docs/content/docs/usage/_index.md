@@ -73,4 +73,4 @@ Keep your diagnostic engine up to date with a single command:
 ```bash
 aws-doctor update
 ```
-This will check GitHub for the latest release, download the binary for your platform, and replace the existing one.
+This command checks the latest published GitHub release before downloading anything. It resolves the version from the release metadata instead of querying a tags endpoint. If you already have the latest version, it exits without reinstalling. If the current binary is managed by Homebrew, it prints `brew upgrade aws-doctor` instead of trying to overwrite the Homebrew-managed installation.

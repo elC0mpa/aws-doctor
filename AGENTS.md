@@ -12,6 +12,7 @@ aws-doctor is a Go CLI tool that provides AWS cost analysis and waste detection.
 - 6-month trend analysis
 - Waste detection (unused EIPs, EBS volumes, stopped instances, load balancers, etc.)
 - Startup banner uses ANSI truecolor; title color switches to AmazonOrange when a blue background is detected (Windows console attributes or `COLORFGBG` on Unix-like terminals), otherwise SkypeBlue. Override with `AWS_DOCTOR_BANNER_COLOR` (color name or ANSI code).
+- `aws-doctor update` must check the latest GitHub release before running the install script. If the current binary is managed by Homebrew, it must print the package-manager upgrade command instead of attempting an in-place overwrite.
 
 ## Quick Reference
 
@@ -43,6 +44,7 @@ aws-doctor/
 |   |-- elb/              # ELB service (load balancers)
 |   |-- orchestrator/     # Workflow coordination
 |   |-- output/           # Output rendering (table/json) + spinner control
+|   |-- release/          # GitHub release lookup service
 |   |-- sts/              # AWS STS service
 |   |-- update/           # Self-update workflow
 |-- utils/                # Utility functions, table rendering
@@ -59,7 +61,9 @@ aws-doctor/
 - `cmd/` package defines Cobra commands (e.g., `cmd/waste.go`), initializes AWS services, and invokes `service/orchestrator`.
 - `service/orchestrator` executes the workflow logic by calling service methods based on the configured model.Flags.
 - `service/output` chooses between table and JSON rendering and owns spinner stop.
-- `service/update` handles updates (invoked by `cmd/update.go`).
+- `service/release` resolves the latest published GitHub release metadata.
+- `service/update` handles updates (invoked by `cmd/update.go`) and delegates release lookup to `service/release`.
+- Update flow should remain in `service/update` and keep the same DI pattern used by the rest of the project (interfaces in `types.go`, implementation in `service.go`, mocks in tests).
 
 ### Service Pattern
 

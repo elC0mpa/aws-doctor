@@ -93,6 +93,14 @@ curl -sSfL https://raw.githubusercontent.com/elC0mpa/aws-doctor/main/install.sh 
 go install github.com/elC0mpa/aws-doctor@latest
 ```
 
+**Updating an existing installation:**
+
+```bash
+aws-doctor update
+```
+
+`aws-doctor update` now checks the latest published GitHub release before downloading anything. The version comparison is resolved from the release metadata, not from a tags endpoint. If the current binary was installed with Homebrew, the command will stop and tell you to use `brew upgrade aws-doctor` instead of trying to overwrite a Homebrew-managed binary.
+
 ## ✨ Key Features
 
 - **📄 Professional PDF Reports:** Generate branded, ready-to-share PDF documents for costs, trends, and waste analysis.

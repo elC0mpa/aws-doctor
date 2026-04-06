@@ -72,4 +72,4 @@ Mantenga su motor de diagnóstico actualizado con un solo comando:
 ```bash
 aws-doctor update
 ```
-Esto buscará el último lanzamiento en GitHub, descargará el binario para su plataforma y reemplazará el existente.
+Este comando consulta la última GitHub release publicada antes de descargar nada. La versión se resuelve desde los metadatos de la release y no desde un endpoint de tags. Si ya tienes la versión más reciente, termina sin reinstalar. Si el binario actual está administrado por Homebrew, mostrará `brew upgrade aws-doctor` en lugar de intentar sobrescribir la instalación administrada por Homebrew.
