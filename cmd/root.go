@@ -14,6 +14,7 @@ import (
 	"github.com/elC0mpa/aws-doctor/service/orchestrator"
 	"github.com/elC0mpa/aws-doctor/service/output"
 	"github.com/elC0mpa/aws-doctor/service/rds"
+	"github.com/elC0mpa/aws-doctor/service/release"
 	"github.com/elC0mpa/aws-doctor/service/report"
 	"github.com/elC0mpa/aws-doctor/service/s3"
 	awssts "github.com/elC0mpa/aws-doctor/service/sts"
@@ -33,7 +34,8 @@ var (
 
 func buildOrchestrator(needsAWS bool) (orchestrator.Service, error) {
 	outputService := output.NewService(outputFormat)
-	updateService := update.NewService()
+	releaseService := release.NewService()
+	updateService := update.NewService(versionInfo.Version, releaseService)
 
 	config := orchestrator.Config{
 		OutputService: outputService,
