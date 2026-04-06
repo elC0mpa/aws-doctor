@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"regexp"
 	"strings"
+	"time"
 
 	"github.com/elC0mpa/aws-doctor/model"
 )
@@ -30,7 +31,9 @@ type latestReleaseResponse struct {
 func NewService() Service {
 	return &service{
 		client: &realGitHubClient{
-			client: http.DefaultClient,
+			client: &http.Client{
+				Timeout: 10 * time.Second,
+			},
 		},
 	}
 }
