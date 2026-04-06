@@ -57,7 +57,7 @@ func (s *service) Update() error {
 	}
 
 	currentVersion := normalizeVersion(s.currentVersion)
-	if currentVersion != "" && currentVersion != "dev" && currentVersion == normalizeVersion(latestRelease.Version) {
+	if currentVersion != "" && currentVersion != "dev" && currentVersion == latestRelease.Version {
 		_, _ = fmt.Fprintf(s.stdout, "aws-doctor v%s is already the latest release.\n", latestRelease.Version)
 
 		return nil

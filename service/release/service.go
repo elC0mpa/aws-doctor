@@ -22,6 +22,7 @@ type realGitHubClient struct {
 
 type latestReleaseResponse struct {
 	Name    string `json:"name"`
+	TagName string `json:"tag_name"`
 	HTMLURL string `json:"html_url"`
 }
 
@@ -40,7 +41,7 @@ func (s *service) GetLatestRelease(ctx context.Context) (model.ReleaseInfo, erro
 		return model.ReleaseInfo{}, err
 	}
 
-	version, err := versionFromReleaseName(release.Name)
+	version, err := versionFromRelease(release)
 	if err != nil {
 		return model.ReleaseInfo{}, err
 	}
@@ -76,20 +77,26 @@ func (c *realGitHubClient) LatestRelease(ctx context.Context) (githubRelease, er
 		return githubRelease{}, fmt.Errorf("decode latest release response: %w", err)
 	}
 
-	if strings.TrimSpace(payload.Name) == "" {
-		return githubRelease{}, fmt.Errorf("latest release name is empty")
+	if strings.TrimSpace(payload.Name) == "" && strings.TrimSpace(payload.TagName) == "" {
+		return githubRelease{}, fmt.Errorf("latest release name and tag are empty")
 	}
 
 	return githubRelease{
-		Name: payload.Name,
-		URL:  payload.HTMLURL,
+		Name:    payload.Name,
+		TagName: payload.TagName,
+		URL:     payload.HTMLURL,
 	}, nil
 }
 
-func versionFromReleaseName(name string) (string, error) {
-	match := releaseVersionPattern.FindString(strings.TrimSpace(name))
+func versionFromRelease(release githubRelease) (string, error) {
+	source := strings.TrimSpace(release.Name)
+	if source == "" {
+		source = strings.TrimSpace(release.TagName)
+	}
+
+	match := releaseVersionPattern.FindString(source)
 	if match == "" {
-		return "", fmt.Errorf("latest release name does not include a version: %q", name)
+		return "", fmt.Errorf("latest release metadata does not include a version: name=%q tag=%q", release.Name, release.TagName)
 	}
 
 	return normalizeVersion(match), nil

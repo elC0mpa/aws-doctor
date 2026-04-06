@@ -15,8 +15,9 @@ type githubClient interface {
 }
 
 type githubRelease struct {
-	Name string
-	URL  string
+	Name    string
+	TagName string
+	URL     string
 }
 
 // Service fetches published release metadata.

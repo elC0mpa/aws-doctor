@@ -42,12 +42,26 @@ func TestGetLatestRelease(t *testing.T) {
 		{
 			name: "returns version from release name",
 			release: githubRelease{
-				Name: "aws-doctor v2.6.4",
-				URL:  "https://github.com/elC0mpa/aws-doctor/releases/tag/v2.6.4",
+				Name:    "aws-doctor v2.6.4",
+				TagName: "v2.6.4",
+				URL:     "https://github.com/elC0mpa/aws-doctor/releases/tag/v2.6.4",
 			},
 			want: model.ReleaseInfo{
 				Version: "2.6.4",
 				Name:    "aws-doctor v2.6.4",
+				URL:     "https://github.com/elC0mpa/aws-doctor/releases/tag/v2.6.4",
+			},
+		},
+		{
+			name: "falls back to tag when release name is empty",
+			release: githubRelease{
+				Name:    "",
+				TagName: "v2.6.4",
+				URL:     "https://github.com/elC0mpa/aws-doctor/releases/tag/v2.6.4",
+			},
+			want: model.ReleaseInfo{
+				Version: "2.6.4",
+				Name:    "",
 				URL:     "https://github.com/elC0mpa/aws-doctor/releases/tag/v2.6.4",
 			},
 		},
@@ -57,11 +71,12 @@ func TestGetLatestRelease(t *testing.T) {
 			wantErrText: "network down",
 		},
 		{
-			name: "errors when release name has no version",
+			name: "errors when release metadata has no version",
 			release: githubRelease{
-				Name: "aws-doctor stable",
+				Name:    "aws-doctor stable",
+				TagName: "stable",
 			},
-			wantErrText: `latest release name does not include a version: "aws-doctor stable"`,
+			wantErrText: `latest release metadata does not include a version: name="aws-doctor stable" tag="stable"`,
 		},
 	}
 
@@ -86,21 +101,22 @@ func TestGetLatestRelease(t *testing.T) {
 	}
 }
 
-func TestVersionFromReleaseName(t *testing.T) {
+func TestVersionFromRelease(t *testing.T) {
 	tests := []struct {
 		name        string
-		input       string
+		input       githubRelease
 		want        string
 		wantErrText string
 	}{
-		{name: "extracts version with prefix", input: "aws-doctor v2.6.4", want: "2.6.4"},
-		{name: "extracts prerelease version", input: "Release v2.6.4-beta.1", want: "2.6.4-beta.1"},
-		{name: "errors when version missing", input: "latest stable", wantErrText: `latest release name does not include a version: "latest stable"`},
+		{name: "extracts version from release name", input: githubRelease{Name: "aws-doctor v2.6.4"}, want: "2.6.4"},
+		{name: "extracts prerelease version", input: githubRelease{Name: "Release v2.6.4-beta.1"}, want: "2.6.4-beta.1"},
+		{name: "falls back to tag name", input: githubRelease{TagName: "v2.6.4"}, want: "2.6.4"},
+		{name: "errors when version missing", input: githubRelease{Name: "latest stable", TagName: "stable"}, wantErrText: `latest release metadata does not include a version: name="latest stable" tag="stable"`},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := versionFromReleaseName(tt.input)
+			got, err := versionFromRelease(tt.input)
 
 			if tt.wantErrText != "" {
 				assert.EqualError(t, err, tt.wantErrText)
