@@ -65,3 +65,33 @@ func (m *MockRenderer) OutputWasteCSV(input model.RenderWasteInput) error {
 func (m *MockRenderer) StopSpinner() {
 	m.Called()
 }
+
+// PrintAlreadyLatest mocks PrintAlreadyLatest
+func (m *MockRenderer) PrintAlreadyLatest(version string) {
+	m.Called(version)
+}
+
+// PrintRateLimitError mocks PrintRateLimitError
+func (m *MockRenderer) PrintRateLimitError() {
+	m.Called()
+}
+
+// PrintUpdateError mocks PrintUpdateError
+func (m *MockRenderer) PrintUpdateError(err error) {
+	m.Called(err)
+}
+
+// RenderVersion mocks RenderVersion
+func (m *MockRenderer) RenderVersion(versionInfo model.VersionInfo) {
+	m.Called(versionInfo)
+}
+
+// PrintReportSuccess mocks PrintReportSuccess
+func (m *MockRenderer) PrintReportSuccess(path string) {
+	m.Called(path)
+}
+
+// PrintFirstDayOfMonthError mocks PrintFirstDayOfMonthError
+func (m *MockRenderer) PrintFirstDayOfMonthError() {
+	m.Called()
+}
