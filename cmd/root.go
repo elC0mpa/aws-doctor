@@ -33,7 +33,7 @@ var (
 
 func buildOrchestrator(needsAWS bool) (orchestrator.Service, error) {
 	outputService := output.NewService(outputFormat)
-	updateService := update.NewService()
+	updateService := update.NewService(versionInfo)
 
 	config := orchestrator.Config{
 		OutputService: outputService,

@@ -37,3 +37,28 @@ func (m *MockOutputService) StopSpinner() {
 func (m *MockOutputService) PrintReportSuccess(path string) {
 	m.Called(path)
 }
+
+// PrintAlreadyLatest mocks the PrintAlreadyLatest method.
+func (m *MockOutputService) PrintAlreadyLatest(version string) {
+	m.Called(version)
+}
+
+// PrintRateLimitError mocks the PrintRateLimitError method.
+func (m *MockOutputService) PrintRateLimitError() {
+	m.Called()
+}
+
+// PrintUpdateError mocks the PrintUpdateError method.
+func (m *MockOutputService) PrintUpdateError(err error) {
+	m.Called(err)
+}
+
+// RenderVersion mocks the RenderVersion method.
+func (m *MockOutputService) RenderVersion(versionInfo model.VersionInfo) {
+	m.Called(versionInfo)
+}
+
+// PrintFirstDayOfMonthError mocks the PrintFirstDayOfMonthError method.
+func (m *MockOutputService) PrintFirstDayOfMonthError() {
+	m.Called()
+}

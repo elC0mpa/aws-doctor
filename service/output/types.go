@@ -1,6 +1,8 @@
 package output
 
 import (
+	"fmt"
+
 	"github.com/elC0mpa/aws-doctor/model"
 	"github.com/elC0mpa/aws-doctor/utils/barchart"
 	costtable "github.com/elC0mpa/aws-doctor/utils/cost_table"
@@ -8,6 +10,7 @@ import (
 	jsonoutput "github.com/elC0mpa/aws-doctor/utils/json_output"
 	"github.com/elC0mpa/aws-doctor/utils/spinner"
 	wastetable "github.com/elC0mpa/aws-doctor/utils/waste_table"
+	"github.com/jedib0t/go-pretty/v6/text"
 )
 
 // Format represents the output format type
@@ -32,6 +35,12 @@ type Renderer interface {
 	OutputWasteJSON(input model.RenderWasteInput) error
 	OutputWasteCSV(input model.RenderWasteInput) error
 	StopSpinner()
+	PrintAlreadyLatest(version string)
+	PrintRateLimitError()
+	PrintUpdateError(err error)
+	RenderVersion(versionInfo model.VersionInfo)
+	PrintReportSuccess(path string)
+	PrintFirstDayOfMonthError()
 }
 
 type realRenderer struct{}
@@ -76,6 +85,38 @@ func (r *realRenderer) StopSpinner() {
 	spinner.StopSpinner()
 }
 
+func (r *realRenderer) PrintAlreadyLatest(version string) {
+	fmt.Println()
+	fmt.Println(text.FgHiWhite.Sprintf("ℹ️ aws-doctor version %s is already the latest version", version))
+}
+
+func (r *realRenderer) PrintRateLimitError() {
+	fmt.Println()
+	fmt.Println(text.FgRed.Sprint("❌ Error: could not check GitHub release because of rate limits"))
+}
+
+func (r *realRenderer) PrintUpdateError(err error) {
+	fmt.Println()
+	fmt.Println(text.FgRed.Sprintf("❌ Error: failed to check for updates: %v", err))
+}
+
+func (r *realRenderer) RenderVersion(versionInfo model.VersionInfo) {
+	fmt.Printf("aws-doctor version %s\n", versionInfo.Version)
+	fmt.Printf("commit: %s\n", versionInfo.Commit)
+	fmt.Printf("built at: %s\n", versionInfo.Date)
+}
+
+func (r *realRenderer) PrintReportSuccess(path string) {
+	fmt.Println()
+	fmt.Println(text.FgGreen.Sprint("✅ Report generated successfully!"))
+	fmt.Println(text.FgHiWhite.Sprintf("📄 Path: %s", path))
+}
+
+func (r *realRenderer) PrintFirstDayOfMonthError() {
+	fmt.Println()
+	fmt.Println(text.FgRed.Sprint("Cost data is not available on the first day of the month. Please try again tomorrow."))
+}
+
 // service is the internal implementation
 type service struct {
 	format   Format
@@ -98,4 +139,19 @@ type Service interface {
 
 	// PrintReportSuccess outputs a success message with the report path
 	PrintReportSuccess(path string)
+
+	// PrintAlreadyLatest outputs a message when the user is already on the latest version
+	PrintAlreadyLatest(version string)
+
+	// PrintRateLimitError outputs a message when GitHub API rate limit is reached
+	PrintRateLimitError()
+
+	// PrintUpdateError outputs a message when an update check fails
+	PrintUpdateError(err error)
+
+	// RenderVersion outputs the version information
+	RenderVersion(versionInfo model.VersionInfo)
+
+	// PrintFirstDayOfMonthError outputs a message when cost data is not available
+	PrintFirstDayOfMonthError()
 }

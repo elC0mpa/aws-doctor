@@ -181,6 +181,47 @@ func TestStopSpinner(t *testing.T) {
 	mr.AssertExpectations(t)
 }
 
+func TestPrintReportSuccess(t *testing.T) {
+	mr := new(renderers.MockRenderer)
+	s := &service{renderer: mr}
+
+	mr.On("PrintReportSuccess", "/tmp/report.pdf").Return()
+
+	s.PrintReportSuccess("/tmp/report.pdf")
+	mr.AssertExpectations(t)
+}
+
+func TestUpdatePrintMethods(t *testing.T) {
+	mr := new(renderers.MockRenderer)
+	s := &service{renderer: mr}
+
+	t.Run("PrintAlreadyLatest", func(t *testing.T) {
+		mr.On("PrintAlreadyLatest", "v1.2.3").Return()
+		s.PrintAlreadyLatest("v1.2.3")
+		mr.AssertExpectations(t)
+	})
+
+	t.Run("PrintRateLimitError", func(t *testing.T) {
+		mr.On("PrintRateLimitError").Return()
+		s.PrintRateLimitError()
+		mr.AssertExpectations(t)
+	})
+
+	t.Run("PrintUpdateError", func(t *testing.T) {
+		err := assert.AnError
+		mr.On("PrintUpdateError", err).Return()
+		s.PrintUpdateError(err)
+		mr.AssertExpectations(t)
+	})
+
+	t.Run("RenderVersion", func(t *testing.T) {
+		v := model.VersionInfo{Version: "v1"}
+		mr.On("RenderVersion", v).Return()
+		s.RenderVersion(v)
+		mr.AssertExpectations(t)
+	})
+}
+
 func TestFormatConstants(t *testing.T) {
 	if FormatTable != "table" {
 		t.Errorf("FormatTable should be 'table', got %q", FormatTable)
