@@ -2,10 +2,7 @@
 package output
 
 import (
-	"fmt"
-
 	"github.com/elC0mpa/aws-doctor/model"
-	"github.com/jedib0t/go-pretty/v6/text"
 )
 
 // NewService creates a new output service with the specified format
@@ -66,7 +63,25 @@ func (s *service) StopSpinner() {
 }
 
 func (s *service) PrintReportSuccess(path string) {
-	fmt.Println()
-	fmt.Println(text.FgGreen.Sprint("✅ Report generated successfully!"))
-	fmt.Println(text.FgHiWhite.Sprintf("📄 Path: %s", path))
+	s.renderer.PrintReportSuccess(path)
+}
+
+func (s *service) PrintAlreadyLatest(version string) {
+	s.renderer.PrintAlreadyLatest(version)
+}
+
+func (s *service) PrintRateLimitError() {
+	s.renderer.PrintRateLimitError()
+}
+
+func (s *service) PrintUpdateError(err error) {
+	s.renderer.PrintUpdateError(err)
+}
+
+func (s *service) RenderVersion(versionInfo model.VersionInfo) {
+	s.renderer.RenderVersion(versionInfo)
+}
+
+func (s *service) PrintFirstDayOfMonthError() {
+	s.renderer.PrintFirstDayOfMonthError()
 }

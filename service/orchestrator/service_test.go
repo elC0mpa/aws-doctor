@@ -106,6 +106,49 @@ func TestOrchestrate_RouteToUpdateWorkflow(t *testing.T) {
 	mockUpdate.AssertExpectations(t)
 }
 
+func TestOrchestrate_RouteToVersionWorkflow(t *testing.T) {
+	// Setup mocks
+	mockSTS := new(services.MockSTSService)
+	mockCost := new(services.MockCostService)
+	mockEC2 := new(services.MockEC2Service)
+	mockELB := new(services.MockELBService)
+	mockS3 := new(services.MockS3Service)
+	mockCloudWatch := new(services.MockCloudWatchLogsService)
+	mockOutput := new(services.MockOutputService)
+	mockUpdate := new(services.MockUpdateService)
+	mockReport := new(services.MockReportService)
+
+	// Create service
+	mockRDS := new(services.MockRDSService)
+	versionInfo := model.VersionInfo{Version: "v1.2.3", Commit: "abc", Date: "today"}
+	config := Config{
+		STSService:            mockSTS,
+		CostService:           mockCost,
+		EC2Service:            mockEC2,
+		ELBService:            mockELB,
+		S3Service:             mockS3,
+		CloudWatchLogsService: mockCloudWatch,
+		RDSService:            mockRDS,
+		OutputService:         mockOutput,
+		UpdateService:         mockUpdate,
+		ReportService:         mockReport,
+		VersionInfo:           versionInfo,
+	}
+	svc := NewService(config)
+
+	// Setup expectations
+	mockOutput.On("StopSpinner").Return()
+	mockOutput.On("RenderVersion", versionInfo).Return()
+
+	// Execute with Version flag
+	flags := model.Flags{Version: true}
+	err := svc.Orchestrate(flags)
+
+	// Assert
+	assert.NoError(t, err)
+	mockOutput.AssertExpectations(t)
+}
+
 func TestOrchestrate_RouteToTrendWorkflow(t *testing.T) {
 	// Setup mocks
 	mockSTS := new(services.MockSTSService)

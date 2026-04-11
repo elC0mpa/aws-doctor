@@ -1,5 +1,12 @@
 package update
 
+import (
+	"context"
+
+	"github.com/elC0mpa/aws-doctor/model"
+	"github.com/google/go-github/v62/github"
+)
+
 // Service is the interface for the update service.
 type Service interface {
 	Update() error
@@ -9,6 +16,12 @@ type commandRunner interface {
 	Run(name string, arg ...string) error
 }
 
+type repositoryService interface {
+	GetLatestRelease(ctx context.Context, owner, repo string) (*github.RepositoryRelease, *github.Response, error)
+}
+
 type service struct {
-	runner commandRunner
+	runner       commandRunner
+	versionInfo  model.VersionInfo
+	repositories repositoryService
 }

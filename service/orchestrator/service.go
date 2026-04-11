@@ -4,7 +4,6 @@ package orchestrator
 import (
 	"context"
 	"errors"
-	"fmt"
 	"strings"
 
 	"github.com/aws/aws-sdk-go-v2/service/ec2/types"
@@ -13,7 +12,7 @@ import (
 	"github.com/elC0mpa/aws-doctor/model"
 	awscostexplorer "github.com/elC0mpa/aws-doctor/service/costexplorer"
 	"github.com/elC0mpa/aws-doctor/utils/slice"
-	"github.com/jedib0t/go-pretty/v6/text"
+	"github.com/google/go-github/v62/github"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -57,9 +56,7 @@ func (s *service) Orchestrate(flags model.Flags) error {
 func (s *service) versionWorkflow() error {
 	s.outputService.StopSpinner()
 
-	fmt.Printf("aws-doctor version %s\n", s.versionInfo.Version)
-	fmt.Printf("commit: %s\n", s.versionInfo.Commit)
-	fmt.Printf("built at: %s\n", s.versionInfo.Date)
+	s.outputService.RenderVersion(s.versionInfo)
 
 	return nil
 }
@@ -67,7 +64,25 @@ func (s *service) versionWorkflow() error {
 func (s *service) updateWorkflow() error {
 	s.outputService.StopSpinner()
 
-	return s.updateService.Update()
+	err := s.updateService.Update()
+	if err == nil {
+		return nil
+	}
+
+	if errors.Is(err, model.ErrAlreadyLatest) {
+		s.outputService.PrintAlreadyLatest(s.versionInfo.Version)
+		return nil
+	}
+
+	var rateLimitErr *github.RateLimitError
+	if errors.As(err, &rateLimitErr) {
+		s.outputService.PrintRateLimitError()
+		return err
+	}
+
+	s.outputService.PrintUpdateError(err)
+
+	return err
 }
 
 func (s *service) defaultWorkflow(generateReport bool, reportPath string) error {
@@ -349,8 +364,7 @@ func (s *service) handleCostError(err error) error {
 	if errors.Is(err, model.ErrFirstDayOfMonth) {
 		s.outputService.StopSpinner()
 
-		fmt.Println()
-		fmt.Println(text.FgRed.Sprint("Cost data is not available on the first day of the month. Please try again tomorrow."))
+		s.outputService.PrintFirstDayOfMonthError()
 
 		return nil
 	}
