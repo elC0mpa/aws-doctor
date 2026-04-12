@@ -95,3 +95,8 @@ func (m *MockRenderer) PrintReportSuccess(path string) {
 func (m *MockRenderer) PrintFirstDayOfMonthError() {
 	m.Called()
 }
+
+// PrintNewVersionAvailable mocks PrintNewVersionAvailable
+func (m *MockRenderer) PrintNewVersionAvailable(currentVersion, latestVersion string) {
+	m.Called(currentVersion, latestVersion)
+}

@@ -10,6 +10,7 @@ import (
 // Service is the interface for the update service.
 type Service interface {
 	Update() error
+	CheckForUpdate(ctx context.Context) (*string, error)
 }
 
 type commandRunner interface {

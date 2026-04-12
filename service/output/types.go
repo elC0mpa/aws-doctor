@@ -41,6 +41,7 @@ type Renderer interface {
 	RenderVersion(versionInfo model.VersionInfo)
 	PrintReportSuccess(path string)
 	PrintFirstDayOfMonthError()
+	PrintNewVersionAvailable(currentVersion, latestVersion string)
 }
 
 type realRenderer struct{}
@@ -117,6 +118,14 @@ func (r *realRenderer) PrintFirstDayOfMonthError() {
 	fmt.Println(text.FgRed.Sprint("Cost data is not available on the first day of the month. Please try again tomorrow."))
 }
 
+func (r *realRenderer) PrintNewVersionAvailable(currentVersion, latestVersion string) {
+	fmt.Println()
+	fmt.Println(text.FgHiYellow.Sprintf(
+		"A new version of aws-doctor is available: %s → %s. Run 'aws-doctor update' to upgrade.",
+		currentVersion, latestVersion,
+	))
+}
+
 // service is the internal implementation
 type service struct {
 	format   Format
@@ -154,4 +163,7 @@ type Service interface {
 
 	// PrintFirstDayOfMonthError outputs a message when cost data is not available
 	PrintFirstDayOfMonthError()
+
+	// PrintNewVersionAvailable outputs a notification when a newer version exists
+	PrintNewVersionAvailable(currentVersion, latestVersion string)
 }

@@ -42,15 +42,36 @@ func (s *service) Orchestrate(flags model.Flags) error {
 		return s.versionWorkflow()
 	}
 
+	// Start async version check for main workflows
+	type versionCheckResult struct {
+		latestVersion *string
+		err           error
+	}
+
+	versionCh := make(chan versionCheckResult, 1)
+
+	go func() {
+		latest, err := s.updateService.CheckForUpdate(context.Background())
+		versionCh <- versionCheckResult{latestVersion: latest, err: err}
+	}()
+
+	var workflowErr error
+
 	if flags.Waste {
-		return s.wasteWorkflow(flags.WasteChecks, flags.Report, flags.ReportPath)
+		workflowErr = s.wasteWorkflow(flags.WasteChecks, flags.Report, flags.ReportPath)
+	} else if flags.Trend {
+		workflowErr = s.trendWorkflow(flags.TrendChecks, flags.Report, flags.ReportPath)
+	} else {
+		workflowErr = s.defaultWorkflow(flags.Report, flags.ReportPath)
 	}
 
-	if flags.Trend {
-		return s.trendWorkflow(flags.TrendChecks, flags.Report, flags.ReportPath)
+	// Collect version check result and notify if new version available
+	result := <-versionCh
+	if result.err == nil && result.latestVersion != nil {
+		s.outputService.PrintNewVersionAvailable(s.versionInfo.Version, *result.latestVersion)
 	}
 
-	return s.defaultWorkflow(flags.Report, flags.ReportPath)
+	return workflowErr
 }
 
 func (s *service) versionWorkflow() error {

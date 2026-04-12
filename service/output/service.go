@@ -85,3 +85,7 @@ func (s *service) RenderVersion(versionInfo model.VersionInfo) {
 func (s *service) PrintFirstDayOfMonthError() {
 	s.renderer.PrintFirstDayOfMonthError()
 }
+
+func (s *service) PrintNewVersionAvailable(currentVersion, latestVersion string) {
+	s.renderer.PrintNewVersionAvailable(currentVersion, latestVersion)
+}

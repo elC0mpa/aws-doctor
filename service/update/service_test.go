@@ -164,6 +164,59 @@ func TestUpdate_ExecutionError(t *testing.T) {
 	assert.Contains(t, err.Error(), "failed to run update script")
 }
 
+func TestCheckForUpdate_DevVersion(t *testing.T) {
+	mrepo := new(mockRepositories)
+	v := model.VersionInfo{Version: "dev"}
+	s := &service{repositories: mrepo, versionInfo: v}
+
+	result, err := s.CheckForUpdate(context.Background())
+	assert.NoError(t, err)
+	assert.Nil(t, result)
+	mrepo.AssertNotCalled(t, "GetLatestRelease", mock.Anything, mock.Anything, mock.Anything)
+}
+
+func TestCheckForUpdate_AlreadyLatest(t *testing.T) {
+	mrepo := new(mockRepositories)
+	v := model.VersionInfo{Version: tag}
+	s := &service{repositories: mrepo, versionInfo: v}
+
+	tagName := tag
+	release := &github.RepositoryRelease{TagName: &tagName}
+	mrepo.On("GetLatestRelease", mock.Anything, model.GitHubOwner, model.GitHubRepo).Return(release, nil, nil)
+
+	result, err := s.CheckForUpdate(context.Background())
+	assert.NoError(t, err)
+	assert.Nil(t, result)
+}
+
+func TestCheckForUpdate_NewVersionAvailable(t *testing.T) {
+	mrepo := new(mockRepositories)
+	v := model.VersionInfo{Version: "v1.2.2"}
+	s := &service{repositories: mrepo, versionInfo: v}
+
+	tagName := tag
+	release := &github.RepositoryRelease{TagName: &tagName}
+	mrepo.On("GetLatestRelease", mock.Anything, model.GitHubOwner, model.GitHubRepo).Return(release, nil, nil)
+
+	result, err := s.CheckForUpdate(context.Background())
+	assert.NoError(t, err)
+	assert.NotNil(t, result)
+	assert.Equal(t, tag, *result)
+}
+
+func TestCheckForUpdate_GitHubError(t *testing.T) {
+	mrepo := new(mockRepositories)
+	v := model.VersionInfo{Version: tag}
+	s := &service{repositories: mrepo, versionInfo: v}
+
+	mrepo.On("GetLatestRelease", mock.Anything, model.GitHubOwner, model.GitHubRepo).Return(nil, nil, errors.New("github error"))
+
+	result, err := s.CheckForUpdate(context.Background())
+	assert.Error(t, err)
+	assert.Nil(t, result)
+	assert.Contains(t, err.Error(), "failed to fetch latest release")
+}
+
 func TestRealRunner_Run(t *testing.T) {
 	// This actually tries to run a command.
 	// We'll run something harmless like 'true'.

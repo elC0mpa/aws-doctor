@@ -62,3 +62,8 @@ func (m *MockOutputService) RenderVersion(versionInfo model.VersionInfo) {
 func (m *MockOutputService) PrintFirstDayOfMonthError() {
 	m.Called()
 }
+
+// PrintNewVersionAvailable mocks the PrintNewVersionAvailable method.
+func (m *MockOutputService) PrintNewVersionAvailable(currentVersion, latestVersion string) {
+	m.Called(currentVersion, latestVersion)
+}

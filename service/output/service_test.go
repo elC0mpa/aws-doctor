@@ -222,6 +222,16 @@ func TestUpdatePrintMethods(t *testing.T) {
 	})
 }
 
+func TestPrintNewVersionAvailable(t *testing.T) {
+	mr := new(renderers.MockRenderer)
+	s := &service{renderer: mr}
+
+	mr.On("PrintNewVersionAvailable", "v1.2.0", "v1.3.0").Return()
+
+	s.PrintNewVersionAvailable("v1.2.0", "v1.3.0")
+	mr.AssertExpectations(t)
+}
+
 func TestFormatConstants(t *testing.T) {
 	if FormatTable != "table" {
 		t.Errorf("FormatTable should be 'table', got %q", FormatTable)
