@@ -96,6 +96,7 @@ func (r *realRenderer) PrintHomebrewUpdate() {
 	fmt.Println(text.FgHiWhite.Sprint("ℹ️ aws-doctor was installed via Homebrew. To update, run:"))
 	fmt.Println()
 	fmt.Println(text.FgHiWhite.Sprint("  brew upgrade aws-doctor"))
+	fmt.Println()
 }
 
 func (r *realRenderer) PrintRateLimitError() {
