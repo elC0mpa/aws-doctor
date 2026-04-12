@@ -75,13 +75,10 @@ func (s *service) shouldUpdate(ctx context.Context) (bool, error) {
 		return true, nil
 	}
 
-	release, _, err := s.repositories.GetLatestRelease(ctx, model.GitHubOwner, model.GitHubRepo)
+	latest, err := s.CheckForUpdate(ctx)
 	if err != nil {
-		return false, fmt.Errorf("failed to fetch latest release: %w", err)
+		return false, err
 	}
 
-	latestVersion := *release.TagName
-	equalVersions := version.IsEqual(latestVersion, s.versionInfo.Version)
-
-	return !equalVersions, nil
+	return latest != nil, nil
 }
