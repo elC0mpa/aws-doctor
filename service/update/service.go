@@ -13,7 +13,7 @@ import (
 	"github.com/google/go-github/v62/github"
 )
 
-const homebrewCellarPath = "/Cellar/"
+const homebrewCellarPath = "/Cellar/aws-doctor/"
 
 type realRunner struct{}
 
