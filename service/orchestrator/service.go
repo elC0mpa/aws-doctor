@@ -69,6 +69,11 @@ func (s *service) updateWorkflow() error {
 		return nil
 	}
 
+	if errors.Is(err, model.ErrHomebrewInstall) {
+		s.outputService.PrintHomebrewUpdate()
+		return nil
+	}
+
 	if errors.Is(err, model.ErrAlreadyLatest) {
 		s.outputService.PrintAlreadyLatest(s.versionInfo.Version)
 		return nil

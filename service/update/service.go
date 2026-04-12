@@ -13,6 +13,8 @@ import (
 	"github.com/google/go-github/v62/github"
 )
 
+const homebrewCellarPath = "/Cellar/"
+
 type realRunner struct{}
 
 func (r *realRunner) Run(name string, arg ...string) error {
@@ -49,11 +51,8 @@ func NewService(versionInfo model.VersionInfo) Service {
 
 func (s *service) Update() error {
 	resolvedPath, err := s.pathResolver.ResolvedExecutablePath()
-	if err == nil && strings.Contains(resolvedPath, "/Cellar/") {
-		fmt.Println("aws-doctor was installed via Homebrew. To update, run:")
-		fmt.Println()
-		fmt.Println("  brew upgrade aws-doctor")
-		return nil
+	if err == nil && strings.Contains(resolvedPath, homebrewCellarPath) {
+		return model.ErrHomebrewInstall
 	}
 
 	shouldUpdate, err := s.shouldUpdate(context.Background())

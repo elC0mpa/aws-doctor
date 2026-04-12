@@ -1,11 +1,8 @@
 package update
 
 import (
-	"bytes"
 	"context"
 	"errors"
-	"io"
-	"os"
 	"testing"
 
 	"github.com/elC0mpa/aws-doctor/model"
@@ -145,8 +142,6 @@ func TestUpdate_NeedsUpdate(t *testing.T) {
 }
 
 func TestUpdate_Homebrew(t *testing.T) {
-	installCmd := []string{"-c", "curl -sSL https://raw.githubusercontent.com/elC0mpa/aws-doctor/main/install.sh | sh"}
-
 	tests := []struct {
 		name         string
 		resolvedPath string
@@ -178,6 +173,8 @@ func TestUpdate_Homebrew(t *testing.T) {
 		},
 	}
 
+	installCmd := []string{"-c", "curl -sSL https://raw.githubusercontent.com/elC0mpa/aws-doctor/main/install.sh | sh"}
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			mr := new(mockRunner)
@@ -192,33 +189,14 @@ func TestUpdate_Homebrew(t *testing.T) {
 				mr.On("Run", "sh", installCmd).Return(nil)
 			}
 
-			// Capture stdout to verify brew message
-			old := os.Stdout
-			r, w, _ := os.Pipe()
-			os.Stdout = w
-
-			var buf bytes.Buffer
-			done := make(chan struct{})
-			go func() {
-				io.Copy(&buf, r)
-				close(done)
-			}()
-
 			err := s.Update()
 
-			w.Close()
-			<-done
-			os.Stdout = old
-
-			output := buf.String()
-
-			assert.NoError(t, err)
-
 			if tt.expectBrew {
-				assert.Contains(t, output, "brew upgrade aws-doctor")
+				assert.ErrorIs(t, err, model.ErrHomebrewInstall)
 				mr.AssertNotCalled(t, "Run", mock.Anything, mock.Anything)
 				mrepo.AssertNotCalled(t, "GetLatestRelease", mock.Anything, mock.Anything, mock.Anything)
 			} else {
+				assert.NoError(t, err)
 				mr.AssertCalled(t, "Run", "sh", installCmd)
 			}
 
