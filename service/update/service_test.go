@@ -197,11 +197,17 @@ func TestUpdate_Homebrew(t *testing.T) {
 			r, w, _ := os.Pipe()
 			os.Stdout = w
 
+			var buf bytes.Buffer
+			done := make(chan struct{})
+			go func() {
+				io.Copy(&buf, r)
+				close(done)
+			}()
+
 			err := s.Update()
 
 			w.Close()
-			var buf bytes.Buffer
-			io.Copy(&buf, r)
+			<-done
 			os.Stdout = old
 
 			output := buf.String()
