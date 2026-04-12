@@ -50,11 +50,6 @@ func NewService(versionInfo model.VersionInfo) Service {
 }
 
 func (s *service) Update() error {
-	resolvedPath, err := s.pathResolver.ResolvedExecutablePath()
-	if err == nil && strings.Contains(resolvedPath, homebrewCellarPath) {
-		return model.ErrHomebrewInstall
-	}
-
 	shouldUpdate, err := s.shouldUpdate(context.Background())
 	if err != nil {
 		return err
@@ -64,8 +59,12 @@ func (s *service) Update() error {
 		return model.ErrAlreadyLatest
 	}
 
+	resolvedPath, err := s.pathResolver.ResolvedExecutablePath()
+	if err == nil && strings.Contains(resolvedPath, homebrewCellarPath) {
+		return model.ErrHomebrewInstall
+	}
+
 	// Proceed with update
-	// Reutilize the install.sh script from the repository
 	if err := s.runner.Run("sh", "-c", "curl -sSL https://raw.githubusercontent.com/elC0mpa/aws-doctor/main/install.sh | sh"); err != nil {
 		return fmt.Errorf("failed to run update script: %w", err)
 	}
