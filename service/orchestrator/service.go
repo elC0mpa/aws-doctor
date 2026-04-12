@@ -57,11 +57,12 @@ func (s *service) Orchestrate(flags model.Flags) error {
 
 	var workflowErr error
 
-	if flags.Waste {
+	switch {
+	case flags.Waste:
 		workflowErr = s.wasteWorkflow(flags.WasteChecks, flags.Report, flags.ReportPath)
-	} else if flags.Trend {
+	case flags.Trend:
 		workflowErr = s.trendWorkflow(flags.TrendChecks, flags.Report, flags.ReportPath)
-	} else {
+	default:
 		workflowErr = s.defaultWorkflow(flags.Report, flags.ReportPath)
 	}
 
