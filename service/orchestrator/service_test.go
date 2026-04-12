@@ -106,6 +106,45 @@ func TestOrchestrate_RouteToUpdateWorkflow(t *testing.T) {
 	mockUpdate.AssertExpectations(t)
 }
 
+func TestOrchestrate_UpdateWorkflow_HomebrewInstall(t *testing.T) {
+	mockSTS := new(services.MockSTSService)
+	mockCost := new(services.MockCostService)
+	mockEC2 := new(services.MockEC2Service)
+	mockELB := new(services.MockELBService)
+	mockS3 := new(services.MockS3Service)
+	mockCloudWatch := new(services.MockCloudWatchLogsService)
+	mockOutput := new(services.MockOutputService)
+	mockUpdate := new(services.MockUpdateService)
+	mockReport := new(services.MockReportService)
+	mockRDS := new(services.MockRDSService)
+
+	config := Config{
+		STSService:            mockSTS,
+		CostService:           mockCost,
+		EC2Service:            mockEC2,
+		ELBService:            mockELB,
+		S3Service:             mockS3,
+		CloudWatchLogsService: mockCloudWatch,
+		RDSService:            mockRDS,
+		OutputService:         mockOutput,
+		UpdateService:         mockUpdate,
+		ReportService:         mockReport,
+		VersionInfo:           model.VersionInfo{Version: "v1.0.0", Commit: "abc", Date: "2024-01-01"},
+	}
+	svc := NewService(config)
+
+	mockOutput.On("StopSpinner").Return()
+	mockUpdate.On("Update").Return(model.ErrHomebrewInstall)
+	mockOutput.On("PrintHomebrewUpdate").Return()
+
+	flags := model.Flags{Update: true}
+	err := svc.Orchestrate(flags)
+
+	assert.NoError(t, err)
+	mockOutput.AssertExpectations(t)
+	mockUpdate.AssertExpectations(t)
+}
+
 func TestOrchestrate_RouteToVersionWorkflow(t *testing.T) {
 	// Setup mocks
 	mockSTS := new(services.MockSTSService)
