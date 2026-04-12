@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"path/filepath"
+	"strings"
 
 	"github.com/elC0mpa/aws-doctor/model"
 	"github.com/elC0mpa/aws-doctor/utils/version"
@@ -22,6 +24,17 @@ func (r *realRunner) Run(name string, arg ...string) error {
 	return cmd.Run()
 }
 
+type realPathResolver struct{}
+
+func (r *realPathResolver) ResolvedExecutablePath() (string, error) {
+	exePath, err := os.Executable()
+	if err != nil {
+		return "", err
+	}
+
+	return filepath.EvalSymlinks(exePath)
+}
+
 // NewService creates a new update service.
 func NewService(versionInfo model.VersionInfo) Service {
 	client := github.NewClient(nil)
@@ -30,10 +43,19 @@ func NewService(versionInfo model.VersionInfo) Service {
 		runner:       &realRunner{},
 		versionInfo:  versionInfo,
 		repositories: client.Repositories,
+		pathResolver: &realPathResolver{},
 	}
 }
 
 func (s *service) Update() error {
+	resolvedPath, err := s.pathResolver.ResolvedExecutablePath()
+	if err == nil && strings.Contains(resolvedPath, "/Cellar/") {
+		fmt.Println("aws-doctor was installed via Homebrew. To update, run:")
+		fmt.Println()
+		fmt.Println("  brew upgrade aws-doctor")
+		return nil
+	}
+
 	shouldUpdate, err := s.shouldUpdate(context.Background())
 	if err != nil {
 		return err
