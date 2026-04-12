@@ -36,6 +36,7 @@ type Renderer interface {
 	OutputWasteCSV(input model.RenderWasteInput) error
 	StopSpinner()
 	PrintAlreadyLatest(version string)
+	PrintHomebrewUpdate()
 	PrintRateLimitError()
 	PrintUpdateError(err error)
 	RenderVersion(versionInfo model.VersionInfo)
@@ -90,6 +91,14 @@ func (r *realRenderer) PrintAlreadyLatest(version string) {
 	fmt.Println(text.FgHiWhite.Sprintf("ℹ️ aws-doctor version %s is already the latest version", version))
 }
 
+func (r *realRenderer) PrintHomebrewUpdate() {
+	fmt.Println()
+	fmt.Println(text.FgHiWhite.Sprint("ℹ️ aws-doctor was installed via Homebrew. To update, run:"))
+	fmt.Println()
+	fmt.Println(text.FgHiWhite.Sprint("  brew upgrade aws-doctor"))
+	fmt.Println()
+}
+
 func (r *realRenderer) PrintRateLimitError() {
 	fmt.Println()
 	fmt.Println(text.FgRed.Sprint("❌ Error: could not check GitHub release because of rate limits"))
@@ -142,6 +151,9 @@ type Service interface {
 
 	// PrintAlreadyLatest outputs a message when the user is already on the latest version
 	PrintAlreadyLatest(version string)
+
+	// PrintHomebrewUpdate outputs a message when the binary was installed via Homebrew
+	PrintHomebrewUpdate()
 
 	// PrintRateLimitError outputs a message when GitHub API rate limit is reached
 	PrintRateLimitError()

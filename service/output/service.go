@@ -70,6 +70,10 @@ func (s *service) PrintAlreadyLatest(version string) {
 	s.renderer.PrintAlreadyLatest(version)
 }
 
+func (s *service) PrintHomebrewUpdate() {
+	s.renderer.PrintHomebrewUpdate()
+}
+
 func (s *service) PrintRateLimitError() {
 	s.renderer.PrintRateLimitError()
 }
