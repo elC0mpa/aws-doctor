@@ -694,164 +694,106 @@ func TestOrchestrate_RouteToReportWorkflow(t *testing.T) {
 	mockOutput.AssertNotCalled(t, "RenderCostComparison", mock.Anything)
 }
 
-func TestOrchestrate_DefaultWorkflow_ShowsNewVersionNotification(t *testing.T) {
-	mockSTS := new(services.MockSTSService)
-	mockCost := new(services.MockCostService)
-	mockEC2 := new(services.MockEC2Service)
-	mockELB := new(services.MockELBService)
-	mockS3 := new(services.MockS3Service)
-	mockCloudWatch := new(services.MockCloudWatchLogsService)
-	mockOutput := new(services.MockOutputService)
-	mockUpdate := new(services.MockUpdateService)
-	mockReport := new(services.MockReportService)
-	mockRDS := new(services.MockRDSService)
+type testMocks struct {
+	sts        *services.MockSTSService
+	cost       *services.MockCostService
+	ec2        *services.MockEC2Service
+	elb        *services.MockELBService
+	s3         *services.MockS3Service
+	cloudWatch *services.MockCloudWatchLogsService
+	output     *services.MockOutputService
+	update     *services.MockUpdateService
+	report     *services.MockReportService
+	rds        *services.MockRDSService
+}
 
-	versionInfo := model.VersionInfo{Version: "v1.2.0", Commit: "abc", Date: "today"}
-	config := Config{
-		STSService:            mockSTS,
-		CostService:           mockCost,
-		EC2Service:            mockEC2,
-		ELBService:            mockELB,
-		S3Service:             mockS3,
-		CloudWatchLogsService: mockCloudWatch,
-		RDSService:            mockRDS,
-		OutputService:         mockOutput,
-		UpdateService:         mockUpdate,
-		ReportService:         mockReport,
-		VersionInfo:           versionInfo,
+func newTestServiceWithMocks(versionInfo model.VersionInfo) (Service, *testMocks) {
+	m := &testMocks{
+		sts:        new(services.MockSTSService),
+		cost:       new(services.MockCostService),
+		ec2:        new(services.MockEC2Service),
+		elb:        new(services.MockELBService),
+		s3:         new(services.MockS3Service),
+		cloudWatch: new(services.MockCloudWatchLogsService),
+		output:     new(services.MockOutputService),
+		update:     new(services.MockUpdateService),
+		report:     new(services.MockReportService),
+		rds:        new(services.MockRDSService),
 	}
-	svc := NewService(config)
 
-	mockCost.On("GetCurrentMonthCostsByService", mock.Anything).Return(&model.CostInfo{}, nil)
-	mockCost.On("GetLastMonthCostsByService", mock.Anything).Return(&model.CostInfo{}, nil)
-	mockCost.On("GetCurrentMonthTotalCosts", mock.Anything).Return(aws.String("100.00"), nil)
-	mockCost.On("GetLastMonthTotalCosts", mock.Anything).Return(aws.String("90.00"), nil)
-	mockSTS.On("GetCallerIdentity", mock.Anything).Return(&sts.GetCallerIdentityOutput{
+	svc := NewService(Config{
+		STSService:            m.sts,
+		CostService:           m.cost,
+		EC2Service:            m.ec2,
+		ELBService:            m.elb,
+		S3Service:             m.s3,
+		CloudWatchLogsService: m.cloudWatch,
+		RDSService:            m.rds,
+		OutputService:         m.output,
+		UpdateService:         m.update,
+		ReportService:         m.report,
+		VersionInfo:           versionInfo,
+	})
+
+	return svc, m
+}
+
+func (m *testMocks) setupDefaultWorkflow() {
+	m.cost.On("GetCurrentMonthCostsByService", mock.Anything).Return(&model.CostInfo{}, nil)
+	m.cost.On("GetLastMonthCostsByService", mock.Anything).Return(&model.CostInfo{}, nil)
+	m.cost.On("GetCurrentMonthTotalCosts", mock.Anything).Return(aws.String("100.00"), nil)
+	m.cost.On("GetLastMonthTotalCosts", mock.Anything).Return(aws.String("90.00"), nil)
+	m.sts.On("GetCallerIdentity", mock.Anything).Return(&sts.GetCallerIdentityOutput{
 		Account: aws.String("123456789012"),
 	}, nil)
-	mockOutput.On("StopSpinner").Return()
-	mockOutput.On("RenderCostComparison", mock.Anything).Return(nil)
+	m.output.On("StopSpinner").Return()
+	m.output.On("RenderCostComparison", mock.Anything).Return(nil)
+}
+
+func TestOrchestrate_DefaultWorkflow_ShowsNewVersionNotification(t *testing.T) {
+	versionInfo := model.VersionInfo{Version: "v1.2.0", Commit: "abc", Date: "today"}
+	svc, m := newTestServiceWithMocks(versionInfo)
+	m.setupDefaultWorkflow()
 
 	latestVersion := "v1.3.0"
-	mockUpdate.On("CheckForUpdate", mock.Anything).Return(&latestVersion, nil)
-	mockOutput.On("PrintNewVersionAvailable", "v1.2.0", "v1.3.0").Return()
+	m.update.On("CheckForUpdate", mock.Anything).Return(&latestVersion, nil)
+	m.output.On("PrintNewVersionAvailable", "v1.2.0", "v1.3.0").Return()
 
 	err := svc.Orchestrate(model.Flags{})
 	assert.NoError(t, err)
-	mockOutput.AssertCalled(t, "PrintNewVersionAvailable", "v1.2.0", "v1.3.0")
+	m.output.AssertCalled(t, "PrintNewVersionAvailable", "v1.2.0", "v1.3.0")
 }
 
 func TestOrchestrate_DefaultWorkflow_VersionCheckError_SilentlyIgnored(t *testing.T) {
-	mockSTS := new(services.MockSTSService)
-	mockCost := new(services.MockCostService)
-	mockEC2 := new(services.MockEC2Service)
-	mockELB := new(services.MockELBService)
-	mockS3 := new(services.MockS3Service)
-	mockCloudWatch := new(services.MockCloudWatchLogsService)
-	mockOutput := new(services.MockOutputService)
-	mockUpdate := new(services.MockUpdateService)
-	mockReport := new(services.MockReportService)
-	mockRDS := new(services.MockRDSService)
+	svc, m := newTestServiceWithMocks(model.VersionInfo{Version: "v1.2.0", Commit: "abc", Date: "today"})
+	m.setupDefaultWorkflow()
 
-	config := Config{
-		STSService:            mockSTS,
-		CostService:           mockCost,
-		EC2Service:            mockEC2,
-		ELBService:            mockELB,
-		S3Service:             mockS3,
-		CloudWatchLogsService: mockCloudWatch,
-		RDSService:            mockRDS,
-		OutputService:         mockOutput,
-		UpdateService:         mockUpdate,
-		ReportService:         mockReport,
-		VersionInfo:           model.VersionInfo{Version: "v1.2.0", Commit: "abc", Date: "today"},
-	}
-	svc := NewService(config)
-
-	mockCost.On("GetCurrentMonthCostsByService", mock.Anything).Return(&model.CostInfo{}, nil)
-	mockCost.On("GetLastMonthCostsByService", mock.Anything).Return(&model.CostInfo{}, nil)
-	mockCost.On("GetCurrentMonthTotalCosts", mock.Anything).Return(aws.String("100.00"), nil)
-	mockCost.On("GetLastMonthTotalCosts", mock.Anything).Return(aws.String("90.00"), nil)
-	mockSTS.On("GetCallerIdentity", mock.Anything).Return(&sts.GetCallerIdentityOutput{
-		Account: aws.String("123456789012"),
-	}, nil)
-	mockOutput.On("StopSpinner").Return()
-	mockOutput.On("RenderCostComparison", mock.Anything).Return(nil)
-
-	mockUpdate.On("CheckForUpdate", mock.Anything).Return(nil, errors.New("github error"))
+	m.update.On("CheckForUpdate", mock.Anything).Return(nil, errors.New("github error"))
 
 	err := svc.Orchestrate(model.Flags{})
 	assert.NoError(t, err)
-	mockOutput.AssertNotCalled(t, "PrintNewVersionAvailable", mock.Anything, mock.Anything)
+	m.output.AssertNotCalled(t, "PrintNewVersionAvailable", mock.Anything, mock.Anything)
 }
 
 func TestOrchestrate_UpdateWorkflow_NoVersionCheck(t *testing.T) {
-	mockSTS := new(services.MockSTSService)
-	mockCost := new(services.MockCostService)
-	mockEC2 := new(services.MockEC2Service)
-	mockELB := new(services.MockELBService)
-	mockS3 := new(services.MockS3Service)
-	mockCloudWatch := new(services.MockCloudWatchLogsService)
-	mockOutput := new(services.MockOutputService)
-	mockUpdate := new(services.MockUpdateService)
-	mockReport := new(services.MockReportService)
-	mockRDS := new(services.MockRDSService)
+	svc, m := newTestServiceWithMocks(model.VersionInfo{Version: "v1.2.0", Commit: "abc", Date: "today"})
 
-	config := Config{
-		STSService:            mockSTS,
-		CostService:           mockCost,
-		EC2Service:            mockEC2,
-		ELBService:            mockELB,
-		S3Service:             mockS3,
-		CloudWatchLogsService: mockCloudWatch,
-		RDSService:            mockRDS,
-		OutputService:         mockOutput,
-		UpdateService:         mockUpdate,
-		ReportService:         mockReport,
-		VersionInfo:           model.VersionInfo{Version: "v1.2.0", Commit: "abc", Date: "today"},
-	}
-	svc := NewService(config)
-
-	mockOutput.On("StopSpinner").Return()
-	mockUpdate.On("Update").Return(nil)
+	m.output.On("StopSpinner").Return()
+	m.update.On("Update").Return(nil)
 
 	err := svc.Orchestrate(model.Flags{Update: true})
 	assert.NoError(t, err)
-	mockUpdate.AssertNotCalled(t, "CheckForUpdate", mock.Anything)
+	m.update.AssertNotCalled(t, "CheckForUpdate", mock.Anything)
 }
 
 func TestOrchestrate_VersionWorkflow_NoVersionCheck(t *testing.T) {
-	mockSTS := new(services.MockSTSService)
-	mockCost := new(services.MockCostService)
-	mockEC2 := new(services.MockEC2Service)
-	mockELB := new(services.MockELBService)
-	mockS3 := new(services.MockS3Service)
-	mockCloudWatch := new(services.MockCloudWatchLogsService)
-	mockOutput := new(services.MockOutputService)
-	mockUpdate := new(services.MockUpdateService)
-	mockReport := new(services.MockReportService)
-	mockRDS := new(services.MockRDSService)
-
 	versionInfo := model.VersionInfo{Version: "v1.2.0", Commit: "abc", Date: "today"}
-	config := Config{
-		STSService:            mockSTS,
-		CostService:           mockCost,
-		EC2Service:            mockEC2,
-		ELBService:            mockELB,
-		S3Service:             mockS3,
-		CloudWatchLogsService: mockCloudWatch,
-		RDSService:            mockRDS,
-		OutputService:         mockOutput,
-		UpdateService:         mockUpdate,
-		ReportService:         mockReport,
-		VersionInfo:           versionInfo,
-	}
-	svc := NewService(config)
+	svc, m := newTestServiceWithMocks(versionInfo)
 
-	mockOutput.On("StopSpinner").Return()
-	mockOutput.On("RenderVersion", versionInfo).Return()
+	m.output.On("StopSpinner").Return()
+	m.output.On("RenderVersion", versionInfo).Return()
 
 	err := svc.Orchestrate(model.Flags{Version: true})
 	assert.NoError(t, err)
-	mockUpdate.AssertNotCalled(t, "CheckForUpdate", mock.Anything)
+	m.update.AssertNotCalled(t, "CheckForUpdate", mock.Anything)
 }
