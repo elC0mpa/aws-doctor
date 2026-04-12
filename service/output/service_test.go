@@ -220,16 +220,12 @@ func TestUpdatePrintMethods(t *testing.T) {
 		s.RenderVersion(v)
 		mr.AssertExpectations(t)
 	})
-}
 
-func TestPrintNewVersionAvailable(t *testing.T) {
-	mr := new(renderers.MockRenderer)
-	s := &service{renderer: mr}
-
-	mr.On("PrintNewVersionAvailable", "v1.2.0", "v1.3.0").Return()
-
-	s.PrintNewVersionAvailable("v1.2.0", "v1.3.0")
-	mr.AssertExpectations(t)
+	t.Run("PrintNewVersionAvailable", func(t *testing.T) {
+		mr.On("PrintNewVersionAvailable", "v1.2.0", "v1.3.0").Return()
+		s.PrintNewVersionAvailable("v1.2.0", "v1.3.0")
+		mr.AssertExpectations(t)
+	})
 }
 
 func TestFormatConstants(t *testing.T) {
