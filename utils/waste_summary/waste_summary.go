@@ -120,6 +120,10 @@ func countOnlyCategories(input model.RenderWasteInput) []model.CategorySummary {
 		categories = append(categories, model.CategorySummary{Name: "Unused Key Pairs", Count: n})
 	}
 
+	if n := len(input.IdleNatGateways); n > 0 {
+		categories = append(categories, model.CategorySummary{Name: "Idle NAT Gateways", Count: n})
+	}
+
 	return categories
 }
 

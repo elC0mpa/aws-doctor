@@ -72,6 +72,7 @@ type WasteReportJSON struct {
 	StoppedRDSInstances       []RDSInstanceJSON        `json:"stopped_rds_instances"`
 	OldRDSSnapshots           []RDSSnapshotJSON        `json:"old_rds_snapshots"`
 	IdleRDSInstances          []RDSIdleInstanceJSON    `json:"idle_rds_instances"`
+	IdleNatGateways           []NatGatewayJSON         `json:"idle_nat_gateways"`
 }
 
 // RDSInstanceJSON represents a stopped RDS instance.
@@ -203,4 +204,13 @@ type KeyPairJSON struct {
 	KeyPairID       string `json:"key_pair_id"`
 	CreationDate    string `json:"creation_date"`
 	DaysSinceCreate int    `json:"days_since_create"`
+}
+
+// NatGatewayJSON represents an idle NAT Gateway
+type NatGatewayJSON struct {
+	NatGatewayID          string  `json:"nat_gateway_id"`
+	VPCID                 string  `json:"vpc_id"`
+	SubnetID              string  `json:"subnet_id"`
+	State                 string  `json:"state"`
+	BytesOutToDestination float64 `json:"bytes_out_to_destination"`
 }

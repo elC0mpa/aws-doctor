@@ -73,3 +73,12 @@ type KeyPairWasteInfo struct {
 	CreateTime      time.Time
 	DaysSinceCreate int
 }
+
+// NatGatewayWasteInfo contains information about idle NAT Gateways
+type NatGatewayWasteInfo struct {
+	NatGatewayID          string
+	VPCID                 string
+	SubnetID              string
+	State                 string
+	BytesOutToDestination float64
+}

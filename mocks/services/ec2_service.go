@@ -102,3 +102,13 @@ func (m *MockEC2Service) GetUnusedKeyPairs(ctx context.Context) ([]model.KeyPair
 
 	return args.Get(0).([]model.KeyPairWasteInfo), args.Error(1)
 }
+
+// GetIdleNatGateways mocks the GetIdleNatGateways method.
+func (m *MockEC2Service) GetIdleNatGateways(ctx context.Context, idleDays int) ([]model.NatGatewayWasteInfo, error) {
+	args := m.Called(ctx, idleDays)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+
+	return args.Get(0).([]model.NatGatewayWasteInfo), args.Error(1)
+}

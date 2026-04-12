@@ -48,7 +48,8 @@ func hasAnyWaste(input model.RenderWasteInput) bool {
 		len(input.CloudWatchLogGroups) > 0 ||
 		len(input.RDSInstances) > 0 ||
 		len(input.RDSSnapshots) > 0 ||
-		len(input.RDSIdleInstances) > 0
+		len(input.RDSIdleInstances) > 0 ||
+		len(input.IdleNatGateways) > 0
 }
 
 func drawWasteSections(input model.RenderWasteInput) {
@@ -90,6 +91,10 @@ func drawWasteSections(input model.RenderWasteInput) {
 
 	if len(input.RDSInstances) > 0 || len(input.RDSSnapshots) > 0 || len(input.RDSIdleInstances) > 0 {
 		drawRDSTable(input.RDSInstances, input.RDSSnapshots, input.RDSIdleInstances)
+	}
+
+	if len(input.IdleNatGateways) > 0 {
+		drawNatGatewayTable(input.IdleNatGateways)
 	}
 }
 
@@ -466,6 +471,28 @@ func drawKeyPairTable(keyPairs []model.KeyPairWasteInfo) {
 	}
 
 	t.AppendRows(rows)
+	t.Render()
+	fmt.Println()
+}
+
+func drawNatGatewayTable(natGateways []model.NatGatewayWasteInfo) {
+	t := table.NewWriter()
+	t.SetOutputMirror(os.Stdout)
+	t.SetStyle(table.StyleRounded)
+	t.SetTitle(" %s ", text.FgHiYellow.Sprint("🧟 NAT Gateway Waste"))
+
+	t.AppendHeader(table.Row{"NAT Gateway ID", "VPC ID", "Subnet ID", "State", "Bytes Transferred"})
+
+	for _, ng := range natGateways {
+		t.AppendRow(table.Row{
+			ng.NatGatewayID,
+			ng.VPCID,
+			ng.SubnetID,
+			ng.State,
+			fmt.Sprintf("%.2f", ng.BytesOutToDestination),
+		})
+	}
+
 	t.Render()
 	fmt.Println()
 }

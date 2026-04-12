@@ -51,3 +51,37 @@ func (s *service) RDSHasZeroConnectionsInPeriod(ctx context.Context, dbInstanceI
 
 	return true, nil
 }
+
+// GetNatGatewayBytesOut returns the total bytes out to destination for a NAT Gateway over the given number of days.
+func (s *service) GetNatGatewayBytesOut(ctx context.Context, natGatewayID string, days int) (float64, error) {
+	now := time.Now()
+	startTime := now.AddDate(0, 0, -days)
+
+	output, err := s.client.GetMetricStatistics(ctx, &cloudwatch.GetMetricStatisticsInput{
+		Namespace:  aws.String("AWS/NATGateway"),
+		MetricName: aws.String("BytesOutToDestination"),
+		Dimensions: []cwtypes.Dimension{
+			{
+				Name:  aws.String("NatGatewayId"),
+				Value: aws.String(natGatewayID),
+			},
+		},
+		StartTime:  &startTime,
+		EndTime:    &now,
+		Period:     aws.Int32(86400),
+		Statistics: []cwtypes.Statistic{cwtypes.StatisticSum},
+	})
+	if err != nil {
+		return 0, fmt.Errorf("failed to get CloudWatch metrics for NAT Gateway %s: %w", natGatewayID, err)
+	}
+
+	var totalBytes float64
+
+	for _, dp := range output.Datapoints {
+		if dp.Sum != nil {
+			totalBytes += *dp.Sum
+		}
+	}
+
+	return totalBytes, nil
+}

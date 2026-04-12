@@ -11,17 +11,19 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/ec2"
 	"github.com/aws/aws-sdk-go-v2/service/ec2/types"
 	"github.com/elC0mpa/aws-doctor/model"
+	"github.com/elC0mpa/aws-doctor/service/cloudwatchmetrics"
 	utilsec2 "github.com/elC0mpa/aws-doctor/utils/ec2"
 )
 
 const ebsSnapshotCostPerGBMonth = 0.05
 
 // NewService creates a new EC2 service.
-func NewService(awsconfig aws.Config) Service {
+func NewService(awsconfig aws.Config, cwService cloudwatchmetrics.Service) Service {
 	client := ec2.NewFromConfig(awsconfig)
 
 	return &service{
-		client: client,
+		client:    client,
+		cwService: cwService,
 	}
 }
 
@@ -591,4 +593,54 @@ func (s *service) getResourceTypeFromDescription(description string) types.Netwo
 	}
 
 	return types.NetworkInterfaceType("interface")
+}
+
+// GetIdleNatGateways returns NAT Gateways that have processed 0 bytes over the idleDays period.
+func (s *service) GetIdleNatGateways(ctx context.Context, idleDays int) ([]model.NatGatewayWasteInfo, error) {
+	var idleNatGateways []model.NatGatewayWasteInfo
+
+	// Describe all available NAT Gateways using paginator
+	paginator := ec2.NewDescribeNatGatewaysPaginator(s.client, &ec2.DescribeNatGatewaysInput{
+		Filter: []types.Filter{
+			{
+				Name:   aws.String("state"),
+				Values: []string{"available"},
+			},
+		},
+	})
+
+	for paginator.HasMorePages() {
+		output, err := paginator.NextPage(ctx)
+		if err != nil {
+			return nil, fmt.Errorf("failed to describe NAT gateways: %w", err)
+		}
+
+		for _, natGateway := range output.NatGateways {
+			// Get NAT Gateway ID - check for nil safety
+			natGatewayID := aws.ToString(natGateway.NatGatewayId)
+			if natGatewayID == "" {
+				continue // Skip NAT Gateways without ID
+			}
+
+			// Query CloudWatch for BytesOutToDestination
+			bytesOut, err := s.cwService.GetNatGatewayBytesOut(ctx, natGatewayID, idleDays)
+			if err != nil {
+				// Continue processing other NAT Gateways rather than failing all
+				continue
+			}
+
+			// Check if idle (0 bytes)
+			if bytesOut == 0 {
+				idleNatGateways = append(idleNatGateways, model.NatGatewayWasteInfo{
+					NatGatewayID:          natGatewayID,
+					VPCID:                 aws.ToString(natGateway.VpcId),
+					SubnetID:              aws.ToString(natGateway.SubnetId),
+					State:                 string(natGateway.State),
+					BytesOutToDestination: bytesOut,
+				})
+			}
+		}
+	}
+
+	return idleNatGateways, nil
 }
