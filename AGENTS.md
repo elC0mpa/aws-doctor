@@ -11,6 +11,7 @@ aws-doctor is a Go CLI tool that provides AWS cost analysis and waste detection.
 - Cost comparison between current and previous month
 - 6-month trend analysis
 - Waste detection (unused EIPs, EBS volumes, stopped instances, load balancers, etc.)
+- Background update notification: the orchestrator checks GitHub for a newer release asynchronously during any main workflow (cost, waste, trend) and prints a notification after command output if an update is available. Skipped for `update`, `version`, and `dev` builds.
 - Startup banner uses ANSI truecolor; title color switches to AmazonOrange when a blue background is detected (Windows console attributes or `COLORFGBG` on Unix-like terminals), otherwise SkypeBlue. Override with `AWS_DOCTOR_BANNER_COLOR` (color name or ANSI code).
 
 ## Quick Reference

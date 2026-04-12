@@ -100,6 +100,7 @@ go install github.com/elC0mpa/aws-doctor@latest
 - **🧟 Zombie Discovery:** Scans for idle EIPs, stopped instances, orphaned snapshots, idle RDS instances, and more. Supports selective service filtering (`ec2`, `s3`, `elb`, `cloudwatch`, `rds`).
 - **📊 6-Month Trends:** High-fidelity ANSI visualization of your spending velocity.
 - **📤 Multiple Output Formats:** Export results in `table`, `json`, or `csv` for easy integration with other tools or reporting.
+- **🔔 Update Notifications:** Automatically checks for new versions in the background and notifies you after command output, so you never miss an update.
 - **🔐 MFA Ready:** Native support for profiles requiring Multi-Factor Authentication.
 
 ## 💡 Motivation
