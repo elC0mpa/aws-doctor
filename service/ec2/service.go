@@ -599,7 +599,6 @@ func (s *service) getResourceTypeFromDescription(description string) types.Netwo
 func (s *service) GetIdleNatGateways(ctx context.Context, idleDays int) ([]model.NatGatewayWasteInfo, error) {
 	var idleNatGateways []model.NatGatewayWasteInfo
 
-	// Describe all available NAT Gateways using paginator
 	paginator := ec2.NewDescribeNatGatewaysPaginator(s.client, &ec2.DescribeNatGatewaysInput{
 		Filter: []types.Filter{
 			{
@@ -616,20 +615,17 @@ func (s *service) GetIdleNatGateways(ctx context.Context, idleDays int) ([]model
 		}
 
 		for _, natGateway := range output.NatGateways {
-			// Get NAT Gateway ID - check for nil safety
 			natGatewayID := aws.ToString(natGateway.NatGatewayId)
 			if natGatewayID == "" {
 				continue // Skip NAT Gateways without ID
 			}
 
-			// Query CloudWatch for BytesOutToDestination
 			bytesOut, err := s.cwService.GetNatGatewayBytesOut(ctx, natGatewayID, idleDays)
 			if err != nil {
 				// Continue processing other NAT Gateways rather than failing all
 				continue
 			}
 
-			// Check if idle (0 bytes)
 			if bytesOut == 0 {
 				idleNatGateways = append(idleNatGateways, model.NatGatewayWasteInfo{
 					NatGatewayID:          natGatewayID,

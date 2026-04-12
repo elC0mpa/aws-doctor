@@ -614,9 +614,58 @@ func TestOutputWasteJSON_AMIWithEmptySnapshots(t *testing.T) {
 	}
 }
 
+func TestOutputWasteJSON_WithIdleNatGateways(t *testing.T) {
+	idleNatGateways := []model.NatGatewayWasteInfo{
+		{
+			NatGatewayID:          "nat-1234567890abcdef0",
+			VPCID:                 "vpc-12345678",
+			SubnetID:              "subnet-12345678",
+			State:                 "available",
+			BytesOutToDestination: 0,
+		},
+		{
+			NatGatewayID:          "nat-abcdef01234567890",
+			VPCID:                 "vpc-87654321",
+			SubnetID:              "subnet-87654321",
+			State:                 "available",
+			BytesOutToDestination: 0,
+		},
+	}
+
+	var err error
+
+	output := captureStdout(func() {
+		err = OutputWasteJSON(model.RenderWasteInput{
+			AccountID:       "123456789012",
+			IdleNatGateways: idleNatGateways,
+		})
+	})
+
+	if err != nil {
+		t.Fatalf("OutputWasteJSON() error = %v", err)
+	}
+
+	var result model.WasteReportJSON
+	if jsonErr := json.Unmarshal([]byte(strings.TrimSpace(output)), &result); jsonErr != nil {
+		t.Fatalf("Failed to parse output JSON: %v", jsonErr)
+	}
+
+	if len(result.IdleNatGateways) != 2 {
+		t.Fatalf("IdleNatGateways has %d items, want 2", len(result.IdleNatGateways))
+	}
+
+	if result.IdleNatGateways[0].NatGatewayID != "nat-1234567890abcdef0" {
+		t.Errorf("First NAT Gateway ID = %v, want nat-1234567890abcdef0", result.IdleNatGateways[0].NatGatewayID)
+	}
+
+	if result.IdleNatGateways[0].BytesOutToDestination != 0 {
+		t.Errorf("First NAT Gateway BytesOutToDestination = %v, want 0", result.IdleNatGateways[0].BytesOutToDestination)
+	}
+}
+
 func BenchmarkOutputWasteJSON(b *testing.B) {
 	elasticIPs := make([]types.Address, 10)
-	for i := 0; i < 10; i++ {
+	for i := range 10 {
 		elasticIPs[i] = types.Address{
 			PublicIp:     aws.String("1.2.3." + string(rune('0'+i))),
 			AllocationId: aws.String("eipalloc-" + string(rune('a'+i))),
@@ -629,9 +678,7 @@ func BenchmarkOutputWasteJSON(b *testing.B) {
 
 	defer func() { os.Stdout = old }()
 
-	b.ResetTimer()
-
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		_ = OutputWasteJSON(model.RenderWasteInput{
 			AccountID:  "123456789012",
 			ElasticIPs: elasticIPs,
