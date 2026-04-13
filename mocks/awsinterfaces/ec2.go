@@ -91,13 +91,3 @@ func (m *MockEC2Client) DescribeKeyPairs(ctx context.Context, params *ec2.Descri
 
 	return args.Get(0).(*ec2.DescribeKeyPairsOutput), args.Error(1)
 }
-
-// DescribeNatGateways mocks the DescribeNatGateways API call.
-func (m *MockEC2Client) DescribeNatGateways(ctx context.Context, params *ec2.DescribeNatGatewaysInput, optFns ...func(*ec2.Options)) (*ec2.DescribeNatGatewaysOutput, error) {
-	args := m.Called(ctx, params, optFns)
-	if args.Get(0) == nil {
-		return nil, args.Error(1)
-	}
-
-	return args.Get(0).(*ec2.DescribeNatGatewaysOutput), args.Error(1)
-}
