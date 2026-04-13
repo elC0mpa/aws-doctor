@@ -16,9 +16,9 @@ import (
 )
 
 const (
-	memoryThresholdPercent = 10
-	lookbackDays           = 14
-	maxReportLines         = 50
+	defaultMemoryThresholdPercent = 10
+	lookbackDays                  = 14
+	maxReportLines                = 50
 )
 
 var maxMemUsedRegex = regexp.MustCompile(`Max Memory Used:\s*(\d+)\s*MB`)
@@ -31,7 +31,11 @@ func NewService(awsconfig aws.Config) Service {
 	}
 }
 
-func (s *service) GetOverProvisionedFunctions(ctx context.Context) ([]model.LambdaOverProvisionedInfo, error) {
+func (s *service) GetOverProvisionedFunctions(ctx context.Context, memoryThresholdPercent int) ([]model.LambdaOverProvisionedInfo, error) {
+	if memoryThresholdPercent <= 0 {
+		memoryThresholdPercent = defaultMemoryThresholdPercent
+	}
+
 	functions, err := s.listAllFunctions(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to list Lambda functions: %w", err)

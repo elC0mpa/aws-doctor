@@ -59,7 +59,7 @@ func TestGetOverProvisionedFunctions(t *testing.T) {
 		},
 	}, nil)
 
-	result, err := s.GetOverProvisionedFunctions(context.Background())
+	result, err := s.GetOverProvisionedFunctions(context.Background(), 10)
 
 	assert.NoError(t, err)
 	assert.Len(t, result, 1)
@@ -85,7 +85,7 @@ func TestGetOverProvisionedFunctions_ListFunctionsError(t *testing.T) {
 
 	mockLambdaClient.On("ListFunctions", mock.Anything, mock.Anything, mock.Anything).Return(nil, errors.New("Lambda API error"))
 
-	_, err := s.GetOverProvisionedFunctions(context.Background())
+	_, err := s.GetOverProvisionedFunctions(context.Background(), 10)
 
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "failed to list Lambda functions")
@@ -114,7 +114,7 @@ func TestGetOverProvisionedFunctions_LogsError(t *testing.T) {
 	// Logs error should be skipped, not returned
 	mockLogsClient.On("FilterLogEvents", mock.Anything, mock.Anything, mock.Anything).Return(nil, errors.New("log group not found"))
 
-	result, err := s.GetOverProvisionedFunctions(context.Background())
+	result, err := s.GetOverProvisionedFunctions(context.Background(), 10)
 
 	assert.NoError(t, err)
 	assert.Empty(t, result)
@@ -135,7 +135,7 @@ func TestGetOverProvisionedFunctions_NoFunctions(t *testing.T) {
 		Functions: []lambdatypes.FunctionConfiguration{},
 	}, nil)
 
-	result, err := s.GetOverProvisionedFunctions(context.Background())
+	result, err := s.GetOverProvisionedFunctions(context.Background(), 10)
 
 	assert.NoError(t, err)
 	assert.Empty(t, result)

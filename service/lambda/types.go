@@ -25,5 +25,5 @@ type service struct {
 
 // Service defines the interface for AWS Lambda waste detection.
 type Service interface {
-	GetOverProvisionedFunctions(ctx context.Context) ([]model.LambdaOverProvisionedInfo, error)
+	GetOverProvisionedFunctions(ctx context.Context, memoryThresholdPercent int) ([]model.LambdaOverProvisionedInfo, error)
 }

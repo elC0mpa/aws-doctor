@@ -45,7 +45,7 @@ func (s *service) Orchestrate(flags model.Flags) error {
 	}
 
 	if flags.Waste {
-		return s.wasteWorkflow(flags.WasteChecks, flags.Report, flags.ReportPath)
+		return s.wasteWorkflow(flags.WasteChecks, flags.Report, flags.ReportPath, flags.LambdaMemoryThreshold)
 	}
 
 	if flags.Trend {
@@ -177,7 +177,7 @@ func (s *service) trendWorkflow(trendChecks []string, generateReport bool, repor
 	return s.outputService.RenderTrend(*stsResult.Account, costInfo, trendChecks)
 }
 
-func (s *service) wasteWorkflow(wasteChecks []string, generateReport bool, reportPath string) error {
+func (s *service) wasteWorkflow(wasteChecks []string, generateReport bool, reportPath string, lambdaMemoryThreshold int) error {
 	ctx := context.Background()
 	g, ctx := errgroup.WithContext(ctx)
 
@@ -339,7 +339,7 @@ func (s *service) wasteWorkflow(wasteChecks []string, generateReport bool, repor
 		g.Go(func() error {
 			var err error
 
-			overProvisionedLambdas, err = s.lambdaService.GetOverProvisionedFunctions(ctx)
+			overProvisionedLambdas, err = s.lambdaService.GetOverProvisionedFunctions(ctx, lambdaMemoryThreshold)
 
 			return err
 		})
