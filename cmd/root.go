@@ -63,8 +63,9 @@ func buildOrchestrator(needsAWS bool) (orchestrator.Service, error) {
 	config.ELBService = elb.NewService(awsCfg)
 	config.S3Service = s3.NewService(awsCfg)
 	config.CloudWatchLogsService = cloudwatchlogs.NewService(awsCfg)
-	config.RDSService = rds.NewService(awsCfg, cloudwatchmetrics.NewService(awsCfg))
-	config.VPCService = awsvpc.NewService(awsCfg, cloudwatchmetrics.NewService(awsCfg))
+	cwMetricsService := cloudwatchmetrics.NewService(awsCfg)
+	config.RDSService = rds.NewService(awsCfg, cwMetricsService)
+	config.VPCService = awsvpc.NewService(awsCfg, cwMetricsService)
 	config.ReportService = report.NewService()
 
 	return orchestrator.NewService(config), nil
