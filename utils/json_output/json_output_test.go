@@ -677,8 +677,8 @@ func BenchmarkOutputWasteJSON(b *testing.B) {
 	os.Stdout, _ = os.Open(os.DevNull)
 
 	defer func() { os.Stdout = old }()
-
-	for b.Loop() {
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
 		_ = OutputWasteJSON(model.RenderWasteInput{
 			AccountID:  "123456789012",
 			ElasticIPs: elasticIPs,
