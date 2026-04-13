@@ -94,9 +94,9 @@ func costCategories(input model.RenderWasteInput) []model.CategorySummary {
 		categories = append(categories, model.CategorySummary{Name: "RDS Snapshots", Count: n, Cost: cost})
 	}
 
-	if n := len(input.IdleNatGateways); n > 0 {
+	if n := len(input.IdleNATGateways); n > 0 {
 		var cost float64
-		for _, ng := range input.IdleNatGateways {
+		for _, ng := range input.IdleNATGateways {
 			cost += ng.EstimatedMonthlyCost
 		}
 

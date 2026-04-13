@@ -95,7 +95,7 @@ func OutputWasteJSON(input model.RenderWasteInput) error {
 		StoppedRDSInstances: mapRDSInstances(input.RDSInstances),
 		OldRDSSnapshots:     mapRDSSnapshots(input.RDSSnapshots),
 		IdleRDSInstances:    mapRDSIdleInstances(input.RDSIdleInstances),
-		IdleNatGateways:     mapNatGateways(input.IdleNatGateways),
+		IdleNATGateways:     mapNATGateways(input.IdleNATGateways),
 	}
 
 	output.OrphanedSnapshots, output.StaleSnapshots = mapSnapshots(input.OrphanedSnapshots)
@@ -116,7 +116,7 @@ func OutputWasteJSON(input model.RenderWasteInput) error {
 		len(output.StoppedRDSInstances) > 0 ||
 		len(output.OldRDSSnapshots) > 0 ||
 		len(output.IdleRDSInstances) > 0 ||
-		len(output.IdleNatGateways) > 0
+		len(output.IdleNATGateways) > 0
 
 	categories, total := wastesummary.Compute(input)
 	output.TotalEstimatedMonthlyCost = total
@@ -359,11 +359,11 @@ func mapRDSIdleInstances(instances []model.RDSIdleInstanceInfo) []model.RDSIdleI
 	return result
 }
 
-func mapNatGateways(natGateways []model.NatGatewayWasteInfo) []model.NatGatewayJSON {
-	var result []model.NatGatewayJSON
+func mapNATGateways(natGateways []model.NATGatewayWasteInfo) []model.NATGatewayJSON {
+	var result []model.NATGatewayJSON
 
 	for _, ng := range natGateways {
-		result = append(result, model.NatGatewayJSON(ng))
+		result = append(result, model.NATGatewayJSON(ng))
 	}
 
 	return result

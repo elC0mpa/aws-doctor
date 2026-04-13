@@ -49,7 +49,7 @@ func hasAnyWaste(input model.RenderWasteInput) bool {
 		len(input.RDSInstances) > 0 ||
 		len(input.RDSSnapshots) > 0 ||
 		len(input.RDSIdleInstances) > 0 ||
-		len(input.IdleNatGateways) > 0
+		len(input.IdleNATGateways) > 0
 }
 
 func drawWasteSections(input model.RenderWasteInput) {
@@ -93,8 +93,8 @@ func drawWasteSections(input model.RenderWasteInput) {
 		drawRDSTable(input.RDSInstances, input.RDSSnapshots, input.RDSIdleInstances)
 	}
 
-	if len(input.IdleNatGateways) > 0 {
-		drawNatGatewayTable(input.IdleNatGateways)
+	if len(input.IdleNATGateways) > 0 {
+		drawNatGatewayTable(input.IdleNATGateways)
 	}
 }
 
@@ -475,11 +475,11 @@ func drawKeyPairTable(keyPairs []model.KeyPairWasteInfo) {
 	fmt.Println()
 }
 
-func drawNatGatewayTable(natGateways []model.NatGatewayWasteInfo) {
+func drawNatGatewayTable(natGateways []model.NATGatewayWasteInfo) {
 	t := table.NewWriter()
 	t.SetOutputMirror(os.Stdout)
 	t.SetStyle(table.StyleRounded)
-	t.SetTitle(" %s ", text.FgHiYellow.Sprint("🧟 NAT Gateway Waste"))
+	t.SetTitle(" %s ", text.FgHiYellow.Sprint("NAT Gateway Waste"))
 
 	t.AppendHeader(table.Row{"Status", "NAT Gateway ID", "Metric", "Est. Cost/Mo"})
 
@@ -495,11 +495,11 @@ func drawNatGatewayTable(natGateways []model.NatGatewayWasteInfo) {
 	fmt.Println()
 }
 
-func populateNatGatewayRows(natGateways []model.NatGatewayWasteInfo) []table.Row {
+func populateNatGatewayRows(natGateways []model.NATGatewayWasteInfo) []table.Row {
 	rows := make([]table.Row, 0, len(natGateways))
 
 	for _, ng := range natGateways {
-		p := outputshared.PresentIdleNatGateway(ng)
+		p := outputshared.PresentIdleNATGateway(ng)
 		rows = append(rows, table.Row{
 			"",
 			p.Identifier,

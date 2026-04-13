@@ -614,17 +614,17 @@ func TestOutputWasteJSON_AMIWithEmptySnapshots(t *testing.T) {
 	}
 }
 
-func TestOutputWasteJSON_WithIdleNatGateways(t *testing.T) {
-	idleNatGateways := []model.NatGatewayWasteInfo{
+func TestOutputWasteJSON_WithIdleNATGateways(t *testing.T) {
+	idleNATGateways := []model.NATGatewayWasteInfo{
 		{
-			NatGatewayID:          "nat-1234567890abcdef0",
+			NATGatewayID:          "nat-1234567890abcdef0",
 			VPCID:                 "vpc-12345678",
 			SubnetID:              "subnet-12345678",
 			State:                 "available",
 			BytesOutToDestination: 0,
 		},
 		{
-			NatGatewayID:          "nat-abcdef01234567890",
+			NATGatewayID:          "nat-abcdef01234567890",
 			VPCID:                 "vpc-87654321",
 			SubnetID:              "subnet-87654321",
 			State:                 "available",
@@ -637,7 +637,7 @@ func TestOutputWasteJSON_WithIdleNatGateways(t *testing.T) {
 	output := captureStdout(func() {
 		err = OutputWasteJSON(model.RenderWasteInput{
 			AccountID:       "123456789012",
-			IdleNatGateways: idleNatGateways,
+			IdleNATGateways: idleNATGateways,
 		})
 	})
 
@@ -650,16 +650,16 @@ func TestOutputWasteJSON_WithIdleNatGateways(t *testing.T) {
 		t.Fatalf("Failed to parse output JSON: %v", jsonErr)
 	}
 
-	if len(result.IdleNatGateways) != 2 {
-		t.Fatalf("IdleNatGateways has %d items, want 2", len(result.IdleNatGateways))
+	if len(result.IdleNATGateways) != 2 {
+		t.Fatalf("IdleNATGateways has %d items, want 2", len(result.IdleNATGateways))
 	}
 
-	if result.IdleNatGateways[0].NatGatewayID != "nat-1234567890abcdef0" {
-		t.Errorf("First NAT Gateway ID = %v, want nat-1234567890abcdef0", result.IdleNatGateways[0].NatGatewayID)
+	if result.IdleNATGateways[0].NATGatewayID != "nat-1234567890abcdef0" {
+		t.Errorf("First NAT Gateway ID = %v, want nat-1234567890abcdef0", result.IdleNATGateways[0].NATGatewayID)
 	}
 
-	if result.IdleNatGateways[0].BytesOutToDestination != 0 {
-		t.Errorf("First NAT Gateway BytesOutToDestination = %v, want 0", result.IdleNatGateways[0].BytesOutToDestination)
+	if result.IdleNATGateways[0].BytesOutToDestination != 0 {
+		t.Errorf("First NAT Gateway BytesOutToDestination = %v, want 0", result.IdleNATGateways[0].BytesOutToDestination)
 	}
 }
 
@@ -677,7 +677,9 @@ func BenchmarkOutputWasteJSON(b *testing.B) {
 	os.Stdout, _ = os.Open(os.DevNull)
 
 	defer func() { os.Stdout = old }()
+
 	b.ResetTimer()
+
 	for i := 0; i < b.N; i++ {
 		_ = OutputWasteJSON(model.RenderWasteInput{
 			AccountID:  "123456789012",

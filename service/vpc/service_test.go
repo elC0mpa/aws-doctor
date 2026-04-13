@@ -14,7 +14,7 @@ import (
 	"github.com/stretchr/testify/mock"
 )
 
-func TestGetIdleNatGateways(t *testing.T) {
+func TestIdleNATGateways(t *testing.T) {
 	ctx := context.Background()
 
 	tests := []struct {
@@ -123,7 +123,7 @@ func TestGetIdleNatGateways(t *testing.T) {
 			}
 
 			// Execute
-			results, err := svc.GetIdleNatGateways(ctx, 7)
+			results, err := svc.IdleNATGateways(ctx, 7)
 
 			// Assert
 			if tt.expectedError {
@@ -137,7 +137,7 @@ func TestGetIdleNatGateways(t *testing.T) {
 	}
 }
 
-func TestGetIdleNatGateways_Error(t *testing.T) {
+func TestIdleNATGateways_Error(t *testing.T) {
 	ctx := context.Background()
 
 	tests := []struct {
@@ -146,7 +146,7 @@ func TestGetIdleNatGateways_Error(t *testing.T) {
 		expectedError bool
 	}{
 		{
-			name: "DescribeNatGateways error",
+			name: "DescribeNATGateways error",
 			setupMocks: func(mockClient *awsinterfaces.MockVPCClient, mockCW *services.MockCloudWatchMetricsService) {
 				mockClient.On("DescribeNatGateways", mock.Anything, mock.Anything, mock.Anything).Return(
 					(*ec2.DescribeNatGatewaysOutput)(nil), errors.New("API error"))
@@ -184,7 +184,7 @@ func TestGetIdleNatGateways_Error(t *testing.T) {
 				cwService: mockCW,
 			}
 
-			results, err := svc.GetIdleNatGateways(ctx, 7)
+			results, err := svc.IdleNATGateways(ctx, 7)
 
 			if tt.expectedError {
 				assert.Error(t, err)

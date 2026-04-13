@@ -206,7 +206,7 @@ func (s *service) wasteWorkflow(wasteChecks []string, generateReport bool, repor
 		rdsInstances                             []model.RDSInstanceWasteInfo
 		rdsSnapshots                             []model.RDSSnapshotWasteInfo
 		rdsIdleInstances                         []model.RDSIdleInstanceInfo
-		idleNatGateways                          []model.NatGatewayWasteInfo
+		idleNATGateways                          []model.NATGatewayWasteInfo
 		stsResult                                *sts.GetCallerIdentityOutput
 	)
 
@@ -280,7 +280,7 @@ func (s *service) wasteWorkflow(wasteChecks []string, generateReport bool, repor
 		g.Go(func() error {
 			var err error
 
-			idleNatGateways, err = s.vpcService.GetIdleNatGateways(ctx, 7)
+			idleNATGateways, err = s.vpcService.IdleNATGateways(ctx, 7)
 
 			return err
 		})
@@ -363,7 +363,7 @@ func (s *service) wasteWorkflow(wasteChecks []string, generateReport bool, repor
 		RDSInstances:        rdsInstances,
 		RDSSnapshots:        rdsSnapshots,
 		RDSIdleInstances:    rdsIdleInstances,
-		IdleNatGateways:     idleNatGateways,
+		IdleNATGateways:     idleNATGateways,
 	}
 
 	if generateReport {
