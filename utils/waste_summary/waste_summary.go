@@ -40,6 +40,15 @@ func costCategories(input model.RenderWasteInput) []model.CategorySummary {
 		categories = append(categories, model.CategorySummary{Name: "Load Balancers", Count: n, Cost: lbCost(input.LoadBalancers)})
 	}
 
+	if n := len(input.IdleLoadBalancers); n > 0 {
+		var cost float64
+		for _, lb := range input.IdleLoadBalancers {
+			cost += lb.EstimatedMonthlyCost
+		}
+
+		categories = append(categories, model.CategorySummary{Name: "Load Balancers (Idle)", Count: n, Cost: cost})
+	}
+
 	if n := len(input.CloudWatchLogGroups); n > 0 {
 		var cost float64
 		for _, lg := range input.CloudWatchLogGroups {

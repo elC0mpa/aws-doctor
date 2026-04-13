@@ -131,6 +131,15 @@ func mapRDSSnapshots(snapshots []model.RDSSnapshotWasteInfo) [][]string {
 	return result
 }
 
+func mapIdleLoadBalancers(idleLBs []model.ELBIdleInfo) [][]string {
+	result := make([][]string, 0, len(idleLBs))
+	for _, lb := range idleLBs {
+		result = append(result, outputshared.PresentIdleLoadBalancer(lb).ToSlice())
+	}
+
+	return result
+}
+
 func mapRDSIdleInstances(instances []model.RDSIdleInstanceInfo) [][]string {
 	result := make([][]string, 0, len(instances))
 	for _, inst := range instances {

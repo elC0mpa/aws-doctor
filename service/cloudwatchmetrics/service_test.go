@@ -175,6 +175,105 @@ func TestNatGatewayBytesOut(t *testing.T) {
 	}
 }
 
+func TestELBHasZeroRequestsInPeriod(t *testing.T) {
+	ctx := context.Background()
+
+	tests := []struct {
+		name       string
+		arn        string
+		lbType     string
+		setupMocks func(*awsinterfaces.MockCloudWatchClient)
+		wantIdle   bool
+		wantErr    bool
+	}{
+		{
+			name:   "ALB with zero requests returns true",
+			arn:    "arn:aws:elasticloadbalancing:us-east-1:123456789:loadbalancer/app/my-alb/abc123",
+			lbType: "application",
+			setupMocks: func(cw *awsinterfaces.MockCloudWatchClient) {
+				cw.On("GetMetricStatistics", mock.Anything, mock.Anything, mock.Anything).Return(&cloudwatch.GetMetricStatisticsOutput{
+					Datapoints: []cwtypes.Datapoint{
+						{Sum: aws.Float64(0)},
+						{Sum: aws.Float64(0)},
+					},
+				}, nil)
+			},
+			wantIdle: true,
+			wantErr:  false,
+		},
+		{
+			name:   "NLB with active flows returns false",
+			arn:    "arn:aws:elasticloadbalancing:us-east-1:123456789:loadbalancer/net/my-nlb/abc123",
+			lbType: "network",
+			setupMocks: func(cw *awsinterfaces.MockCloudWatchClient) {
+				cw.On("GetMetricStatistics", mock.Anything, mock.Anything, mock.Anything).Return(&cloudwatch.GetMetricStatisticsOutput{
+					Datapoints: []cwtypes.Datapoint{
+						{Sum: aws.Float64(0)},
+						{Sum: aws.Float64(42)},
+					},
+				}, nil)
+			},
+			wantIdle: false,
+			wantErr:  false,
+		},
+		{
+			name:   "empty datapoints returns true",
+			arn:    "arn:aws:elasticloadbalancing:us-east-1:123456789:loadbalancer/app/my-alb/abc123",
+			lbType: "application",
+			setupMocks: func(cw *awsinterfaces.MockCloudWatchClient) {
+				cw.On("GetMetricStatistics", mock.Anything, mock.Anything, mock.Anything).Return(&cloudwatch.GetMetricStatisticsOutput{
+					Datapoints: []cwtypes.Datapoint{},
+				}, nil)
+			},
+			wantIdle: true,
+			wantErr:  false,
+		},
+		{
+			name:   "cloudwatch error returns error",
+			arn:    "arn:aws:elasticloadbalancing:us-east-1:123456789:loadbalancer/app/my-alb/abc123",
+			lbType: "application",
+			setupMocks: func(cw *awsinterfaces.MockCloudWatchClient) {
+				cw.On("GetMetricStatistics", mock.Anything, mock.Anything, mock.Anything).Return((*cloudwatch.GetMetricStatisticsOutput)(nil), errors.New("cloudwatch error"))
+			},
+			wantIdle: false,
+			wantErr:  true,
+		},
+		{
+			name:       "invalid ARN returns error",
+			arn:        "invalid-arn",
+			lbType:     "application",
+			setupMocks: func(cw *awsinterfaces.MockCloudWatchClient) {},
+			wantIdle:   false,
+			wantErr:    true,
+		},
+		{
+			name:       "unsupported LB type returns error",
+			arn:        "arn:aws:elasticloadbalancing:us-east-1:123456789:loadbalancer/gw/my-gwlb/abc123",
+			lbType:     "gateway",
+			setupMocks: func(cw *awsinterfaces.MockCloudWatchClient) {},
+			wantIdle:   false,
+			wantErr:    true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			mockCW := new(awsinterfaces.MockCloudWatchClient)
+			tt.setupMocks(mockCW)
+
+			svc := &service{client: mockCW}
+			idle, err := svc.ELBHasZeroRequestsInPeriod(ctx, tt.arn, tt.lbType, 7)
+
+			if tt.wantErr {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+				assert.Equal(t, tt.wantIdle, idle)
+			}
+		})
+	}
+}
+
 func TestNewService(t *testing.T) {
 	cfg := aws.Config{}
 	svc := NewService(cfg)

@@ -138,7 +138,7 @@ func (s *service) addEC2Waste(m core.Maroto, input model.RenderWasteInput) bool 
 }
 
 func (s *service) addLBWaste(m core.Maroto, input model.RenderWasteInput) bool {
-	if len(input.LoadBalancers) == 0 {
+	if len(input.LoadBalancers) == 0 && len(input.IdleLoadBalancers) == 0 {
 		return false
 	}
 
@@ -147,6 +147,11 @@ func (s *service) addLBWaste(m core.Maroto, input model.RenderWasteInput) bool {
 	for _, lb := range input.LoadBalancers {
 		p := outputshared.PresentLoadBalancer(lb)
 		s.addWasteRow(m, []string{"Unused", aws.ToString(lb.LoadBalancerName), p.Metric, p.EstimatedCost})
+	}
+
+	for _, lb := range input.IdleLoadBalancers {
+		p := outputshared.PresentIdleLoadBalancer(lb)
+		s.addWasteRow(m, []string{"Idle", lb.LoadBalancerName, p.Metric, p.EstimatedCost})
 	}
 
 	m.AddRow(5, col.New(12))

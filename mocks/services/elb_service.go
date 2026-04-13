@@ -4,6 +4,7 @@ import (
 	"context"
 
 	elbtypes "github.com/aws/aws-sdk-go-v2/service/elasticloadbalancingv2/types"
+	"github.com/elC0mpa/aws-doctor/model"
 	"github.com/stretchr/testify/mock"
 )
 
@@ -20,4 +21,14 @@ func (m *MockELBService) GetUnusedLoadBalancers(ctx context.Context) ([]elbtypes
 	}
 
 	return args.Get(0).([]elbtypes.LoadBalancer), args.Error(1)
+}
+
+// GetIdleLoadBalancers mocks the GetIdleLoadBalancers method.
+func (m *MockELBService) GetIdleLoadBalancers(ctx context.Context) ([]model.ELBIdleInfo, error) {
+	args := m.Called(ctx)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+
+	return args.Get(0).([]model.ELBIdleInfo), args.Error(1)
 }

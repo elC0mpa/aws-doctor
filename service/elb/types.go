@@ -5,6 +5,7 @@ import (
 
 	elb "github.com/aws/aws-sdk-go-v2/service/elasticloadbalancingv2"
 	"github.com/aws/aws-sdk-go-v2/service/elasticloadbalancingv2/types"
+	"github.com/elC0mpa/aws-doctor/model"
 )
 
 // ClientAPI is the interface for the AWS ELB client methods used by the service.
@@ -14,10 +15,17 @@ type ClientAPI interface {
 }
 
 type service struct {
-	client ClientAPI
+	client    ClientAPI
+	cwService cloudwatchMetricsService
+}
+
+// cloudwatchMetricsService is a local interface for the CloudWatch metrics dependency.
+type cloudwatchMetricsService interface {
+	ELBHasZeroRequestsInPeriod(ctx context.Context, loadBalancerArn string, lbType string, days int) (bool, error)
 }
 
 // Service defines the interface for AWS ELB service.
 type Service interface {
 	GetUnusedLoadBalancers(ctx context.Context) ([]types.LoadBalancer, error)
+	GetIdleLoadBalancers(ctx context.Context) ([]model.ELBIdleInfo, error)
 }

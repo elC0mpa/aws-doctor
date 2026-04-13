@@ -309,6 +309,30 @@ func TestPresentRDSSnapshot(t *testing.T) {
 	}
 }
 
+func TestPresentIdleLoadBalancer(t *testing.T) {
+	lb := model.ELBIdleInfo{
+		LoadBalancerName:     "test-alb",
+		LoadBalancerArn:      "arn:aws:elasticloadbalancing:us-east-1:123:loadbalancer/app/test-alb/abc123",
+		Type:                 "application",
+		DaysChecked:          7,
+		EstimatedMonthlyCost: 16.43,
+	}
+
+	p := PresentIdleLoadBalancer(lb)
+
+	if !strings.Contains(p.Identifier, "test-alb") {
+		t.Errorf("Identifier = %v, want to contain 'test-alb'", p.Identifier)
+	}
+
+	if p.EstimatedCost != "$16.43" {
+		t.Errorf("EstimatedCost = %v, want '$16.43'", p.EstimatedCost)
+	}
+
+	if !strings.Contains(p.Details, "7 days") {
+		t.Errorf("Details %q does not contain '7 days'", p.Details)
+	}
+}
+
 func TestPresentRDSIdleInstance(t *testing.T) {
 	inst := model.RDSIdleInstanceInfo{
 		DBInstanceID:         "idle-db",

@@ -23,3 +23,10 @@ func (m *MockCloudWatchMetricsService) NatGatewayBytesOut(ctx context.Context, n
 	args := m.Called(ctx, natGatewayID, days)
 	return args.Get(0).(float64), args.Error(1)
 }
+
+// ELBHasZeroRequestsInPeriod mocks the ELBHasZeroRequestsInPeriod method.
+func (m *MockCloudWatchMetricsService) ELBHasZeroRequestsInPeriod(ctx context.Context, loadBalancerArn string, lbType string, days int) (bool, error) {
+	args := m.Called(ctx, loadBalancerArn, lbType, days)
+
+	return args.Bool(0), args.Error(1)
+}

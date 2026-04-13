@@ -15,6 +15,7 @@ type ClientAPI interface {
 type Service interface {
 	RDSHasZeroConnectionsInPeriod(ctx context.Context, dbInstanceID string, days int) (bool, error)
 	NatGatewayBytesOut(ctx context.Context, natGatewayID string, days int) (float64, error)
+	ELBHasZeroRequestsInPeriod(ctx context.Context, loadBalancerArn string, lbType string, days int) (bool, error)
 }
 
 type service struct {
