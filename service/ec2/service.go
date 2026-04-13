@@ -11,17 +11,20 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/ec2"
 	"github.com/aws/aws-sdk-go-v2/service/ec2/types"
 	"github.com/elC0mpa/aws-doctor/model"
+	"github.com/elC0mpa/aws-doctor/service/cloudwatchmetrics"
 	utilsec2 "github.com/elC0mpa/aws-doctor/utils/ec2"
+	"github.com/elC0mpa/aws-doctor/utils/pricing"
 )
 
 const ebsSnapshotCostPerGBMonth = 0.05
 
 // NewService creates a new EC2 service.
-func NewService(awsconfig aws.Config) Service {
+func NewService(awsconfig aws.Config, cwService cloudwatchmetrics.Service) Service {
 	client := ec2.NewFromConfig(awsconfig)
 
 	return &service{
-		client: client,
+		client:    client,
+		cwService: cwService,
 	}
 }
 
@@ -525,6 +528,51 @@ func (s *service) GetUnusedKeyPairs(ctx context.Context) ([]model.KeyPairWasteIn
 				CreateTime:      createTime,
 				DaysSinceCreate: daysSinceCreate,
 			})
+		}
+	}
+
+	return results, nil
+}
+
+const idleNATGatewayDaysThreshold = 7
+
+// GetIdleNATGateways returns NAT Gateways with zero processed bytes over the past 7 days.
+func (s *service) GetIdleNATGateways(ctx context.Context) ([]model.NATGatewayWasteInfo, error) {
+	var results []model.NATGatewayWasteInfo
+
+	paginator := ec2.NewDescribeNatGatewaysPaginator(s.client, &ec2.DescribeNatGatewaysInput{
+		Filter: []types.Filter{
+			{
+				Name:   aws.String("state"),
+				Values: []string{"available"},
+			},
+		},
+	})
+
+	for paginator.HasMorePages() {
+		output, err := paginator.NextPage(ctx)
+		if err != nil {
+			return nil, fmt.Errorf("failed to describe NAT gateways: %w", err)
+		}
+
+		for _, natGw := range output.NatGateways {
+			natGwID := aws.ToString(natGw.NatGatewayId)
+
+			isIdle, err := s.cwService.NATGatewayHasZeroBytesInPeriod(ctx, natGwID, idleNATGatewayDaysThreshold)
+			if err != nil {
+				continue
+			}
+
+			if isIdle {
+				results = append(results, model.NATGatewayWasteInfo{
+					NATGatewayID:         natGwID,
+					State:                string(natGw.State),
+					SubnetID:             aws.ToString(natGw.SubnetId),
+					VpcID:                aws.ToString(natGw.VpcId),
+					EstimatedMonthlyCost: pricing.CalculateNATGatewayMonthlyCost(),
+					DaysChecked:          idleNATGatewayDaysThreshold,
+				})
+			}
 		}
 	}
 

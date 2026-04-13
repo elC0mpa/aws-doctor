@@ -204,6 +204,7 @@ func (s *service) wasteWorkflow(wasteChecks []string, generateReport bool, repor
 		rdsInstances                             []model.RDSInstanceWasteInfo
 		rdsSnapshots                             []model.RDSSnapshotWasteInfo
 		rdsIdleInstances                         []model.RDSIdleInstanceInfo
+		idleNATGateways                          []model.NATGatewayWasteInfo
 		stsResult                                *sts.GetCallerIdentityOutput
 	)
 
@@ -267,6 +268,15 @@ func (s *service) wasteWorkflow(wasteChecks []string, generateReport bool, repor
 			var err error
 
 			unusedKeyPairs, err = s.ec2Service.GetUnusedKeyPairs(ctx)
+
+			return err
+		})
+
+		// Fetch idle NAT gateways concurrently
+		g.Go(func() error {
+			var err error
+
+			idleNATGateways, err = s.ec2Service.GetIdleNATGateways(ctx)
 
 			return err
 		})
@@ -349,6 +359,7 @@ func (s *service) wasteWorkflow(wasteChecks []string, generateReport bool, repor
 		RDSInstances:        rdsInstances,
 		RDSSnapshots:        rdsSnapshots,
 		RDSIdleInstances:    rdsIdleInstances,
+		IdleNATGateways:     idleNATGateways,
 	}
 
 	if generateReport {

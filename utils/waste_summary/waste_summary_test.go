@@ -195,3 +195,20 @@ func TestCompute_MixedWaste(t *testing.T) {
 	assert.Equal(t, "Unused Key Pairs", categories[1].Name)
 	assert.Equal(t, 0.0, categories[1].Cost)
 }
+
+func TestCompute_NATGateways(t *testing.T) {
+	input := model.RenderWasteInput{
+		IdleNATGateways: []model.NATGatewayWasteInfo{
+			{NATGatewayID: "nat-1", EstimatedMonthlyCost: pricing.NATGatewayCostPerMonth},
+			{NATGatewayID: "nat-2", EstimatedMonthlyCost: pricing.NATGatewayCostPerMonth},
+		},
+	}
+
+	categories, total := Compute(input)
+
+	assert.Len(t, categories, 1)
+	assert.Equal(t, "NAT Gateways (Idle)", categories[0].Name)
+	assert.Equal(t, 2, categories[0].Count)
+	assert.Equal(t, 2*pricing.NATGatewayCostPerMonth, categories[0].Cost)
+	assert.Equal(t, 2*pricing.NATGatewayCostPerMonth, total)
+}

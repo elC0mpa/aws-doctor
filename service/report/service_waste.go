@@ -55,6 +55,10 @@ func (s *service) addWasteSections(m core.Maroto, input model.RenderWasteInput) 
 		hasWaste = true
 	}
 
+	if s.addNATGatewayWaste(m, input) {
+		hasWaste = true
+	}
+
 	return hasWaste
 }
 
@@ -293,6 +297,23 @@ func (s *service) addWasteSummary(m core.Maroto, input model.RenderWasteInput) {
 		text.NewCol(4, "", props.Text{}),
 		text.NewCol(4, fmt.Sprintf("$%.2f", totalCost), props.Text{Style: fontstyle.Bold, Size: 10, Align: align.Right, Color: &props.Color{Red: 200, Green: 0, Blue: 0}}),
 	)
+}
+
+func (s *service) addNATGatewayWaste(m core.Maroto, input model.RenderWasteInput) bool {
+	if len(input.IdleNATGateways) == 0 {
+		return false
+	}
+
+	s.addWasteSection(m, "NAT Gateway Waste", []string{"Status", "NAT Gateway ID", "VPC ID", "Est. Cost"})
+
+	for _, gw := range input.IdleNATGateways {
+		p := outputshared.PresentNATGateway(gw)
+		s.addWasteRow(m, []string{"Idle", p.Identifier, gw.VpcID, p.EstimatedCost})
+	}
+
+	m.AddRow(5, col.New(12))
+
+	return true
 }
 
 func (s *service) addWasteSection(m core.Maroto, title string, headers []string) {

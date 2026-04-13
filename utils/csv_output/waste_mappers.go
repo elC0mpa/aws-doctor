@@ -139,3 +139,12 @@ func mapRDSIdleInstances(instances []model.RDSIdleInstanceInfo) [][]string {
 
 	return result
 }
+
+func mapNATGateways(gateways []model.NATGatewayWasteInfo) [][]string {
+	result := make([][]string, 0, len(gateways))
+	for _, gw := range gateways {
+		result = append(result, outputshared.PresentNATGateway(gw).ToSlice())
+	}
+
+	return result
+}

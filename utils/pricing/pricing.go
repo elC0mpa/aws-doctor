@@ -32,6 +32,9 @@ const (
 
 	// CLBCostPerMonth is the base cost of a CLB (~$0.025/hour * 730 hours)
 	CLBCostPerMonth = 18.25
+
+	// NATGatewayCostPerMonth is the base cost of a NAT Gateway (~$0.045/hour * 730 hours)
+	NATGatewayCostPerMonth = 32.85
 )
 
 // EBSCostPerGBMonth returns the per-GB monthly cost for a given EBS volume type.
@@ -69,6 +72,11 @@ func CalculateLoadBalancerMonthlyCost(lbType elbtypes.LoadBalancerTypeEnum) floa
 	}
 
 	return ALBCostPerMonth
+}
+
+// CalculateNATGatewayMonthlyCost returns the estimated monthly cost for an idle NAT Gateway.
+func CalculateNATGatewayMonthlyCost() float64 {
+	return NATGatewayCostPerMonth
 }
 
 // CalculateCloudWatchLogsMonthlyCost calculates the estimated monthly storage cost for CloudWatch Logs.

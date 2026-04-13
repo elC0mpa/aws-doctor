@@ -10,6 +10,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/ec2"
 	"github.com/aws/aws-sdk-go-v2/service/ec2/types"
 	"github.com/elC0mpa/aws-doctor/mocks/awsinterfaces"
+	"github.com/elC0mpa/aws-doctor/mocks/services"
 	"github.com/elC0mpa/aws-doctor/model"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -478,6 +479,100 @@ func TestGetUnusedKeyPairs(t *testing.T) {
 	assert.Equal(t, "key-2", result[0].KeyPairID)
 	assert.Equal(t, 10, result[0].DaysSinceCreate)
 	mockClient.AssertExpectations(t)
+}
+
+func TestGetIdleNATGateways(t *testing.T) {
+	ctx := context.Background()
+
+	tests := []struct {
+		name       string
+		setupMocks func(*awsinterfaces.MockEC2Client, *services.MockCloudWatchMetricsService)
+		wantCount  int
+		wantErr    bool
+	}{
+		{
+			name: "idle NAT gateway detected",
+			setupMocks: func(ec2Mock *awsinterfaces.MockEC2Client, cwMock *services.MockCloudWatchMetricsService) {
+				ec2Mock.On("DescribeNatGateways", mock.Anything, mock.Anything, mock.Anything).Return(&ec2.DescribeNatGatewaysOutput{
+					NatGateways: []types.NatGateway{
+						{
+							NatGatewayId: aws.String("nat-idle123"),
+							State:        types.NatGatewayStateAvailable,
+							SubnetId:     aws.String("subnet-abc"),
+							VpcId:        aws.String("vpc-def"),
+						},
+					},
+				}, nil)
+				cwMock.On("NATGatewayHasZeroBytesInPeriod", mock.Anything, "nat-idle123", 7).Return(true, nil)
+			},
+			wantCount: 1,
+			wantErr:   false,
+		},
+		{
+			name: "active NAT gateway not reported",
+			setupMocks: func(ec2Mock *awsinterfaces.MockEC2Client, cwMock *services.MockCloudWatchMetricsService) {
+				ec2Mock.On("DescribeNatGateways", mock.Anything, mock.Anything, mock.Anything).Return(&ec2.DescribeNatGatewaysOutput{
+					NatGateways: []types.NatGateway{
+						{
+							NatGatewayId: aws.String("nat-active123"),
+							State:        types.NatGatewayStateAvailable,
+							SubnetId:     aws.String("subnet-abc"),
+							VpcId:        aws.String("vpc-def"),
+						},
+					},
+				}, nil)
+				cwMock.On("NATGatewayHasZeroBytesInPeriod", mock.Anything, "nat-active123", 7).Return(false, nil)
+			},
+			wantCount: 0,
+			wantErr:   false,
+		},
+		{
+			name: "describe error returns error",
+			setupMocks: func(ec2Mock *awsinterfaces.MockEC2Client, cwMock *services.MockCloudWatchMetricsService) {
+				ec2Mock.On("DescribeNatGateways", mock.Anything, mock.Anything, mock.Anything).Return((*ec2.DescribeNatGatewaysOutput)(nil), errors.New("api error"))
+			},
+			wantCount: 0,
+			wantErr:   true,
+		},
+		{
+			name: "cloudwatch error skips gateway",
+			setupMocks: func(ec2Mock *awsinterfaces.MockEC2Client, cwMock *services.MockCloudWatchMetricsService) {
+				ec2Mock.On("DescribeNatGateways", mock.Anything, mock.Anything, mock.Anything).Return(&ec2.DescribeNatGatewaysOutput{
+					NatGateways: []types.NatGateway{
+						{
+							NatGatewayId: aws.String("nat-err123"),
+							State:        types.NatGatewayStateAvailable,
+							SubnetId:     aws.String("subnet-abc"),
+							VpcId:        aws.String("vpc-def"),
+						},
+					},
+				}, nil)
+				cwMock.On("NATGatewayHasZeroBytesInPeriod", mock.Anything, "nat-err123", 7).Return(false, errors.New("cw error"))
+			},
+			wantCount: 0,
+			wantErr:   false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			mockClient := new(awsinterfaces.MockEC2Client)
+			mockCW := new(services.MockCloudWatchMetricsService)
+			tt.setupMocks(mockClient, mockCW)
+
+			svc := &service{client: mockClient, cwService: mockCW}
+			result, err := svc.GetIdleNATGateways(ctx)
+
+			if tt.wantErr {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+				assert.Len(t, result, tt.wantCount)
+			}
+
+			mockClient.AssertExpectations(t)
+		})
+	}
 }
 
 func TestGetResourceTypeFromDescription(t *testing.T) {

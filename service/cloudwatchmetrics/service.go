@@ -51,3 +51,35 @@ func (s *service) RDSHasZeroConnectionsInPeriod(ctx context.Context, dbInstanceI
 
 	return true, nil
 }
+
+// NATGatewayHasZeroBytesInPeriod checks if a NAT Gateway had zero BytesOutToDestination over the given number of days.
+func (s *service) NATGatewayHasZeroBytesInPeriod(ctx context.Context, natGatewayID string, days int) (bool, error) {
+	now := time.Now()
+	startTime := now.AddDate(0, 0, -days)
+
+	output, err := s.client.GetMetricStatistics(ctx, &cloudwatch.GetMetricStatisticsInput{
+		Namespace:  aws.String("AWS/NATGateway"),
+		MetricName: aws.String("BytesOutToDestination"),
+		Dimensions: []cwtypes.Dimension{
+			{
+				Name:  aws.String("NatGatewayId"),
+				Value: aws.String(natGatewayID),
+			},
+		},
+		StartTime:  &startTime,
+		EndTime:    &now,
+		Period:     aws.Int32(86400),
+		Statistics: []cwtypes.Statistic{cwtypes.StatisticSum},
+	})
+	if err != nil {
+		return false, fmt.Errorf("failed to get CloudWatch metrics for NAT Gateway %s: %w", natGatewayID, err)
+	}
+
+	for _, dp := range output.Datapoints {
+		if dp.Sum != nil && *dp.Sum > 0 {
+			return false, nil
+		}
+	}
+
+	return true, nil
+}

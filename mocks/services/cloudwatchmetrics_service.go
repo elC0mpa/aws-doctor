@@ -17,3 +17,10 @@ func (m *MockCloudWatchMetricsService) RDSHasZeroConnectionsInPeriod(ctx context
 
 	return args.Bool(0), args.Error(1)
 }
+
+// NATGatewayHasZeroBytesInPeriod mocks the NATGatewayHasZeroBytesInPeriod method.
+func (m *MockCloudWatchMetricsService) NATGatewayHasZeroBytesInPeriod(ctx context.Context, natGatewayID string, days int) (bool, error) {
+	args := m.Called(ctx, natGatewayID, days)
+
+	return args.Bool(0), args.Error(1)
+}

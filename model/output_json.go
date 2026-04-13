@@ -72,6 +72,7 @@ type WasteReportJSON struct {
 	StoppedRDSInstances       []RDSInstanceJSON        `json:"stopped_rds_instances"`
 	OldRDSSnapshots           []RDSSnapshotJSON        `json:"old_rds_snapshots"`
 	IdleRDSInstances          []RDSIdleInstanceJSON    `json:"idle_rds_instances"`
+	IdleNATGateways           []NATGatewayJSON         `json:"idle_nat_gateways"`
 }
 
 // RDSInstanceJSON represents a stopped RDS instance.
@@ -195,6 +196,16 @@ type SnapshotJSON struct {
 	Category            string  `json:"category"`              // "orphaned" or "stale"
 	Reason              string  `json:"reason"`                // Human-readable reason
 	MaxPotentialSavings float64 `json:"max_potential_savings"` // Actual savings may be lower due to incremental storage
+}
+
+// NATGatewayJSON represents an idle NAT Gateway
+type NATGatewayJSON struct {
+	NATGatewayID         string  `json:"nat_gateway_id"`
+	State                string  `json:"state"`
+	SubnetID             string  `json:"subnet_id"`
+	VpcID                string  `json:"vpc_id"`
+	EstimatedMonthlyCost float64 `json:"estimated_monthly_cost"`
+	DaysChecked          int     `json:"days_checked"`
 }
 
 // KeyPairJSON represents an unused EC2 key pair

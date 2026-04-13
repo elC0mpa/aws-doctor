@@ -78,6 +78,10 @@ func TestCalculateLoadBalancerMonthlyCost(t *testing.T) {
 	assert.Equal(t, CLBCostPerMonth, CalculateLoadBalancerMonthlyCost("classic"))
 }
 
+func TestCalculateNATGatewayMonthlyCost(t *testing.T) {
+	assert.Equal(t, NATGatewayCostPerMonth, CalculateNATGatewayMonthlyCost())
+}
+
 func TestCalculateCloudWatchLogsMonthlyCost(t *testing.T) {
 	// 100 GB = 100 * 1024 * 1024 * 1024 bytes
 	bytes := int64(100 * 1024 * 1024 * 1024)

@@ -95,6 +95,7 @@ func OutputWasteJSON(input model.RenderWasteInput) error {
 		StoppedRDSInstances: mapRDSInstances(input.RDSInstances),
 		OldRDSSnapshots:     mapRDSSnapshots(input.RDSSnapshots),
 		IdleRDSInstances:    mapRDSIdleInstances(input.RDSIdleInstances),
+		IdleNATGateways:     mapNATGateways(input.IdleNATGateways),
 	}
 
 	output.OrphanedSnapshots, output.StaleSnapshots = mapSnapshots(input.OrphanedSnapshots)
@@ -114,7 +115,8 @@ func OutputWasteJSON(input model.RenderWasteInput) error {
 		len(output.CloudWatchLogGroups) > 0 ||
 		len(output.StoppedRDSInstances) > 0 ||
 		len(output.OldRDSSnapshots) > 0 ||
-		len(output.IdleRDSInstances) > 0
+		len(output.IdleRDSInstances) > 0 ||
+		len(output.IdleNATGateways) > 0
 
 	categories, total := wastesummary.Compute(input)
 	output.TotalEstimatedMonthlyCost = total
@@ -342,6 +344,16 @@ func mapRDSSnapshots(snapshots []model.RDSSnapshotWasteInfo) []model.RDSSnapshot
 			DaysSinceCreate:      snap.DaysSinceCreate,
 			EstimatedMonthlyCost: snap.EstimatedMonthlyCost,
 		})
+	}
+
+	return result
+}
+
+func mapNATGateways(gateways []model.NATGatewayWasteInfo) []model.NATGatewayJSON {
+	var result []model.NATGatewayJSON
+
+	for _, gw := range gateways {
+		result = append(result, model.NATGatewayJSON(gw))
 	}
 
 	return result

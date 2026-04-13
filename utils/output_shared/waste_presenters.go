@@ -181,6 +181,18 @@ func PresentRDSSnapshot(snap model.RDSSnapshotWasteInfo) ResourceRow {
 	}
 }
 
+// PresentNATGateway returns a ResourceRow for an idle NAT Gateway
+func PresentNATGateway(gw model.NATGatewayWasteInfo) ResourceRow {
+	return ResourceRow{
+		Category:      "Idle NAT Gateway",
+		Identifier:    gw.NATGatewayID,
+		EstimatedCost: fmt.Sprintf("$%.2f", gw.EstimatedMonthlyCost),
+		Metric:        fmt.Sprintf("0 bytes out in last %d days", gw.DaysChecked),
+		Age:           NAValue,
+		Details:       fmt.Sprintf("VPC: %s / Subnet: %s", gw.VpcID, gw.SubnetID),
+	}
+}
+
 // PresentRDSIdleInstance returns a ResourceRow for an idle RDS instance
 func PresentRDSIdleInstance(inst model.RDSIdleInstanceInfo) ResourceRow {
 	return ResourceRow{

@@ -309,6 +309,30 @@ func TestPresentRDSSnapshot(t *testing.T) {
 	}
 }
 
+func TestPresentNATGateway(t *testing.T) {
+	gw := model.NATGatewayWasteInfo{
+		NATGatewayID:         "nat-12345",
+		VpcID:                "vpc-abc",
+		SubnetID:             "subnet-def",
+		DaysChecked:          7,
+		EstimatedMonthlyCost: 32.85,
+	}
+
+	p := PresentNATGateway(gw)
+
+	if p.Identifier != "nat-12345" {
+		t.Errorf("Identifier = %v, want 'nat-12345'", p.Identifier)
+	}
+
+	if !strings.Contains(p.Metric, "7 days") {
+		t.Errorf("Metric %q does not contain '7 days'", p.Metric)
+	}
+
+	if p.EstimatedCost != "$32.85" {
+		t.Errorf("EstimatedCost = %v, want '$32.85'", p.EstimatedCost)
+	}
+}
+
 func TestPresentRDSIdleInstance(t *testing.T) {
 	inst := model.RDSIdleInstanceInfo{
 		DBInstanceID:         "idle-db",

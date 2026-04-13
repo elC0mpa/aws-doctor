@@ -805,3 +805,46 @@ func TestDrawRDSTable(t *testing.T) {
 		t.Error("drawRDSTable() missing idle instance ID")
 	}
 }
+
+func TestDrawNATGatewayTable(t *testing.T) {
+	gateways := []model.NATGatewayWasteInfo{
+		{NATGatewayID: "nat-idle123", State: "available", SubnetID: "subnet-abc", VpcID: "vpc-def", EstimatedMonthlyCost: 32.85, DaysChecked: 7},
+	}
+
+	output := captureWasteOutput(func() {
+		drawNATGatewayTable(gateways)
+	})
+
+	if !strings.Contains(output, "NAT Gateway Waste") {
+		t.Error("drawNATGatewayTable() missing title")
+	}
+
+	if !strings.Contains(output, "nat-idle123") {
+		t.Error("drawNATGatewayTable() missing NAT gateway ID")
+	}
+
+	if !strings.Contains(output, "vpc-def") {
+		t.Error("drawNATGatewayTable() missing VPC ID")
+	}
+}
+
+func TestDrawWasteTable_WithIdleNATGateways(t *testing.T) {
+	input := model.RenderWasteInput{
+		AccountID: "123456789012",
+		IdleNATGateways: []model.NATGatewayWasteInfo{
+			{NATGatewayID: "nat-idle123", State: "available", SubnetID: "subnet-abc", VpcID: "vpc-def", EstimatedMonthlyCost: 32.85, DaysChecked: 7},
+		},
+	}
+
+	output := captureWasteOutput(func() {
+		DrawWasteTable(input)
+	})
+
+	if !strings.Contains(output, "NAT Gateway Waste") {
+		t.Error("DrawWasteTable() missing NAT Gateway section")
+	}
+
+	if !strings.Contains(output, "nat-idle123") {
+		t.Error("DrawWasteTable() missing NAT gateway ID")
+	}
+}
