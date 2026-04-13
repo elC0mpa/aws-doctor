@@ -200,7 +200,7 @@ func PresentIdleNATGateway(ng model.NATGatewayWasteInfo) ResourceRow {
 		Identifier:    ng.NATGatewayID,
 		EstimatedCost: fmt.Sprintf("$%.2f", ng.EstimatedMonthlyCost),
 		Metric:        fmt.Sprintf("%.2f bytes transferred", ng.BytesOutToDestination),
-		Age:           NAValue,
+		Age:           fmt.Sprintf("%d", ng.DaysSinceCreate),
 		Details:       fmt.Sprintf("VPC: %s / Subnet: %s / State: %s", ng.VPCID, ng.SubnetID, ng.State),
 	}
 }
