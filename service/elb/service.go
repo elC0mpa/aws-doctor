@@ -3,12 +3,14 @@ package elb
 
 import (
 	"context"
+	"sync"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	elb "github.com/aws/aws-sdk-go-v2/service/elasticloadbalancingv2"
 	"github.com/aws/aws-sdk-go-v2/service/elasticloadbalancingv2/types"
 	"github.com/elC0mpa/aws-doctor/model"
 	"github.com/elC0mpa/aws-doctor/utils/pricing"
+	"golang.org/x/sync/errgroup"
 )
 
 const idleCheckDays = 7
@@ -23,8 +25,9 @@ func NewService(awsconfig aws.Config, cwService cloudwatchMetricsService) Servic
 	}
 }
 
-func (s *service) GetUnusedLoadBalancers(ctx context.Context) ([]types.LoadBalancer, error) {
-	// Collect all load balancers using pagination
+// fetchLoadBalancersAndTargetGroups paginates all load balancers and target groups,
+// returning the full LB list and a set of LB ARNs that have at least one target group.
+func (s *service) fetchLoadBalancersAndTargetGroups(ctx context.Context) ([]types.LoadBalancer, map[string]bool, error) {
 	var allLoadBalancers []types.LoadBalancer
 
 	lbPaginator := elb.NewDescribeLoadBalancersPaginator(s.client, &elb.DescribeLoadBalancersInput{})
@@ -32,20 +35,19 @@ func (s *service) GetUnusedLoadBalancers(ctx context.Context) ([]types.LoadBalan
 	for lbPaginator.HasMorePages() {
 		lbOutput, err := lbPaginator.NextPage(ctx)
 		if err != nil {
-			return nil, err
+			return nil, nil, err
 		}
 
 		allLoadBalancers = append(allLoadBalancers, lbOutput.LoadBalancers...)
 	}
 
-	// Collect all target groups using pagination
 	usedLbArns := make(map[string]bool)
 	tgPaginator := elb.NewDescribeTargetGroupsPaginator(s.client, &elb.DescribeTargetGroupsInput{})
 
 	for tgPaginator.HasMorePages() {
 		tgOutput, err := tgPaginator.NextPage(ctx)
 		if err != nil {
-			return nil, err
+			return nil, nil, err
 		}
 
 		for _, tg := range tgOutput.TargetGroups {
@@ -55,7 +57,15 @@ func (s *service) GetUnusedLoadBalancers(ctx context.Context) ([]types.LoadBalan
 		}
 	}
 
-	// Find orphaned load balancers
+	return allLoadBalancers, usedLbArns, nil
+}
+
+func (s *service) GetUnusedLoadBalancers(ctx context.Context) ([]types.LoadBalancer, error) {
+	allLoadBalancers, usedLbArns, err := s.fetchLoadBalancersAndTargetGroups(ctx)
+	if err != nil {
+		return nil, err
+	}
+
 	var orphanedLbs []types.LoadBalancer
 
 	for _, lb := range allLoadBalancers {
@@ -74,39 +84,13 @@ func (s *service) GetUnusedLoadBalancers(ctx context.Context) ([]types.LoadBalan
 }
 
 func (s *service) GetIdleLoadBalancers(ctx context.Context) ([]model.ELBIdleInfo, error) {
-	// Collect all load balancers using pagination
-	var allLoadBalancers []types.LoadBalancer
-
-	lbPaginator := elb.NewDescribeLoadBalancersPaginator(s.client, &elb.DescribeLoadBalancersInput{})
-
-	for lbPaginator.HasMorePages() {
-		lbOutput, err := lbPaginator.NextPage(ctx)
-		if err != nil {
-			return nil, err
-		}
-
-		allLoadBalancers = append(allLoadBalancers, lbOutput.LoadBalancers...)
+	allLoadBalancers, lbsWithTargetGroups, err := s.fetchLoadBalancersAndTargetGroups(ctx)
+	if err != nil {
+		return nil, err
 	}
 
-	// Collect all target groups to find which LBs have target groups
-	lbsWithTargetGroups := make(map[string]bool)
-	tgPaginator := elb.NewDescribeTargetGroupsPaginator(s.client, &elb.DescribeTargetGroupsInput{})
-
-	for tgPaginator.HasMorePages() {
-		tgOutput, err := tgPaginator.NextPage(ctx)
-		if err != nil {
-			return nil, err
-		}
-
-		for _, tg := range tgOutput.TargetGroups {
-			for _, lbArn := range tg.LoadBalancerArns {
-				lbsWithTargetGroups[lbArn] = true
-			}
-		}
-	}
-
-	// Check LBs that have target groups but may have zero traffic
-	var idleLBs []model.ELBIdleInfo
+	// Filter to ALB/NLB that have target groups
+	var candidates []types.LoadBalancer
 
 	for _, lb := range allLoadBalancers {
 		if lb.Type != types.LoadBalancerTypeEnumApplication && lb.Type != types.LoadBalancerTypeEnumNetwork {
@@ -115,27 +99,48 @@ func (s *service) GetIdleLoadBalancers(ctx context.Context) ([]model.ELBIdleInfo
 
 		arn := aws.ToString(lb.LoadBalancerArn)
 
-		// Only check LBs that DO have target groups (those without are caught by GetUnusedLoadBalancers)
-		if !lbsWithTargetGroups[arn] {
-			continue
+		if lbsWithTargetGroups[arn] {
+			candidates = append(candidates, lb)
 		}
+	}
 
-		lbType := string(lb.Type)
+	// Check CloudWatch metrics in parallel
+	var (
+		mu      sync.Mutex
+		idleLBs []model.ELBIdleInfo
+	)
 
-		idle, err := s.cwService.ELBHasZeroRequestsInPeriod(ctx, arn, lbType, idleCheckDays)
-		if err != nil {
-			return nil, err
-		}
+	g, ctx := errgroup.WithContext(ctx)
 
-		if idle {
-			idleLBs = append(idleLBs, model.ELBIdleInfo{
-				LoadBalancerName:     aws.ToString(lb.LoadBalancerName),
-				LoadBalancerArn:      arn,
-				Type:                 lbType,
-				DaysChecked:          idleCheckDays,
-				EstimatedMonthlyCost: pricing.CalculateLoadBalancerMonthlyCost(lb.Type),
-			})
-		}
+	for _, lb := range candidates {
+		g.Go(func() error {
+			arn := aws.ToString(lb.LoadBalancerArn)
+			lbType := string(lb.Type)
+
+			idle, cwErr := s.cwService.ELBHasZeroRequestsInPeriod(ctx, arn, lbType, idleCheckDays)
+			if cwErr != nil {
+				return cwErr
+			}
+
+			if idle {
+				mu.Lock()
+
+				idleLBs = append(idleLBs, model.ELBIdleInfo{
+					LoadBalancerName:     aws.ToString(lb.LoadBalancerName),
+					LoadBalancerArn:      arn,
+					Type:                 lbType,
+					DaysChecked:          idleCheckDays,
+					EstimatedMonthlyCost: pricing.CalculateLoadBalancerMonthlyCost(lb.Type),
+				})
+				mu.Unlock()
+			}
+
+			return nil
+		})
+	}
+
+	if err := g.Wait(); err != nil {
+		return nil, err
 	}
 
 	return idleLBs, nil
