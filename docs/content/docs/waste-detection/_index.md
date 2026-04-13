@@ -23,7 +23,7 @@ aws-doctor waste --region us-east-1
 ### Selective Scanning
 If you only want to scan specific AWS services, you can pass them as arguments to the subcommand. This is useful for faster execution or targeted cleanups. 
 
-Currently supported filters are `ec2`, `s3`, `elb`, `cloudwatch`, `rds`, and `vpc`.
+Currently supported filters are `ec2`, `s3`, `elb`, `cloudwatch`, `rds`, `vpc`, and `lambda`.
 
 ```bash
 # Example: Scan only EC2 and S3 resources
@@ -42,7 +42,7 @@ We group waste into four primary infrastructure categories:
     icon="server"
     title="Compute & EBS"
     link="compute/"
-    subtitle="Instances stopped for >30 days, orphaned volumes, stale snapshots, and expired RIs."
+    subtitle="Instances stopped for >30 days, orphaned volumes, stale snapshots, expired RIs, and over-provisioned Lambda functions."
   >}}
   {{< hextra/feature-card
     icon="database"
