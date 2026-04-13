@@ -213,4 +213,5 @@ type NatGatewayJSON struct {
 	SubnetID              string  `json:"subnet_id"`
 	State                 string  `json:"state"`
 	BytesOutToDestination float64 `json:"bytes_out_to_destination"`
+	EstimatedMonthlyCost  float64 `json:"estimated_monthly_cost"`
 }

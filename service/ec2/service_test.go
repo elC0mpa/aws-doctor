@@ -737,7 +737,7 @@ func BenchmarkGetResourceTypeFromDescription(b *testing.B) {
 		"Primary network interface",
 	}
 
-	for b.Loop() {
+	for i := 0; i < b.N; i++ {
 		for _, desc := range descriptions {
 			s.getResourceTypeFromDescription(desc)
 		}

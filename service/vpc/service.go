@@ -10,6 +10,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/ec2/types"
 	"github.com/elC0mpa/aws-doctor/model"
 	awscloudwatchmetrics "github.com/elC0mpa/aws-doctor/service/cloudwatchmetrics"
+	"github.com/elC0mpa/aws-doctor/utils/pricing"
 )
 
 // NewService creates a new VPC service instance.
@@ -47,7 +48,7 @@ func (s *service) GetIdleNatGateways(ctx context.Context, idleDays int) ([]model
 				continue // Skip NAT Gateways without ID
 			}
 
-			bytesOut, err := s.cwService.GetNatGatewayBytesOut(ctx, natGatewayID, idleDays)
+			bytesOut, err := s.cwService.NatGatewayBytesOut(ctx, natGatewayID, idleDays)
 			if err != nil {
 				// Continue processing other NAT Gateways rather than failing all
 				continue
@@ -60,6 +61,7 @@ func (s *service) GetIdleNatGateways(ctx context.Context, idleDays int) ([]model
 					SubnetID:              aws.ToString(natGateway.SubnetId),
 					State:                 string(natGateway.State),
 					BytesOutToDestination: bytesOut,
+					EstimatedMonthlyCost:  pricing.NatGatewayCostPerMonth,
 				})
 			}
 		}

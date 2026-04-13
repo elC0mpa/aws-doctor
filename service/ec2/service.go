@@ -11,14 +11,13 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/ec2"
 	"github.com/aws/aws-sdk-go-v2/service/ec2/types"
 	"github.com/elC0mpa/aws-doctor/model"
-	"github.com/elC0mpa/aws-doctor/service/cloudwatchmetrics"
 	utilsec2 "github.com/elC0mpa/aws-doctor/utils/ec2"
 )
 
 const ebsSnapshotCostPerGBMonth = 0.05
 
 // NewService creates a new EC2 service.
-func NewService(awsconfig aws.Config, cwService cloudwatchmetrics.Service) Service {
+func NewService(awsconfig aws.Config) Service {
 	client := ec2.NewFromConfig(awsconfig)
 
 	return &service{

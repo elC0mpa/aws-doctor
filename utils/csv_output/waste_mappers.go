@@ -143,7 +143,7 @@ func mapRDSIdleInstances(instances []model.RDSIdleInstanceInfo) [][]string {
 func mapNatGateways(natGateways []model.NatGatewayWasteInfo) [][]string {
 	result := make([][]string, 0, len(natGateways))
 	for _, ng := range natGateways {
-		result = append(result, outputshared.PresentNatGateway(ng).ToSlice())
+		result = append(result, outputshared.PresentIdleNatGateway(ng).ToSlice())
 	}
 
 	return result

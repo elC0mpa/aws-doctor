@@ -7,4 +7,5 @@ type NatGatewayWasteInfo struct {
 	SubnetID              string
 	State                 string
 	BytesOutToDestination float64
+	EstimatedMonthlyCost  float64
 }
