@@ -30,6 +30,7 @@ func NewService(cfg Config) Service {
 		updateService:         cfg.UpdateService,
 		reportService:         cfg.ReportService,
 		versionInfo:           cfg.VersionInfo,
+		vpcService:            cfg.VPCService,
 	}
 }
 
@@ -186,6 +187,7 @@ func (s *service) wasteWorkflow(wasteChecks []string, generateReport bool, repor
 	runS3 := runAll || slice.ContainsIgnoreCase(wasteChecks, "s3")
 	runCloudWatchLogs := runAll || slice.ContainsIgnoreCase(wasteChecks, "cloudwatch")
 	runRDS := runAll || slice.ContainsIgnoreCase(wasteChecks, "rds")
+	runVPC := runAll || slice.ContainsIgnoreCase(wasteChecks, "vpc")
 
 	// Results from concurrent API calls
 	var (
@@ -271,12 +273,14 @@ func (s *service) wasteWorkflow(wasteChecks []string, generateReport bool, repor
 
 			return err
 		})
+	}
 
+	if runVPC {
 		// Fetch idle NAT Gateways concurrently
 		g.Go(func() error {
 			var err error
 
-			idleNatGateways, err = s.ec2Service.GetIdleNatGateways(ctx, 7)
+			idleNatGateways, err = s.vpcService.GetIdleNatGateways(ctx, 7)
 
 			return err
 		})

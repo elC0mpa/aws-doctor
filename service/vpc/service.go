@@ -1,0 +1,69 @@
+// Package vpc provides a service for interacting with AWS VPC resources.
+package vpc
+
+import (
+	"context"
+	"fmt"
+
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/service/ec2"
+	"github.com/aws/aws-sdk-go-v2/service/ec2/types"
+	"github.com/elC0mpa/aws-doctor/model"
+	awscloudwatchmetrics "github.com/elC0mpa/aws-doctor/service/cloudwatchmetrics"
+)
+
+// NewService creates a new VPC service instance.
+func NewService(awsCfg aws.Config, cwService awscloudwatchmetrics.Service) Service {
+	client := ec2.NewFromConfig(awsCfg)
+
+	return &service{
+		client:    client,
+		cwService: cwService,
+	}
+}
+
+// GetIdleNatGateways returns NAT Gateways that have processed 0 bytes over the idleDays period.
+func (s *service) GetIdleNatGateways(ctx context.Context, idleDays int) ([]model.NatGatewayWasteInfo, error) {
+	var idleNatGateways []model.NatGatewayWasteInfo
+
+	paginator := ec2.NewDescribeNatGatewaysPaginator(s.client, &ec2.DescribeNatGatewaysInput{
+		Filter: []types.Filter{
+			{
+				Name:   aws.String("state"),
+				Values: []string{"available"},
+			},
+		},
+	})
+
+	for paginator.HasMorePages() {
+		output, err := paginator.NextPage(ctx)
+		if err != nil {
+			return nil, fmt.Errorf("failed to describe NAT gateways: %w", err)
+		}
+
+		for _, natGateway := range output.NatGateways {
+			natGatewayID := aws.ToString(natGateway.NatGatewayId)
+			if natGatewayID == "" {
+				continue // Skip NAT Gateways without ID
+			}
+
+			bytesOut, err := s.cwService.GetNatGatewayBytesOut(ctx, natGatewayID, idleDays)
+			if err != nil {
+				// Continue processing other NAT Gateways rather than failing all
+				continue
+			}
+
+			if bytesOut == 0 {
+				idleNatGateways = append(idleNatGateways, model.NatGatewayWasteInfo{
+					NatGatewayID:          natGatewayID,
+					VPCID:                 aws.ToString(natGateway.VpcId),
+					SubnetID:              aws.ToString(natGateway.SubnetId),
+					State:                 string(natGateway.State),
+					BytesOutToDestination: bytesOut,
+				})
+			}
+		}
+	}
+
+	return idleNatGateways, nil
+}
