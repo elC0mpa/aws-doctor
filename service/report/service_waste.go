@@ -59,6 +59,10 @@ func (s *service) addWasteSections(m core.Maroto, input model.RenderWasteInput) 
 		hasWaste = true
 	}
 
+	if s.addLambdaWaste(m, input) {
+		hasWaste = true
+	}
+
 	return hasWaste
 }
 
@@ -286,6 +290,23 @@ func (s *service) addNATGatewayWaste(m core.Maroto, input model.RenderWasteInput
 	for _, ng := range input.IdleNATGateways {
 		p := outputshared.PresentIdleNATGateway(ng)
 		s.addWasteRow(m, []string{"Idle", p.Identifier, ng.VPCID, p.EstimatedCost})
+	}
+
+	m.AddRow(5, col.New(12))
+
+	return true
+}
+
+func (s *service) addLambdaWaste(m core.Maroto, input model.RenderWasteInput) bool {
+	if len(input.OverProvisionedLambdas) == 0 {
+		return false
+	}
+
+	s.addWasteSection(m, "Lambda Over-Provisioned Memory", []string{"Status", "Function", "Memory", "Utilization"})
+
+	for _, fn := range input.OverProvisionedLambdas {
+		p := outputshared.PresentLambdaOverProvisioned(fn)
+		s.addWasteRow(m, []string{"Over-Provisioned", p.Identifier, fmt.Sprintf("%d/%d MB", fn.MaxMemoryUsedMB, fn.ConfiguredMemoryMB), p.Metric})
 	}
 
 	m.AddRow(5, col.New(12))

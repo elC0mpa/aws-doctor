@@ -216,3 +216,15 @@ func PresentIdleNATGateway(ng model.NATGatewayWasteInfo) ResourceRow {
 		Details:       fmt.Sprintf("VPC: %s / Subnet: %s / State: %s", ng.VPCID, ng.SubnetID, ng.State),
 	}
 }
+
+// PresentLambdaOverProvisioned returns a ResourceRow for an over-provisioned Lambda function
+func PresentLambdaOverProvisioned(fn model.LambdaOverProvisionedInfo) ResourceRow {
+	return ResourceRow{
+		Category:      "Lambda (Over-Provisioned)",
+		Identifier:    fn.FunctionName,
+		EstimatedCost: NAValue,
+		Metric:        fmt.Sprintf("%.1f%% utilization", fn.MemoryUtilization),
+		Age:           NAValue,
+		Details:       fmt.Sprintf("Runtime: %s / Configured: %d MB / Used: %d MB / Recommended: %d MB", fn.Runtime, fn.ConfiguredMemoryMB, fn.MaxMemoryUsedMB, fn.RecommendedMemoryMB),
+	}
+}

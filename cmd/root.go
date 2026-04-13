@@ -11,6 +11,7 @@ import (
 	awscostexplorer "github.com/elC0mpa/aws-doctor/service/costexplorer"
 	awsec2 "github.com/elC0mpa/aws-doctor/service/ec2"
 	"github.com/elC0mpa/aws-doctor/service/elb"
+	awslambda "github.com/elC0mpa/aws-doctor/service/lambda"
 	"github.com/elC0mpa/aws-doctor/service/orchestrator"
 	"github.com/elC0mpa/aws-doctor/service/output"
 	"github.com/elC0mpa/aws-doctor/service/rds"
@@ -67,6 +68,7 @@ func buildOrchestrator(needsAWS bool) (orchestrator.Service, error) {
 	config.CloudWatchLogsService = cloudwatchlogs.NewService(awsCfg)
 	config.RDSService = rds.NewService(awsCfg, cwMetricsService)
 	config.VPCService = awsvpc.NewService(awsCfg, cwMetricsService)
+	config.LambdaService = awslambda.NewService(awsCfg)
 	config.ReportService = report.NewService()
 
 	return orchestrator.NewService(config), nil
