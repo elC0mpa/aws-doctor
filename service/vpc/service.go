@@ -4,6 +4,7 @@ package vpc
 import (
 	"context"
 	"fmt"
+	"log"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/ec2"
@@ -50,7 +51,7 @@ func (s *service) GetIdleNatGateways(ctx context.Context, idleDays int) ([]model
 
 			bytesOut, err := s.cwService.NatGatewayBytesOut(ctx, natGatewayID, idleDays)
 			if err != nil {
-				// Continue processing other NAT Gateways rather than failing all
+				log.Printf("Warning: failed to get CloudWatch metrics for NAT Gateway %s: %v", natGatewayID, err)
 				continue
 			}
 
