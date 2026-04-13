@@ -6,7 +6,6 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/ec2"
 	"github.com/aws/aws-sdk-go-v2/service/ec2/types"
 	"github.com/elC0mpa/aws-doctor/model"
-	"github.com/elC0mpa/aws-doctor/service/cloudwatchmetrics"
 )
 
 // ClientAPI is the interface for the AWS EC2 client methods used by the service.
@@ -22,8 +21,7 @@ type ClientAPI interface {
 }
 
 type service struct {
-	client    ClientAPI
-	cwService cloudwatchmetrics.Service
+	client ClientAPI
 }
 
 // Service is the interface for AWS EC2 service.

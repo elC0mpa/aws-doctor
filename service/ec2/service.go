@@ -22,8 +22,7 @@ func NewService(awsconfig aws.Config, cwService cloudwatchmetrics.Service) Servi
 	client := ec2.NewFromConfig(awsconfig)
 
 	return &service{
-		client:    client,
-		cwService: cwService,
+		client: client,
 	}
 }
 
