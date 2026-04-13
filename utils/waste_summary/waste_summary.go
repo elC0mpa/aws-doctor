@@ -94,6 +94,15 @@ func costCategories(input model.RenderWasteInput) []model.CategorySummary {
 		categories = append(categories, model.CategorySummary{Name: "RDS Snapshots", Count: n, Cost: cost})
 	}
 
+	if n := len(input.IdleNatGateways); n > 0 {
+		var cost float64
+		for _, ng := range input.IdleNatGateways {
+			cost += ng.EstimatedMonthlyCost
+		}
+
+		categories = append(categories, model.CategorySummary{Name: "Idle NAT Gateways", Count: n, Cost: cost})
+	}
+
 	return categories
 }
 
@@ -118,10 +127,6 @@ func countOnlyCategories(input model.RenderWasteInput) []model.CategorySummary {
 
 	if n := len(input.UnusedKeyPairs); n > 0 {
 		categories = append(categories, model.CategorySummary{Name: "Unused Key Pairs", Count: n})
-	}
-
-	if n := len(input.IdleNatGateways); n > 0 {
-		categories = append(categories, model.CategorySummary{Name: "Idle NAT Gateways", Count: n})
 	}
 
 	return categories

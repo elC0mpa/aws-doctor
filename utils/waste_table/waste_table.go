@@ -481,20 +481,34 @@ func drawNatGatewayTable(natGateways []model.NatGatewayWasteInfo) {
 	t.SetStyle(table.StyleRounded)
 	t.SetTitle(" %s ", text.FgHiYellow.Sprint("🧟 NAT Gateway Waste"))
 
-	t.AppendHeader(table.Row{"NAT Gateway ID", "VPC ID", "Subnet ID", "State", "Bytes Transferred"})
+	t.AppendHeader(table.Row{"Status", "NAT Gateway ID", "Metric", "Est. Cost/Mo"})
 
-	for _, ng := range natGateways {
-		t.AppendRow(table.Row{
-			ng.NatGatewayID,
-			ng.VPCID,
-			ng.SubnetID,
-			ng.State,
-			fmt.Sprintf("%.2f", ng.BytesOutToDestination),
-		})
+	rows := populateNatGatewayRows(natGateways)
+	if len(rows) > 0 {
+		halfRow := len(rows) / 2
+		rows[halfRow][0] = text.FgHiRed.Sprint("Idle (> 7 Days)")
 	}
+
+	t.AppendRows(rows)
 
 	t.Render()
 	fmt.Println()
+}
+
+func populateNatGatewayRows(natGateways []model.NatGatewayWasteInfo) []table.Row {
+	rows := make([]table.Row, 0, len(natGateways))
+
+	for _, ng := range natGateways {
+		p := outputshared.PresentIdleNatGateway(ng)
+		rows = append(rows, table.Row{
+			"",
+			p.Identifier,
+			p.Metric,
+			p.EstimatedCost,
+		})
+	}
+
+	return rows
 }
 
 func populateKeyPairRows(keyPairs []model.KeyPairWasteInfo) []table.Row {
