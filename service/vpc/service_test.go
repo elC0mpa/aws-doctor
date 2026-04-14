@@ -14,7 +14,7 @@ import (
 	"github.com/stretchr/testify/mock"
 )
 
-func TestIdleNATGateways(t *testing.T) {
+func TestGetIdleNATGateways(t *testing.T) {
 	ctx := context.Background()
 
 	tests := []struct {
@@ -123,7 +123,7 @@ func TestIdleNATGateways(t *testing.T) {
 			}
 
 			// Execute
-			results, err := svc.IdleNATGateways(ctx, 7)
+			results, err := svc.GetIdleNATGateways(ctx, 7)
 
 			// Assert
 			if tt.expectedError {
@@ -137,7 +137,7 @@ func TestIdleNATGateways(t *testing.T) {
 	}
 }
 
-func TestIdleNATGateways_Error(t *testing.T) {
+func TestGetIdleNATGateways_Error(t *testing.T) {
 	ctx := context.Background()
 
 	tests := []struct {
@@ -184,7 +184,7 @@ func TestIdleNATGateways_Error(t *testing.T) {
 				cwService: mockCW,
 			}
 
-			results, err := svc.IdleNATGateways(ctx, 7)
+			results, err := svc.GetIdleNATGateways(ctx, 7)
 
 			if tt.expectedError {
 				assert.Error(t, err)

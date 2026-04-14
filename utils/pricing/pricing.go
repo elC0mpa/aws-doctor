@@ -79,3 +79,8 @@ func CalculateCloudWatchLogsMonthlyCost(storedBytes int64) float64 {
 	storedGB := float64(storedBytes) / (1024 * 1024 * 1024)
 	return storedGB * CloudWatchLogsCostPerGBMonth
 }
+
+// CalculateNATGatewayMonthlyCost returns the estimated monthly cost for a NAT Gateway.
+func CalculateNATGatewayMonthlyCost() float64 {
+	return NatGatewayCostPerMonth
+}

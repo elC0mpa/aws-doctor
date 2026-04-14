@@ -316,7 +316,7 @@ func TestPresentRDSIdleInstance(t *testing.T) {
 		DaysChecked:          7,
 		EstimatedMonthlyCost: 50.00,
 	}
-	
+
 	p := PresentRDSIdleInstance(inst)
 
 	if p.Identifier != "idle-db" {

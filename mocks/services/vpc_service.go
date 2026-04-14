@@ -12,8 +12,8 @@ type MockVPCService struct {
 	mock.Mock
 }
 
-// IdleNATGateways mocks the IdleNATGateways method.
-func (m *MockVPCService) IdleNATGateways(ctx context.Context, idleDays int) ([]model.NATGatewayWasteInfo, error) {
+// GetIdleNATGateways mocks the GetIdleNATGateways method.
+func (m *MockVPCService) GetIdleNATGateways(ctx context.Context, idleDays int) ([]model.NATGatewayWasteInfo, error) {
 	args := m.Called(ctx, idleDays)
 	if args.Get(0) == nil {
 		return nil, args.Error(1)

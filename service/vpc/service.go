@@ -16,8 +16,8 @@ import (
 )
 
 // NewService creates a new VPC service instance.
-func NewService(awsCfg aws.Config, cwService awscloudwatchmetrics.Service) Service {
-	client := ec2.NewFromConfig(awsCfg)
+func NewService(awsconfig aws.Config, cwService awscloudwatchmetrics.Service) Service {
+	client := ec2.NewFromConfig(awsconfig)
 
 	return &service{
 		client:    client,
@@ -25,8 +25,8 @@ func NewService(awsCfg aws.Config, cwService awscloudwatchmetrics.Service) Servi
 	}
 }
 
-// IdleNATGateways returns NAT Gateways that have processed 0 bytes over the idleDays period.
-func (s *service) IdleNATGateways(ctx context.Context, idleDays int) ([]model.NATGatewayWasteInfo, error) {
+// GetIdleNATGateways returns NAT Gateways that have processed 0 bytes over the idleDays period.
+func (s *service) GetIdleNATGateways(ctx context.Context, idleDays int) ([]model.NATGatewayWasteInfo, error) {
 	paginator := ec2.NewDescribeNatGatewaysPaginator(s.client, &ec2.DescribeNatGatewaysInput{
 		Filter: []types.Filter{
 			{
@@ -58,46 +58,37 @@ func (s *service) IdleNATGateways(ctx context.Context, idleDays int) ([]model.NA
 }
 
 // collectValidGateways filters NAT Gateways with non-nil IDs.
-func (s *service) collectValidGateways(natGateways []types.NatGateway) []natGatewayWithIndex {
-	valid := make([]natGatewayWithIndex, 0, len(natGateways))
+func (s *service) collectValidGateways(natGateways []types.NatGateway) []types.NatGateway {
+	valid := make([]types.NatGateway, 0, len(natGateways))
 
-	for i, natGateway := range natGateways {
+	for _, natGateway := range natGateways {
 		natGatewayID := aws.ToString(natGateway.NatGatewayId)
 		if natGatewayID == "" {
 			continue
 		}
 
-		valid = append(valid, natGatewayWithIndex{i, natGateway})
+		valid = append(valid, natGateway)
 	}
 
 	return valid
 }
 
 // fetchBytesOutConcurrently fetches CloudWatch bytesOut metrics for NAT Gateways in parallel.
-func (s *service) fetchBytesOutConcurrently(ctx context.Context, gateways []natGatewayWithIndex, idleDays int) ([]struct {
-	bytesOut float64
-	err      error
-}, error,
-) {
+func (s *service) fetchBytesOutConcurrently(ctx context.Context, gateways []types.NatGateway, idleDays int) ([]natGatewayMetricResult, error) {
 	g, ctx := errgroup.WithContext(ctx)
 
-	results := make([]struct {
-		bytesOut float64
-		err      error
-	}, len(gateways))
+	results := make([]natGatewayMetricResult, len(gateways))
 
-	for _, vg := range gateways {
-		i := vg.index
-		natGateway := vg.natGateway
+	for i, natGateway := range gateways {
 		natGatewayID := aws.ToString(natGateway.NatGatewayId)
 
 		g.Go(func() error {
 			bytesOut, err := s.cwService.NatGatewayBytesOut(ctx, natGatewayID, idleDays)
 
-			results[i] = struct {
-				bytesOut float64
-				err      error
-			}{bytesOut: bytesOut, err: err}
+			results[i] = natGatewayMetricResult{
+				bytesOut: bytesOut,
+				err:      err,
+			}
 
 			return nil
 		})
@@ -111,16 +102,11 @@ func (s *service) fetchBytesOutConcurrently(ctx context.Context, gateways []natG
 }
 
 // buildIdleNATGateways constructs NATGatewayWasteInfo slice from gateways with zero bytesOut.
-func (s *service) buildIdleNATGateways(gateways []natGatewayWithIndex, results []struct {
-	bytesOut float64
-	err      error
-},
-) []model.NATGatewayWasteInfo {
+func (s *service) buildIdleNATGateways(gateways []types.NatGateway, results []natGatewayMetricResult) []model.NATGatewayWasteInfo {
 	var idle []model.NATGatewayWasteInfo
 
-	for _, vg := range gateways {
-		natGateway := vg.natGateway
-		result := results[vg.index]
+	for i, natGateway := range gateways {
+		result := results[i]
 
 		if result.err != nil {
 			continue
@@ -147,7 +133,7 @@ func (s *service) natGatewayToWasteInfo(natGateway types.NatGateway) model.NATGa
 		SubnetID:              aws.ToString(natGateway.SubnetId),
 		State:                 string(natGateway.State),
 		BytesOutToDestination: 0,
-		EstimatedMonthlyCost:  pricing.NatGatewayCostPerMonth,
+		EstimatedMonthlyCost:  pricing.CalculateNATGatewayMonthlyCost(),
 		DaysSinceCreate:       daysSinceCreate,
 	}
 }
