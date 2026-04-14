@@ -11,6 +11,12 @@ import (
 	cwtypes "github.com/aws/aws-sdk-go-v2/service/cloudwatch/types"
 )
 
+const (
+	// metricPeriodSeconds is the period for CloudWatch metric queries (1 day in seconds).
+	// Using daily periods ensures we capture all metrics even if they are reported less frequently.
+	metricPeriodSeconds = 86400
+)
+
 // NewService creates a new CloudWatch metrics service.
 func NewService(awsconfig aws.Config) Service {
 	client := cloudwatch.NewFromConfig(awsconfig)
@@ -36,7 +42,7 @@ func (s *service) RDSHasZeroConnectionsInPeriod(ctx context.Context, dbInstanceI
 		},
 		StartTime:  &startTime,
 		EndTime:    &now,
-		Period:     aws.Int32(86400),
+		Period:     aws.Int32(metricPeriodSeconds),
 		Statistics: []cwtypes.Statistic{cwtypes.StatisticSum},
 	})
 	if err != nil {
@@ -50,4 +56,38 @@ func (s *service) RDSHasZeroConnectionsInPeriod(ctx context.Context, dbInstanceI
 	}
 
 	return true, nil
+}
+
+// NatGatewayBytesOut returns the total bytes out to destination for a NAT Gateway over the given number of days.
+func (s *service) NatGatewayBytesOut(ctx context.Context, natGatewayID string, days int) (float64, error) {
+	now := time.Now()
+	startTime := now.AddDate(0, 0, -days)
+
+	output, err := s.client.GetMetricStatistics(ctx, &cloudwatch.GetMetricStatisticsInput{
+		Namespace:  aws.String("AWS/NATGateway"),
+		MetricName: aws.String("BytesOutToDestination"),
+		Dimensions: []cwtypes.Dimension{
+			{
+				Name:  aws.String("NatGatewayId"),
+				Value: aws.String(natGatewayID),
+			},
+		},
+		StartTime:  &startTime,
+		EndTime:    &now,
+		Period:     aws.Int32(metricPeriodSeconds),
+		Statistics: []cwtypes.Statistic{cwtypes.StatisticSum},
+	})
+	if err != nil {
+		return 0, fmt.Errorf("failed to get CloudWatch metrics for NAT Gateway %s: %w", natGatewayID, err)
+	}
+
+	var totalBytes float64
+
+	for _, dp := range output.Datapoints {
+		if dp.Sum != nil {
+			totalBytes += *dp.Sum
+		}
+	}
+
+	return totalBytes, nil
 }

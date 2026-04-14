@@ -249,6 +249,7 @@ func TestOrchestrate_RouteToWasteWorkflow(t *testing.T) {
 
 	// Create service
 	mockRDS := new(services.MockRDSService)
+	mockVPC := new(services.MockVPCService)
 	config := Config{
 		STSService:            mockSTS,
 		CostService:           mockCost,
@@ -257,6 +258,7 @@ func TestOrchestrate_RouteToWasteWorkflow(t *testing.T) {
 		S3Service:             mockS3,
 		CloudWatchLogsService: mockCloudWatch,
 		RDSService:            mockRDS,
+		VPCService:            mockVPC,
 		OutputService:         mockOutput,
 		UpdateService:         mockUpdate,
 		ReportService:         mockReport,
@@ -271,6 +273,7 @@ func TestOrchestrate_RouteToWasteWorkflow(t *testing.T) {
 	mockEC2.On("GetUnusedAMIs", mock.Anything, mock.Anything).Return([]model.AMIWasteInfo{}, nil)
 	mockEC2.On("GetOrphanedSnapshots", mock.Anything, mock.Anything).Return([]model.SnapshotWasteInfo{}, nil)
 	mockEC2.On("GetUnusedKeyPairs", mock.Anything).Return([]model.KeyPairWasteInfo{}, nil)
+	mockVPC.On("IdleNATGateways", mock.Anything, mock.Anything).Return([]model.NATGatewayWasteInfo{}, nil)
 	mockS3.On("GetS3Waste", mock.Anything).Return([]model.S3BucketWasteInfo{}, []model.S3MultipartUploadWasteInfo{}, nil)
 	mockCloudWatch.On("GetCloudWatchLogsWaste", mock.Anything).Return([]model.CloudWatchLogsWasteInfo{}, nil)
 	mockRDS.On("GetRDSWaste", mock.Anything).Return([]model.RDSInstanceWasteInfo{}, []model.RDSSnapshotWasteInfo{}, []model.RDSIdleInstanceInfo{}, nil)
@@ -307,6 +310,7 @@ func TestOrchestrate_WasteTakesPrecedenceOverTrend(t *testing.T) {
 
 	// Create service
 	mockRDS := new(services.MockRDSService)
+	mockVPC := new(services.MockVPCService)
 	config := Config{
 		STSService:            mockSTS,
 		CostService:           mockCost,
@@ -315,6 +319,7 @@ func TestOrchestrate_WasteTakesPrecedenceOverTrend(t *testing.T) {
 		S3Service:             mockS3,
 		CloudWatchLogsService: mockCloudWatch,
 		RDSService:            mockRDS,
+		VPCService:            mockVPC,
 		OutputService:         mockOutput,
 		UpdateService:         mockUpdate,
 		ReportService:         mockReport,
@@ -329,6 +334,7 @@ func TestOrchestrate_WasteTakesPrecedenceOverTrend(t *testing.T) {
 	mockEC2.On("GetUnusedAMIs", mock.Anything, mock.Anything).Return([]model.AMIWasteInfo{}, nil)
 	mockEC2.On("GetOrphanedSnapshots", mock.Anything, mock.Anything).Return([]model.SnapshotWasteInfo{}, nil)
 	mockEC2.On("GetUnusedKeyPairs", mock.Anything).Return([]model.KeyPairWasteInfo{}, nil)
+	mockVPC.On("IdleNATGateways", mock.Anything, mock.Anything).Return([]model.NATGatewayWasteInfo{}, nil)
 	mockS3.On("GetS3Waste", mock.Anything).Return([]model.S3BucketWasteInfo{}, []model.S3MultipartUploadWasteInfo{}, nil)
 	mockCloudWatch.On("GetCloudWatchLogsWaste", mock.Anything).Return([]model.CloudWatchLogsWasteInfo{}, nil)
 	mockRDS.On("GetRDSWaste", mock.Anything).Return([]model.RDSInstanceWasteInfo{}, []model.RDSSnapshotWasteInfo{}, []model.RDSIdleInstanceInfo{}, nil)
@@ -559,12 +565,12 @@ func TestTrendWorkflow_Error(t *testing.T) {
 func TestWasteWorkflow_Error(t *testing.T) {
 	tests := []struct {
 		name        string
-		setupMocks  func(*services.MockEC2Service, *services.MockELBService, *services.MockS3Service, *services.MockCloudWatchLogsService, *services.MockRDSService, *services.MockSTSService)
+		setupMocks  func(*services.MockEC2Service, *services.MockELBService, *services.MockS3Service, *services.MockCloudWatchLogsService, *services.MockRDSService, *services.MockSTSService, *services.MockVPCService)
 		expectedErr string
 	}{
 		{
 			name: "GetUnusedElasticIpAddressesInfo_fails",
-			setupMocks: func(mockEC2 *services.MockEC2Service, mockELB *services.MockELBService, mockS3 *services.MockS3Service, mockCloudWatch *services.MockCloudWatchLogsService, mockRDS *services.MockRDSService, mockSTS *services.MockSTSService) {
+			setupMocks: func(mockEC2 *services.MockEC2Service, mockELB *services.MockELBService, mockS3 *services.MockS3Service, mockCloudWatch *services.MockCloudWatchLogsService, mockRDS *services.MockRDSService, mockSTS *services.MockSTSService, mockVPC *services.MockVPCService) {
 				mockEC2.On("GetUnusedElasticIPAddressesInfo", mock.Anything).Return(([]types.Address)(nil), errors.New("EIP error"))
 				mockEC2.On("GetUnusedEBSVolumes", mock.Anything).Return([]types.Volume{}, nil)
 				mockEC2.On("GetStoppedInstancesInfo", mock.Anything).Return([]types.Instance{}, []types.Volume{}, nil)
@@ -572,6 +578,7 @@ func TestWasteWorkflow_Error(t *testing.T) {
 				mockEC2.On("GetUnusedAMIs", mock.Anything, mock.Anything).Return([]model.AMIWasteInfo{}, nil)
 				mockEC2.On("GetOrphanedSnapshots", mock.Anything, mock.Anything).Return([]model.SnapshotWasteInfo{}, nil)
 				mockEC2.On("GetUnusedKeyPairs", mock.Anything).Return([]model.KeyPairWasteInfo{}, nil)
+				mockVPC.On("IdleNATGateways", mock.Anything, mock.Anything).Return([]model.NATGatewayWasteInfo{}, nil)
 				mockS3.On("GetS3Waste", mock.Anything).Return([]model.S3BucketWasteInfo{}, []model.S3MultipartUploadWasteInfo{}, nil)
 				mockCloudWatch.On("GetCloudWatchLogsWaste", mock.Anything).Return([]model.CloudWatchLogsWasteInfo{}, nil)
 				mockRDS.On("GetRDSWaste", mock.Anything).Return([]model.RDSInstanceWasteInfo{}, []model.RDSSnapshotWasteInfo{}, []model.RDSIdleInstanceInfo{}, nil)
@@ -585,7 +592,7 @@ func TestWasteWorkflow_Error(t *testing.T) {
 		},
 		{
 			name: "GetUnusedEBSVolumes_fails",
-			setupMocks: func(mockEC2 *services.MockEC2Service, mockELB *services.MockELBService, mockS3 *services.MockS3Service, mockCloudWatch *services.MockCloudWatchLogsService, mockRDS *services.MockRDSService, mockSTS *services.MockSTSService) {
+			setupMocks: func(mockEC2 *services.MockEC2Service, mockELB *services.MockELBService, mockS3 *services.MockS3Service, mockCloudWatch *services.MockCloudWatchLogsService, mockRDS *services.MockRDSService, mockSTS *services.MockSTSService, mockVPC *services.MockVPCService) {
 				mockEC2.On("GetUnusedElasticIPAddressesInfo", mock.Anything).Return([]types.Address{}, nil)
 				mockEC2.On("GetUnusedEBSVolumes", mock.Anything).Return(([]types.Volume)(nil), errors.New("EBS error"))
 				mockEC2.On("GetStoppedInstancesInfo", mock.Anything).Return([]types.Instance{}, []types.Volume{}, nil)
@@ -593,6 +600,7 @@ func TestWasteWorkflow_Error(t *testing.T) {
 				mockEC2.On("GetUnusedAMIs", mock.Anything, mock.Anything).Return([]model.AMIWasteInfo{}, nil)
 				mockEC2.On("GetOrphanedSnapshots", mock.Anything, mock.Anything).Return([]model.SnapshotWasteInfo{}, nil)
 				mockEC2.On("GetUnusedKeyPairs", mock.Anything).Return([]model.KeyPairWasteInfo{}, nil)
+				mockVPC.On("IdleNATGateways", mock.Anything, mock.Anything).Return([]model.NATGatewayWasteInfo{}, nil)
 				mockS3.On("GetS3Waste", mock.Anything).Return([]model.S3BucketWasteInfo{}, []model.S3MultipartUploadWasteInfo{}, nil)
 				mockCloudWatch.On("GetCloudWatchLogsWaste", mock.Anything).Return([]model.CloudWatchLogsWasteInfo{}, nil)
 				mockRDS.On("GetRDSWaste", mock.Anything).Return([]model.RDSInstanceWasteInfo{}, []model.RDSSnapshotWasteInfo{}, []model.RDSIdleInstanceInfo{}, nil)
@@ -606,7 +614,7 @@ func TestWasteWorkflow_Error(t *testing.T) {
 		},
 		{
 			name: "GetUnusedLoadBalancers_fails",
-			setupMocks: func(mockEC2 *services.MockEC2Service, mockELB *services.MockELBService, mockS3 *services.MockS3Service, mockCloudWatch *services.MockCloudWatchLogsService, mockRDS *services.MockRDSService, mockSTS *services.MockSTSService) {
+			setupMocks: func(mockEC2 *services.MockEC2Service, mockELB *services.MockELBService, mockS3 *services.MockS3Service, mockCloudWatch *services.MockCloudWatchLogsService, mockRDS *services.MockRDSService, mockSTS *services.MockSTSService, mockVPC *services.MockVPCService) {
 				mockEC2.On("GetUnusedElasticIPAddressesInfo", mock.Anything).Return([]types.Address{}, nil)
 				mockEC2.On("GetUnusedEBSVolumes", mock.Anything).Return([]types.Volume{}, nil)
 				mockEC2.On("GetStoppedInstancesInfo", mock.Anything).Return([]types.Instance{}, []types.Volume{}, nil)
@@ -614,6 +622,7 @@ func TestWasteWorkflow_Error(t *testing.T) {
 				mockEC2.On("GetUnusedAMIs", mock.Anything, mock.Anything).Return([]model.AMIWasteInfo{}, nil)
 				mockEC2.On("GetOrphanedSnapshots", mock.Anything, mock.Anything).Return([]model.SnapshotWasteInfo{}, nil)
 				mockEC2.On("GetUnusedKeyPairs", mock.Anything).Return([]model.KeyPairWasteInfo{}, nil)
+				mockVPC.On("IdleNATGateways", mock.Anything, mock.Anything).Return([]model.NATGatewayWasteInfo{}, nil)
 				mockS3.On("GetS3Waste", mock.Anything).Return([]model.S3BucketWasteInfo{}, []model.S3MultipartUploadWasteInfo{}, nil)
 				mockCloudWatch.On("GetCloudWatchLogsWaste", mock.Anything).Return([]model.CloudWatchLogsWasteInfo{}, nil)
 				mockRDS.On("GetRDSWaste", mock.Anything).Return([]model.RDSInstanceWasteInfo{}, []model.RDSSnapshotWasteInfo{}, []model.RDSIdleInstanceInfo{}, nil)
@@ -639,8 +648,9 @@ func TestWasteWorkflow_Error(t *testing.T) {
 			mockUpdate := new(services.MockUpdateService)
 			mockRDS := new(services.MockRDSService)
 			mockReport := new(services.MockReportService)
+			mockVPC := new(services.MockVPCService)
 
-			tt.setupMocks(mockEC2, mockELB, mockS3, mockCloudWatch, mockRDS, mockSTS)
+			tt.setupMocks(mockEC2, mockELB, mockS3, mockCloudWatch, mockRDS, mockSTS, mockVPC)
 			mockOutput.On("StopSpinner").Return().Maybe()
 			mockOutput.On("RenderWaste", mock.Anything).Return(nil).Maybe()
 
@@ -652,6 +662,7 @@ func TestWasteWorkflow_Error(t *testing.T) {
 				S3Service:             mockS3,
 				CloudWatchLogsService: mockCloudWatch,
 				RDSService:            mockRDS,
+				VPCService:            mockVPC,
 				OutputService:         mockOutput,
 				UpdateService:         mockUpdate,
 				ReportService:         mockReport,

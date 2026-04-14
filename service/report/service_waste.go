@@ -55,6 +55,10 @@ func (s *service) addWasteSections(m core.Maroto, input model.RenderWasteInput) 
 		hasWaste = true
 	}
 
+	if s.addNATGatewayWaste(m, input) {
+		hasWaste = true
+	}
+
 	return hasWaste
 }
 
@@ -260,6 +264,23 @@ func (s *service) addRDSWaste(m core.Maroto, input model.RenderWasteInput) bool 
 	for _, inst := range input.RDSIdleInstances {
 		p := outputshared.PresentRDSIdleInstance(inst)
 		s.addWasteRow(m, []string{"Idle", p.Identifier, inst.Engine, p.EstimatedCost})
+	}
+
+	m.AddRow(5, col.New(12))
+
+	return true
+}
+
+func (s *service) addNATGatewayWaste(m core.Maroto, input model.RenderWasteInput) bool {
+	if len(input.IdleNATGateways) == 0 {
+		return false
+	}
+
+	s.addWasteSection(m, "NAT Gateway Waste", []string{"Status", "NAT Gateway ID", "VPC ID", "Est. Cost"})
+
+	for _, ng := range input.IdleNATGateways {
+		p := outputshared.PresentIdleNATGateway(ng)
+		s.addWasteRow(m, []string{"Idle", p.Identifier, ng.VPCID, p.EstimatedCost})
 	}
 
 	m.AddRow(5, col.New(12))

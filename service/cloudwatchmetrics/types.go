@@ -14,6 +14,7 @@ type ClientAPI interface {
 // Service is the interface for CloudWatch metrics operations.
 type Service interface {
 	RDSHasZeroConnectionsInPeriod(ctx context.Context, dbInstanceID string, days int) (bool, error)
+	NatGatewayBytesOut(ctx context.Context, natGatewayID string, days int) (float64, error)
 }
 
 type service struct {

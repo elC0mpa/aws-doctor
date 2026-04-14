@@ -30,6 +30,7 @@ func NewService(cfg Config) Service {
 		updateService:         cfg.UpdateService,
 		reportService:         cfg.ReportService,
 		versionInfo:           cfg.VersionInfo,
+		vpcService:            cfg.VPCService,
 	}
 }
 
@@ -186,6 +187,7 @@ func (s *service) wasteWorkflow(wasteChecks []string, generateReport bool, repor
 	runS3 := runAll || slice.ContainsIgnoreCase(wasteChecks, "s3")
 	runCloudWatchLogs := runAll || slice.ContainsIgnoreCase(wasteChecks, "cloudwatch")
 	runRDS := runAll || slice.ContainsIgnoreCase(wasteChecks, "rds")
+	runVPC := runAll || slice.ContainsIgnoreCase(wasteChecks, "vpc")
 
 	// Results from concurrent API calls
 	var (
@@ -204,6 +206,7 @@ func (s *service) wasteWorkflow(wasteChecks []string, generateReport bool, repor
 		rdsInstances                             []model.RDSInstanceWasteInfo
 		rdsSnapshots                             []model.RDSSnapshotWasteInfo
 		rdsIdleInstances                         []model.RDSIdleInstanceInfo
+		idleNATGateways                          []model.NATGatewayWasteInfo
 		stsResult                                *sts.GetCallerIdentityOutput
 	)
 
@@ -267,6 +270,17 @@ func (s *service) wasteWorkflow(wasteChecks []string, generateReport bool, repor
 			var err error
 
 			unusedKeyPairs, err = s.ec2Service.GetUnusedKeyPairs(ctx)
+
+			return err
+		})
+	}
+
+	if runVPC {
+		// Fetch idle NAT Gateways concurrently
+		g.Go(func() error {
+			var err error
+
+			idleNATGateways, err = s.vpcService.IdleNATGateways(ctx, 7)
 
 			return err
 		})
@@ -349,6 +363,7 @@ func (s *service) wasteWorkflow(wasteChecks []string, generateReport bool, repor
 		RDSInstances:        rdsInstances,
 		RDSSnapshots:        rdsSnapshots,
 		RDSIdleInstances:    rdsIdleInstances,
+		IdleNATGateways:     idleNATGateways,
 	}
 
 	if generateReport {
