@@ -18,6 +18,7 @@ import (
 	"github.com/elC0mpa/aws-doctor/service/s3"
 	awssts "github.com/elC0mpa/aws-doctor/service/sts"
 	"github.com/elC0mpa/aws-doctor/service/update"
+	awsvpc "github.com/elC0mpa/aws-doctor/service/vpc"
 	"github.com/elC0mpa/aws-doctor/utils/banner"
 	"github.com/elC0mpa/aws-doctor/utils/spinner"
 	"github.com/spf13/cobra"
@@ -62,7 +63,9 @@ func buildOrchestrator(needsAWS bool) (orchestrator.Service, error) {
 	config.ELBService = elb.NewService(awsCfg)
 	config.S3Service = s3.NewService(awsCfg)
 	config.CloudWatchLogsService = cloudwatchlogs.NewService(awsCfg)
-	config.RDSService = rds.NewService(awsCfg, cloudwatchmetrics.NewService(awsCfg))
+	cwMetricsService := cloudwatchmetrics.NewService(awsCfg)
+	config.RDSService = rds.NewService(awsCfg, cwMetricsService)
+	config.VPCService = awsvpc.NewService(awsCfg, cwMetricsService)
 	config.ReportService = report.NewService()
 
 	return orchestrator.NewService(config), nil

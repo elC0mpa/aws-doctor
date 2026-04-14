@@ -192,3 +192,15 @@ func PresentRDSIdleInstance(inst model.RDSIdleInstanceInfo) ResourceRow {
 		Details:       fmt.Sprintf("Engine: %s", inst.Engine),
 	}
 }
+
+// PresentIdleNATGateway returns a ResourceRow for an idle NAT Gateway
+func PresentIdleNATGateway(ng model.NATGatewayWasteInfo) ResourceRow {
+	return ResourceRow{
+		Category:      "Idle NAT Gateway",
+		Identifier:    ng.NATGatewayID,
+		EstimatedCost: fmt.Sprintf("$%.2f", ng.EstimatedMonthlyCost),
+		Metric:        fmt.Sprintf("%.2f bytes transferred", ng.BytesOutToDestination),
+		Age:           fmt.Sprintf("%d", ng.DaysSinceCreate),
+		Details:       fmt.Sprintf("VPC: %s / Subnet: %s / State: %s", ng.VPCID, ng.SubnetID, ng.State),
+	}
+}

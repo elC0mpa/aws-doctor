@@ -27,6 +27,9 @@ const (
 	// CloudWatchLogsCostPerGBMonth is the cost of CloudWatch Logs storage per GB per month.
 	CloudWatchLogsCostPerGBMonth = 0.03
 
+	// NatGatewayCostPerMonth is the cost of a NAT Gateway (~$0.045/hour * 730 hours in us-east-1).
+	NatGatewayCostPerMonth = 32.85
+
 	// ALBCostPerMonth is the base cost of an ALB/NLB (~$0.0225/hour * 730 hours)
 	ALBCostPerMonth = 16.43
 
