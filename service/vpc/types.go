@@ -4,7 +4,6 @@ import (
 	"context"
 
 	"github.com/aws/aws-sdk-go-v2/service/ec2"
-	"github.com/aws/aws-sdk-go-v2/service/ec2/types"
 	"github.com/elC0mpa/aws-doctor/model"
 	awscloudwatchmetrics "github.com/elC0mpa/aws-doctor/service/cloudwatchmetrics"
 )
@@ -16,7 +15,7 @@ type ClientAPI interface {
 
 // Service is the interface for VPC-related waste detection
 type Service interface {
-	IdleNATGateways(ctx context.Context, idleDays int) ([]model.NATGatewayWasteInfo, error)
+	GetIdleNATGateways(ctx context.Context, idleDays int) ([]model.NATGatewayWasteInfo, error)
 }
 
 type service struct {
@@ -24,8 +23,8 @@ type service struct {
 	cwService awscloudwatchmetrics.Service
 }
 
-// natGatewayWithIndex pairs a NAT Gateway with its position in the original slice.
-type natGatewayWithIndex struct {
-	index      int
-	natGateway types.NatGateway
+// natGatewayMetricResult stores the result of a CloudWatch metric query for a NAT Gateway.
+type natGatewayMetricResult struct {
+	bytesOut float64
+	err      error
 }

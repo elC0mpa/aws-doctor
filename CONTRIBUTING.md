@@ -167,6 +167,9 @@ Use [Conventional Commits](https://www.conventionalcommits.org/) style:
 
 - **Service interfaces** are defined in `types.go` files
 - **Service implementations** are in `service.go` files
+- **Method Naming**: Service methods that retrieve data must use the `Get` prefix (e.g., `GetIdleNATGateways`, `GetRDSWaste`).
+- **Parameter Naming**: Use `awsconfig` consistently for `aws.Config` parameters in `NewService` constructors.
+- **Struct Usage**: Prefer named internal structs over anonymous structs for complex return types or concurrent result collection to improve readability.
 - **AWS clients** use the AWS SDK v2 patterns
 - **Concurrent operations** use `errgroup` for coordination
 

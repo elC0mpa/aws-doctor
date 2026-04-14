@@ -280,7 +280,7 @@ func (s *service) wasteWorkflow(wasteChecks []string, generateReport bool, repor
 		g.Go(func() error {
 			var err error
 
-			idleNATGateways, err = s.vpcService.IdleNATGateways(ctx, 7)
+			idleNATGateways, err = s.vpcService.GetIdleNATGateways(ctx, 7)
 
 			return err
 		})
