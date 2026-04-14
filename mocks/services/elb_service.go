@@ -13,22 +13,21 @@ type MockELBService struct {
 	mock.Mock
 }
 
-// GetUnusedLoadBalancers mocks the GetUnusedLoadBalancers method.
-func (m *MockELBService) GetUnusedLoadBalancers(ctx context.Context) ([]elbtypes.LoadBalancer, error) {
+// GetLoadBalancerWaste mocks the GetLoadBalancerWaste method.
+func (m *MockELBService) GetLoadBalancerWaste(ctx context.Context) ([]elbtypes.LoadBalancer, []model.ELBIdleInfo, error) {
 	args := m.Called(ctx)
-	if args.Get(0) == nil {
-		return nil, args.Error(1)
+
+	var unused []elbtypes.LoadBalancer
+
+	if args.Get(0) != nil {
+		unused = args.Get(0).([]elbtypes.LoadBalancer)
 	}
 
-	return args.Get(0).([]elbtypes.LoadBalancer), args.Error(1)
-}
+	var idle []model.ELBIdleInfo
 
-// GetIdleLoadBalancers mocks the GetIdleLoadBalancers method.
-func (m *MockELBService) GetIdleLoadBalancers(ctx context.Context) ([]model.ELBIdleInfo, error) {
-	args := m.Called(ctx)
-	if args.Get(0) == nil {
-		return nil, args.Error(1)
+	if args.Get(1) != nil {
+		idle = args.Get(1).([]model.ELBIdleInfo)
 	}
 
-	return args.Get(0).([]model.ELBIdleInfo), args.Error(1)
+	return unused, idle, args.Error(2)
 }

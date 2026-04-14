@@ -26,6 +26,5 @@ type cloudwatchMetricsService interface {
 
 // Service defines the interface for AWS ELB service.
 type Service interface {
-	GetUnusedLoadBalancers(ctx context.Context) ([]types.LoadBalancer, error)
-	GetIdleLoadBalancers(ctx context.Context) ([]model.ELBIdleInfo, error)
+	GetLoadBalancerWaste(ctx context.Context) ([]types.LoadBalancer, []model.ELBIdleInfo, error)
 }

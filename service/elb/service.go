@@ -60,13 +60,18 @@ func (s *service) fetchLoadBalancersAndTargetGroups(ctx context.Context) ([]type
 	return allLoadBalancers, usedLbArns, nil
 }
 
-func (s *service) GetUnusedLoadBalancers(ctx context.Context) ([]types.LoadBalancer, error) {
+// GetLoadBalancerWaste fetches all load balancers and target groups once, then partitions into
+// unused (no target groups) and idle (has target groups but zero traffic via CloudWatch).
+func (s *service) GetLoadBalancerWaste(ctx context.Context) ([]types.LoadBalancer, []model.ELBIdleInfo, error) {
 	allLoadBalancers, usedLbArns, err := s.fetchLoadBalancersAndTargetGroups(ctx)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
-	var orphanedLbs []types.LoadBalancer
+	var (
+		orphanedLbs []types.LoadBalancer
+		candidates  []types.LoadBalancer
+	)
 
 	for _, lb := range allLoadBalancers {
 		if lb.Type != types.LoadBalancerTypeEnumApplication && lb.Type != types.LoadBalancerTypeEnumNetwork {
@@ -77,34 +82,12 @@ func (s *service) GetUnusedLoadBalancers(ctx context.Context) ([]types.LoadBalan
 
 		if !usedLbArns[arn] {
 			orphanedLbs = append(orphanedLbs, lb)
-		}
-	}
-
-	return orphanedLbs, nil
-}
-
-func (s *service) GetIdleLoadBalancers(ctx context.Context) ([]model.ELBIdleInfo, error) {
-	allLoadBalancers, lbsWithTargetGroups, err := s.fetchLoadBalancersAndTargetGroups(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	// Filter to ALB/NLB that have target groups
-	var candidates []types.LoadBalancer
-
-	for _, lb := range allLoadBalancers {
-		if lb.Type != types.LoadBalancerTypeEnumApplication && lb.Type != types.LoadBalancerTypeEnumNetwork {
-			continue
-		}
-
-		arn := aws.ToString(lb.LoadBalancerArn)
-
-		if lbsWithTargetGroups[arn] {
+		} else {
 			candidates = append(candidates, lb)
 		}
 	}
 
-	// Check CloudWatch metrics in parallel
+	// Check CloudWatch metrics in parallel for LBs that have target groups
 	var (
 		mu      sync.Mutex
 		idleLBs []model.ELBIdleInfo
@@ -140,8 +123,8 @@ func (s *service) GetIdleLoadBalancers(ctx context.Context) ([]model.ELBIdleInfo
 	}
 
 	if err := g.Wait(); err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
-	return idleLBs, nil
+	return orphanedLbs, idleLBs, nil
 }

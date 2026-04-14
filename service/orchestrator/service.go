@@ -288,20 +288,11 @@ func (s *service) wasteWorkflow(wasteChecks []string, generateReport bool, repor
 	}
 
 	if runELB {
-		// Fetch unused Load Balancers concurrently
+		// Fetch unused and idle Load Balancers concurrently
 		g.Go(func() error {
 			var err error
 
-			unusedLoadBalancers, err = s.elbService.GetUnusedLoadBalancers(ctx)
-
-			return err
-		})
-
-		// Fetch idle Load Balancers concurrently
-		g.Go(func() error {
-			var err error
-
-			idleLoadBalancers, err = s.elbService.GetIdleLoadBalancers(ctx)
+			unusedLoadBalancers, idleLoadBalancers, err = s.elbService.GetLoadBalancerWaste(ctx)
 
 			return err
 		})
