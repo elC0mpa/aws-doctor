@@ -840,12 +840,13 @@ func drawLambdaTable(lambdas []model.LambdaOverProvisionedInfo) {
 	t.SetStyle(table.StyleRounded)
 	t.SetTitle("Lambda Over-Provisioned Memory")
 
-	t.AppendHeader(table.Row{"Status", "Function Name", "Runtime", "Memory (Configured)", "Memory (Max Used)", "Utilization"})
+	t.AppendHeader(table.Row{"Status", "Function Name", "Runtime", "Memory (Configured)", "Memory (Max Used)", "Utilization", "Recommended"})
 
 	t.SetColumnConfigs([]table.ColumnConfig{
 		{Number: 4, Align: text.AlignRight},
 		{Number: 5, Align: text.AlignRight},
 		{Number: 6, Align: text.AlignRight},
+		{Number: 7, Align: text.AlignRight},
 	})
 
 	statusLabel := "Over-Provisioned"
@@ -873,6 +874,7 @@ func populateLambdaRows(lambdas []model.LambdaOverProvisionedInfo) []table.Row {
 			fmt.Sprintf("%d MB", fn.ConfiguredMemoryMB),
 			fmt.Sprintf("%d MB", fn.MaxMemoryUsedMB),
 			p.Metric,
+			fmt.Sprintf("%d MB", fn.RecommendedMemoryMB),
 		})
 	}
 
