@@ -194,6 +194,23 @@ func TestCompute_CountOnlyItems(t *testing.T) {
 	}
 }
 
+func TestCompute_LambdaOverProvisioned(t *testing.T) {
+	input := model.RenderWasteInput{
+		OverProvisionedLambdas: []model.LambdaOverProvisionedInfo{
+			{FunctionName: "fn-1", ConfiguredMemoryMB: 1024, MaxMemoryUsedMB: 50},
+			{FunctionName: "fn-2", ConfiguredMemoryMB: 512, MaxMemoryUsedMB: 30},
+		},
+	}
+
+	categories, total := Compute(input)
+
+	assert.Len(t, categories, 1)
+	assert.Equal(t, "Lambda (Over-Provisioned)", categories[0].Name)
+	assert.Equal(t, 2, categories[0].Count)
+	assert.Equal(t, 0.0, categories[0].Cost)
+	assert.Equal(t, 0.0, total)
+}
+
 func TestCompute_MixedWaste(t *testing.T) {
 	input := model.RenderWasteInput{
 		ElasticIPs: []types.Address{

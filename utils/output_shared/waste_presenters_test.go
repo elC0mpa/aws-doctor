@@ -385,3 +385,32 @@ func TestPresentIdleNATGateway(t *testing.T) {
 		t.Errorf("EstimatedCost = %v, want '$30.00'", p.EstimatedCost)
 	}
 }
+
+func TestPresentLambdaOverProvisioned(t *testing.T) {
+	fn := model.LambdaOverProvisionedInfo{
+		FunctionName:        "my-function",
+		Runtime:             "go1.x",
+		ConfiguredMemoryMB:  1024,
+		MaxMemoryUsedMB:     50,
+		MemoryUtilization:   4.9,
+		RecommendedMemoryMB: 128,
+	}
+
+	p := PresentLambdaOverProvisioned(fn)
+
+	if p.Identifier != "my-function" {
+		t.Errorf("Identifier = %v, want 'my-function'", p.Identifier)
+	}
+
+	if !strings.Contains(p.Metric, "4.9%") {
+		t.Errorf("Metric %q does not contain '4.9%%'", p.Metric)
+	}
+
+	if p.EstimatedCost != NAValue {
+		t.Errorf("EstimatedCost = %v, want '%s'", p.EstimatedCost, NAValue)
+	}
+
+	if !strings.Contains(p.Details, "1024 MB") {
+		t.Errorf("Details %q does not contain '1024 MB'", p.Details)
+	}
+}

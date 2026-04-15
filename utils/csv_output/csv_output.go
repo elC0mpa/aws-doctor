@@ -88,6 +88,7 @@ func OutputWasteCSV(input model.RenderWasteInput) error {
 	rows = append(rows, mapRDSIdleInstances(input.RDSIdleInstances)...)
 	rows = append(rows, mapNATGateways(input.IdleNATGateways)...)
 	rows = append(rows, mapIdleLoadBalancers(input.IdleLoadBalancers)...)
+	rows = append(rows, mapLambdaOverProvisioned(input.OverProvisionedLambdas)...)
 
 	return w.WriteAll(rows)
 }

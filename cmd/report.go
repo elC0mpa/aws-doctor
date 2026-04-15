@@ -49,12 +49,13 @@ var reportWasteCmd = &cobra.Command{
 		}
 
 		flags := model.Flags{
-			Region:      region,
-			Profile:     profile,
-			Report:      true,
-			ReportPath:  reportOutPath,
-			Waste:       true,
-			WasteChecks: parsedChecks,
+			Region:                region,
+			Profile:               profile,
+			Report:                true,
+			ReportPath:            reportOutPath,
+			Waste:                 true,
+			WasteChecks:           parsedChecks,
+			LambdaMemoryThreshold: lambdaMemoryThreshold,
 		}
 
 		return orch.Orchestrate(flags)
@@ -91,6 +92,9 @@ var reportTrendCmd = &cobra.Command{
 func init() {
 	reportCmd.PersistentFlags().StringVar(&reportOutPath, "path", "", "Output path for the PDF report")
 	reportCmd.PersistentFlags().Lookup("path").NoOptDefVal = "DEFAULT"
+
+	reportWasteCmd.Flags().IntVar(&lambdaMemoryThreshold, "lambda-memory-threshold", 10,
+		"Memory utilization threshold (%) below which Lambda functions are flagged as over-provisioned")
 
 	reportCmd.AddCommand(reportCostCmd)
 	reportCmd.AddCommand(reportWasteCmd)
