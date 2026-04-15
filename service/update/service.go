@@ -13,10 +13,9 @@ import (
 	"github.com/google/go-github/v62/github"
 )
 
-const (
-	homebrewCellarPath = "/Cellar/aws-doctor/"
-	goInstallBinPath   = "/go/bin/"
-)
+const homebrewCellarPath = "/Cellar/aws-doctor/"
+
+var goInstallBinPath = string(filepath.Separator) + filepath.Join("go", "bin") + string(filepath.Separator)
 
 type realRunner struct{}
 
