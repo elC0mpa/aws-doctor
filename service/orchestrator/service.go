@@ -334,7 +334,7 @@ func (s *service) wasteWorkflow(wasteChecks []string, generateReport bool, repor
 		})
 	}
 
-	if runLambda && s.lambdaService != nil {
+	if runLambda {
 		// Fetch over-provisioned Lambda functions concurrently
 		g.Go(func() error {
 			var err error

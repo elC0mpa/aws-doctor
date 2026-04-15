@@ -113,7 +113,7 @@ func TestGetIdleNATGateways(t *testing.T) {
 			// Setup mock CloudWatch service
 			mockCW := new(services.MockCloudWatchMetricsService)
 			for natID, bytesOut := range tt.bytesOutMap {
-				mockCW.On("NatGatewayBytesOut", mock.Anything, natID, 7).Return(bytesOut, nil)
+				mockCW.On("NATGatewayBytesOut", mock.Anything, natID, 7).Return(bytesOut, nil)
 			}
 
 			// Create service with mocks
@@ -167,7 +167,7 @@ func TestGetIdleNATGateways_Error(t *testing.T) {
 					},
 				}, nil)
 				// When CloudWatch errors, we skip the NAT gateway and continue
-				mockCW.On("NatGatewayBytesOut", mock.Anything, "nat-123", 7).Return(0.0, errors.New("CW error"))
+				mockCW.On("NATGatewayBytesOut", mock.Anything, "nat-123", 7).Return(0.0, errors.New("CW error"))
 			},
 			expectedError: false, // CloudWatch errors are logged and we continue
 		},

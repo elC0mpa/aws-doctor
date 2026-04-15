@@ -18,7 +18,7 @@ type mockCWLogsService struct {
 	mock.Mock
 }
 
-func (m *mockCWLogsService) GetMaxMemoryUsed(ctx context.Context, logGroupName string, startTime, endTime time.Time) (int32, error) {
+func (m *mockCWLogsService) GetLambdaMaxMemoryUsed(ctx context.Context, logGroupName string, startTime, endTime time.Time) (int32, error) {
 	args := m.Called(ctx, logGroupName, startTime, endTime)
 
 	return args.Get(0).(int32), args.Error(1)
@@ -49,11 +49,11 @@ func TestGetOverProvisionedFunctions(t *testing.T) {
 		},
 	}, nil)
 
-	// Mock GetMaxMemoryUsed for over-provisioned function (uses 50 MB of 1024 MB = ~5%)
-	mockLogsService.On("GetMaxMemoryUsed", mock.Anything, "/aws/lambda/over-provisioned-fn", mock.Anything, mock.Anything).Return(int32(50), nil)
+	// Mock GetLambdaMaxMemoryUsed for over-provisioned function (uses 50 MB of 1024 MB = ~5%)
+	mockLogsService.On("GetLambdaMaxMemoryUsed", mock.Anything, "/aws/lambda/over-provisioned-fn", mock.Anything, mock.Anything).Return(int32(50), nil)
 
-	// Mock GetMaxMemoryUsed for normal function (uses 200 MB of 256 MB = ~78%)
-	mockLogsService.On("GetMaxMemoryUsed", mock.Anything, "/aws/lambda/normal-fn", mock.Anything, mock.Anything).Return(int32(200), nil)
+	// Mock GetLambdaMaxMemoryUsed for normal function (uses 200 MB of 256 MB = ~78%)
+	mockLogsService.On("GetLambdaMaxMemoryUsed", mock.Anything, "/aws/lambda/normal-fn", mock.Anything, mock.Anything).Return(int32(200), nil)
 
 	result, err := s.GetOverProvisionedFunctions(context.Background(), 10)
 
@@ -108,7 +108,7 @@ func TestGetOverProvisionedFunctions_LogsError(t *testing.T) {
 	}, nil)
 
 	// Logs error should be skipped, not returned
-	mockLogsService.On("GetMaxMemoryUsed", mock.Anything, "/aws/lambda/fn-with-no-logs", mock.Anything, mock.Anything).Return(int32(0), errors.New("log group not found"))
+	mockLogsService.On("GetLambdaMaxMemoryUsed", mock.Anything, "/aws/lambda/fn-with-no-logs", mock.Anything, mock.Anything).Return(int32(0), errors.New("log group not found"))
 
 	result, err := s.GetOverProvisionedFunctions(context.Background(), 10)
 

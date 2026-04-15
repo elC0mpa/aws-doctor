@@ -60,8 +60,8 @@ func (s *service) RDSHasZeroConnectionsInPeriod(ctx context.Context, dbInstanceI
 	return true, nil
 }
 
-// NatGatewayBytesOut returns the total bytes out to destination for a NAT Gateway over the given number of days.
-func (s *service) NatGatewayBytesOut(ctx context.Context, natGatewayID string, days int) (float64, error) {
+// NATGatewayBytesOut returns the total bytes out to destination for a NAT Gateway over the given number of days.
+func (s *service) NATGatewayBytesOut(ctx context.Context, natGatewayID string, days int) (float64, error) {
 	now := time.Now()
 	startTime := now.AddDate(0, 0, -days)
 

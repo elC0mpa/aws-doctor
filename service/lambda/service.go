@@ -53,7 +53,7 @@ func (s *service) GetOverProvisionedFunctions(ctx context.Context, memoryThresho
 			configuredMemoryMB := aws.ToInt32(fn.MemorySize)
 			logGroupName := fmt.Sprintf("/aws/lambda/%s", functionName)
 
-			maxMemUsed, err := s.logsService.GetMaxMemoryUsed(ctx, logGroupName, startTime, now)
+			maxMemUsed, err := s.logsService.GetLambdaMaxMemoryUsed(ctx, logGroupName, startTime, now)
 			if err != nil || maxMemUsed <= 0 || configuredMemoryMB <= 0 {
 				return nil
 			}
