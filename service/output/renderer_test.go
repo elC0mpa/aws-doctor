@@ -215,6 +215,7 @@ func TestRealRenderer_PrintNewVersionAvailable_WritesToStderr(t *testing.T) {
 	os.Stdout = oldStdout
 
 	var buf [1024]byte
+
 	n, _ := rPipe.Read(buf[:])
 	output := string(buf[:n])
 
