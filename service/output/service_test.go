@@ -201,6 +201,12 @@ func TestUpdatePrintMethods(t *testing.T) {
 		mr.AssertExpectations(t)
 	})
 
+	t.Run("PrintHomebrewUpdate", func(t *testing.T) {
+		mr.On("PrintHomebrewUpdate").Return()
+		s.PrintHomebrewUpdate()
+		mr.AssertExpectations(t)
+	})
+
 	t.Run("PrintRateLimitError", func(t *testing.T) {
 		mr.On("PrintRateLimitError").Return()
 		s.PrintRateLimitError()

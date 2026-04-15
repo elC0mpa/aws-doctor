@@ -22,7 +22,7 @@ aws-doctor waste --region us-east-1
 ### Escaneo Selectivo
 Si sólo desea escanear servicios de AWS específicos, puede pasarlos como argumentos al subcomando. Esto es útil para una ejecución más rápida o para limpiezas específicas.
 
-Los filtros soportados actualmente son `ec2`, `s3`, `elb`, `cloudwatch`, y `rds`.
+Los filtros soportados actualmente son `ec2`, `s3`, `elb`, `cloudwatch`, `rds`, y `vpc`.
 
 ```bash
 # Ejemplo: Escanear solo recursos de EC2 y S3
@@ -59,7 +59,7 @@ Agrupamos el desperdicio en cuatro categorías principales de infraestructura:
     icon="share"
     title="Redes"
     link="networking/"
-    subtitle="IPs Elásticas sin asociar y Load Balancers sin objetivos saludables."
+    subtitle="IPs Elásticas sin asociar, Load Balancers inactivos y NAT Gateways inactivos."
   >}}
 {{< /hextra/feature-grid >}}
 

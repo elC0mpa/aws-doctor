@@ -12,6 +12,7 @@ import (
 	"github.com/elC0mpa/aws-doctor/service/s3"
 	awssts "github.com/elC0mpa/aws-doctor/service/sts"
 	"github.com/elC0mpa/aws-doctor/service/update"
+	awsvpc "github.com/elC0mpa/aws-doctor/service/vpc"
 )
 
 type service struct {
@@ -26,6 +27,7 @@ type service struct {
 	updateService         update.Service
 	reportService         report.Service
 	versionInfo           model.VersionInfo
+	vpcService            awsvpc.Service
 }
 
 // Config holds the dependencies for the orchestrator service.
@@ -41,6 +43,7 @@ type Config struct {
 	UpdateService         update.Service
 	ReportService         report.Service
 	VersionInfo           model.VersionInfo
+	VPCService            awsvpc.Service
 }
 
 // Service is the interface for orchestrator service.

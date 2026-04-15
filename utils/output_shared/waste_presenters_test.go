@@ -331,3 +331,33 @@ func TestPresentRDSIdleInstance(t *testing.T) {
 		t.Errorf("EstimatedCost = %v, want '$50.00'", p.EstimatedCost)
 	}
 }
+
+func TestPresentIdleNATGateway(t *testing.T) {
+	ng := model.NATGatewayWasteInfo{
+		NATGatewayID:          "nat-12345",
+		VPCID:                 "vpc-12345",
+		SubnetID:              "subnet-12345",
+		State:                 "available",
+		BytesOutToDestination: 0,
+		EstimatedMonthlyCost:  30.00,
+		DaysSinceCreate:       45,
+	}
+
+	p := PresentIdleNATGateway(ng)
+
+	if p.Identifier != "nat-12345" {
+		t.Errorf("Identifier = %v, want 'nat-12345'", p.Identifier)
+	}
+
+	if p.Age != "45" {
+		t.Errorf("Age = %v, want '45'", p.Age)
+	}
+
+	if p.Metric != "0.00 bytes transferred" {
+		t.Errorf("Metric = %v, want '0.00 bytes transferred'", p.Metric)
+	}
+
+	if p.EstimatedCost != "$30.00" {
+		t.Errorf("EstimatedCost = %v, want '$30.00'", p.EstimatedCost)
+	}
+}

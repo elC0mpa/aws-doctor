@@ -7,7 +7,7 @@ weight: 30
 Uncover costs from unattached networking assets and idle connectivity resources.
 
 {{< callout type="info" >}}
-**Permissions Required**: `ec2:DescribeAddresses`, `elasticloadbalancing:DescribeLoadBalancers`, `elasticloadbalancing:DescribeTargetGroups`.
+**Permissions Required**: `ec2:DescribeAddresses`, `ec2:DescribeNatGateways`, `elasticloadbalancing:DescribeLoadBalancers`, `elasticloadbalancing:DescribeTargetGroups`, `cloudwatch:GetMetricStatistics`.
 {{< /callout >}}
 
 ## Elastic IP Addresses (EIP)
@@ -30,6 +30,17 @@ Load Balancers carry a fixed hourly cost regardless of traffic volume. An ELB wi
 
 - **Action**: Delete any Load Balancer that has zero healthy targets or no target group association.
 
+---
+
+## NAT Gateways
+
+**AWS Doctor** identifies NAT Gateways that have processed **zero bytes** of data over the last **7 days**.
+
+### Why it's waste
+NAT Gateways have a high hourly cost (~$32.85/month in most regions) even when they are not processing any traffic. If a NAT Gateway is idle, it is often a leftover from a previous architecture or an improperly decommissioned environment.
+
+- **Action**: Delete any NAT Gateway that shows no activity and is no longer required for outbound connectivity.
+
 {{< callout type="info" >}}
-Future updates will include detection for **Idle NAT Gateways** and **Unused VPC Endpoints**.
+Future updates will include detection for **Unused VPC Endpoints**.
 {{< /callout >}}

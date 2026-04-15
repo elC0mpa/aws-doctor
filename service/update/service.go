@@ -5,11 +5,15 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"path/filepath"
+	"strings"
 
 	"github.com/elC0mpa/aws-doctor/model"
 	"github.com/elC0mpa/aws-doctor/utils/version"
 	"github.com/google/go-github/v62/github"
 )
+
+const homebrewCellarPath = "/Cellar/aws-doctor/"
 
 type realRunner struct{}
 
@@ -22,6 +26,17 @@ func (r *realRunner) Run(name string, arg ...string) error {
 	return cmd.Run()
 }
 
+type realPathResolver struct{}
+
+func (r *realPathResolver) ResolvedExecutablePath() (string, error) {
+	exePath, err := os.Executable()
+	if err != nil {
+		return "", err
+	}
+
+	return filepath.EvalSymlinks(exePath)
+}
+
 // NewService creates a new update service.
 func NewService(versionInfo model.VersionInfo) Service {
 	client := github.NewClient(nil)
@@ -30,6 +45,7 @@ func NewService(versionInfo model.VersionInfo) Service {
 		runner:       &realRunner{},
 		versionInfo:  versionInfo,
 		repositories: client.Repositories,
+		pathResolver: &realPathResolver{},
 	}
 }
 
@@ -43,8 +59,12 @@ func (s *service) Update() error {
 		return model.ErrAlreadyLatest
 	}
 
+	resolvedPath, err := s.pathResolver.ResolvedExecutablePath()
+	if err == nil && strings.Contains(resolvedPath, homebrewCellarPath) {
+		return model.ErrHomebrewInstall
+	}
+
 	// Proceed with update
-	// Reutilize the install.sh script from the repository
 	if err := s.runner.Run("sh", "-c", "curl -sSL https://raw.githubusercontent.com/elC0mpa/aws-doctor/main/install.sh | sh"); err != nil {
 		return fmt.Errorf("failed to run update script: %w", err)
 	}

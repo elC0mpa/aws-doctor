@@ -48,7 +48,8 @@ func hasAnyWaste(input model.RenderWasteInput) bool {
 		len(input.CloudWatchLogGroups) > 0 ||
 		len(input.RDSInstances) > 0 ||
 		len(input.RDSSnapshots) > 0 ||
-		len(input.RDSIdleInstances) > 0
+		len(input.RDSIdleInstances) > 0 ||
+		len(input.IdleNATGateways) > 0
 }
 
 func drawWasteSections(input model.RenderWasteInput) {
@@ -90,6 +91,10 @@ func drawWasteSections(input model.RenderWasteInput) {
 
 	if len(input.RDSInstances) > 0 || len(input.RDSSnapshots) > 0 || len(input.RDSIdleInstances) > 0 {
 		drawRDSTable(input.RDSInstances, input.RDSSnapshots, input.RDSIdleInstances)
+	}
+
+	if len(input.IdleNATGateways) > 0 {
+		drawNatGatewayTable(input.IdleNATGateways)
 	}
 }
 
@@ -468,6 +473,42 @@ func drawKeyPairTable(keyPairs []model.KeyPairWasteInfo) {
 	t.AppendRows(rows)
 	t.Render()
 	fmt.Println()
+}
+
+func drawNatGatewayTable(natGateways []model.NATGatewayWasteInfo) {
+	t := table.NewWriter()
+	t.SetOutputMirror(os.Stdout)
+	t.SetStyle(table.StyleRounded)
+	t.SetTitle(" %s ", text.FgHiYellow.Sprint("NAT Gateway Waste"))
+
+	t.AppendHeader(table.Row{"Status", "NAT Gateway ID", "Metric", "Est. Cost/Mo"})
+
+	rows := populateNatGatewayRows(natGateways)
+	if len(rows) > 0 {
+		halfRow := len(rows) / 2
+		rows[halfRow][0] = text.FgHiRed.Sprint("Idle (> 7 Days)")
+	}
+
+	t.AppendRows(rows)
+
+	t.Render()
+	fmt.Println()
+}
+
+func populateNatGatewayRows(natGateways []model.NATGatewayWasteInfo) []table.Row {
+	rows := make([]table.Row, 0, len(natGateways))
+
+	for _, ng := range natGateways {
+		p := outputshared.PresentIdleNATGateway(ng)
+		rows = append(rows, table.Row{
+			"",
+			p.Identifier,
+			p.Metric,
+			p.EstimatedCost,
+		})
+	}
+
+	return rows
 }
 
 func populateKeyPairRows(keyPairs []model.KeyPairWasteInfo) []table.Row {

@@ -34,7 +34,7 @@ A terminal-based tool that acts as a comprehensive health check for your AWS acc
 ### 🧟 Waste Detection
 ![Waste Detection](https://github.com/elC0mpa/aws-doctor/blob/main/docs/static/images/demo/waste.gif?raw=true)
 
-*Supports selective scanning: `aws-doctor waste ec2 s3 cloudwatch rds`*
+*Supports selective scanning: `aws-doctor waste ec2 s3 cloudwatch rds vpc`*
 
 ## 📄 Professional Reporting
 
@@ -97,7 +97,7 @@ go install github.com/elC0mpa/aws-doctor@latest
 
 - **📄 Professional PDF Reports:** Generate branded, ready-to-share PDF documents for costs, trends, and waste analysis.
 - **📉 Fair Cost Comparison:** Compares identical time windows between months to spot real anomalies.
-- **🧟 Zombie Discovery:** Scans for idle EIPs, stopped instances, orphaned snapshots, idle RDS instances, and more. Supports selective service filtering (`ec2`, `s3`, `elb`, `cloudwatch`, `rds`).
+- **🧟 Zombie Discovery:** Scans for idle EIPs, stopped instances, orphaned snapshots, idle RDS instances, idle NAT Gateways, and more. Supports selective service filtering (`ec2`, `s3`, `elb`, `cloudwatch`, `rds`, `vpc`).
 - **📊 6-Month Trends:** High-fidelity ANSI visualization of your spending velocity.
 - **📤 Multiple Output Formats:** Export results in `table`, `json`, or `csv` for easy integration with other tools or reporting.
 - **🔔 Update Notifications:** Automatically checks for new versions in the background and notifies you after command output, so you never miss an update.
@@ -108,6 +108,26 @@ go install github.com/elC0mpa/aws-doctor@latest
 As a Cloud Architect, I often need to check AWS costs and billing information. While the AWS Console provides raw data, it lacks the immediate context I need to answer the question: *_"Are we spending efficiently?"_*
 
 I created ***\*aws-doctor\**** to fill that gap. It doesn't just show you the bill; it acts as a diagnostic tool that helps you understand ***\*where\**** the money is going and ***\*what\**** can be cleaned up. It automates the routine checks I used to perform manually, serving as a free, open-source alternative to the paid recommendations found in AWS Trusted Advisor.
+
+## 👥 Community
+
+### Contributors
+
+A huge thank you to everyone who has contributed to **aws-doctor**! Your help makes this tool better for everyone.
+
+<a href="https://github.com/elC0mpa/aws-doctor/graphs/contributors">
+  <img src="https://contrib.rocks/image?repo=elC0mpa/aws-doctor" alt="Contributors" />
+</a>
+
+### Star History
+
+<a href="https://www.star-history.com/?type=date&legend=top-left&repos=elC0mpa%2Faws-doctor">
+ <picture>
+   <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/chart?repos=elC0mpa/aws-doctor&type=date&theme=dark&legend=top-left" />
+   <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/chart?repos=elC0mpa/aws-doctor&type=date&legend=top-left" />
+   <img alt="Star History Chart" src="https://api.star-history.com/chart?repos=elC0mpa/aws-doctor&type=date&legend=top-left" />
+ </picture>
+</a>
 
 ## 🤝 Contributing
 

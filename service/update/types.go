@@ -21,8 +21,13 @@ type repositoryService interface {
 	GetLatestRelease(ctx context.Context, owner, repo string) (*github.RepositoryRelease, *github.Response, error)
 }
 
+type executablePathResolver interface {
+	ResolvedExecutablePath() (string, error)
+}
+
 type service struct {
 	runner       commandRunner
 	versionInfo  model.VersionInfo
 	repositories repositoryService
+	pathResolver executablePathResolver
 }
