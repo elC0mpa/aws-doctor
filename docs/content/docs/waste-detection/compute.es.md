@@ -7,7 +7,7 @@ weight: 10
 Audite su huella de EC2 y EBS para eliminar los costos de instancias y datos abandonados.
 
 {{< callout type="info" >}}
-**Permisos Requeridos**: `ec2:DescribeInstances`, `ec2:DescribeReservedInstances`, `ec2:DescribeVolumes`, `ec2:DescribeSnapshots`, `ec2:DescribeKeyPairs`, `ec2:DescribeImages`.
+**Permisos Requeridos**: `ec2:DescribeInstances`, `ec2:DescribeReservedInstances`, `ec2:DescribeVolumes`, `ec2:DescribeSnapshots`, `ec2:DescribeKeyPairs`, `ec2:DescribeImages`, `lambda:ListFunctions`, `logs:DescribeLogGroups`, `logs:StartQuery`, `logs:GetQueryResults`.
 {{< /callout >}}
 
 ## Instancias EC2
@@ -21,6 +21,20 @@ Audite su huella de EC2 y EBS para eliminar los costos de instancias y datos aba
 Escanea RIs activas programadas para vencer en los **próximos 30 días** o que han vencido en los **últimos 30 días**.
 - **Razón**: Las RIs vencidas vuelven a los costosos precios de On-Demand sin previo aviso.
 - **Acción**: Revisar el uso y renovar o migrar a Savings Plans.
+
+---
+
+## AWS Lambda
+
+### Memoria Sobre-Provisionada
+Busca funciones Lambda donde el pico de utilización de memoria es significativamente menor que la asignación configurada (umbral predeterminado: **10%**).
+- **Razón**: El precio de Lambda es directamente proporcional a la memoria asignada. Asignar 10GB a una función que usa 200MB desperdicia ~98% del costo.
+- **Acción**: Ajustar el tamaño de la memoria de la función según las recomendaciones.
+- **Motor de Recomendación**: Sugiere configurar la memoria al **doble del pico observado** (con un mínimo de 128 MB).
+
+{{< callout type="tip" >}}
+Puede ajustar la sensibilidad de esta verificación utilizando el flag `--lambda-memory-threshold` (por ejemplo, `--lambda-memory-threshold 20` para marcar funciones que usan menos del 20%).
+{{< /callout >}}
 
 ---
 

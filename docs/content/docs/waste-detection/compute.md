@@ -7,7 +7,7 @@ weight: 10
 Audit your EC2 and EBS footprint to eliminate costs from abandoned instances and data.
 
 {{< callout type="info" >}}
-**Permissions Required**: `ec2:DescribeInstances`, `ec2:DescribeReservedInstances`, `ec2:DescribeVolumes`, `ec2:DescribeSnapshots`, `ec2:DescribeKeyPairs`, `ec2:DescribeImages`.
+**Permissions Required**: `ec2:DescribeInstances`, `ec2:DescribeReservedInstances`, `ec2:DescribeVolumes`, `ec2:DescribeSnapshots`, `ec2:DescribeKeyPairs`, `ec2:DescribeImages`, `lambda:ListFunctions`, `logs:DescribeLogGroups`, `logs:StartQuery`, `logs:GetQueryResults`.
 {{< /callout >}}
 
 ## EC2 Instances
@@ -21,6 +21,20 @@ Audit your EC2 and EBS footprint to eliminate costs from abandoned instances and
 Scans for active RIs scheduled to expire in the **next 30 days** or that have expired in the **last 30 days**.
 - **Reason**: Expired RIs revert to expensive On-Demand pricing without warning.
 - **Action**: Review usage and renew or migrate to Savings Plans.
+
+---
+
+## AWS Lambda
+
+### Over-Provisioned Memory
+Scans for Lambda functions where peak memory utilization is significantly lower than the configured allocation (default threshold: **10%**).
+- **Reason**: Lambda pricing is directly proportional to allocated memory. Allocating 10GB to a function that uses 200MB wastes ~98% of the cost.
+- **Action**: Right-size the function memory based on the recommendations.
+- **Recommendation Engine**: Suggests setting memory to **2x the observed peak** (with a minimum of 128 MB).
+
+{{< callout type="tip" >}}
+You can tune the sensitivity of this check using the `--lambda-memory-threshold` flag (e.g., `--lambda-memory-threshold 20` to flag functions using less than 20%).
+{{< /callout >}}
 
 ---
 
