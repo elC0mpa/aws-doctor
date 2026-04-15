@@ -5,6 +5,7 @@ import (
 	"context"
 	"errors"
 	"strings"
+	"time"
 
 	"github.com/aws/aws-sdk-go-v2/service/ec2/types"
 	elbtypes "github.com/aws/aws-sdk-go-v2/service/elasticloadbalancingv2/types"
@@ -52,7 +53,10 @@ func (s *service) Orchestrate(flags model.Flags) error {
 	versionCh := make(chan versionCheckResult, 1)
 
 	go func() {
-		latest, err := s.updateService.CheckForUpdate(context.Background())
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+
+		latest, err := s.updateService.CheckForUpdate(ctx)
 		versionCh <- versionCheckResult{latestVersion: latest, err: err}
 	}()
 
