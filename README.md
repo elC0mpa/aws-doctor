@@ -108,6 +108,26 @@ As a Cloud Architect, I often need to check AWS costs and billing information. W
 
 I created ***\*aws-doctor\**** to fill that gap. It doesn't just show you the bill; it acts as a diagnostic tool that helps you understand ***\*where\**** the money is going and ***\*what\**** can be cleaned up. It automates the routine checks I used to perform manually, serving as a free, open-source alternative to the paid recommendations found in AWS Trusted Advisor.
 
+## 👥 Community
+
+### Contributors
+
+A huge thank you to everyone who has contributed to **aws-doctor**! Your help makes this tool better for everyone.
+
+<a href="https://github.com/elC0mpa/aws-doctor/graphs/contributors">
+  <img src="https://contrib.rocks/image?repo=elC0mpa/aws-doctor" alt="Contributors" />
+</a>
+
+### Star History
+
+<a href="https://www.star-history.com/?type=date&legend=top-left&repos=elC0mpa%2Faws-doctor">
+ <picture>
+   <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/chart?repos=elC0mpa/aws-doctor&type=date&theme=dark&legend=top-left" />
+   <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/chart?repos=elC0mpa/aws-doctor&type=date&legend=top-left" />
+   <img alt="Star History Chart" src="https://api.star-history.com/chart?repos=elC0mpa/aws-doctor&type=date&legend=top-left" />
+ </picture>
+</a>
+
 ## 🤝 Contributing
 
 We love contributions! Whether it's a new detection rule or a bug fix, check our [Community Dashboard](https://awsdoctor.compacompila.com/#join-the-community) to get started.
