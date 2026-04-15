@@ -302,11 +302,11 @@ func (s *service) addLambdaWaste(m core.Maroto, input model.RenderWasteInput) bo
 		return false
 	}
 
-	s.addWasteSection(m, "Lambda Over-Provisioned Memory", []string{"Status", "Function", "Memory", "Utilization"})
+	s.addWasteSection(m, "Lambda Over-Provisioned Memory", []string{"Status", "Function", "Memory", "Details"})
 
 	for _, fn := range input.OverProvisionedLambdas {
 		p := outputshared.PresentLambdaOverProvisioned(fn)
-		s.addWasteRow(m, []string{"Over-Provisioned", p.Identifier, fmt.Sprintf("%d/%d MB", fn.MaxMemoryUsedMB, fn.ConfiguredMemoryMB), p.Metric})
+		s.addWasteRow(m, []string{"Over-Provisioned", p.Identifier, fmt.Sprintf("%d/%d MB", fn.MaxMemoryUsedMB, fn.ConfiguredMemoryMB), p.Details})
 	}
 
 	m.AddRow(5, col.New(12))

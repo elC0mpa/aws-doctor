@@ -4,40 +4,31 @@ package lambda
 import (
 	"context"
 	"fmt"
-	"regexp"
-	"strconv"
 	"sync"
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
-	"github.com/aws/aws-sdk-go-v2/service/cloudwatchlogs"
 	awslambda "github.com/aws/aws-sdk-go-v2/service/lambda"
 	lambdatypes "github.com/aws/aws-sdk-go-v2/service/lambda/types"
 	"github.com/elC0mpa/aws-doctor/model"
+	"github.com/elC0mpa/aws-doctor/service/cloudwatchlogs"
 	"golang.org/x/sync/errgroup"
 )
 
 const (
-	defaultMemoryThresholdPercent = 10
-	lookbackDays                  = 14
-	maxLogsConcurrency            = 10
+	lookbackDays       = 14
+	maxLogsConcurrency = 10
 )
 
-var maxMemUsedRegex = regexp.MustCompile(`Max Memory Used:\s*(\d+)\s*MB`)
-
 // NewService creates a new Lambda service.
-func NewService(awsconfig aws.Config) Service {
+func NewService(awsconfig aws.Config, cwLogsService cloudwatchlogs.Service) Service {
 	return &service{
 		lambdaClient: awslambda.NewFromConfig(awsconfig),
-		logsClient:   cloudwatchlogs.NewFromConfig(awsconfig),
+		logsService:  cwLogsService,
 	}
 }
 
 func (s *service) GetOverProvisionedFunctions(ctx context.Context, memoryThresholdPercent int) ([]model.LambdaOverProvisionedInfo, error) {
-	if memoryThresholdPercent <= 0 {
-		memoryThresholdPercent = defaultMemoryThresholdPercent
-	}
-
 	functions, err := s.listAllFunctions(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to list Lambda functions: %w", err)
@@ -62,7 +53,7 @@ func (s *service) GetOverProvisionedFunctions(ctx context.Context, memoryThresho
 			configuredMemoryMB := aws.ToInt32(fn.MemorySize)
 			logGroupName := fmt.Sprintf("/aws/lambda/%s", functionName)
 
-			maxMemUsed, err := s.getMaxMemoryUsed(ctx, logGroupName, startTime, now)
+			maxMemUsed, err := s.logsService.GetMaxMemoryUsed(ctx, logGroupName, startTime, now)
 			if err != nil || maxMemUsed <= 0 || configuredMemoryMB <= 0 {
 				return nil
 			}
@@ -114,47 +105,4 @@ func (s *service) listAllFunctions(ctx context.Context) ([]lambdatypes.FunctionC
 	}
 
 	return functions, nil
-}
-
-// getMaxMemoryUsed paginates through REPORT lines from a Lambda function's log group
-// and returns the highest "Max Memory Used" value in MB.
-func (s *service) getMaxMemoryUsed(ctx context.Context, logGroupName string, startTime, endTime time.Time) (int32, error) {
-	input := &cloudwatchlogs.FilterLogEventsInput{
-		LogGroupName:  aws.String(logGroupName),
-		FilterPattern: aws.String("REPORT RequestId"),
-		StartTime:     aws.Int64(startTime.UnixMilli()),
-		EndTime:       aws.Int64(endTime.UnixMilli()),
-		Interleaved:   aws.Bool(true),
-	}
-
-	var maxMem int32
-
-	for {
-		output, err := s.logsClient.FilterLogEvents(ctx, input)
-		if err != nil {
-			return 0, err
-		}
-
-		for _, event := range output.Events {
-			if event.Message == nil {
-				continue
-			}
-
-			matches := maxMemUsedRegex.FindStringSubmatch(*event.Message)
-			if len(matches) >= 2 {
-				mem, err := strconv.Atoi(matches[1])
-				if err == nil && int32(mem) > maxMem {
-					maxMem = int32(mem)
-				}
-			}
-		}
-
-		if output.NextToken == nil {
-			break
-		}
-
-		input.NextToken = output.NextToken
-	}
-
-	return maxMem, nil
 }

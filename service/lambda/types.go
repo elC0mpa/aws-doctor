@@ -2,8 +2,8 @@ package lambda
 
 import (
 	"context"
+	"time"
 
-	"github.com/aws/aws-sdk-go-v2/service/cloudwatchlogs"
 	awslambda "github.com/aws/aws-sdk-go-v2/service/lambda"
 	"github.com/elC0mpa/aws-doctor/model"
 )
@@ -13,14 +13,14 @@ type ClientAPI interface {
 	ListFunctions(ctx context.Context, params *awslambda.ListFunctionsInput, optFns ...func(*awslambda.Options)) (*awslambda.ListFunctionsOutput, error)
 }
 
-// LogsClientAPI is the interface for the CloudWatch Logs client methods used by the service.
-type LogsClientAPI interface {
-	FilterLogEvents(ctx context.Context, params *cloudwatchlogs.FilterLogEventsInput, optFns ...func(*cloudwatchlogs.Options)) (*cloudwatchlogs.FilterLogEventsOutput, error)
+// cloudWatchLogsService defines the interface for the CloudWatch Logs dependency.
+type cloudWatchLogsService interface {
+	GetMaxMemoryUsed(ctx context.Context, logGroupName string, startTime, endTime time.Time) (int32, error)
 }
 
 type service struct {
 	lambdaClient ClientAPI
-	logsClient   LogsClientAPI
+	logsService  cloudWatchLogsService
 }
 
 // Service defines the interface for AWS Lambda waste detection.

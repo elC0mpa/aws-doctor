@@ -4,10 +4,9 @@ import (
 	"context"
 	"errors"
 	"testing"
+	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
-	"github.com/aws/aws-sdk-go-v2/service/cloudwatchlogs"
-	cwlogstypes "github.com/aws/aws-sdk-go-v2/service/cloudwatchlogs/types"
 	awslambda "github.com/aws/aws-sdk-go-v2/service/lambda"
 	lambdatypes "github.com/aws/aws-sdk-go-v2/service/lambda/types"
 	"github.com/elC0mpa/aws-doctor/mocks/awsinterfaces"
@@ -15,13 +14,23 @@ import (
 	"github.com/stretchr/testify/mock"
 )
 
+type mockCWLogsService struct {
+	mock.Mock
+}
+
+func (m *mockCWLogsService) GetMaxMemoryUsed(ctx context.Context, logGroupName string, startTime, endTime time.Time) (int32, error) {
+	args := m.Called(ctx, logGroupName, startTime, endTime)
+
+	return args.Get(0).(int32), args.Error(1)
+}
+
 func TestGetOverProvisionedFunctions(t *testing.T) {
 	mockLambdaClient := new(awsinterfaces.MockLambdaClient)
-	mockLogsClient := new(awsinterfaces.MockLambdaLogsClient)
+	mockLogsService := new(mockCWLogsService)
 
 	s := &service{
 		lambdaClient: mockLambdaClient,
-		logsClient:   mockLogsClient,
+		logsService:  mockLogsService,
 	}
 
 	// Mock ListFunctions: one over-provisioned function, one normal function
@@ -40,24 +49,11 @@ func TestGetOverProvisionedFunctions(t *testing.T) {
 		},
 	}, nil)
 
-	// Mock FilterLogEvents for over-provisioned function (uses 50 MB of 1024 MB = ~5%)
-	mockLogsClient.On("FilterLogEvents", mock.Anything, mock.MatchedBy(func(input *cloudwatchlogs.FilterLogEventsInput) bool {
-		return aws.ToString(input.LogGroupName) == "/aws/lambda/over-provisioned-fn"
-	}), mock.Anything).Return(&cloudwatchlogs.FilterLogEventsOutput{
-		Events: []cwlogstypes.FilteredLogEvent{
-			{Message: aws.String("REPORT RequestId: abc-123 Duration: 100.00 ms Billed Duration: 100 ms Memory Size: 1024 MB Max Memory Used: 50 MB")},
-			{Message: aws.String("REPORT RequestId: def-456 Duration: 200.00 ms Billed Duration: 200 ms Memory Size: 1024 MB Max Memory Used: 40 MB")},
-		},
-	}, nil)
+	// Mock GetMaxMemoryUsed for over-provisioned function (uses 50 MB of 1024 MB = ~5%)
+	mockLogsService.On("GetMaxMemoryUsed", mock.Anything, "/aws/lambda/over-provisioned-fn", mock.Anything, mock.Anything).Return(int32(50), nil)
 
-	// Mock FilterLogEvents for normal function (uses 200 MB of 256 MB = ~78%)
-	mockLogsClient.On("FilterLogEvents", mock.Anything, mock.MatchedBy(func(input *cloudwatchlogs.FilterLogEventsInput) bool {
-		return aws.ToString(input.LogGroupName) == "/aws/lambda/normal-fn"
-	}), mock.Anything).Return(&cloudwatchlogs.FilterLogEventsOutput{
-		Events: []cwlogstypes.FilteredLogEvent{
-			{Message: aws.String("REPORT RequestId: ghi-789 Duration: 300.00 ms Billed Duration: 300 ms Memory Size: 256 MB Max Memory Used: 200 MB")},
-		},
-	}, nil)
+	// Mock GetMaxMemoryUsed for normal function (uses 200 MB of 256 MB = ~78%)
+	mockLogsService.On("GetMaxMemoryUsed", mock.Anything, "/aws/lambda/normal-fn", mock.Anything, mock.Anything).Return(int32(200), nil)
 
 	result, err := s.GetOverProvisionedFunctions(context.Background(), 10)
 
@@ -71,16 +67,16 @@ func TestGetOverProvisionedFunctions(t *testing.T) {
 	assert.Equal(t, "nodejs20.x", result[0].Runtime)
 
 	mockLambdaClient.AssertExpectations(t)
-	mockLogsClient.AssertExpectations(t)
+	mockLogsService.AssertExpectations(t)
 }
 
 func TestGetOverProvisionedFunctions_ListFunctionsError(t *testing.T) {
 	mockLambdaClient := new(awsinterfaces.MockLambdaClient)
-	mockLogsClient := new(awsinterfaces.MockLambdaLogsClient)
+	mockLogsService := new(mockCWLogsService)
 
 	s := &service{
 		lambdaClient: mockLambdaClient,
-		logsClient:   mockLogsClient,
+		logsService:  mockLogsService,
 	}
 
 	mockLambdaClient.On("ListFunctions", mock.Anything, mock.Anything, mock.Anything).Return(nil, errors.New("Lambda API error"))
@@ -94,11 +90,11 @@ func TestGetOverProvisionedFunctions_ListFunctionsError(t *testing.T) {
 
 func TestGetOverProvisionedFunctions_LogsError(t *testing.T) {
 	mockLambdaClient := new(awsinterfaces.MockLambdaClient)
-	mockLogsClient := new(awsinterfaces.MockLambdaLogsClient)
+	mockLogsService := new(mockCWLogsService)
 
 	s := &service{
 		lambdaClient: mockLambdaClient,
-		logsClient:   mockLogsClient,
+		logsService:  mockLogsService,
 	}
 
 	mockLambdaClient.On("ListFunctions", mock.Anything, mock.Anything, mock.Anything).Return(&awslambda.ListFunctionsOutput{
@@ -112,23 +108,23 @@ func TestGetOverProvisionedFunctions_LogsError(t *testing.T) {
 	}, nil)
 
 	// Logs error should be skipped, not returned
-	mockLogsClient.On("FilterLogEvents", mock.Anything, mock.Anything, mock.Anything).Return(nil, errors.New("log group not found"))
+	mockLogsService.On("GetMaxMemoryUsed", mock.Anything, "/aws/lambda/fn-with-no-logs", mock.Anything, mock.Anything).Return(int32(0), errors.New("log group not found"))
 
 	result, err := s.GetOverProvisionedFunctions(context.Background(), 10)
 
 	assert.NoError(t, err)
 	assert.Empty(t, result)
 	mockLambdaClient.AssertExpectations(t)
-	mockLogsClient.AssertExpectations(t)
+	mockLogsService.AssertExpectations(t)
 }
 
 func TestGetOverProvisionedFunctions_NoFunctions(t *testing.T) {
 	mockLambdaClient := new(awsinterfaces.MockLambdaClient)
-	mockLogsClient := new(awsinterfaces.MockLambdaLogsClient)
+	mockLogsService := new(mockCWLogsService)
 
 	s := &service{
 		lambdaClient: mockLambdaClient,
-		logsClient:   mockLogsClient,
+		logsService:  mockLogsService,
 	}
 
 	mockLambdaClient.On("ListFunctions", mock.Anything, mock.Anything, mock.Anything).Return(&awslambda.ListFunctionsOutput{

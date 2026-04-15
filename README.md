@@ -97,7 +97,7 @@ go install github.com/elC0mpa/aws-doctor@latest
 
 - **📄 Professional PDF Reports:** Generate branded, ready-to-share PDF documents for costs, trends, and waste analysis.
 - **📉 Fair Cost Comparison:** Compares identical time windows between months to spot real anomalies.
-- **🧟 Zombie Discovery:** Scans for idle EIPs, stopped instances, orphaned snapshots, idle RDS instances, idle NAT Gateways, over-provisioned Lambda functions, and more. Supports selective service filtering (`ec2`, `s3`, `elb`, `cloudwatch`, `rds`, `vpc`, `lambda`).
+- **🧟 Zombie Discovery:** Scans for idle EIPs, stopped instances, orphaned snapshots, idle RDS instances, idle NAT Gateways, and more. Supports selective service filtering (`ec2`, `s3`, `elb`, `cloudwatch`, `rds`, `vpc`).
 - **📊 6-Month Trends:** High-fidelity ANSI visualization of your spending velocity.
 - **📤 Multiple Output Formats:** Export results in `table`, `json`, or `csv` for easy integration with other tools or reporting.
 - **🔐 MFA Ready:** Native support for profiles requiring Multi-Factor Authentication.

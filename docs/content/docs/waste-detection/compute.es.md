@@ -1,13 +1,13 @@
 ---
-title: "Computo y EBS"
-description: "Audite instancias EC2, volumenes EBS, snapshots y funciones Lambda en busca de desperdicio. Identifique instancias detenidas, almacenamiento huerfano y funciones sobreaprovisionadas para ahorrar costos."
+title: "Cómputo y EBS"
+description: "Audite instancias EC2, volúmenes EBS y snapshots en busca de desperdicio. Identifique instancias detenidas y almacenamiento huérfano para ahorrar costos."
 weight: 10
 ---
 
-Audite su huella de EC2, EBS y Lambda para eliminar los costos de instancias, datos abandonados y funciones sobreaprovisionadas.
+Audite su huella de EC2 y EBS para eliminar los costos de instancias y datos abandonados.
 
 {{< callout type="info" >}}
-**Permisos Requeridos**: `ec2:DescribeInstances`, `ec2:DescribeReservedInstances`, `ec2:DescribeVolumes`, `ec2:DescribeSnapshots`, `ec2:DescribeKeyPairs`, `ec2:DescribeImages`, `lambda:ListFunctions`, `logs:FilterLogEvents`.
+**Permisos Requeridos**: `ec2:DescribeInstances`, `ec2:DescribeReservedInstances`, `ec2:DescribeVolumes`, `ec2:DescribeSnapshots`, `ec2:DescribeKeyPairs`, `ec2:DescribeImages`.
 {{< /callout >}}
 
 ## Instancias EC2
@@ -46,22 +46,6 @@ Marca las AMIs y snapshots que tienen **más de 90 días** y no están asociados
 ## Acceso y Seguridad
 
 ### Key Pairs sin Usar
-Identifica los Key Pairs de EC2 que no estan asociados con ninguna instancia en ejecucion o detenida.
-- **Razon**: Reduce el desorden administrativo y los posibles riesgos de seguridad de llaves antiguas.
-- **Accion**: Eliminar las llaves sin usar desde la consola/CLI.
-
----
-
-## Funciones Lambda
-
-### Memoria Sobreaprovisionada
-Identifica funciones Lambda que consistentemente usan **menos del 10%** de su memoria asignada durante los ultimos 14 dias. La deteccion funciona analizando `Max Memory Used` de las lineas `REPORT` en los CloudWatch Logs de cada funcion.
-
-- **Razon**: El precio de Lambda se basa en GB-segundos. Una funcion con 1024 MB asignados pero que solo usa 50 MB esta pagando aproximadamente 20x mas por invocacion de lo necesario. Ajustar la memoria puede reducir significativamente los costos.
-- **Accion**: Reducir la asignacion de memoria de la funcion. AWS Doctor sugiere un tamano recomendado de 2x el uso pico observado (minimo 128 MB) para permitir margen para picos.
-
-El umbral predeterminado del 10% se puede personalizar:
-
-```bash
-aws-doctor waste lambda --lambda-memory-threshold 20
-```
+Identifica los Key Pairs de EC2 que no están asociados con ninguna instancia en ejecución o detenida.
+- **Razón**: Reduce el desorden administrativo y los posibles riesgos de seguridad de llaves antiguas.
+- **Acción**: Eliminar las llaves sin usar desde la consola/CLI.

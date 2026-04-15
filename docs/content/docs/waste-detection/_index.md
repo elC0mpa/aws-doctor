@@ -42,7 +42,7 @@ We group waste into four primary infrastructure categories:
     icon="server"
     title="Compute & EBS"
     link="compute/"
-    subtitle="Instances stopped for >30 days, orphaned volumes, stale snapshots, expired RIs, and over-provisioned Lambda functions."
+    subtitle="Instances stopped for >30 days, orphaned volumes, stale snapshots, and expired RIs."
   >}}
   {{< hextra/feature-card
     icon="database"

@@ -1,13 +1,13 @@
 ---
 title: "Compute & EBS"
-description: "Audit EC2 instances, EBS volumes, snapshots, and Lambda functions for waste. Identify long-stopped instances, orphaned storage, and over-provisioned functions to save costs."
+description: "Audit EC2 instances, EBS volumes, and snapshots for waste. Identify long-stopped instances and orphaned storage to save costs."
 weight: 10
 ---
 
-Audit your EC2, EBS, and Lambda footprint to eliminate costs from abandoned instances, data, and over-provisioned functions.
+Audit your EC2 and EBS footprint to eliminate costs from abandoned instances and data.
 
 {{< callout type="info" >}}
-**Permissions Required**: `ec2:DescribeInstances`, `ec2:DescribeReservedInstances`, `ec2:DescribeVolumes`, `ec2:DescribeSnapshots`, `ec2:DescribeKeyPairs`, `ec2:DescribeImages`, `lambda:ListFunctions`, `logs:FilterLogEvents`.
+**Permissions Required**: `ec2:DescribeInstances`, `ec2:DescribeReservedInstances`, `ec2:DescribeVolumes`, `ec2:DescribeSnapshots`, `ec2:DescribeKeyPairs`, `ec2:DescribeImages`.
 {{< /callout >}}
 
 ## EC2 Instances
@@ -49,19 +49,3 @@ Flags AMIs and snapshots that are **older than 90 days** and are not associated 
 Identifies EC2 Key Pairs that are not associated with any running or stopped instance.
 - **Reason**: Reduces administrative clutter and potential security risks from old keys.
 - **Action**: Delete unused keys from the console/CLI.
-
----
-
-## Lambda Functions
-
-### Over-Provisioned Memory
-Identifies Lambda functions that consistently use **less than 10%** of their allocated memory over the last 14 days. The detection works by parsing `Max Memory Used` from the `REPORT` log lines in each function's CloudWatch Logs.
-
-- **Reason**: Lambda pricing is based on GB-seconds. A function allocated 1024 MB but only using 50 MB is paying roughly 20x more per invocation than necessary. Rightsizing memory can significantly reduce costs.
-- **Action**: Reduce the function's memory allocation. AWS Doctor suggests a recommended size at 2x the observed peak usage (minimum 128 MB) to allow headroom for spikes.
-
-The default threshold of 10% can be customized:
-
-```bash
-aws-doctor waste lambda --lambda-memory-threshold 20
-```
