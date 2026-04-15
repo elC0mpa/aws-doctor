@@ -34,7 +34,7 @@ A terminal-based tool that acts as a comprehensive health check for your AWS acc
 ### 🧟 Waste Detection
 ![Waste Detection](https://github.com/elC0mpa/aws-doctor/blob/main/docs/static/images/demo/waste.gif?raw=true)
 
-*Supports selective scanning: `aws-doctor waste ec2 s3 cloudwatch rds vpc`*
+*Supports selective scanning: `aws-doctor waste ec2 s3 cloudwatch rds vpc lambda elb`*
 
 ## 📄 Professional Reporting
 
@@ -53,8 +53,8 @@ aws-doctor report cost
 # Full waste report
 aws-doctor report waste
 
-# Selective checks (e.g., ec2 and s3 only)
-aws-doctor report waste ec2 s3
+# Selective checks (e.g., ec2, s3, and lambda only)
+aws-doctor report waste ec2 s3 lambda
 ```
 
 ### Generate a Trend Report
@@ -67,7 +67,7 @@ aws-doctor report trend ec2 rds
 ```
 
 > [!TIP]
-> **Subcommand Arguments:** Just like the terminal commands, `report waste` accepts specific checks (e.g., `ec2`, `s3`, `rds`) and `report trend` accepts specific service names.
+> **Subcommand Arguments:** Just like the terminal commands, `report waste` accepts specific checks (e.g., `ec2`, `s3`, `rds`, `lambda`) and `report trend` accepts specific service names.
 
 > [!TIP]
 > By default, reports are saved in your **Documents** folder. Use the `--path` flag to specify a custom directory or filename:
@@ -97,7 +97,7 @@ go install github.com/elC0mpa/aws-doctor@latest
 
 - **📄 Professional PDF Reports:** Generate branded, ready-to-share PDF documents for costs, trends, and waste analysis.
 - **📉 Fair Cost Comparison:** Compares identical time windows between months to spot real anomalies.
-- **🧟 Zombie Discovery:** Scans for idle EIPs, stopped instances, orphaned snapshots, idle RDS instances, idle NAT Gateways, and more. Supports selective service filtering (`ec2`, `s3`, `elb`, `cloudwatch`, `rds`, `vpc`).
+- **🧟 Zombie Discovery:** Scans for idle EIPs, stopped instances, orphaned snapshots, idle RDS instances, idle NAT Gateways, idle Load Balancers, and over-provisioned Lambda memory. Supports selective service filtering (`ec2`, `s3`, `elb`, `cloudwatch`, `rds`, `vpc`, `lambda`).
 - **📊 6-Month Trends:** High-fidelity ANSI visualization of your spending velocity.
 - **📤 Multiple Output Formats:** Export results in `table`, `json`, or `csv` for easy integration with other tools or reporting.
 - **🔐 MFA Ready:** Native support for profiles requiring Multi-Factor Authentication.

@@ -22,26 +22,45 @@ aws-doctor waste --region us-east-1
 ### Escaneo Selectivo
 Si sólo desea escanear servicios de AWS específicos, puede pasarlos como argumentos al subcomando. Esto es útil para una ejecución más rápida o para limpiezas específicas.
 
-Los filtros soportados actualmente son `ec2`, `s3`, `elb`, `cloudwatch`, `rds`, y `vpc`.
+| Argumento | Servicio |
+| :--- | :--- |
+| `ec2` | Instancias EC2, volúmenes EBS, snapshots, key pairs, AMIs. |
+| `elb` | Load Balancers Application y Network. |
+| `s3` | Buckets S3 y cargas multiparte. |
+| `rds` | Instancias RDS y snapshots. |
+| `lambda` | Detección de memoria sobre-provisionada en Lambda. |
+| `vpc` | NAT Gateways y recursos de VPC inactivos. |
+| `cloudwatch` | Grupos de logs de CloudWatch sin políticas de retención. |
 
 ```bash
-# Ejemplo: Escanear solo recursos de EC2 y S3
-aws-doctor waste ec2 s3 --region us-east-1
-
-# Nota: Las listas separadas por comas también funcionan por compatibilidad
-# aws-doctor waste ec2,s3
+# Ejemplo: Escanear solo recursos de EC2 y Lambda
+aws-doctor waste ec2 lambda
 ```
+
+### Flags de Configuración
+
+Los subcomandos `waste` y `report waste` soportan flags específicos para ajustar la lógica de detección:
+
+| Flag | Por Defecto | Descripción |
+| :--- | :--- | :--- |
+| `--lambda-memory-threshold` | `10` | Umbral de utilización de memoria (%) por debajo del cual las funciones Lambda se marcan como sobre-provisionadas. |
 
 ## Categorías de Detección
 
-Agrupamos el desperdicio en cuatro categorías principales de infraestructura:
+Agrupamos el desperdicio en categorías principales de infraestructura:
 
 {{< hextra/feature-grid cols="2" >}}
   {{< hextra/feature-card
     icon="server"
     title="Cómputo y EBS"
     link="compute/"
-    subtitle="Instancias detenidas por >30 días, volúmenes huérfanos, snapshots obsoletos y RIs vencidas."
+    subtitle="Instancias EC2 detenidas por >30 días, volúmenes huérfanos, snapshots obsoletos y RIs vencidas."
+  >}}
+  {{< hextra/feature-card
+    icon="code"
+    title="Lambda"
+    link="compute/#aws-lambda"
+    subtitle="Detección de memoria sobre-provisionada y recomendaciones de ajuste de tamaño."
   >}}
   {{< hextra/feature-card
     icon="database"
