@@ -44,6 +44,7 @@ func (s *service) Orchestrate(flags model.Flags) error {
 		return s.versionWorkflow()
 	}
 
+	// TODO: cache the version check result locally to avoid hitting the GitHub API on every run.
 	// Start async version check for main workflows
 	type versionCheckResult struct {
 		latestVersion *string
