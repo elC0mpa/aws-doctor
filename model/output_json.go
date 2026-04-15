@@ -110,13 +110,7 @@ type RDSIdleInstanceJSON struct {
 }
 
 // ELBIdleJSON represents an idle load balancer with zero connections.
-type ELBIdleJSON struct {
-	Name                 string  `json:"name"`
-	ARN                  string  `json:"arn"`
-	Type                 string  `json:"type"`
-	DaysChecked          int     `json:"days_checked"`
-	EstimatedMonthlyCost float64 `json:"estimated_monthly_cost"`
-}
+type ELBIdleJSON ELBIdleInfo
 
 // CloudWatchLogGroupJSON represents a CloudWatch Log Group without a retention policy
 type CloudWatchLogGroupJSON struct {

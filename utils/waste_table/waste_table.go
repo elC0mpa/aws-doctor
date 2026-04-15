@@ -347,7 +347,7 @@ func populateIdleLoadBalancerRows(idleLBs []model.ELBIdleInfo) []table.Row {
 
 	for _, lb := range idleLBs {
 		p := outputshared.PresentIdleLoadBalancer(lb)
-		rows = append(rows, table.Row{"", lb.LoadBalancerName, p.Metric, p.EstimatedCost})
+		rows = append(rows, table.Row{"", lb.Name, p.Metric, p.EstimatedCost})
 	}
 
 	return rows

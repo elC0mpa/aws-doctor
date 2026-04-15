@@ -160,8 +160,8 @@ func TestCompute_RDS(t *testing.T) {
 func TestCompute_IdleLoadBalancers(t *testing.T) {
 	input := model.RenderWasteInput{
 		IdleLoadBalancers: []model.ELBIdleInfo{
-			{LoadBalancerName: "idle-alb", Type: "application", EstimatedMonthlyCost: pricing.ALBCostPerMonth},
-			{LoadBalancerName: "idle-nlb", Type: "network", EstimatedMonthlyCost: pricing.ALBCostPerMonth},
+			{Name: "idle-alb", Type: "application", EstimatedMonthlyCost: pricing.ALBCostPerMonth},
+			{Name: "idle-nlb", Type: "network", EstimatedMonthlyCost: pricing.ALBCostPerMonth},
 		},
 	}
 

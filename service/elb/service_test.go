@@ -18,7 +18,7 @@ type mockCWMetricsService struct {
 	mock.Mock
 }
 
-func (m *mockCWMetricsService) ELBHasZeroRequestsInPeriod(ctx context.Context, loadBalancerArn string, lbType string, days int) (bool, error) {
+func (m *mockCWMetricsService) ELBHasZeroRequestsInPeriod(ctx context.Context, loadBalancerArn string, lbType types.LoadBalancerTypeEnum, days int) (bool, error) {
 	args := m.Called(ctx, loadBalancerArn, lbType, days)
 
 	return args.Bool(0), args.Error(1)
@@ -71,11 +71,11 @@ func TestGetLoadBalancerWaste(t *testing.T) {
 				// idle-alb: zero requests
 				cw.On("ELBHasZeroRequestsInPeriod", mock.Anything,
 					"arn:aws:elasticloadbalancing:us-east-1:123:loadbalancer/app/idle-alb/abc",
-					"application", 7).Return(true, nil)
+					types.LoadBalancerTypeEnumApplication, 7).Return(true, nil)
 				// active-nlb: has traffic
 				cw.On("ELBHasZeroRequestsInPeriod", mock.Anything,
 					"arn:aws:elasticloadbalancing:us-east-1:123:loadbalancer/net/active-nlb/def",
-					"network", 7).Return(false, nil)
+					types.LoadBalancerTypeEnumNetwork, 7).Return(false, nil)
 			},
 			wantUnused:    1, // orphan-alb
 			wantIdle:      1, // idle-alb
@@ -157,7 +157,7 @@ func TestGetLoadBalancerWaste(t *testing.T) {
 				assert.Len(t, idle, tt.wantIdle)
 
 				for i, name := range tt.wantIdleNames {
-					assert.Equal(t, name, idle[i].LoadBalancerName)
+					assert.Equal(t, name, idle[i].Name)
 				}
 			}
 		})

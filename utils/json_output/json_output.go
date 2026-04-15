@@ -355,13 +355,7 @@ func mapIdleLoadBalancers(idleLBs []model.ELBIdleInfo) []model.ELBIdleJSON {
 	var result []model.ELBIdleJSON
 
 	for _, lb := range idleLBs {
-		result = append(result, model.ELBIdleJSON{
-			Name:                 lb.LoadBalancerName,
-			ARN:                  lb.LoadBalancerArn,
-			Type:                 lb.Type,
-			DaysChecked:          lb.DaysChecked,
-			EstimatedMonthlyCost: lb.EstimatedMonthlyCost,
-		})
+		result = append(result, model.ELBIdleJSON(lb))
 	}
 
 	return result

@@ -8,6 +8,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/cloudwatch"
 	cwtypes "github.com/aws/aws-sdk-go-v2/service/cloudwatch/types"
+	elbtypes "github.com/aws/aws-sdk-go-v2/service/elasticloadbalancingv2/types"
 	"github.com/elC0mpa/aws-doctor/mocks/awsinterfaces"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -181,7 +182,7 @@ func TestELBHasZeroRequestsInPeriod(t *testing.T) {
 	tests := []struct {
 		name       string
 		arn        string
-		lbType     string
+		lbType     elbtypes.LoadBalancerTypeEnum
 		setupMocks func(*awsinterfaces.MockCloudWatchClient)
 		wantIdle   bool
 		wantErr    bool
@@ -189,7 +190,7 @@ func TestELBHasZeroRequestsInPeriod(t *testing.T) {
 		{
 			name:   "ALB with zero requests returns true",
 			arn:    "arn:aws:elasticloadbalancing:us-east-1:123456789:loadbalancer/app/my-alb/abc123",
-			lbType: "application",
+			lbType: elbtypes.LoadBalancerTypeEnumApplication,
 			setupMocks: func(cw *awsinterfaces.MockCloudWatchClient) {
 				cw.On("GetMetricStatistics", mock.Anything, mock.Anything, mock.Anything).Return(&cloudwatch.GetMetricStatisticsOutput{
 					Datapoints: []cwtypes.Datapoint{
@@ -204,7 +205,7 @@ func TestELBHasZeroRequestsInPeriod(t *testing.T) {
 		{
 			name:   "NLB with active flows returns false",
 			arn:    "arn:aws:elasticloadbalancing:us-east-1:123456789:loadbalancer/net/my-nlb/abc123",
-			lbType: "network",
+			lbType: elbtypes.LoadBalancerTypeEnumNetwork,
 			setupMocks: func(cw *awsinterfaces.MockCloudWatchClient) {
 				cw.On("GetMetricStatistics", mock.Anything, mock.Anything, mock.Anything).Return(&cloudwatch.GetMetricStatisticsOutput{
 					Datapoints: []cwtypes.Datapoint{
@@ -219,7 +220,7 @@ func TestELBHasZeroRequestsInPeriod(t *testing.T) {
 		{
 			name:   "empty datapoints returns true",
 			arn:    "arn:aws:elasticloadbalancing:us-east-1:123456789:loadbalancer/app/my-alb/abc123",
-			lbType: "application",
+			lbType: elbtypes.LoadBalancerTypeEnumApplication,
 			setupMocks: func(cw *awsinterfaces.MockCloudWatchClient) {
 				cw.On("GetMetricStatistics", mock.Anything, mock.Anything, mock.Anything).Return(&cloudwatch.GetMetricStatisticsOutput{
 					Datapoints: []cwtypes.Datapoint{},
@@ -231,7 +232,7 @@ func TestELBHasZeroRequestsInPeriod(t *testing.T) {
 		{
 			name:   "cloudwatch error returns error",
 			arn:    "arn:aws:elasticloadbalancing:us-east-1:123456789:loadbalancer/app/my-alb/abc123",
-			lbType: "application",
+			lbType: elbtypes.LoadBalancerTypeEnumApplication,
 			setupMocks: func(cw *awsinterfaces.MockCloudWatchClient) {
 				cw.On("GetMetricStatistics", mock.Anything, mock.Anything, mock.Anything).Return((*cloudwatch.GetMetricStatisticsOutput)(nil), errors.New("cloudwatch error"))
 			},
@@ -249,7 +250,7 @@ func TestELBHasZeroRequestsInPeriod(t *testing.T) {
 		{
 			name:       "unsupported LB type returns error",
 			arn:        "arn:aws:elasticloadbalancing:us-east-1:123456789:loadbalancer/gw/my-gwlb/abc123",
-			lbType:     "gateway",
+			lbType:     elbtypes.LoadBalancerTypeEnumGateway,
 			setupMocks: func(cw *awsinterfaces.MockCloudWatchClient) {},
 			wantIdle:   false,
 			wantErr:    true,
@@ -269,6 +270,49 @@ func TestELBHasZeroRequestsInPeriod(t *testing.T) {
 			} else {
 				assert.NoError(t, err)
 				assert.Equal(t, tt.wantIdle, idle)
+			}
+		})
+	}
+}
+
+func TestExtractLoadBalancerID(t *testing.T) {
+	tests := []struct {
+		name    string
+		arn     string
+		want    string
+		wantErr bool
+	}{
+		{
+			name: "valid ALB ARN",
+			arn:  "arn:aws:elasticloadbalancing:us-east-1:123456789:loadbalancer/app/my-alb/abc123",
+			want: "app/my-alb/abc123",
+		},
+		{
+			name: "valid NLB ARN",
+			arn:  "arn:aws:elasticloadbalancing:us-east-1:123456789:loadbalancer/net/my-nlb/def456",
+			want: "net/my-nlb/def456",
+		},
+		{
+			name:    "invalid ARN",
+			arn:     "invalid-arn",
+			wantErr: true,
+		},
+		{
+			name:    "empty string",
+			arn:     "",
+			wantErr: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := ExtractLoadBalancerID(tt.arn)
+
+			if tt.wantErr {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+				assert.Equal(t, tt.want, got)
 			}
 		})
 	}

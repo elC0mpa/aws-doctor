@@ -21,7 +21,7 @@ type service struct {
 
 // cloudwatchMetricsService is a local interface for the CloudWatch metrics dependency.
 type cloudwatchMetricsService interface {
-	ELBHasZeroRequestsInPeriod(ctx context.Context, loadBalancerArn string, lbType string, days int) (bool, error)
+	ELBHasZeroRequestsInPeriod(ctx context.Context, loadBalancerArn string, lbType types.LoadBalancerTypeEnum, days int) (bool, error)
 }
 
 // Service defines the interface for AWS ELB service.

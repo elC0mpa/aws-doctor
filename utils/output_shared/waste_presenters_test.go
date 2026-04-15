@@ -311,8 +311,8 @@ func TestPresentRDSSnapshot(t *testing.T) {
 
 func TestPresentIdleLoadBalancer(t *testing.T) {
 	lb := model.ELBIdleInfo{
-		LoadBalancerName:     "test-alb",
-		LoadBalancerArn:      "arn:aws:elasticloadbalancing:us-east-1:123:loadbalancer/app/test-alb/abc123",
+		Name:                 "test-alb",
+		ARN:                  "arn:aws:elasticloadbalancing:us-east-1:123:loadbalancer/app/test-alb/abc123",
 		Type:                 "application",
 		DaysChecked:          7,
 		EstimatedMonthlyCost: 16.43,

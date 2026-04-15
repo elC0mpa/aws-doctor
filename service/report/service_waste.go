@@ -151,7 +151,7 @@ func (s *service) addLBWaste(m core.Maroto, input model.RenderWasteInput) bool {
 
 	for _, lb := range input.IdleLoadBalancers {
 		p := outputshared.PresentIdleLoadBalancer(lb)
-		s.addWasteRow(m, []string{"Idle", lb.LoadBalancerName, p.Metric, p.EstimatedCost})
+		s.addWasteRow(m, []string{"Idle", lb.Name, p.Metric, p.EstimatedCost})
 	}
 
 	m.AddRow(5, col.New(12))

@@ -185,7 +185,7 @@ func PresentRDSSnapshot(snap model.RDSSnapshotWasteInfo) ResourceRow {
 func PresentIdleLoadBalancer(lb model.ELBIdleInfo) ResourceRow {
 	return ResourceRow{
 		Category:      "Idle Load Balancer",
-		Identifier:    lb.LoadBalancerArn,
+		Identifier:    lb.ARN,
 		EstimatedCost: fmt.Sprintf("$%.2f", lb.EstimatedMonthlyCost),
 		Metric:        lb.Type,
 		Age:           NAValue,

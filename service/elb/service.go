@@ -98,9 +98,8 @@ func (s *service) GetLoadBalancerWaste(ctx context.Context) ([]types.LoadBalance
 	for _, lb := range candidates {
 		g.Go(func() error {
 			arn := aws.ToString(lb.LoadBalancerArn)
-			lbType := string(lb.Type)
 
-			idle, cwErr := s.cwService.ELBHasZeroRequestsInPeriod(ctx, arn, lbType, idleCheckDays)
+			idle, cwErr := s.cwService.ELBHasZeroRequestsInPeriod(ctx, arn, lb.Type, idleCheckDays)
 			if cwErr != nil {
 				return cwErr
 			}
@@ -109,9 +108,9 @@ func (s *service) GetLoadBalancerWaste(ctx context.Context) ([]types.LoadBalance
 				mu.Lock()
 
 				idleLBs = append(idleLBs, model.ELBIdleInfo{
-					LoadBalancerName:     aws.ToString(lb.LoadBalancerName),
-					LoadBalancerArn:      arn,
-					Type:                 lbType,
+					Name:                 aws.ToString(lb.LoadBalancerName),
+					ARN:                  arn,
+					Type:                 string(lb.Type),
 					DaysChecked:          idleCheckDays,
 					EstimatedMonthlyCost: pricing.CalculateLoadBalancerMonthlyCost(lb.Type),
 				})

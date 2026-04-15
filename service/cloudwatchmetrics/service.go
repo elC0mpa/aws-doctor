@@ -10,6 +10,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/cloudwatch"
 	cwtypes "github.com/aws/aws-sdk-go-v2/service/cloudwatch/types"
+	elbtypes "github.com/aws/aws-sdk-go-v2/service/elasticloadbalancingv2/types"
 )
 
 const (
@@ -93,26 +94,33 @@ func (s *service) NatGatewayBytesOut(ctx context.Context, natGatewayID string, d
 	return totalBytes, nil
 }
 
+// ExtractLoadBalancerID extracts the CloudWatch dimension value from a load balancer ARN.
+func ExtractLoadBalancerID(arn string) (string, error) {
+	parts := strings.SplitN(arn, ":loadbalancer/", 2)
+	if len(parts) != 2 {
+		return "", fmt.Errorf("invalid load balancer ARN: %s", arn)
+	}
+
+	return parts[1], nil
+}
+
 // ELBHasZeroRequestsInPeriod checks if a load balancer had zero requests/connections over the given number of days.
-func (s *service) ELBHasZeroRequestsInPeriod(ctx context.Context, loadBalancerArn string, lbType string, days int) (bool, error) {
+func (s *service) ELBHasZeroRequestsInPeriod(ctx context.Context, loadBalancerArn string, lbType elbtypes.LoadBalancerTypeEnum, days int) (bool, error) {
 	now := time.Now()
 	startTime := now.AddDate(0, 0, -days)
 
-	// Extract the LB ID from the ARN (the part after "loadbalancer/")
-	parts := strings.SplitN(loadBalancerArn, ":loadbalancer/", 2)
-	if len(parts) != 2 {
-		return false, fmt.Errorf("invalid load balancer ARN: %s", loadBalancerArn)
+	lbID, err := ExtractLoadBalancerID(loadBalancerArn)
+	if err != nil {
+		return false, err
 	}
-
-	lbID := parts[1]
 
 	var namespace, metricName string
 
 	switch lbType {
-	case "application":
+	case elbtypes.LoadBalancerTypeEnumApplication:
 		namespace = "AWS/ApplicationELB"
 		metricName = "RequestCount"
-	case "network":
+	case elbtypes.LoadBalancerTypeEnumNetwork:
 		namespace = "AWS/NetworkELB"
 		metricName = "ActiveFlowCount"
 	default:

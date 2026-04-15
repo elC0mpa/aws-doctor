@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/aws/aws-sdk-go-v2/service/cloudwatch"
+	elbtypes "github.com/aws/aws-sdk-go-v2/service/elasticloadbalancingv2/types"
 )
 
 // ClientAPI is the interface for the AWS CloudWatch client methods used by the service.
@@ -15,7 +16,7 @@ type ClientAPI interface {
 type Service interface {
 	RDSHasZeroConnectionsInPeriod(ctx context.Context, dbInstanceID string, days int) (bool, error)
 	NatGatewayBytesOut(ctx context.Context, natGatewayID string, days int) (float64, error)
-	ELBHasZeroRequestsInPeriod(ctx context.Context, loadBalancerArn string, lbType string, days int) (bool, error)
+	ELBHasZeroRequestsInPeriod(ctx context.Context, loadBalancerArn string, lbType elbtypes.LoadBalancerTypeEnum, days int) (bool, error)
 }
 
 type service struct {

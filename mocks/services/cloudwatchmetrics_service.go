@@ -3,6 +3,7 @@ package services
 import (
 	"context"
 
+	elbtypes "github.com/aws/aws-sdk-go-v2/service/elasticloadbalancingv2/types"
 	"github.com/stretchr/testify/mock"
 )
 
@@ -25,7 +26,7 @@ func (m *MockCloudWatchMetricsService) NatGatewayBytesOut(ctx context.Context, n
 }
 
 // ELBHasZeroRequestsInPeriod mocks the ELBHasZeroRequestsInPeriod method.
-func (m *MockCloudWatchMetricsService) ELBHasZeroRequestsInPeriod(ctx context.Context, loadBalancerArn string, lbType string, days int) (bool, error) {
+func (m *MockCloudWatchMetricsService) ELBHasZeroRequestsInPeriod(ctx context.Context, loadBalancerArn string, lbType elbtypes.LoadBalancerTypeEnum, days int) (bool, error) {
 	args := m.Called(ctx, loadBalancerArn, lbType, days)
 
 	return args.Bool(0), args.Error(1)
