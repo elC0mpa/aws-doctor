@@ -6,6 +6,7 @@ import (
 	awscostexplorer "github.com/elC0mpa/aws-doctor/service/costexplorer"
 	awsec2 "github.com/elC0mpa/aws-doctor/service/ec2"
 	"github.com/elC0mpa/aws-doctor/service/elb"
+	"github.com/elC0mpa/aws-doctor/service/lambda"
 	"github.com/elC0mpa/aws-doctor/service/output"
 	"github.com/elC0mpa/aws-doctor/service/rds"
 	"github.com/elC0mpa/aws-doctor/service/report"
@@ -23,6 +24,7 @@ type service struct {
 	s3Service             s3.Service
 	cloudwatchlogsService cloudwatchlogs.Service
 	rdsService            rds.Service
+	lambdaService         lambda.Service
 	outputService         output.Service
 	updateService         update.Service
 	reportService         report.Service
@@ -39,6 +41,7 @@ type Config struct {
 	S3Service             s3.Service
 	CloudWatchLogsService cloudwatchlogs.Service
 	RDSService            rds.Service
+	LambdaService         lambda.Service
 	OutputService         output.Service
 	UpdateService         update.Service
 	ReportService         report.Service

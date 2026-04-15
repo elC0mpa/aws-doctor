@@ -7,6 +7,8 @@ import (
 	"github.com/spf13/cobra"
 )
 
+var lambdaMemoryThreshold int
+
 var wasteCmd = &cobra.Command{
 	Use:   "waste [checks...]",
 	Short: "Display AWS waste report (e.g., ec2 s3)",
@@ -23,11 +25,12 @@ var wasteCmd = &cobra.Command{
 		}
 
 		flags := model.Flags{
-			Region:      region,
-			Profile:     profile,
-			Output:      outputFormat,
-			Waste:       true,
-			WasteChecks: parsedChecks,
+			Region:                region,
+			Profile:               profile,
+			Output:                outputFormat,
+			Waste:                 true,
+			WasteChecks:           parsedChecks,
+			LambdaMemoryThreshold: lambdaMemoryThreshold,
 		}
 
 		return orch.Orchestrate(flags)
@@ -35,5 +38,7 @@ var wasteCmd = &cobra.Command{
 }
 
 func init() {
+	wasteCmd.Flags().IntVar(&lambdaMemoryThreshold, "lambda-memory-threshold", 10,
+		"Memory utilization threshold (%) below which Lambda functions are flagged as over-provisioned")
 	rootCmd.AddCommand(wasteCmd)
 }

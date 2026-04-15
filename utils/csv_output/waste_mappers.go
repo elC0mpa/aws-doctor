@@ -157,3 +157,12 @@ func mapNATGateways(natGateways []model.NATGatewayWasteInfo) [][]string {
 
 	return result
 }
+
+func mapLambdaOverProvisioned(lambdas []model.LambdaOverProvisionedInfo) [][]string {
+	result := make([][]string, 0, len(lambdas))
+	for _, fn := range lambdas {
+		result = append(result, outputshared.PresentLambdaOverProvisioned(fn).ToSlice())
+	}
+
+	return result
+}

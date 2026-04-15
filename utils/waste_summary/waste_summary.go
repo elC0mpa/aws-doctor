@@ -151,6 +151,10 @@ func countOnlyCategories(input model.RenderWasteInput) []model.CategorySummary {
 		categories = append(categories, model.CategorySummary{Name: "Unused Key Pairs", Count: n})
 	}
 
+	if n := len(input.OverProvisionedLambdas); n > 0 {
+		categories = append(categories, model.CategorySummary{Name: "Lambda (Over-Provisioned)", Count: n})
+	}
+
 	return categories
 }
 

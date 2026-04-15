@@ -50,7 +50,8 @@ func hasAnyWaste(input model.RenderWasteInput) bool {
 		len(input.RDSSnapshots) > 0 ||
 		len(input.RDSIdleInstances) > 0 ||
 		len(input.IdleNATGateways) > 0 ||
-		len(input.IdleLoadBalancers) > 0
+		len(input.IdleLoadBalancers) > 0 ||
+		len(input.OverProvisionedLambdas) > 0
 }
 
 func drawWasteSections(input model.RenderWasteInput) {
@@ -96,6 +97,10 @@ func drawWasteSections(input model.RenderWasteInput) {
 
 	if len(input.IdleNATGateways) > 0 {
 		drawNatGatewayTable(input.IdleNATGateways)
+	}
+
+	if len(input.OverProvisionedLambdas) > 0 {
+		drawLambdaTable(input.OverProvisionedLambdas)
 	}
 }
 
@@ -823,6 +828,53 @@ func populateRDSSnapshotRows(snapshots []model.RDSSnapshotWasteInfo) []table.Row
 			snap.Engine,
 			fmt.Sprintf("%s days old, %d GB", p.Age, snap.AllocatedStorage),
 			p.EstimatedCost,
+		})
+	}
+
+	return rows
+}
+
+func drawLambdaTable(lambdas []model.LambdaOverProvisionedInfo) {
+	t := table.NewWriter()
+	t.SetOutputMirror(os.Stdout)
+	t.SetStyle(table.StyleRounded)
+	t.SetTitle("Lambda Over-Provisioned Memory")
+
+	t.AppendHeader(table.Row{"Status", "Function Name", "Runtime", "Memory (Configured)", "Memory (Max Used)", "Utilization", "Recommended"})
+
+	t.SetColumnConfigs([]table.ColumnConfig{
+		{Number: 4, Align: text.AlignRight},
+		{Number: 5, Align: text.AlignRight},
+		{Number: 6, Align: text.AlignRight},
+		{Number: 7, Align: text.AlignRight},
+	})
+
+	statusLabel := "Over-Provisioned"
+	rows := populateLambdaRows(lambdas)
+
+	if len(rows) > 0 {
+		halfRow := len(rows) / 2
+		rows[halfRow][0] = text.FgHiYellow.Sprint(statusLabel)
+	}
+
+	t.AppendRows(rows)
+	t.Render()
+	fmt.Println()
+}
+
+func populateLambdaRows(lambdas []model.LambdaOverProvisionedInfo) []table.Row {
+	rows := make([]table.Row, 0, len(lambdas))
+
+	for _, fn := range lambdas {
+		p := outputshared.PresentLambdaOverProvisioned(fn)
+		rows = append(rows, table.Row{
+			"",
+			p.Identifier,
+			fn.Runtime,
+			fmt.Sprintf("%d MB", fn.ConfiguredMemoryMB),
+			fmt.Sprintf("%d MB", fn.MaxMemoryUsedMB),
+			p.Metric,
+			fmt.Sprintf("%d MB", fn.RecommendedMemoryMB),
 		})
 	}
 
