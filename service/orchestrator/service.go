@@ -71,14 +71,14 @@ func (s *service) Orchestrate(flags model.Flags) error {
 		workflowErr = s.defaultWorkflow(flags.Report, flags.ReportPath)
 	}
 
-	// Notify if new version available (only for human-readable output, non-blocking)
+	// Notify if new version available (only for human-readable output)
 	if flags.Output != "json" && flags.Output != "csv" {
 		select {
 		case result := <-versionCh:
 			if result.err == nil && result.latestVersion != nil {
 				s.outputService.PrintNewVersionAvailable(s.versionInfo.Version, *result.latestVersion)
 			}
-		default:
+		case <-time.After(500 * time.Millisecond):
 		}
 	}
 
