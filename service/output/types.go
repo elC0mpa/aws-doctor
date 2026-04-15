@@ -2,6 +2,7 @@ package output
 
 import (
 	"fmt"
+	"os"
 
 	"github.com/elC0mpa/aws-doctor/model"
 	"github.com/elC0mpa/aws-doctor/utils/barchart"
@@ -128,8 +129,8 @@ func (r *realRenderer) PrintFirstDayOfMonthError() {
 }
 
 func (r *realRenderer) PrintNewVersionAvailable(currentVersion, latestVersion string) {
-	fmt.Println()
-	fmt.Println(text.FgHiYellow.Sprintf(
+	fmt.Fprintln(os.Stderr)
+	fmt.Fprintln(os.Stderr, text.FgHiYellow.Sprintf(
 		"A new version of aws-doctor is available: %s → %s. Run 'aws-doctor update' to upgrade.",
 		currentVersion, latestVersion,
 	))

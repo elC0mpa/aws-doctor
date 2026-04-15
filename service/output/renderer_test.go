@@ -195,3 +195,30 @@ func TestRealRenderer_StopSpinner(t *testing.T) {
 		r.StopSpinner()
 	})
 }
+
+func TestRealRenderer_PrintNewVersionAvailable_WritesToStderr(t *testing.T) {
+	r := &realRenderer{}
+
+	// Capture stderr
+	oldStderr := os.Stderr
+	rPipe, wPipe, _ := os.Pipe()
+	os.Stderr = wPipe
+
+	// Ensure stdout is not written to
+	oldStdout := os.Stdout
+	os.Stdout = func() *os.File { f, _ := os.OpenFile(os.DevNull, os.O_WRONLY, 0); return f }()
+
+	r.PrintNewVersionAvailable("v1.2.0", "v1.3.0")
+
+	_ = wPipe.Close()
+	os.Stderr = oldStderr
+	os.Stdout = oldStdout
+
+	var buf [1024]byte
+	n, _ := rPipe.Read(buf[:])
+	output := string(buf[:n])
+
+	assert.Contains(t, output, "v1.2.0")
+	assert.Contains(t, output, "v1.3.0")
+	assert.Contains(t, output, "aws-doctor update")
+}
