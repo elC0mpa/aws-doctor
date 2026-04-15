@@ -89,6 +89,10 @@ func (s *service) CheckForUpdate(ctx context.Context) (*string, error) {
 		return nil, fmt.Errorf("failed to fetch latest release: %w", err)
 	}
 
+	if release == nil || release.TagName == nil {
+		return nil, fmt.Errorf("latest release is nil")
+	}
+
 	latestVersion := *release.TagName
 	if version.IsEqual(latestVersion, s.versionInfo.Version) {
 		return nil, nil

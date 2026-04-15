@@ -311,6 +311,19 @@ func TestCheckForUpdate_NewVersionAvailable(t *testing.T) {
 	assert.Equal(t, tag, *result)
 }
 
+func TestCheckForUpdate_NilRelease(t *testing.T) {
+	mrepo := new(mockRepositories)
+	v := model.VersionInfo{Version: tag}
+	s := &service{repositories: mrepo, versionInfo: v}
+
+	mrepo.On("GetLatestRelease", mock.Anything, model.GitHubOwner, model.GitHubRepo).Return(nil, nil, nil)
+
+	result, err := s.CheckForUpdate(context.Background())
+	assert.Error(t, err)
+	assert.Nil(t, result)
+	assert.Contains(t, err.Error(), "latest release is nil")
+}
+
 func TestCheckForUpdate_GitHubError(t *testing.T) {
 	mrepo := new(mockRepositories)
 	v := model.VersionInfo{Version: tag}
