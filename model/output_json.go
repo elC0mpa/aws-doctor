@@ -73,6 +73,7 @@ type WasteReportJSON struct {
 	OldRDSSnapshots           []RDSSnapshotJSON        `json:"old_rds_snapshots"`
 	IdleRDSInstances          []RDSIdleInstanceJSON    `json:"idle_rds_instances"`
 	IdleNATGateways           []NATGatewayJSON         `json:"idle_nat_gateways"`
+	IdleLoadBalancers         []ELBIdleJSON            `json:"idle_load_balancers"`
 }
 
 // RDSInstanceJSON represents a stopped RDS instance.
@@ -107,6 +108,9 @@ type RDSIdleInstanceJSON struct {
 	DaysChecked          int     `json:"days_checked"`
 	EstimatedMonthlyCost float64 `json:"estimated_monthly_cost"`
 }
+
+// ELBIdleJSON represents an idle load balancer with zero connections.
+type ELBIdleJSON ELBIdleInfo
 
 // CloudWatchLogGroupJSON represents a CloudWatch Log Group without a retention policy
 type CloudWatchLogGroupJSON struct {

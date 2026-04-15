@@ -96,6 +96,7 @@ func OutputWasteJSON(input model.RenderWasteInput) error {
 		OldRDSSnapshots:     mapRDSSnapshots(input.RDSSnapshots),
 		IdleRDSInstances:    mapRDSIdleInstances(input.RDSIdleInstances),
 		IdleNATGateways:     mapNATGateways(input.IdleNATGateways),
+		IdleLoadBalancers:   mapIdleLoadBalancers(input.IdleLoadBalancers),
 	}
 
 	output.OrphanedSnapshots, output.StaleSnapshots = mapSnapshots(input.OrphanedSnapshots)
@@ -116,7 +117,8 @@ func OutputWasteJSON(input model.RenderWasteInput) error {
 		len(output.StoppedRDSInstances) > 0 ||
 		len(output.OldRDSSnapshots) > 0 ||
 		len(output.IdleRDSInstances) > 0 ||
-		len(output.IdleNATGateways) > 0
+		len(output.IdleNATGateways) > 0 ||
+		len(output.IdleLoadBalancers) > 0
 
 	categories, total := wastesummary.Compute(input)
 	output.TotalEstimatedMonthlyCost = total
@@ -344,6 +346,16 @@ func mapRDSSnapshots(snapshots []model.RDSSnapshotWasteInfo) []model.RDSSnapshot
 			DaysSinceCreate:      snap.DaysSinceCreate,
 			EstimatedMonthlyCost: snap.EstimatedMonthlyCost,
 		})
+	}
+
+	return result
+}
+
+func mapIdleLoadBalancers(idleLBs []model.ELBIdleInfo) []model.ELBIdleJSON {
+	var result []model.ELBIdleJSON
+
+	for _, lb := range idleLBs {
+		result = append(result, model.ELBIdleJSON(lb))
 	}
 
 	return result

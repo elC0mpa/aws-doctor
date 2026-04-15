@@ -381,7 +381,7 @@ func TestDrawLoadBalancerTable(t *testing.T) {
 	}
 
 	output := captureWasteOutput(func() {
-		drawLoadBalancerTable(loadBalancers)
+		drawLoadBalancerTable(loadBalancers, nil)
 	})
 
 	if !strings.Contains(output, "Load Balancer Waste") {

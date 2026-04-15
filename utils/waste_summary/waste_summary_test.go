@@ -157,6 +157,23 @@ func TestCompute_RDS(t *testing.T) {
 	assert.Equal(t, 12.5, categories[2].Cost)
 }
 
+func TestCompute_IdleLoadBalancers(t *testing.T) {
+	input := model.RenderWasteInput{
+		IdleLoadBalancers: []model.ELBIdleInfo{
+			{Name: "idle-alb", Type: "application", EstimatedMonthlyCost: pricing.ALBCostPerMonth},
+			{Name: "idle-nlb", Type: "network", EstimatedMonthlyCost: pricing.ALBCostPerMonth},
+		},
+	}
+
+	categories, total := Compute(input)
+
+	assert.Len(t, categories, 1)
+	assert.Equal(t, "Load Balancers (Idle)", categories[0].Name)
+	assert.Equal(t, 2, categories[0].Count)
+	assert.Equal(t, pricing.ALBCostPerMonth*2, categories[0].Cost)
+	assert.Equal(t, pricing.ALBCostPerMonth*2, total)
+}
+
 func TestCompute_CountOnlyItems(t *testing.T) {
 	input := model.RenderWasteInput{
 		StoppedInstances:   []types.Instance{{InstanceId: aws.String("i-1")}},
