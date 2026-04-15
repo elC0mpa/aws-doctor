@@ -91,7 +91,7 @@ func TestGetCloudWatchLogsWaste(t *testing.T) {
 	}
 }
 
-func TestGetMaxMemoryUsed(t *testing.T) {
+func TestGetLambdaMaxMemoryUsed(t *testing.T) {
 	ctx := context.Background()
 	startTime := time.Date(2026, 4, 1, 0, 0, 0, 0, time.UTC)
 	endTime := time.Date(2026, 4, 14, 0, 0, 0, 0, time.UTC)
@@ -163,7 +163,7 @@ func TestGetMaxMemoryUsed(t *testing.T) {
 			tt.setupMocks(mockClient)
 
 			svc := &service{client: mockClient}
-			mem, err := svc.GetMaxMemoryUsed(ctx, "/aws/lambda/test-fn", startTime, endTime)
+			mem, err := svc.GetLambdaMaxMemoryUsed(ctx, "/aws/lambda/test-fn", startTime, endTime)
 
 			if tt.wantErr {
 				assert.Error(t, err)

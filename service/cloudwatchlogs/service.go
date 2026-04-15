@@ -54,9 +54,9 @@ func (s *service) GetCloudWatchLogsWaste(ctx context.Context) ([]model.CloudWatc
 
 const queryPollInterval = 500 * time.Millisecond
 
-// GetMaxMemoryUsed runs a CloudWatch Logs Insights query to find the maximum memory used
+// GetLambdaMaxMemoryUsed runs a CloudWatch Logs Insights query to find the maximum memory used
 // by a Lambda function within the given time range. Returns the value in MB.
-func (s *service) GetMaxMemoryUsed(ctx context.Context, logGroupName string, startTime, endTime time.Time) (int32, error) {
+func (s *service) GetLambdaMaxMemoryUsed(ctx context.Context, logGroupName string, startTime, endTime time.Time) (int32, error) {
 	queryString := `filter @type = "REPORT" | stats max(@maxMemoryUsed / 1048576) as maxMemMB`
 
 	startOutput, err := s.client.StartQuery(ctx, &cloudwatchlogs.StartQueryInput{
@@ -81,7 +81,7 @@ func (s *service) GetMaxMemoryUsed(ctx context.Context, logGroupName string, sta
 			return parseMaxMemMB(results.Results), nil
 		}
 
-		if results.Status == cwlogstypes.QueryStatusFailed || results.Status == cwlogstypes.QueryStatusCancelled {
+		if results.Status == cwlogstypes.QueryStatusFailed || results.Status == cwlogstypes.QueryStatusCancelled || results.Status == cwlogstypes.QueryStatusTimeout {
 			return 0, fmt.Errorf("query %s for %s", results.Status, logGroupName)
 		}
 

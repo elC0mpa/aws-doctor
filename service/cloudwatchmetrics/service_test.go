@@ -87,7 +87,7 @@ func TestRDSHasZeroConnectionsInPeriod(t *testing.T) {
 	}
 }
 
-func TestNatGatewayBytesOut(t *testing.T) {
+func TestNATGatewayBytesOut(t *testing.T) {
 	ctx := context.Background()
 
 	tests := []struct {
@@ -164,7 +164,7 @@ func TestNatGatewayBytesOut(t *testing.T) {
 			tt.setupMocks(mockCW)
 
 			svc := &service{client: mockCW}
-			bytes, err := svc.NatGatewayBytesOut(ctx, "nat-123", 7)
+			bytes, err := svc.NATGatewayBytesOut(ctx, "nat-123", 7)
 
 			if tt.wantErr {
 				assert.Error(t, err)

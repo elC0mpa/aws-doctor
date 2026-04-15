@@ -15,7 +15,7 @@ type ClientAPI interface {
 
 // cloudWatchLogsService defines the interface for the CloudWatch Logs dependency.
 type cloudWatchLogsService interface {
-	GetMaxMemoryUsed(ctx context.Context, logGroupName string, startTime, endTime time.Time) (int32, error)
+	GetLambdaMaxMemoryUsed(ctx context.Context, logGroupName string, startTime, endTime time.Time) (int32, error)
 }
 
 type service struct {
