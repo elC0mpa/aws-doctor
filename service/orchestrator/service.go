@@ -197,6 +197,7 @@ func (s *service) wasteWorkflow(wasteChecks []string, generateReport bool, repor
 		attachedToStoppedInstancesEBSVolumesInfo []types.Volume
 		expireReservedInstancesInfo              []model.RiExpirationInfo
 		unusedLoadBalancers                      []elbtypes.LoadBalancer
+		idleLoadBalancers                        []model.ELBIdleInfo
 		unusedAMIs                               []model.AMIWasteInfo
 		orphanedSnapshots                        []model.SnapshotWasteInfo
 		unusedKeyPairs                           []model.KeyPairWasteInfo
@@ -287,11 +288,11 @@ func (s *service) wasteWorkflow(wasteChecks []string, generateReport bool, repor
 	}
 
 	if runELB {
-		// Fetch unused Load Balancers concurrently
+		// Fetch unused and idle Load Balancers concurrently
 		g.Go(func() error {
 			var err error
 
-			unusedLoadBalancers, err = s.elbService.GetUnusedLoadBalancers(ctx)
+			unusedLoadBalancers, idleLoadBalancers, err = s.elbService.GetLoadBalancerWaste(ctx)
 
 			return err
 		})
@@ -364,6 +365,7 @@ func (s *service) wasteWorkflow(wasteChecks []string, generateReport bool, repor
 		RDSSnapshots:        rdsSnapshots,
 		RDSIdleInstances:    rdsIdleInstances,
 		IdleNATGateways:     idleNATGateways,
+		IdleLoadBalancers:   idleLoadBalancers,
 	}
 
 	if generateReport {

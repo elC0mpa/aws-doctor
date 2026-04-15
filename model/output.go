@@ -31,6 +31,7 @@ type RenderWasteInput struct {
 	RDSSnapshots        []RDSSnapshotWasteInfo
 	RDSIdleInstances    []RDSIdleInstanceInfo
 	IdleNATGateways     []NATGatewayWasteInfo
+	IdleLoadBalancers   []ELBIdleInfo
 }
 
 // RenderCostComparisonInput represents the input data for rendering the cost comparison report

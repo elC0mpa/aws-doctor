@@ -181,6 +181,18 @@ func PresentRDSSnapshot(snap model.RDSSnapshotWasteInfo) ResourceRow {
 	}
 }
 
+// PresentIdleLoadBalancer returns a ResourceRow for an idle load balancer with zero connections.
+func PresentIdleLoadBalancer(lb model.ELBIdleInfo) ResourceRow {
+	return ResourceRow{
+		Category:      "Idle Load Balancer",
+		Identifier:    lb.ARN,
+		EstimatedCost: fmt.Sprintf("$%.2f", lb.EstimatedMonthlyCost),
+		Metric:        lb.Type,
+		Age:           NAValue,
+		Details:       fmt.Sprintf("0 connections over %d days", lb.DaysChecked),
+	}
+}
+
 // PresentRDSIdleInstance returns a ResourceRow for an idle RDS instance
 func PresentRDSIdleInstance(inst model.RDSIdleInstanceInfo) ResourceRow {
 	return ResourceRow{

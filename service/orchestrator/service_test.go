@@ -277,7 +277,7 @@ func TestOrchestrate_RouteToWasteWorkflow(t *testing.T) {
 	mockS3.On("GetS3Waste", mock.Anything).Return([]model.S3BucketWasteInfo{}, []model.S3MultipartUploadWasteInfo{}, nil)
 	mockCloudWatch.On("GetCloudWatchLogsWaste", mock.Anything).Return([]model.CloudWatchLogsWasteInfo{}, nil)
 	mockRDS.On("GetRDSWaste", mock.Anything).Return([]model.RDSInstanceWasteInfo{}, []model.RDSSnapshotWasteInfo{}, []model.RDSIdleInstanceInfo{}, nil)
-	mockELB.On("GetUnusedLoadBalancers", mock.Anything).Return([]elbtypes.LoadBalancer{}, nil)
+	mockELB.On("GetLoadBalancerWaste", mock.Anything).Return([]elbtypes.LoadBalancer{}, []model.ELBIdleInfo{}, nil)
 	mockSTS.On("GetCallerIdentity", mock.Anything).Return(&sts.GetCallerIdentityOutput{
 		Account: aws.String("123456789012"),
 	}, nil)
@@ -338,7 +338,7 @@ func TestOrchestrate_WasteTakesPrecedenceOverTrend(t *testing.T) {
 	mockS3.On("GetS3Waste", mock.Anything).Return([]model.S3BucketWasteInfo{}, []model.S3MultipartUploadWasteInfo{}, nil)
 	mockCloudWatch.On("GetCloudWatchLogsWaste", mock.Anything).Return([]model.CloudWatchLogsWasteInfo{}, nil)
 	mockRDS.On("GetRDSWaste", mock.Anything).Return([]model.RDSInstanceWasteInfo{}, []model.RDSSnapshotWasteInfo{}, []model.RDSIdleInstanceInfo{}, nil)
-	mockELB.On("GetUnusedLoadBalancers", mock.Anything).Return([]elbtypes.LoadBalancer{}, nil)
+	mockELB.On("GetLoadBalancerWaste", mock.Anything).Return([]elbtypes.LoadBalancer{}, []model.ELBIdleInfo{}, nil)
 	mockSTS.On("GetCallerIdentity", mock.Anything).Return(&sts.GetCallerIdentityOutput{
 		Account: aws.String("123456789012"),
 	}, nil)
@@ -583,7 +583,7 @@ func TestWasteWorkflow_Error(t *testing.T) {
 				mockCloudWatch.On("GetCloudWatchLogsWaste", mock.Anything).Return([]model.CloudWatchLogsWasteInfo{}, nil)
 				mockRDS.On("GetRDSWaste", mock.Anything).Return([]model.RDSInstanceWasteInfo{}, []model.RDSSnapshotWasteInfo{}, []model.RDSIdleInstanceInfo{}, nil)
 
-				mockELB.On("GetUnusedLoadBalancers", mock.Anything).Return([]elbtypes.LoadBalancer{}, nil)
+				mockELB.On("GetLoadBalancerWaste", mock.Anything).Return([]elbtypes.LoadBalancer{}, []model.ELBIdleInfo{}, nil)
 				mockSTS.On("GetCallerIdentity", mock.Anything).Return(&sts.GetCallerIdentityOutput{
 					Account: aws.String("123456789012"),
 				}, nil)
@@ -605,7 +605,7 @@ func TestWasteWorkflow_Error(t *testing.T) {
 				mockCloudWatch.On("GetCloudWatchLogsWaste", mock.Anything).Return([]model.CloudWatchLogsWasteInfo{}, nil)
 				mockRDS.On("GetRDSWaste", mock.Anything).Return([]model.RDSInstanceWasteInfo{}, []model.RDSSnapshotWasteInfo{}, []model.RDSIdleInstanceInfo{}, nil)
 
-				mockELB.On("GetUnusedLoadBalancers", mock.Anything).Return([]elbtypes.LoadBalancer{}, nil)
+				mockELB.On("GetLoadBalancerWaste", mock.Anything).Return([]elbtypes.LoadBalancer{}, []model.ELBIdleInfo{}, nil)
 				mockSTS.On("GetCallerIdentity", mock.Anything).Return(&sts.GetCallerIdentityOutput{
 					Account: aws.String("123456789012"),
 				}, nil)
@@ -613,7 +613,7 @@ func TestWasteWorkflow_Error(t *testing.T) {
 			expectedErr: "EBS error",
 		},
 		{
-			name: "GetUnusedLoadBalancers_fails",
+			name: "GetLoadBalancerWaste_fails",
 			setupMocks: func(mockEC2 *services.MockEC2Service, mockELB *services.MockELBService, mockS3 *services.MockS3Service, mockCloudWatch *services.MockCloudWatchLogsService, mockRDS *services.MockRDSService, mockSTS *services.MockSTSService, mockVPC *services.MockVPCService) {
 				mockEC2.On("GetUnusedElasticIPAddressesInfo", mock.Anything).Return([]types.Address{}, nil)
 				mockEC2.On("GetUnusedEBSVolumes", mock.Anything).Return([]types.Volume{}, nil)
@@ -627,7 +627,7 @@ func TestWasteWorkflow_Error(t *testing.T) {
 				mockCloudWatch.On("GetCloudWatchLogsWaste", mock.Anything).Return([]model.CloudWatchLogsWasteInfo{}, nil)
 				mockRDS.On("GetRDSWaste", mock.Anything).Return([]model.RDSInstanceWasteInfo{}, []model.RDSSnapshotWasteInfo{}, []model.RDSIdleInstanceInfo{}, nil)
 
-				mockELB.On("GetUnusedLoadBalancers", mock.Anything).Return(([]elbtypes.LoadBalancer)(nil), errors.New("ELB error"))
+				mockELB.On("GetLoadBalancerWaste", mock.Anything).Return(nil, nil, errors.New("ELB error"))
 				mockSTS.On("GetCallerIdentity", mock.Anything).Return(&sts.GetCallerIdentityOutput{
 					Account: aws.String("123456789012"),
 				}, nil)
