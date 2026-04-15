@@ -13,7 +13,10 @@ import (
 	"github.com/google/go-github/v62/github"
 )
 
-const homebrewCellarPath = "/Cellar/aws-doctor/"
+const (
+	homebrewCellarPath = "/Cellar/aws-doctor/"
+	goInstallBinPath   = "/go/bin/"
+)
 
 type realRunner struct{}
 
@@ -62,6 +65,10 @@ func (s *service) Update() error {
 	resolvedPath, err := s.pathResolver.ResolvedExecutablePath()
 	if err == nil && strings.Contains(resolvedPath, homebrewCellarPath) {
 		return model.ErrHomebrewInstall
+	}
+
+	if err == nil && strings.Contains(resolvedPath, goInstallBinPath) {
+		return model.ErrGoInstall
 	}
 
 	// Proceed with update

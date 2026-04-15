@@ -207,6 +207,12 @@ func TestUpdatePrintMethods(t *testing.T) {
 		mr.AssertExpectations(t)
 	})
 
+	t.Run("PrintGoInstallUpdate", func(t *testing.T) {
+		mr.On("PrintGoInstallUpdate").Return()
+		s.PrintGoInstallUpdate()
+		mr.AssertExpectations(t)
+	})
+
 	t.Run("PrintRateLimitError", func(t *testing.T) {
 		mr.On("PrintRateLimitError").Return()
 		s.PrintRateLimitError()

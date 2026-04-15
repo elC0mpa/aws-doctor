@@ -97,6 +97,11 @@ func (s *service) updateWorkflow() error {
 		return nil
 	}
 
+	if errors.Is(err, model.ErrGoInstall) {
+		s.outputService.PrintGoInstallUpdate()
+		return nil
+	}
+
 	if errors.Is(err, model.ErrAlreadyLatest) {
 		s.outputService.PrintAlreadyLatest(s.versionInfo.Version)
 		return nil

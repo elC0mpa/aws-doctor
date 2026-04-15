@@ -74,6 +74,10 @@ func (s *service) PrintHomebrewUpdate() {
 	s.renderer.PrintHomebrewUpdate()
 }
 
+func (s *service) PrintGoInstallUpdate() {
+	s.renderer.PrintGoInstallUpdate()
+}
+
 func (s *service) PrintRateLimitError() {
 	s.renderer.PrintRateLimitError()
 }

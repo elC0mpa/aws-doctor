@@ -48,6 +48,11 @@ func (m *MockOutputService) PrintHomebrewUpdate() {
 	m.Called()
 }
 
+// PrintGoInstallUpdate mocks the PrintGoInstallUpdate method.
+func (m *MockOutputService) PrintGoInstallUpdate() {
+	m.Called()
+}
+
 // PrintRateLimitError mocks the PrintRateLimitError method.
 func (m *MockOutputService) PrintRateLimitError() {
 	m.Called()

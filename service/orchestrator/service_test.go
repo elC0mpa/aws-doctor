@@ -146,6 +146,20 @@ func TestOrchestrate_UpdateWorkflow_HomebrewInstall(t *testing.T) {
 	mockUpdate.AssertExpectations(t)
 }
 
+func TestOrchestrate_UpdateWorkflow_GoInstall(t *testing.T) {
+	svc, m := newTestServiceWithMocks(model.VersionInfo{Version: "v1.0.0", Commit: "abc", Date: "2024-01-01"})
+
+	m.output.On("StopSpinner").Return()
+	m.update.On("Update").Return(model.ErrGoInstall)
+	m.output.On("PrintGoInstallUpdate").Return()
+
+	err := svc.Orchestrate(model.Flags{Update: true})
+
+	assert.NoError(t, err)
+	m.output.AssertExpectations(t)
+	m.update.AssertExpectations(t)
+}
+
 func TestOrchestrate_RouteToVersionWorkflow(t *testing.T) {
 	// Setup mocks
 	mockSTS := new(services.MockSTSService)

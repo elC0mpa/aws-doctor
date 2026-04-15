@@ -38,6 +38,7 @@ type Renderer interface {
 	StopSpinner()
 	PrintAlreadyLatest(version string)
 	PrintHomebrewUpdate()
+	PrintGoInstallUpdate()
 	PrintRateLimitError()
 	PrintUpdateError(err error)
 	RenderVersion(versionInfo model.VersionInfo)
@@ -98,6 +99,14 @@ func (r *realRenderer) PrintHomebrewUpdate() {
 	fmt.Println(text.FgHiWhite.Sprint("ℹ️ aws-doctor was installed via Homebrew. To update, run:"))
 	fmt.Println()
 	fmt.Println(text.FgHiWhite.Sprint("  brew upgrade aws-doctor"))
+	fmt.Println()
+}
+
+func (r *realRenderer) PrintGoInstallUpdate() {
+	fmt.Println()
+	fmt.Println(text.FgHiWhite.Sprint("ℹ️ aws-doctor was installed via go install. To update, run:"))
+	fmt.Println()
+	fmt.Println(text.FgHiWhite.Sprint("  go install github.com/elC0mpa/aws-doctor@latest"))
 	fmt.Println()
 }
 
@@ -164,6 +173,9 @@ type Service interface {
 
 	// PrintHomebrewUpdate outputs a message when the binary was installed via Homebrew
 	PrintHomebrewUpdate()
+
+	// PrintGoInstallUpdate outputs a message when the binary was installed via go install
+	PrintGoInstallUpdate()
 
 	// PrintRateLimitError outputs a message when GitHub API rate limit is reached
 	PrintRateLimitError()
