@@ -14,6 +14,8 @@ import (
 	"github.com/stretchr/testify/mock"
 )
 
+const testLatestVersion = "v1.3.0"
+
 func TestOrchestrate_RouteToDefaultWorkflow(t *testing.T) {
 	// Setup mocks
 	mockSTS := new(services.MockSTSService)
@@ -819,13 +821,13 @@ func TestOrchestrate_DefaultWorkflow_ShowsNewVersionNotification(t *testing.T) {
 	svc, m := newTestServiceWithMocks(versionInfo)
 	m.setupDefaultWorkflow()
 
-	latestVersion := "v1.3.0"
+	latestVersion := testLatestVersion
 	m.update.On("CheckForUpdate", mock.Anything).Return(&latestVersion, nil)
-	m.output.On("PrintNewVersionAvailable", "v1.2.0", "v1.3.0").Return()
+	m.output.On("PrintNewVersionAvailable", "v1.2.0", testLatestVersion).Return()
 
 	err := svc.Orchestrate(model.Flags{})
 	assert.NoError(t, err)
-	m.output.AssertCalled(t, "PrintNewVersionAvailable", "v1.2.0", "v1.3.0")
+	m.output.AssertCalled(t, "PrintNewVersionAvailable", "v1.2.0", testLatestVersion)
 }
 
 func TestOrchestrate_DefaultWorkflow_VersionCheckError_SilentlyIgnored(t *testing.T) {
@@ -844,7 +846,7 @@ func TestOrchestrate_DefaultWorkflow_JSONFormat_SkipsVersionNotification(t *test
 	svc, m := newTestServiceWithMocks(versionInfo)
 	m.setupDefaultWorkflow()
 
-	latestVersion := "v1.3.0"
+	latestVersion := testLatestVersion
 	m.update.On("CheckForUpdate", mock.Anything).Return(&latestVersion, nil)
 
 	err := svc.Orchestrate(model.Flags{Output: "json"})
@@ -857,7 +859,7 @@ func TestOrchestrate_DefaultWorkflow_CSVFormat_SkipsVersionNotification(t *testi
 	svc, m := newTestServiceWithMocks(versionInfo)
 	m.setupDefaultWorkflow()
 
-	latestVersion := "v1.3.0"
+	latestVersion := testLatestVersion
 	m.update.On("CheckForUpdate", mock.Anything).Return(&latestVersion, nil)
 
 	err := svc.Orchestrate(model.Flags{Output: "csv"})
