@@ -34,7 +34,7 @@ A terminal-based tool that acts as a comprehensive health check for your AWS acc
 ### 🧟 Waste Detection
 ![Waste Detection](https://github.com/elC0mpa/aws-doctor/blob/main/docs/static/images/demo/waste.gif?raw=true)
 
-*Supports selective scanning: `aws-doctor waste ec2 s3 cloudwatch rds`*
+*Supports selective scanning: `aws-doctor waste ec2 s3 cloudwatch rds vpc`*
 
 ## 📄 Professional Reporting
 
