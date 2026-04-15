@@ -45,21 +45,25 @@ func (s *service) Orchestrate(flags model.Flags) error {
 	}
 
 	// TODO: cache the version check result locally to avoid hitting the GitHub API on every run.
-	// Start async version check for main workflows
+	// Start async version check only for human-readable output
 	type versionCheckResult struct {
 		latestVersion *string
 		err           error
 	}
 
-	versionCh := make(chan versionCheckResult, 1)
+	var versionCh chan versionCheckResult
 
-	go func() {
-		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-		defer cancel()
+	if flags.Output != "json" && flags.Output != "csv" {
+		versionCh = make(chan versionCheckResult, 1)
 
-		latest, err := s.updateService.CheckForUpdate(ctx)
-		versionCh <- versionCheckResult{latestVersion: latest, err: err}
-	}()
+		go func() {
+			ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+			defer cancel()
+
+			latest, err := s.updateService.CheckForUpdate(ctx)
+			versionCh <- versionCheckResult{latestVersion: latest, err: err}
+		}()
+	}
 
 	var workflowErr error
 
@@ -72,8 +76,8 @@ func (s *service) Orchestrate(flags model.Flags) error {
 		workflowErr = s.defaultWorkflow(flags.Report, flags.ReportPath)
 	}
 
-	// Notify if new version available (only for human-readable output)
-	if flags.Output != "json" && flags.Output != "csv" {
+	// Notify if new version available
+	if versionCh != nil {
 		select {
 		case result := <-versionCh:
 			if result.err == nil && result.latestVersion != nil {
