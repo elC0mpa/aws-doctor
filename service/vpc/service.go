@@ -83,7 +83,7 @@ func (s *service) fetchBytesOutConcurrently(ctx context.Context, gateways []type
 		natGatewayID := aws.ToString(natGateway.NatGatewayId)
 
 		g.Go(func() error {
-			bytesOut, err := s.cwService.NatGatewayBytesOut(ctx, natGatewayID, idleDays)
+			bytesOut, err := s.cwService.NATGatewayBytesOut(ctx, natGatewayID, idleDays)
 
 			results[i] = natGatewayMetricResult{
 				bytesOut: bytesOut,

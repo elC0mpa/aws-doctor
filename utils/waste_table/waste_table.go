@@ -49,7 +49,9 @@ func hasAnyWaste(input model.RenderWasteInput) bool {
 		len(input.RDSInstances) > 0 ||
 		len(input.RDSSnapshots) > 0 ||
 		len(input.RDSIdleInstances) > 0 ||
-		len(input.IdleNATGateways) > 0
+		len(input.IdleNATGateways) > 0 ||
+		len(input.IdleLoadBalancers) > 0 ||
+		len(input.OverProvisionedLambdas) > 0
 }
 
 func drawWasteSections(input model.RenderWasteInput) {
@@ -65,8 +67,8 @@ func drawWasteSections(input model.RenderWasteInput) {
 		drawEC2Table(input.StoppedInstances, input.Ris)
 	}
 
-	if len(input.LoadBalancers) > 0 {
-		drawLoadBalancerTable(input.LoadBalancers)
+	if len(input.LoadBalancers) > 0 || len(input.IdleLoadBalancers) > 0 {
+		drawLoadBalancerTable(input.LoadBalancers, input.IdleLoadBalancers)
 	}
 
 	if len(input.S3Buckets) > 0 || len(input.S3MultipartUploads) > 0 {
@@ -95,6 +97,10 @@ func drawWasteSections(input model.RenderWasteInput) {
 
 	if len(input.IdleNATGateways) > 0 {
 		drawNatGatewayTable(input.IdleNATGateways)
+	}
+
+	if len(input.OverProvisionedLambdas) > 0 {
+		drawLambdaTable(input.OverProvisionedLambdas)
 	}
 }
 
@@ -293,7 +299,7 @@ func populateRiRows(ris []model.RiExpirationInfo) []table.Row {
 	return rows
 }
 
-func drawLoadBalancerTable(loadBalancers []elbtypes.LoadBalancer) {
+func drawLoadBalancerTable(loadBalancers []elbtypes.LoadBalancer, idleLoadBalancers []model.ELBIdleInfo) {
 	t := table.NewWriter()
 	t.SetOutputMirror(os.Stdout)
 	t.SetStyle(table.StyleRounded)
@@ -301,17 +307,55 @@ func drawLoadBalancerTable(loadBalancers []elbtypes.LoadBalancer) {
 
 	t.AppendHeader(table.Row{"Status", "Name", "Type", "Est. Cost/Mo"})
 
-	statusUnused := "No Target Groups"
-	rows := populateLoadBalancerRows(loadBalancers)
+	t.SetColumnConfigs([]table.ColumnConfig{
+		{Number: 4, Align: text.AlignRight},
+	})
 
-	if len(rows) > 0 {
-		halfRow := len(rows) / 2
-		rows[halfRow][0] = text.FgHiRed.Sprint(statusUnused)
+	var hasPreviousRows bool
+
+	if len(loadBalancers) > 0 {
+		statusUnused := "No Target Groups"
+		rows := populateLoadBalancerRows(loadBalancers)
+
+		if len(rows) > 0 {
+			halfRow := len(rows) / 2
+			rows[halfRow][0] = text.FgHiRed.Sprint(statusUnused)
+		}
+
+		t.AppendRows(rows)
+
+		hasPreviousRows = true
 	}
 
-	t.AppendRows(rows)
+	if len(idleLoadBalancers) > 0 {
+		if hasPreviousRows {
+			t.AppendSeparator()
+		}
+
+		statusIdle := "Idle (0 connections)"
+		rows := populateIdleLoadBalancerRows(idleLoadBalancers)
+
+		if len(rows) > 0 {
+			halfRow := len(rows) / 2
+			rows[halfRow][0] = text.FgHiYellow.Sprint(statusIdle)
+		}
+
+		t.AppendRows(rows)
+	}
+
 	t.Render()
 	fmt.Println()
+}
+
+func populateIdleLoadBalancerRows(idleLBs []model.ELBIdleInfo) []table.Row {
+	rows := make([]table.Row, 0, len(idleLBs))
+
+	for _, lb := range idleLBs {
+		p := outputshared.PresentIdleLoadBalancer(lb)
+		rows = append(rows, table.Row{"", lb.Name, p.Metric, p.EstimatedCost})
+	}
+
+	return rows
 }
 
 func populateLoadBalancerRows(loadBalancers []elbtypes.LoadBalancer) []table.Row {
@@ -784,6 +828,53 @@ func populateRDSSnapshotRows(snapshots []model.RDSSnapshotWasteInfo) []table.Row
 			snap.Engine,
 			fmt.Sprintf("%s days old, %d GB", p.Age, snap.AllocatedStorage),
 			p.EstimatedCost,
+		})
+	}
+
+	return rows
+}
+
+func drawLambdaTable(lambdas []model.LambdaOverProvisionedInfo) {
+	t := table.NewWriter()
+	t.SetOutputMirror(os.Stdout)
+	t.SetStyle(table.StyleRounded)
+	t.SetTitle("Lambda Over-Provisioned Memory")
+
+	t.AppendHeader(table.Row{"Status", "Function Name", "Runtime", "Memory (Configured)", "Memory (Max Used)", "Utilization", "Recommended"})
+
+	t.SetColumnConfigs([]table.ColumnConfig{
+		{Number: 4, Align: text.AlignRight},
+		{Number: 5, Align: text.AlignRight},
+		{Number: 6, Align: text.AlignRight},
+		{Number: 7, Align: text.AlignRight},
+	})
+
+	statusLabel := "Over-Provisioned"
+	rows := populateLambdaRows(lambdas)
+
+	if len(rows) > 0 {
+		halfRow := len(rows) / 2
+		rows[halfRow][0] = text.FgHiYellow.Sprint(statusLabel)
+	}
+
+	t.AppendRows(rows)
+	t.Render()
+	fmt.Println()
+}
+
+func populateLambdaRows(lambdas []model.LambdaOverProvisionedInfo) []table.Row {
+	rows := make([]table.Row, 0, len(lambdas))
+
+	for _, fn := range lambdas {
+		p := outputshared.PresentLambdaOverProvisioned(fn)
+		rows = append(rows, table.Row{
+			"",
+			p.Identifier,
+			fn.Runtime,
+			fmt.Sprintf("%d MB", fn.ConfiguredMemoryMB),
+			fmt.Sprintf("%d MB", fn.MaxMemoryUsedMB),
+			p.Metric,
+			fmt.Sprintf("%d MB", fn.RecommendedMemoryMB),
 		})
 	}
 

@@ -51,28 +51,30 @@ type WasteSummaryJSON struct {
 
 // WasteReportJSON represents the JSON output for waste detection
 type WasteReportJSON struct {
-	AccountID                 string                   `json:"account_id"`
-	GeneratedAt               string                   `json:"generated_at"`
-	HasWaste                  bool                     `json:"has_waste"`
-	TotalEstimatedMonthlyCost float64                  `json:"total_estimated_monthly_cost"`
-	Summary                   []WasteSummaryJSON       `json:"summary"`
-	UnusedElasticIPs          []ElasticIPJSON          `json:"unused_elastic_ips"`
-	UnusedEBSVolumes          []EBSVolumeJSON          `json:"unused_ebs_volumes"`
-	StoppedVolumes            []EBSVolumeJSON          `json:"stopped_instance_volumes"`
-	StoppedInstances          []StoppedInstanceJSON    `json:"stopped_instances"`
-	ReservedInstances         []ReservedInstanceJSON   `json:"reserved_instances"`
-	UnusedLoadBalancers       []LoadBalancerJSON       `json:"unused_load_balancers"`
-	UnusedAMIs                []AMIJSON                `json:"unused_amis"`
-	OrphanedSnapshots         []SnapshotJSON           `json:"orphaned_snapshots"`
-	StaleSnapshots            []SnapshotJSON           `json:"stale_snapshots"`
-	UnusedKeyPairs            []KeyPairJSON            `json:"unused_key_pairs"`
-	S3Buckets                 []S3BucketJSON           `json:"s3_buckets_without_lifecycle"`
-	S3MultipartUploads        []S3MultipartJSON        `json:"s3_buckets_with_incomplete_multipart_uploads"`
-	CloudWatchLogGroups       []CloudWatchLogGroupJSON `json:"cloudwatch_log_groups_without_retention_policy"`
-	StoppedRDSInstances       []RDSInstanceJSON        `json:"stopped_rds_instances"`
-	OldRDSSnapshots           []RDSSnapshotJSON        `json:"old_rds_snapshots"`
-	IdleRDSInstances          []RDSIdleInstanceJSON    `json:"idle_rds_instances"`
-	IdleNATGateways           []NATGatewayJSON         `json:"idle_nat_gateways"`
+	AccountID                 string                      `json:"account_id"`
+	GeneratedAt               string                      `json:"generated_at"`
+	HasWaste                  bool                        `json:"has_waste"`
+	TotalEstimatedMonthlyCost float64                     `json:"total_estimated_monthly_cost"`
+	Summary                   []WasteSummaryJSON          `json:"summary"`
+	UnusedElasticIPs          []ElasticIPJSON             `json:"unused_elastic_ips"`
+	UnusedEBSVolumes          []EBSVolumeJSON             `json:"unused_ebs_volumes"`
+	StoppedVolumes            []EBSVolumeJSON             `json:"stopped_instance_volumes"`
+	StoppedInstances          []StoppedInstanceJSON       `json:"stopped_instances"`
+	ReservedInstances         []ReservedInstanceJSON      `json:"reserved_instances"`
+	UnusedLoadBalancers       []LoadBalancerJSON          `json:"unused_load_balancers"`
+	UnusedAMIs                []AMIJSON                   `json:"unused_amis"`
+	OrphanedSnapshots         []SnapshotJSON              `json:"orphaned_snapshots"`
+	StaleSnapshots            []SnapshotJSON              `json:"stale_snapshots"`
+	UnusedKeyPairs            []KeyPairJSON               `json:"unused_key_pairs"`
+	S3Buckets                 []S3BucketJSON              `json:"s3_buckets_without_lifecycle"`
+	S3MultipartUploads        []S3MultipartJSON           `json:"s3_buckets_with_incomplete_multipart_uploads"`
+	CloudWatchLogGroups       []CloudWatchLogGroupJSON    `json:"cloudwatch_log_groups_without_retention_policy"`
+	StoppedRDSInstances       []RDSInstanceJSON           `json:"stopped_rds_instances"`
+	OldRDSSnapshots           []RDSSnapshotJSON           `json:"old_rds_snapshots"`
+	IdleRDSInstances          []RDSIdleInstanceJSON       `json:"idle_rds_instances"`
+	IdleNATGateways           []NATGatewayJSON            `json:"idle_nat_gateways"`
+	IdleLoadBalancers         []ELBIdleJSON               `json:"idle_load_balancers"`
+	OverProvisionedLambdas    []LambdaOverProvisionedJSON `json:"over_provisioned_lambdas"`
 }
 
 // RDSInstanceJSON represents a stopped RDS instance.
@@ -107,6 +109,9 @@ type RDSIdleInstanceJSON struct {
 	DaysChecked          int     `json:"days_checked"`
 	EstimatedMonthlyCost float64 `json:"estimated_monthly_cost"`
 }
+
+// ELBIdleJSON represents an idle load balancer with zero connections.
+type ELBIdleJSON ELBIdleInfo
 
 // CloudWatchLogGroupJSON represents a CloudWatch Log Group without a retention policy
 type CloudWatchLogGroupJSON struct {
@@ -215,4 +220,14 @@ type NATGatewayJSON struct {
 	BytesOutToDestination float64 `json:"bytes_out_to_destination"`
 	EstimatedMonthlyCost  float64 `json:"estimated_monthly_cost"`
 	DaysSinceCreate       int     `json:"days_since_create"`
+}
+
+// LambdaOverProvisionedJSON represents a Lambda function with over-provisioned memory.
+type LambdaOverProvisionedJSON struct {
+	FunctionName        string  `json:"function_name"`
+	Runtime             string  `json:"runtime"`
+	ConfiguredMemoryMB  int32   `json:"configured_memory_mb"`
+	MaxMemoryUsedMB     int32   `json:"max_memory_used_mb"`
+	MemoryUtilization   float64 `json:"memory_utilization_percent"`
+	RecommendedMemoryMB int32   `json:"recommended_memory_mb"`
 }

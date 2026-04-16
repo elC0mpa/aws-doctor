@@ -27,6 +27,7 @@ func NewService(cfg Config) Service {
 		s3Service:             cfg.S3Service,
 		cloudwatchlogsService: cfg.CloudWatchLogsService,
 		rdsService:            cfg.RDSService,
+		lambdaService:         cfg.LambdaService,
 		outputService:         cfg.OutputService,
 		updateService:         cfg.UpdateService,
 		reportService:         cfg.ReportService,
@@ -69,7 +70,7 @@ func (s *service) Orchestrate(flags model.Flags) error {
 
 	switch {
 	case flags.Waste:
-		workflowErr = s.wasteWorkflow(flags.WasteChecks, flags.Report, flags.ReportPath)
+		workflowErr = s.wasteWorkflow(flags.WasteChecks, flags.Report, flags.ReportPath, flags.LambdaMemoryThreshold)
 	case flags.Trend:
 		workflowErr = s.trendWorkflow(flags.TrendChecks, flags.Report, flags.ReportPath)
 	default:
@@ -217,7 +218,7 @@ func (s *service) trendWorkflow(trendChecks []string, generateReport bool, repor
 	return s.outputService.RenderTrend(*stsResult.Account, costInfo, trendChecks)
 }
 
-func (s *service) wasteWorkflow(wasteChecks []string, generateReport bool, reportPath string) error {
+func (s *service) wasteWorkflow(wasteChecks []string, generateReport bool, reportPath string, lambdaMemoryThreshold int) error {
 	ctx := context.Background()
 	g, ctx := errgroup.WithContext(ctx)
 
@@ -229,6 +230,7 @@ func (s *service) wasteWorkflow(wasteChecks []string, generateReport bool, repor
 	runCloudWatchLogs := runAll || slice.ContainsIgnoreCase(wasteChecks, "cloudwatch")
 	runRDS := runAll || slice.ContainsIgnoreCase(wasteChecks, "rds")
 	runVPC := runAll || slice.ContainsIgnoreCase(wasteChecks, "vpc")
+	runLambda := runAll || slice.ContainsIgnoreCase(wasteChecks, "lambda")
 
 	// Results from concurrent API calls
 	var (
@@ -238,6 +240,7 @@ func (s *service) wasteWorkflow(wasteChecks []string, generateReport bool, repor
 		attachedToStoppedInstancesEBSVolumesInfo []types.Volume
 		expireReservedInstancesInfo              []model.RiExpirationInfo
 		unusedLoadBalancers                      []elbtypes.LoadBalancer
+		idleLoadBalancers                        []model.ELBIdleInfo
 		unusedAMIs                               []model.AMIWasteInfo
 		orphanedSnapshots                        []model.SnapshotWasteInfo
 		unusedKeyPairs                           []model.KeyPairWasteInfo
@@ -248,6 +251,7 @@ func (s *service) wasteWorkflow(wasteChecks []string, generateReport bool, repor
 		rdsSnapshots                             []model.RDSSnapshotWasteInfo
 		rdsIdleInstances                         []model.RDSIdleInstanceInfo
 		idleNATGateways                          []model.NATGatewayWasteInfo
+		overProvisionedLambdas                   []model.LambdaOverProvisionedInfo
 		stsResult                                *sts.GetCallerIdentityOutput
 	)
 
@@ -328,11 +332,11 @@ func (s *service) wasteWorkflow(wasteChecks []string, generateReport bool, repor
 	}
 
 	if runELB {
-		// Fetch unused Load Balancers concurrently
+		// Fetch unused and idle Load Balancers concurrently
 		g.Go(func() error {
 			var err error
 
-			unusedLoadBalancers, err = s.elbService.GetUnusedLoadBalancers(ctx)
+			unusedLoadBalancers, idleLoadBalancers, err = s.elbService.GetLoadBalancerWaste(ctx)
 
 			return err
 		})
@@ -371,6 +375,17 @@ func (s *service) wasteWorkflow(wasteChecks []string, generateReport bool, repor
 		})
 	}
 
+	if runLambda {
+		// Fetch over-provisioned Lambda functions concurrently
+		g.Go(func() error {
+			var err error
+
+			overProvisionedLambdas, err = s.lambdaService.GetOverProvisionedFunctions(ctx, lambdaMemoryThreshold)
+
+			return err
+		})
+	}
+
 	// Fetch caller identity concurrently (always required for output)
 	g.Go(func() error {
 		var err error
@@ -388,23 +403,25 @@ func (s *service) wasteWorkflow(wasteChecks []string, generateReport bool, repor
 	s.outputService.StopSpinner()
 
 	input := model.RenderWasteInput{
-		AccountID:           *stsResult.Account,
-		ElasticIPs:          elasticIPInfo,
-		UnusedVolumes:       availableEBSVolumesInfo,
-		StoppedVolumes:      attachedToStoppedInstancesEBSVolumesInfo,
-		Ris:                 expireReservedInstancesInfo,
-		StoppedInstances:    stoppedInstancesMoreThan30Days,
-		LoadBalancers:       unusedLoadBalancers,
-		UnusedAMIs:          unusedAMIs,
-		OrphanedSnapshots:   orphanedSnapshots,
-		UnusedKeyPairs:      unusedKeyPairs,
-		S3Buckets:           s3Buckets,
-		S3MultipartUploads:  s3MultipartUploads,
-		CloudWatchLogGroups: cloudwatchLogs,
-		RDSInstances:        rdsInstances,
-		RDSSnapshots:        rdsSnapshots,
-		RDSIdleInstances:    rdsIdleInstances,
-		IdleNATGateways:     idleNATGateways,
+		AccountID:              *stsResult.Account,
+		ElasticIPs:             elasticIPInfo,
+		UnusedVolumes:          availableEBSVolumesInfo,
+		StoppedVolumes:         attachedToStoppedInstancesEBSVolumesInfo,
+		Ris:                    expireReservedInstancesInfo,
+		StoppedInstances:       stoppedInstancesMoreThan30Days,
+		LoadBalancers:          unusedLoadBalancers,
+		UnusedAMIs:             unusedAMIs,
+		OrphanedSnapshots:      orphanedSnapshots,
+		UnusedKeyPairs:         unusedKeyPairs,
+		S3Buckets:              s3Buckets,
+		S3MultipartUploads:     s3MultipartUploads,
+		CloudWatchLogGroups:    cloudwatchLogs,
+		RDSInstances:           rdsInstances,
+		RDSSnapshots:           rdsSnapshots,
+		RDSIdleInstances:       rdsIdleInstances,
+		IdleNATGateways:        idleNATGateways,
+		IdleLoadBalancers:      idleLoadBalancers,
+		OverProvisionedLambdas: overProvisionedLambdas,
 	}
 
 	if generateReport {

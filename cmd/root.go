@@ -11,6 +11,7 @@ import (
 	awscostexplorer "github.com/elC0mpa/aws-doctor/service/costexplorer"
 	awsec2 "github.com/elC0mpa/aws-doctor/service/ec2"
 	"github.com/elC0mpa/aws-doctor/service/elb"
+	awslambda "github.com/elC0mpa/aws-doctor/service/lambda"
 	"github.com/elC0mpa/aws-doctor/service/orchestrator"
 	"github.com/elC0mpa/aws-doctor/service/output"
 	"github.com/elC0mpa/aws-doctor/service/rds"
@@ -57,15 +58,18 @@ func buildOrchestrator(needsAWS bool) (orchestrator.Service, error) {
 
 	spinner.StartSpinner()
 
+	cwMetricsService := cloudwatchmetrics.NewService(awsCfg)
+
 	config.STSService = awssts.NewService(awsCfg)
 	config.CostService = awscostexplorer.NewService(awsCfg)
 	config.EC2Service = awsec2.NewService(awsCfg)
-	config.ELBService = elb.NewService(awsCfg)
+	config.ELBService = elb.NewService(awsCfg, cwMetricsService)
 	config.S3Service = s3.NewService(awsCfg)
-	config.CloudWatchLogsService = cloudwatchlogs.NewService(awsCfg)
-	cwMetricsService := cloudwatchmetrics.NewService(awsCfg)
+	cwLogsService := cloudwatchlogs.NewService(awsCfg)
+	config.CloudWatchLogsService = cwLogsService
 	config.RDSService = rds.NewService(awsCfg, cwMetricsService)
 	config.VPCService = awsvpc.NewService(awsCfg, cwMetricsService)
+	config.LambdaService = awslambda.NewService(awsCfg, cwLogsService)
 	config.ReportService = report.NewService()
 
 	return orchestrator.NewService(config), nil

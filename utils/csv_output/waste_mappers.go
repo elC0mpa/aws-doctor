@@ -131,6 +131,15 @@ func mapRDSSnapshots(snapshots []model.RDSSnapshotWasteInfo) [][]string {
 	return result
 }
 
+func mapIdleLoadBalancers(idleLBs []model.ELBIdleInfo) [][]string {
+	result := make([][]string, 0, len(idleLBs))
+	for _, lb := range idleLBs {
+		result = append(result, outputshared.PresentIdleLoadBalancer(lb).ToSlice())
+	}
+
+	return result
+}
+
 func mapRDSIdleInstances(instances []model.RDSIdleInstanceInfo) [][]string {
 	result := make([][]string, 0, len(instances))
 	for _, inst := range instances {
@@ -144,6 +153,15 @@ func mapNATGateways(natGateways []model.NATGatewayWasteInfo) [][]string {
 	result := make([][]string, 0, len(natGateways))
 	for _, ng := range natGateways {
 		result = append(result, outputshared.PresentIdleNATGateway(ng).ToSlice())
+	}
+
+	return result
+}
+
+func mapLambdaOverProvisioned(lambdas []model.LambdaOverProvisionedInfo) [][]string {
+	result := make([][]string, 0, len(lambdas))
+	for _, fn := range lambdas {
+		result = append(result, outputshared.PresentLambdaOverProvisioned(fn).ToSlice())
 	}
 
 	return result

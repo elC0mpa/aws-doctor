@@ -309,6 +309,30 @@ func TestPresentRDSSnapshot(t *testing.T) {
 	}
 }
 
+func TestPresentIdleLoadBalancer(t *testing.T) {
+	lb := model.ELBIdleInfo{
+		Name:                 "test-alb",
+		ARN:                  "arn:aws:elasticloadbalancing:us-east-1:123:loadbalancer/app/test-alb/abc123",
+		Type:                 "application",
+		DaysChecked:          7,
+		EstimatedMonthlyCost: 16.43,
+	}
+
+	p := PresentIdleLoadBalancer(lb)
+
+	if !strings.Contains(p.Identifier, "test-alb") {
+		t.Errorf("Identifier = %v, want to contain 'test-alb'", p.Identifier)
+	}
+
+	if p.EstimatedCost != "$16.43" {
+		t.Errorf("EstimatedCost = %v, want '$16.43'", p.EstimatedCost)
+	}
+
+	if !strings.Contains(p.Details, "7 days") {
+		t.Errorf("Details %q does not contain '7 days'", p.Details)
+	}
+}
+
 func TestPresentRDSIdleInstance(t *testing.T) {
 	inst := model.RDSIdleInstanceInfo{
 		DBInstanceID:         "idle-db",
@@ -359,5 +383,34 @@ func TestPresentIdleNATGateway(t *testing.T) {
 
 	if p.EstimatedCost != "$30.00" {
 		t.Errorf("EstimatedCost = %v, want '$30.00'", p.EstimatedCost)
+	}
+}
+
+func TestPresentLambdaOverProvisioned(t *testing.T) {
+	fn := model.LambdaOverProvisionedInfo{
+		FunctionName:        "my-function",
+		Runtime:             "go1.x",
+		ConfiguredMemoryMB:  1024,
+		MaxMemoryUsedMB:     50,
+		MemoryUtilization:   4.9,
+		RecommendedMemoryMB: 128,
+	}
+
+	p := PresentLambdaOverProvisioned(fn)
+
+	if p.Identifier != "my-function" {
+		t.Errorf("Identifier = %v, want 'my-function'", p.Identifier)
+	}
+
+	if !strings.Contains(p.Metric, "4.9%") {
+		t.Errorf("Metric %q does not contain '4.9%%'", p.Metric)
+	}
+
+	if p.EstimatedCost != NAValue {
+		t.Errorf("EstimatedCost = %v, want '%s'", p.EstimatedCost, NAValue)
+	}
+
+	if !strings.Contains(p.Details, "1024 MB") {
+		t.Errorf("Details %q does not contain '1024 MB'", p.Details)
 	}
 }

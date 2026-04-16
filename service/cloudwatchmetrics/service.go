@@ -4,11 +4,13 @@ package cloudwatchmetrics
 import (
 	"context"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/cloudwatch"
 	cwtypes "github.com/aws/aws-sdk-go-v2/service/cloudwatch/types"
+	elbtypes "github.com/aws/aws-sdk-go-v2/service/elasticloadbalancingv2/types"
 )
 
 const (
@@ -58,8 +60,8 @@ func (s *service) RDSHasZeroConnectionsInPeriod(ctx context.Context, dbInstanceI
 	return true, nil
 }
 
-// NatGatewayBytesOut returns the total bytes out to destination for a NAT Gateway over the given number of days.
-func (s *service) NatGatewayBytesOut(ctx context.Context, natGatewayID string, days int) (float64, error) {
+// NATGatewayBytesOut returns the total bytes out to destination for a NAT Gateway over the given number of days.
+func (s *service) NATGatewayBytesOut(ctx context.Context, natGatewayID string, days int) (float64, error) {
 	now := time.Now()
 	startTime := now.AddDate(0, 0, -days)
 
@@ -90,4 +92,64 @@ func (s *service) NatGatewayBytesOut(ctx context.Context, natGatewayID string, d
 	}
 
 	return totalBytes, nil
+}
+
+// ExtractLoadBalancerID extracts the CloudWatch dimension value from a load balancer ARN.
+func ExtractLoadBalancerID(arn string) (string, error) {
+	parts := strings.SplitN(arn, ":loadbalancer/", 2)
+	if len(parts) != 2 {
+		return "", fmt.Errorf("invalid load balancer ARN: %s", arn)
+	}
+
+	return parts[1], nil
+}
+
+// ELBHasZeroRequestsInPeriod checks if a load balancer had zero requests/connections over the given number of days.
+func (s *service) ELBHasZeroRequestsInPeriod(ctx context.Context, loadBalancerArn string, lbType elbtypes.LoadBalancerTypeEnum, days int) (bool, error) {
+	now := time.Now()
+	startTime := now.AddDate(0, 0, -days)
+
+	lbID, err := ExtractLoadBalancerID(loadBalancerArn)
+	if err != nil {
+		return false, err
+	}
+
+	var namespace, metricName string
+
+	switch lbType {
+	case elbtypes.LoadBalancerTypeEnumApplication:
+		namespace = "AWS/ApplicationELB"
+		metricName = "RequestCount"
+	case elbtypes.LoadBalancerTypeEnumNetwork:
+		namespace = "AWS/NetworkELB"
+		metricName = "ActiveFlowCount"
+	default:
+		return false, fmt.Errorf("unsupported load balancer type: %s", lbType)
+	}
+
+	output, err := s.client.GetMetricStatistics(ctx, &cloudwatch.GetMetricStatisticsInput{
+		Namespace:  aws.String(namespace),
+		MetricName: aws.String(metricName),
+		Dimensions: []cwtypes.Dimension{
+			{
+				Name:  aws.String("LoadBalancer"),
+				Value: aws.String(lbID),
+			},
+		},
+		StartTime:  &startTime,
+		EndTime:    &now,
+		Period:     aws.Int32(metricPeriodSeconds),
+		Statistics: []cwtypes.Statistic{cwtypes.StatisticSum},
+	})
+	if err != nil {
+		return false, fmt.Errorf("failed to get CloudWatch metrics for %s: %w", loadBalancerArn, err)
+	}
+
+	for _, dp := range output.Datapoints {
+		if dp.Sum != nil && *dp.Sum > 0 {
+			return false, nil
+		}
+	}
+
+	return true, nil
 }

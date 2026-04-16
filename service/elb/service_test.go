@@ -13,102 +13,153 @@ import (
 	"github.com/stretchr/testify/mock"
 )
 
-func TestGetUnusedLoadBalancers(t *testing.T) {
-	mockClient := new(awsinterfaces.MockELBClient)
-	s := &service{client: mockClient}
+// mockCWMetricsService is a local mock for cloudwatchMetricsService used by GetLoadBalancerWaste.
+type mockCWMetricsService struct {
+	mock.Mock
+}
 
-	// Mock DescribeLoadBalancers
-	mockClient.On("DescribeLoadBalancers", mock.Anything, mock.Anything, mock.Anything).Return(&elb.DescribeLoadBalancersOutput{
-		LoadBalancers: []types.LoadBalancer{
-			// Used ALB
-			{
-				LoadBalancerArn:  aws.String("arn:alb:used"),
-				Type:             types.LoadBalancerTypeEnumApplication,
-				LoadBalancerName: aws.String("used-alb"),
+func (m *mockCWMetricsService) ELBHasZeroRequestsInPeriod(ctx context.Context, loadBalancerArn string, lbType types.LoadBalancerTypeEnum, days int) (bool, error) {
+	args := m.Called(ctx, loadBalancerArn, lbType, days)
+
+	return args.Bool(0), args.Error(1)
+}
+
+func TestGetLoadBalancerWaste(t *testing.T) {
+	tests := []struct {
+		name          string
+		setupMocks    func(*awsinterfaces.MockELBClient, *mockCWMetricsService)
+		wantUnused    int
+		wantIdle      int
+		wantErr       bool
+		wantIdleNames []string
+	}{
+		{
+			name: "separates unused and idle load balancers",
+			setupMocks: func(mc *awsinterfaces.MockELBClient, cw *mockCWMetricsService) {
+				mc.On("DescribeLoadBalancers", mock.Anything, mock.Anything, mock.Anything).Return(&elb.DescribeLoadBalancersOutput{
+					LoadBalancers: []types.LoadBalancer{
+						{
+							LoadBalancerArn:  aws.String("arn:aws:elasticloadbalancing:us-east-1:123:loadbalancer/app/idle-alb/abc"),
+							Type:             types.LoadBalancerTypeEnumApplication,
+							LoadBalancerName: aws.String("idle-alb"),
+						},
+						{
+							LoadBalancerArn:  aws.String("arn:aws:elasticloadbalancing:us-east-1:123:loadbalancer/net/active-nlb/def"),
+							Type:             types.LoadBalancerTypeEnumNetwork,
+							LoadBalancerName: aws.String("active-nlb"),
+						},
+						{
+							LoadBalancerArn:  aws.String("arn:aws:elasticloadbalancing:us-east-1:123:loadbalancer/app/orphan-alb/ghi"),
+							Type:             types.LoadBalancerTypeEnumApplication,
+							LoadBalancerName: aws.String("orphan-alb"),
+						},
+						{
+							LoadBalancerArn:  aws.String("arn:gwlb:unused"),
+							Type:             types.LoadBalancerTypeEnumGateway,
+							LoadBalancerName: aws.String("unused-gwlb"),
+						},
+					},
+				}, nil)
+
+				mc.On("DescribeTargetGroups", mock.Anything, mock.Anything, mock.Anything).Return(&elb.DescribeTargetGroupsOutput{
+					TargetGroups: []types.TargetGroup{
+						{LoadBalancerArns: []string{"arn:aws:elasticloadbalancing:us-east-1:123:loadbalancer/app/idle-alb/abc"}},
+						{LoadBalancerArns: []string{"arn:aws:elasticloadbalancing:us-east-1:123:loadbalancer/net/active-nlb/def"}},
+					},
+				}, nil)
+
+				// idle-alb: zero requests
+				cw.On("ELBHasZeroRequestsInPeriod", mock.Anything,
+					"arn:aws:elasticloadbalancing:us-east-1:123:loadbalancer/app/idle-alb/abc",
+					types.LoadBalancerTypeEnumApplication, 7).Return(true, nil)
+				// active-nlb: has traffic
+				cw.On("ELBHasZeroRequestsInPeriod", mock.Anything,
+					"arn:aws:elasticloadbalancing:us-east-1:123:loadbalancer/net/active-nlb/def",
+					types.LoadBalancerTypeEnumNetwork, 7).Return(false, nil)
 			},
-			// Unused ALB
-			{
-				LoadBalancerArn:  aws.String("arn:alb:unused"),
-				Type:             types.LoadBalancerTypeEnumApplication,
-				LoadBalancerName: aws.String("unused-alb"),
-			},
-			// Used NLB
-			{
-				LoadBalancerArn:  aws.String("arn:nlb:used"),
-				Type:             types.LoadBalancerTypeEnumNetwork,
-				LoadBalancerName: aws.String("used-nlb"),
-			},
-			// Unused NLB
-			{
-				LoadBalancerArn:  aws.String("arn:nlb:unused"),
-				Type:             types.LoadBalancerTypeEnumNetwork,
-				LoadBalancerName: aws.String("unused-nlb"),
-			},
-			// Other Type (e.g. Gateway - should be skipped by logic, but for safety)
-			{
-				LoadBalancerArn:  aws.String("arn:gwlb:unused"),
-				Type:             types.LoadBalancerTypeEnumGateway,
-				LoadBalancerName: aws.String("unused-gwlb"),
-			},
+			wantUnused:    1, // orphan-alb
+			wantIdle:      1, // idle-alb
+			wantErr:       false,
+			wantIdleNames: []string{"idle-alb"},
 		},
-	}, nil)
-
-	// Mock DescribeTargetGroups (defines which LBs are used)
-	mockClient.On("DescribeTargetGroups", mock.Anything, mock.Anything, mock.Anything).Return(&elb.DescribeTargetGroupsOutput{
-		TargetGroups: []types.TargetGroup{
-			{
-				LoadBalancerArns: []string{"arn:alb:used"},
+		{
+			name: "LB error returns error",
+			setupMocks: func(mc *awsinterfaces.MockELBClient, cw *mockCWMetricsService) {
+				mc.On("DescribeLoadBalancers", mock.Anything, mock.Anything, mock.Anything).Return(nil, errors.New("LB API error"))
 			},
-			{
-				LoadBalancerArns: []string{"arn:nlb:used"},
-			},
+			wantUnused: 0,
+			wantIdle:   0,
+			wantErr:    true,
 		},
-	}, nil)
+		{
+			name: "TG error returns error",
+			setupMocks: func(mc *awsinterfaces.MockELBClient, cw *mockCWMetricsService) {
+				mc.On("DescribeLoadBalancers", mock.Anything, mock.Anything, mock.Anything).Return(&elb.DescribeLoadBalancersOutput{}, nil)
+				mc.On("DescribeTargetGroups", mock.Anything, mock.Anything, mock.Anything).Return(nil, errors.New("TG API error"))
+			},
+			wantUnused: 0,
+			wantIdle:   0,
+			wantErr:    true,
+		},
+		{
+			name: "CloudWatch error returns error",
+			setupMocks: func(mc *awsinterfaces.MockELBClient, cw *mockCWMetricsService) {
+				mc.On("DescribeLoadBalancers", mock.Anything, mock.Anything, mock.Anything).Return(&elb.DescribeLoadBalancersOutput{
+					LoadBalancers: []types.LoadBalancer{
+						{
+							LoadBalancerArn:  aws.String("arn:aws:elasticloadbalancing:us-east-1:123:loadbalancer/app/test-alb/abc"),
+							Type:             types.LoadBalancerTypeEnumApplication,
+							LoadBalancerName: aws.String("test-alb"),
+						},
+					},
+				}, nil)
 
-	result, err := s.GetUnusedLoadBalancers(context.Background())
+				mc.On("DescribeTargetGroups", mock.Anything, mock.Anything, mock.Anything).Return(&elb.DescribeTargetGroupsOutput{
+					TargetGroups: []types.TargetGroup{
+						{LoadBalancerArns: []string{"arn:aws:elasticloadbalancing:us-east-1:123:loadbalancer/app/test-alb/abc"}},
+					},
+				}, nil)
 
-	assert.NoError(t, err)
-	assert.Len(t, result, 2)
-
-	// Verify we got the unused ones
-	foundUnusedALB := false
-	foundUnusedNLB := false
-
-	for _, lb := range result {
-		if *lb.LoadBalancerName == "unused-alb" {
-			foundUnusedALB = true
-		}
-
-		if *lb.LoadBalancerName == "unused-nlb" {
-			foundUnusedNLB = true
-		}
+				cw.On("ELBHasZeroRequestsInPeriod", mock.Anything, mock.Anything, mock.Anything, mock.Anything).
+					Return(false, errors.New("CW error"))
+			},
+			wantUnused: 0,
+			wantIdle:   0,
+			wantErr:    true,
+		},
+		{
+			name: "empty result with no load balancers",
+			setupMocks: func(mc *awsinterfaces.MockELBClient, cw *mockCWMetricsService) {
+				mc.On("DescribeLoadBalancers", mock.Anything, mock.Anything, mock.Anything).Return(&elb.DescribeLoadBalancersOutput{}, nil)
+				mc.On("DescribeTargetGroups", mock.Anything, mock.Anything, mock.Anything).Return(&elb.DescribeTargetGroupsOutput{}, nil)
+			},
+			wantUnused: 0,
+			wantIdle:   0,
+			wantErr:    false,
+		},
 	}
 
-	assert.True(t, foundUnusedALB)
-	assert.True(t, foundUnusedNLB)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			mockClient := new(awsinterfaces.MockELBClient)
+			mockCW := new(mockCWMetricsService)
 
-	mockClient.AssertExpectations(t)
-}
+			tt.setupMocks(mockClient, mockCW)
 
-func TestGetUnusedLoadBalancers_LBError(t *testing.T) {
-	mockClient := new(awsinterfaces.MockELBClient)
-	s := &service{client: mockClient}
+			s := &service{client: mockClient, cwService: mockCW}
+			unused, idle, err := s.GetLoadBalancerWaste(context.Background())
 
-	mockClient.On("DescribeLoadBalancers", mock.Anything, mock.Anything, mock.Anything).Return(nil, errors.New("LB API error"))
+			if tt.wantErr {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+				assert.Len(t, unused, tt.wantUnused)
+				assert.Len(t, idle, tt.wantIdle)
 
-	_, err := s.GetUnusedLoadBalancers(context.Background())
-	assert.Error(t, err)
-	mockClient.AssertExpectations(t)
-}
-
-func TestGetUnusedLoadBalancers_TGError(t *testing.T) {
-	mockClient := new(awsinterfaces.MockELBClient)
-	s := &service{client: mockClient}
-
-	mockClient.On("DescribeLoadBalancers", mock.Anything, mock.Anything, mock.Anything).Return(&elb.DescribeLoadBalancersOutput{}, nil)
-	mockClient.On("DescribeTargetGroups", mock.Anything, mock.Anything, mock.Anything).Return(nil, errors.New("TG API error"))
-
-	_, err := s.GetUnusedLoadBalancers(context.Background())
-	assert.Error(t, err)
-	mockClient.AssertExpectations(t)
+				for i, name := range tt.wantIdleNames {
+					assert.Equal(t, name, idle[i].Name)
+				}
+			}
+		})
+	}
 }

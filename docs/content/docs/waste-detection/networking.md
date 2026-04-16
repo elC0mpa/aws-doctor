@@ -23,12 +23,17 @@ AWS charges for all public IPv4 addresses, including Elastic IPs. While an assoc
 
 ## Elastic Load Balancers (ELB)
 
-Identifies Application (ALB) and Network (NLB) Load Balancers that are **not associated with any target group**.
+**AWS Doctor** identifies Application (ALB) and Network (NLB) Load Balancers that are either unassociated or idle.
 
-### Why it's waste
-Load Balancers carry a fixed hourly cost regardless of traffic volume. An ELB without target groups is effectively an entry point to nowhere, yet it continues to bill at the full hourly rate plus LCU charges.
+### Unused Load Balancers
+Flags ELBs that are **not associated with any target group**.
+- **Reason**: An ELB without target groups is an entry point to nowhere, yet it continues to bill at the full hourly rate.
+- **Action**: Delete any Load Balancer that has no target group association.
 
-- **Action**: Delete any Load Balancer that has zero healthy targets or no target group association.
+### Idle Load Balancers
+Flags ELBs that have processed **zero requests or connections** over the last **7 days**.
+- **Reason**: Load Balancers carry a fixed hourly cost regardless of traffic volume (~$16-20/month base cost).
+- **Action**: Delete or consolidate services into shared LBs.
 
 ---
 

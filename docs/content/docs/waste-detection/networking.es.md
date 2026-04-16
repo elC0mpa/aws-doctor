@@ -23,12 +23,17 @@ AWS cobra por todas las direcciones IPv4 públicas, incluyendo las IPs Elástica
 
 ## Elastic Load Balancers (ELB)
 
-Identifica los Application (ALB) y Network (NLB) Load Balancers que **no están asociados con ningún grupo de destino (target group)**.
+**AWS Doctor** identifica los Application (ALB) y Network (NLB) Load Balancers que están sin asociar o inactivos.
 
-### Por qué es desperdicio
-Los Load Balancers tienen un costo fijo por hora independientemente del volumen de tráfico. Un ELB sin grupos de destino es efectivamente un punto de entrada a ninguna parte, pero sigue facturando a la tarifa por hora completa más los cargos por LCU.
+### Load Balancers sin Usar
+Marca los ELB que **no están asociados con ningún grupo de destino (target group)**.
+- **Razón**: Un ELB sin grupos de destino es un punto de entrada a ninguna parte, pero sigue facturando a la tarifa por hora completa.
+- **Acción**: Eliminar cualquier Load Balancer que no tenga una asociación de grupo de destino.
 
-- **Acción**: Eliminar cualquier Load Balancer que tenga cero objetivos saludables o no tenga una asociación de grupo de destino.
+### Load Balancers Inactivos
+Marca los ELB que han procesado **cero solicitudes o conexiones** durante los últimos **7 días**.
+- **Razón**: Los Load Balancers tienen un costo fijo por hora independientemente del volumen de tráfico (~$16-20/mes de costo base).
+- **Acción**: Eliminar o consolidar servicios en LBs compartidos.
 
 ---
 

@@ -181,6 +181,18 @@ func PresentRDSSnapshot(snap model.RDSSnapshotWasteInfo) ResourceRow {
 	}
 }
 
+// PresentIdleLoadBalancer returns a ResourceRow for an idle load balancer with zero connections.
+func PresentIdleLoadBalancer(lb model.ELBIdleInfo) ResourceRow {
+	return ResourceRow{
+		Category:      "Idle Load Balancer",
+		Identifier:    lb.ARN,
+		EstimatedCost: fmt.Sprintf("$%.2f", lb.EstimatedMonthlyCost),
+		Metric:        lb.Type,
+		Age:           NAValue,
+		Details:       fmt.Sprintf("0 connections over %d days", lb.DaysChecked),
+	}
+}
+
 // PresentRDSIdleInstance returns a ResourceRow for an idle RDS instance
 func PresentRDSIdleInstance(inst model.RDSIdleInstanceInfo) ResourceRow {
 	return ResourceRow{
@@ -202,5 +214,17 @@ func PresentIdleNATGateway(ng model.NATGatewayWasteInfo) ResourceRow {
 		Metric:        fmt.Sprintf("%.2f bytes transferred", ng.BytesOutToDestination),
 		Age:           fmt.Sprintf("%d", ng.DaysSinceCreate),
 		Details:       fmt.Sprintf("VPC: %s / Subnet: %s / State: %s", ng.VPCID, ng.SubnetID, ng.State),
+	}
+}
+
+// PresentLambdaOverProvisioned returns a ResourceRow for an over-provisioned Lambda function
+func PresentLambdaOverProvisioned(fn model.LambdaOverProvisionedInfo) ResourceRow {
+	return ResourceRow{
+		Category:      "Lambda (Over-Provisioned)",
+		Identifier:    fn.FunctionName,
+		EstimatedCost: NAValue,
+		Metric:        fmt.Sprintf("%.1f%% utilization", fn.MemoryUtilization),
+		Age:           NAValue,
+		Details:       fmt.Sprintf("Runtime: %s / Configured: %d MB / Used: %d MB / Recommended: %d MB", fn.Runtime, fn.ConfiguredMemoryMB, fn.MaxMemoryUsedMB, fn.RecommendedMemoryMB),
 	}
 }

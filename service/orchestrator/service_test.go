@@ -27,6 +27,7 @@ func TestOrchestrate_RouteToDefaultWorkflow(t *testing.T) {
 	mockOutput := new(services.MockOutputService)
 	mockUpdate := new(services.MockUpdateService)
 	mockReport := new(services.MockReportService)
+	mockLambda := new(services.MockLambdaService)
 
 	// Create service
 	mockRDS := new(services.MockRDSService)
@@ -38,6 +39,7 @@ func TestOrchestrate_RouteToDefaultWorkflow(t *testing.T) {
 		S3Service:             mockS3,
 		CloudWatchLogsService: mockCloudWatch,
 		RDSService:            mockRDS,
+		LambdaService:         mockLambda,
 		OutputService:         mockOutput,
 		UpdateService:         mockUpdate,
 		ReportService:         mockReport,
@@ -78,6 +80,7 @@ func TestOrchestrate_RouteToUpdateWorkflow(t *testing.T) {
 	mockOutput := new(services.MockOutputService)
 	mockUpdate := new(services.MockUpdateService)
 	mockReport := new(services.MockReportService)
+	mockLambda := new(services.MockLambdaService)
 
 	// Create service
 	mockRDS := new(services.MockRDSService)
@@ -89,6 +92,7 @@ func TestOrchestrate_RouteToUpdateWorkflow(t *testing.T) {
 		S3Service:             mockS3,
 		CloudWatchLogsService: mockCloudWatch,
 		RDSService:            mockRDS,
+		LambdaService:         mockLambda,
 		OutputService:         mockOutput,
 		UpdateService:         mockUpdate,
 		ReportService:         mockReport,
@@ -120,6 +124,7 @@ func TestOrchestrate_UpdateWorkflow_HomebrewInstall(t *testing.T) {
 	mockUpdate := new(services.MockUpdateService)
 	mockReport := new(services.MockReportService)
 	mockRDS := new(services.MockRDSService)
+	mockLambda := new(services.MockLambdaService)
 
 	config := Config{
 		STSService:            mockSTS,
@@ -129,6 +134,7 @@ func TestOrchestrate_UpdateWorkflow_HomebrewInstall(t *testing.T) {
 		S3Service:             mockS3,
 		CloudWatchLogsService: mockCloudWatch,
 		RDSService:            mockRDS,
+		LambdaService:         mockLambda,
 		OutputService:         mockOutput,
 		UpdateService:         mockUpdate,
 		ReportService:         mockReport,
@@ -173,6 +179,7 @@ func TestOrchestrate_RouteToVersionWorkflow(t *testing.T) {
 	mockOutput := new(services.MockOutputService)
 	mockUpdate := new(services.MockUpdateService)
 	mockReport := new(services.MockReportService)
+	mockLambda := new(services.MockLambdaService)
 
 	// Create service
 	mockRDS := new(services.MockRDSService)
@@ -185,6 +192,7 @@ func TestOrchestrate_RouteToVersionWorkflow(t *testing.T) {
 		S3Service:             mockS3,
 		CloudWatchLogsService: mockCloudWatch,
 		RDSService:            mockRDS,
+		LambdaService:         mockLambda,
 		OutputService:         mockOutput,
 		UpdateService:         mockUpdate,
 		ReportService:         mockReport,
@@ -216,6 +224,7 @@ func TestOrchestrate_RouteToTrendWorkflow(t *testing.T) {
 	mockOutput := new(services.MockOutputService)
 	mockUpdate := new(services.MockUpdateService)
 	mockReport := new(services.MockReportService)
+	mockLambda := new(services.MockLambdaService)
 
 	// Create service
 	mockRDS := new(services.MockRDSService)
@@ -227,6 +236,7 @@ func TestOrchestrate_RouteToTrendWorkflow(t *testing.T) {
 		S3Service:             mockS3,
 		CloudWatchLogsService: mockCloudWatch,
 		RDSService:            mockRDS,
+		LambdaService:         mockLambda,
 		OutputService:         mockOutput,
 		UpdateService:         mockUpdate,
 		ReportService:         mockReport,
@@ -264,6 +274,7 @@ func TestOrchestrate_RouteToWasteWorkflow(t *testing.T) {
 	mockOutput := new(services.MockOutputService)
 	mockUpdate := new(services.MockUpdateService)
 	mockReport := new(services.MockReportService)
+	mockLambda := new(services.MockLambdaService)
 
 	// Create service
 	mockRDS := new(services.MockRDSService)
@@ -277,6 +288,7 @@ func TestOrchestrate_RouteToWasteWorkflow(t *testing.T) {
 		CloudWatchLogsService: mockCloudWatch,
 		RDSService:            mockRDS,
 		VPCService:            mockVPC,
+		LambdaService:         mockLambda,
 		OutputService:         mockOutput,
 		UpdateService:         mockUpdate,
 		ReportService:         mockReport,
@@ -295,7 +307,8 @@ func TestOrchestrate_RouteToWasteWorkflow(t *testing.T) {
 	mockS3.On("GetS3Waste", mock.Anything).Return([]model.S3BucketWasteInfo{}, []model.S3MultipartUploadWasteInfo{}, nil)
 	mockCloudWatch.On("GetCloudWatchLogsWaste", mock.Anything).Return([]model.CloudWatchLogsWasteInfo{}, nil)
 	mockRDS.On("GetRDSWaste", mock.Anything).Return([]model.RDSInstanceWasteInfo{}, []model.RDSSnapshotWasteInfo{}, []model.RDSIdleInstanceInfo{}, nil)
-	mockELB.On("GetUnusedLoadBalancers", mock.Anything).Return([]elbtypes.LoadBalancer{}, nil)
+	mockELB.On("GetLoadBalancerWaste", mock.Anything).Return([]elbtypes.LoadBalancer{}, []model.ELBIdleInfo{}, nil)
+	mockLambda.On("GetOverProvisionedFunctions", mock.Anything, mock.Anything).Return([]model.LambdaOverProvisionedInfo{}, nil)
 	mockSTS.On("GetCallerIdentity", mock.Anything).Return(&sts.GetCallerIdentityOutput{
 		Account: aws.String("123456789012"),
 	}, nil)
@@ -326,6 +339,7 @@ func TestOrchestrate_WasteTakesPrecedenceOverTrend(t *testing.T) {
 	mockOutput := new(services.MockOutputService)
 	mockUpdate := new(services.MockUpdateService)
 	mockReport := new(services.MockReportService)
+	mockLambda := new(services.MockLambdaService)
 
 	// Create service
 	mockRDS := new(services.MockRDSService)
@@ -339,6 +353,7 @@ func TestOrchestrate_WasteTakesPrecedenceOverTrend(t *testing.T) {
 		CloudWatchLogsService: mockCloudWatch,
 		RDSService:            mockRDS,
 		VPCService:            mockVPC,
+		LambdaService:         mockLambda,
 		OutputService:         mockOutput,
 		UpdateService:         mockUpdate,
 		ReportService:         mockReport,
@@ -357,7 +372,8 @@ func TestOrchestrate_WasteTakesPrecedenceOverTrend(t *testing.T) {
 	mockS3.On("GetS3Waste", mock.Anything).Return([]model.S3BucketWasteInfo{}, []model.S3MultipartUploadWasteInfo{}, nil)
 	mockCloudWatch.On("GetCloudWatchLogsWaste", mock.Anything).Return([]model.CloudWatchLogsWasteInfo{}, nil)
 	mockRDS.On("GetRDSWaste", mock.Anything).Return([]model.RDSInstanceWasteInfo{}, []model.RDSSnapshotWasteInfo{}, []model.RDSIdleInstanceInfo{}, nil)
-	mockELB.On("GetUnusedLoadBalancers", mock.Anything).Return([]elbtypes.LoadBalancer{}, nil)
+	mockELB.On("GetLoadBalancerWaste", mock.Anything).Return([]elbtypes.LoadBalancer{}, []model.ELBIdleInfo{}, nil)
+	mockLambda.On("GetOverProvisionedFunctions", mock.Anything, mock.Anything).Return([]model.LambdaOverProvisionedInfo{}, nil)
 	mockSTS.On("GetCallerIdentity", mock.Anything).Return(&sts.GetCallerIdentityOutput{
 		Account: aws.String("123456789012"),
 	}, nil)
@@ -385,6 +401,7 @@ func TestOrchestrate_TrendWorkflow_Mapping(t *testing.T) {
 	mockOutput := new(services.MockOutputService)
 	mockUpdate := new(services.MockUpdateService)
 	mockReport := new(services.MockReportService)
+	mockLambda := new(services.MockLambdaService)
 
 	// Create service
 	mockRDS := new(services.MockRDSService)
@@ -396,6 +413,7 @@ func TestOrchestrate_TrendWorkflow_Mapping(t *testing.T) {
 		S3Service:             mockS3,
 		CloudWatchLogsService: mockCloudWatch,
 		RDSService:            mockRDS,
+		LambdaService:         mockLambda,
 		OutputService:         mockOutput,
 		UpdateService:         mockUpdate,
 		ReportService:         mockReport,
@@ -493,6 +511,7 @@ func TestDefaultWorkflow_CostServiceError(t *testing.T) {
 			mockOutput := new(services.MockOutputService)
 			mockUpdate := new(services.MockUpdateService)
 			mockReport := new(services.MockReportService)
+			mockLambda := new(services.MockLambdaService)
 
 			tt.setupMocks(mockCost, mockSTS)
 			mockOutput.On("StopSpinner").Return().Maybe()
@@ -508,6 +527,7 @@ func TestDefaultWorkflow_CostServiceError(t *testing.T) {
 				S3Service:             mockS3,
 				CloudWatchLogsService: mockCloudWatch,
 				RDSService:            mockRDS,
+				LambdaService:         mockLambda,
 				OutputService:         mockOutput,
 				UpdateService:         mockUpdate,
 				ReportService:         mockReport,
@@ -556,6 +576,7 @@ func TestTrendWorkflow_Error(t *testing.T) {
 			mockOutput := new(services.MockOutputService)
 			mockUpdate := new(services.MockUpdateService)
 			mockReport := new(services.MockReportService)
+			mockLambda := new(services.MockLambdaService)
 
 			tt.setupMocks(mockCost, mockSTS)
 			mockOutput.On("StopSpinner").Return().Maybe()
@@ -571,6 +592,7 @@ func TestTrendWorkflow_Error(t *testing.T) {
 				S3Service:             mockS3,
 				CloudWatchLogsService: mockCloudWatch,
 				RDSService:            mockRDS,
+				LambdaService:         mockLambda,
 				OutputService:         mockOutput,
 				UpdateService:         mockUpdate,
 				ReportService:         mockReport,
@@ -588,12 +610,12 @@ func TestTrendWorkflow_Error(t *testing.T) {
 func TestWasteWorkflow_Error(t *testing.T) {
 	tests := []struct {
 		name        string
-		setupMocks  func(*services.MockEC2Service, *services.MockELBService, *services.MockS3Service, *services.MockCloudWatchLogsService, *services.MockRDSService, *services.MockSTSService, *services.MockVPCService)
+		setupMocks  func(*services.MockEC2Service, *services.MockELBService, *services.MockS3Service, *services.MockCloudWatchLogsService, *services.MockRDSService, *services.MockSTSService, *services.MockVPCService, *services.MockLambdaService)
 		expectedErr string
 	}{
 		{
 			name: "GetUnusedElasticIpAddressesInfo_fails",
-			setupMocks: func(mockEC2 *services.MockEC2Service, mockELB *services.MockELBService, mockS3 *services.MockS3Service, mockCloudWatch *services.MockCloudWatchLogsService, mockRDS *services.MockRDSService, mockSTS *services.MockSTSService, mockVPC *services.MockVPCService) {
+			setupMocks: func(mockEC2 *services.MockEC2Service, mockELB *services.MockELBService, mockS3 *services.MockS3Service, mockCloudWatch *services.MockCloudWatchLogsService, mockRDS *services.MockRDSService, mockSTS *services.MockSTSService, mockVPC *services.MockVPCService, mockLambda *services.MockLambdaService) {
 				mockEC2.On("GetUnusedElasticIPAddressesInfo", mock.Anything).Return(([]types.Address)(nil), errors.New("EIP error"))
 				mockEC2.On("GetUnusedEBSVolumes", mock.Anything).Return([]types.Volume{}, nil)
 				mockEC2.On("GetStoppedInstancesInfo", mock.Anything).Return([]types.Instance{}, []types.Volume{}, nil)
@@ -605,8 +627,9 @@ func TestWasteWorkflow_Error(t *testing.T) {
 				mockS3.On("GetS3Waste", mock.Anything).Return([]model.S3BucketWasteInfo{}, []model.S3MultipartUploadWasteInfo{}, nil)
 				mockCloudWatch.On("GetCloudWatchLogsWaste", mock.Anything).Return([]model.CloudWatchLogsWasteInfo{}, nil)
 				mockRDS.On("GetRDSWaste", mock.Anything).Return([]model.RDSInstanceWasteInfo{}, []model.RDSSnapshotWasteInfo{}, []model.RDSIdleInstanceInfo{}, nil)
+				mockLambda.On("GetOverProvisionedFunctions", mock.Anything, mock.Anything).Return([]model.LambdaOverProvisionedInfo{}, nil)
 
-				mockELB.On("GetUnusedLoadBalancers", mock.Anything).Return([]elbtypes.LoadBalancer{}, nil)
+				mockELB.On("GetLoadBalancerWaste", mock.Anything).Return([]elbtypes.LoadBalancer{}, []model.ELBIdleInfo{}, nil)
 				mockSTS.On("GetCallerIdentity", mock.Anything).Return(&sts.GetCallerIdentityOutput{
 					Account: aws.String("123456789012"),
 				}, nil)
@@ -615,7 +638,7 @@ func TestWasteWorkflow_Error(t *testing.T) {
 		},
 		{
 			name: "GetUnusedEBSVolumes_fails",
-			setupMocks: func(mockEC2 *services.MockEC2Service, mockELB *services.MockELBService, mockS3 *services.MockS3Service, mockCloudWatch *services.MockCloudWatchLogsService, mockRDS *services.MockRDSService, mockSTS *services.MockSTSService, mockVPC *services.MockVPCService) {
+			setupMocks: func(mockEC2 *services.MockEC2Service, mockELB *services.MockELBService, mockS3 *services.MockS3Service, mockCloudWatch *services.MockCloudWatchLogsService, mockRDS *services.MockRDSService, mockSTS *services.MockSTSService, mockVPC *services.MockVPCService, mockLambda *services.MockLambdaService) {
 				mockEC2.On("GetUnusedElasticIPAddressesInfo", mock.Anything).Return([]types.Address{}, nil)
 				mockEC2.On("GetUnusedEBSVolumes", mock.Anything).Return(([]types.Volume)(nil), errors.New("EBS error"))
 				mockEC2.On("GetStoppedInstancesInfo", mock.Anything).Return([]types.Instance{}, []types.Volume{}, nil)
@@ -627,8 +650,9 @@ func TestWasteWorkflow_Error(t *testing.T) {
 				mockS3.On("GetS3Waste", mock.Anything).Return([]model.S3BucketWasteInfo{}, []model.S3MultipartUploadWasteInfo{}, nil)
 				mockCloudWatch.On("GetCloudWatchLogsWaste", mock.Anything).Return([]model.CloudWatchLogsWasteInfo{}, nil)
 				mockRDS.On("GetRDSWaste", mock.Anything).Return([]model.RDSInstanceWasteInfo{}, []model.RDSSnapshotWasteInfo{}, []model.RDSIdleInstanceInfo{}, nil)
+				mockLambda.On("GetOverProvisionedFunctions", mock.Anything, mock.Anything).Return([]model.LambdaOverProvisionedInfo{}, nil)
 
-				mockELB.On("GetUnusedLoadBalancers", mock.Anything).Return([]elbtypes.LoadBalancer{}, nil)
+				mockELB.On("GetLoadBalancerWaste", mock.Anything).Return([]elbtypes.LoadBalancer{}, []model.ELBIdleInfo{}, nil)
 				mockSTS.On("GetCallerIdentity", mock.Anything).Return(&sts.GetCallerIdentityOutput{
 					Account: aws.String("123456789012"),
 				}, nil)
@@ -636,8 +660,8 @@ func TestWasteWorkflow_Error(t *testing.T) {
 			expectedErr: "EBS error",
 		},
 		{
-			name: "GetUnusedLoadBalancers_fails",
-			setupMocks: func(mockEC2 *services.MockEC2Service, mockELB *services.MockELBService, mockS3 *services.MockS3Service, mockCloudWatch *services.MockCloudWatchLogsService, mockRDS *services.MockRDSService, mockSTS *services.MockSTSService, mockVPC *services.MockVPCService) {
+			name: "GetLoadBalancerWaste_fails",
+			setupMocks: func(mockEC2 *services.MockEC2Service, mockELB *services.MockELBService, mockS3 *services.MockS3Service, mockCloudWatch *services.MockCloudWatchLogsService, mockRDS *services.MockRDSService, mockSTS *services.MockSTSService, mockVPC *services.MockVPCService, mockLambda *services.MockLambdaService) {
 				mockEC2.On("GetUnusedElasticIPAddressesInfo", mock.Anything).Return([]types.Address{}, nil)
 				mockEC2.On("GetUnusedEBSVolumes", mock.Anything).Return([]types.Volume{}, nil)
 				mockEC2.On("GetStoppedInstancesInfo", mock.Anything).Return([]types.Instance{}, []types.Volume{}, nil)
@@ -649,8 +673,9 @@ func TestWasteWorkflow_Error(t *testing.T) {
 				mockS3.On("GetS3Waste", mock.Anything).Return([]model.S3BucketWasteInfo{}, []model.S3MultipartUploadWasteInfo{}, nil)
 				mockCloudWatch.On("GetCloudWatchLogsWaste", mock.Anything).Return([]model.CloudWatchLogsWasteInfo{}, nil)
 				mockRDS.On("GetRDSWaste", mock.Anything).Return([]model.RDSInstanceWasteInfo{}, []model.RDSSnapshotWasteInfo{}, []model.RDSIdleInstanceInfo{}, nil)
+				mockLambda.On("GetOverProvisionedFunctions", mock.Anything, mock.Anything).Return([]model.LambdaOverProvisionedInfo{}, nil)
 
-				mockELB.On("GetUnusedLoadBalancers", mock.Anything).Return(([]elbtypes.LoadBalancer)(nil), errors.New("ELB error"))
+				mockELB.On("GetLoadBalancerWaste", mock.Anything).Return(nil, nil, errors.New("ELB error"))
 				mockSTS.On("GetCallerIdentity", mock.Anything).Return(&sts.GetCallerIdentityOutput{
 					Account: aws.String("123456789012"),
 				}, nil)
@@ -672,8 +697,9 @@ func TestWasteWorkflow_Error(t *testing.T) {
 			mockRDS := new(services.MockRDSService)
 			mockReport := new(services.MockReportService)
 			mockVPC := new(services.MockVPCService)
+			mockLambda := new(services.MockLambdaService)
 
-			tt.setupMocks(mockEC2, mockELB, mockS3, mockCloudWatch, mockRDS, mockSTS, mockVPC)
+			tt.setupMocks(mockEC2, mockELB, mockS3, mockCloudWatch, mockRDS, mockSTS, mockVPC, mockLambda)
 			mockOutput.On("StopSpinner").Return().Maybe()
 			mockOutput.On("RenderWaste", mock.Anything).Return(nil).Maybe()
 			mockUpdate.On("CheckForUpdate", mock.Anything).Return(nil, nil).Maybe()
@@ -687,6 +713,7 @@ func TestWasteWorkflow_Error(t *testing.T) {
 				CloudWatchLogsService: mockCloudWatch,
 				RDSService:            mockRDS,
 				VPCService:            mockVPC,
+				LambdaService:         mockLambda,
 				OutputService:         mockOutput,
 				UpdateService:         mockUpdate,
 				ReportService:         mockReport,
@@ -713,6 +740,7 @@ func TestOrchestrate_RouteToReportWorkflow(t *testing.T) {
 	mockUpdate := new(services.MockUpdateService)
 	mockReport := new(services.MockReportService)
 	mockRDS := new(services.MockRDSService)
+	mockLambda := new(services.MockLambdaService)
 
 	// Create service
 	config := Config{
@@ -723,6 +751,7 @@ func TestOrchestrate_RouteToReportWorkflow(t *testing.T) {
 		S3Service:             mockS3,
 		CloudWatchLogsService: mockCloudWatch,
 		RDSService:            mockRDS,
+		LambdaService:         mockLambda,
 		OutputService:         mockOutput,
 		UpdateService:         mockUpdate,
 		ReportService:         mockReport,

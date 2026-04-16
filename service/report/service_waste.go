@@ -59,6 +59,10 @@ func (s *service) addWasteSections(m core.Maroto, input model.RenderWasteInput) 
 		hasWaste = true
 	}
 
+	if s.addLambdaWaste(m, input) {
+		hasWaste = true
+	}
+
 	return hasWaste
 }
 
@@ -138,7 +142,7 @@ func (s *service) addEC2Waste(m core.Maroto, input model.RenderWasteInput) bool 
 }
 
 func (s *service) addLBWaste(m core.Maroto, input model.RenderWasteInput) bool {
-	if len(input.LoadBalancers) == 0 {
+	if len(input.LoadBalancers) == 0 && len(input.IdleLoadBalancers) == 0 {
 		return false
 	}
 
@@ -147,6 +151,11 @@ func (s *service) addLBWaste(m core.Maroto, input model.RenderWasteInput) bool {
 	for _, lb := range input.LoadBalancers {
 		p := outputshared.PresentLoadBalancer(lb)
 		s.addWasteRow(m, []string{"Unused", aws.ToString(lb.LoadBalancerName), p.Metric, p.EstimatedCost})
+	}
+
+	for _, lb := range input.IdleLoadBalancers {
+		p := outputshared.PresentIdleLoadBalancer(lb)
+		s.addWasteRow(m, []string{"Idle", lb.Name, p.Metric, p.EstimatedCost})
 	}
 
 	m.AddRow(5, col.New(12))
@@ -281,6 +290,38 @@ func (s *service) addNATGatewayWaste(m core.Maroto, input model.RenderWasteInput
 	for _, ng := range input.IdleNATGateways {
 		p := outputshared.PresentIdleNATGateway(ng)
 		s.addWasteRow(m, []string{"Idle", p.Identifier, ng.VPCID, p.EstimatedCost})
+	}
+
+	m.AddRow(5, col.New(12))
+
+	return true
+}
+
+func (s *service) addLambdaWaste(m core.Maroto, input model.RenderWasteInput) bool {
+	if len(input.OverProvisionedLambdas) == 0 {
+		return false
+	}
+
+	m.AddRow(10,
+		text.NewCol(12, "Lambda Over-Provisioned Memory", props.Text{Style: fontstyle.Bold, Size: 11}),
+	)
+
+	m.AddRow(10,
+		text.NewCol(5, "Function", props.Text{Style: fontstyle.Bold, Size: 9}),
+		text.NewCol(3, "Used/Configured", props.Text{Style: fontstyle.Bold, Size: 9}),
+		text.NewCol(2, "Utilization", props.Text{Style: fontstyle.Bold, Size: 9, Align: align.Right}),
+		text.NewCol(2, "Recommended", props.Text{Style: fontstyle.Bold, Size: 9, Align: align.Right}),
+	)
+
+	m.AddRow(2, line.NewCol(12))
+
+	for _, fn := range input.OverProvisionedLambdas {
+		m.AddRow(8,
+			text.NewCol(5, fn.FunctionName, props.Text{Size: 7}),
+			text.NewCol(3, fmt.Sprintf("%d / %d MB", fn.MaxMemoryUsedMB, fn.ConfiguredMemoryMB), props.Text{Size: 8}),
+			text.NewCol(2, fmt.Sprintf("%.1f%%", fn.MemoryUtilization), props.Text{Size: 8, Align: align.Right}),
+			text.NewCol(2, fmt.Sprintf("%d MB", fn.RecommendedMemoryMB), props.Text{Size: 8, Align: align.Right}),
+		)
 	}
 
 	m.AddRow(5, col.New(12))

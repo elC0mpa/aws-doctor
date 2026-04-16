@@ -22,6 +22,13 @@ func Compute(input model.RenderWasteInput) ([]model.CategorySummary, float64) {
 }
 
 func costCategories(input model.RenderWasteInput) []model.CategorySummary {
+	categories := computeAndStorageCategories(input)
+	categories = append(categories, networkingCategories(input)...)
+
+	return categories
+}
+
+func computeAndStorageCategories(input model.RenderWasteInput) []model.CategorySummary {
 	var categories []model.CategorySummary
 
 	if n := len(input.ElasticIPs); n > 0 {
@@ -34,10 +41,6 @@ func costCategories(input model.RenderWasteInput) []model.CategorySummary {
 
 	if n := len(input.StoppedVolumes); n > 0 {
 		categories = append(categories, model.CategorySummary{Name: "EBS Volumes (Stopped Inst.)", Count: n, Cost: ebsVolumeCost(input.StoppedVolumes)})
-	}
-
-	if n := len(input.LoadBalancers); n > 0 {
-		categories = append(categories, model.CategorySummary{Name: "Load Balancers", Count: n, Cost: lbCost(input.LoadBalancers)})
 	}
 
 	if n := len(input.CloudWatchLogGroups); n > 0 {
@@ -94,6 +97,25 @@ func costCategories(input model.RenderWasteInput) []model.CategorySummary {
 		categories = append(categories, model.CategorySummary{Name: "RDS Snapshots", Count: n, Cost: cost})
 	}
 
+	return categories
+}
+
+func networkingCategories(input model.RenderWasteInput) []model.CategorySummary {
+	var categories []model.CategorySummary
+
+	if n := len(input.LoadBalancers); n > 0 {
+		categories = append(categories, model.CategorySummary{Name: "Load Balancers", Count: n, Cost: lbCost(input.LoadBalancers)})
+	}
+
+	if n := len(input.IdleLoadBalancers); n > 0 {
+		var cost float64
+		for _, lb := range input.IdleLoadBalancers {
+			cost += lb.EstimatedMonthlyCost
+		}
+
+		categories = append(categories, model.CategorySummary{Name: "Load Balancers (Idle)", Count: n, Cost: cost})
+	}
+
 	if n := len(input.IdleNATGateways); n > 0 {
 		var cost float64
 		for _, ng := range input.IdleNATGateways {
@@ -127,6 +149,10 @@ func countOnlyCategories(input model.RenderWasteInput) []model.CategorySummary {
 
 	if n := len(input.UnusedKeyPairs); n > 0 {
 		categories = append(categories, model.CategorySummary{Name: "Unused Key Pairs", Count: n})
+	}
+
+	if n := len(input.OverProvisionedLambdas); n > 0 {
+		categories = append(categories, model.CategorySummary{Name: "Lambda (Over-Provisioned)", Count: n})
 	}
 
 	return categories

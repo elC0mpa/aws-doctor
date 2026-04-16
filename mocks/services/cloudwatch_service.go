@@ -2,6 +2,7 @@ package services
 
 import (
 	"context"
+	"time"
 
 	"github.com/elC0mpa/aws-doctor/model"
 	"github.com/stretchr/testify/mock"
@@ -21,4 +22,11 @@ func (m *MockCloudWatchLogsService) GetCloudWatchLogsWaste(ctx context.Context) 
 	}
 
 	return args.Get(0).([]model.CloudWatchLogsWasteInfo), args.Error(1)
+}
+
+// GetLambdaMaxMemoryUsed mocks the GetLambdaMaxMemoryUsed method.
+func (m *MockCloudWatchLogsService) GetLambdaMaxMemoryUsed(ctx context.Context, logGroupName string, startTime, endTime time.Time) (int32, error) {
+	args := m.Called(ctx, logGroupName, startTime, endTime)
+
+	return args.Get(0).(int32), args.Error(1)
 }

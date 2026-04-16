@@ -79,23 +79,25 @@ func OutputTrendJSON(accountID string, costInfo []model.CostInfo, services []str
 // OutputWasteJSON outputs waste detection data as JSON
 func OutputWasteJSON(input model.RenderWasteInput) error {
 	output := model.WasteReportJSON{
-		AccountID:           input.AccountID,
-		GeneratedAt:         time.Now().UTC().Format(time.RFC3339),
-		UnusedElasticIPs:    mapElasticIPs(input.ElasticIPs),
-		UnusedEBSVolumes:    mapEBSVolumes(input.UnusedVolumes, "available"),
-		StoppedVolumes:      mapEBSVolumes(input.StoppedVolumes, "attached_to_stopped"),
-		StoppedInstances:    mapStoppedInstances(input.StoppedInstances),
-		ReservedInstances:   mapReservedInstances(input.Ris),
-		UnusedLoadBalancers: mapLoadBalancers(input.LoadBalancers),
-		UnusedAMIs:          mapAMIs(input.UnusedAMIs),
-		UnusedKeyPairs:      mapKeyPairs(input.UnusedKeyPairs),
-		S3Buckets:           mapS3Buckets(input.S3Buckets),
-		S3MultipartUploads:  mapS3MultipartUploads(input.S3MultipartUploads),
-		CloudWatchLogGroups: mapCloudWatchLogGroups(input.CloudWatchLogGroups),
-		StoppedRDSInstances: mapRDSInstances(input.RDSInstances),
-		OldRDSSnapshots:     mapRDSSnapshots(input.RDSSnapshots),
-		IdleRDSInstances:    mapRDSIdleInstances(input.RDSIdleInstances),
-		IdleNATGateways:     mapNATGateways(input.IdleNATGateways),
+		AccountID:              input.AccountID,
+		GeneratedAt:            time.Now().UTC().Format(time.RFC3339),
+		UnusedElasticIPs:       mapElasticIPs(input.ElasticIPs),
+		UnusedEBSVolumes:       mapEBSVolumes(input.UnusedVolumes, "available"),
+		StoppedVolumes:         mapEBSVolumes(input.StoppedVolumes, "attached_to_stopped"),
+		StoppedInstances:       mapStoppedInstances(input.StoppedInstances),
+		ReservedInstances:      mapReservedInstances(input.Ris),
+		UnusedLoadBalancers:    mapLoadBalancers(input.LoadBalancers),
+		UnusedAMIs:             mapAMIs(input.UnusedAMIs),
+		UnusedKeyPairs:         mapKeyPairs(input.UnusedKeyPairs),
+		S3Buckets:              mapS3Buckets(input.S3Buckets),
+		S3MultipartUploads:     mapS3MultipartUploads(input.S3MultipartUploads),
+		CloudWatchLogGroups:    mapCloudWatchLogGroups(input.CloudWatchLogGroups),
+		StoppedRDSInstances:    mapRDSInstances(input.RDSInstances),
+		OldRDSSnapshots:        mapRDSSnapshots(input.RDSSnapshots),
+		IdleRDSInstances:       mapRDSIdleInstances(input.RDSIdleInstances),
+		IdleNATGateways:        mapNATGateways(input.IdleNATGateways),
+		IdleLoadBalancers:      mapIdleLoadBalancers(input.IdleLoadBalancers),
+		OverProvisionedLambdas: mapLambdaOverProvisioned(input.OverProvisionedLambdas),
 	}
 
 	output.OrphanedSnapshots, output.StaleSnapshots = mapSnapshots(input.OrphanedSnapshots)
@@ -116,7 +118,9 @@ func OutputWasteJSON(input model.RenderWasteInput) error {
 		len(output.StoppedRDSInstances) > 0 ||
 		len(output.OldRDSSnapshots) > 0 ||
 		len(output.IdleRDSInstances) > 0 ||
-		len(output.IdleNATGateways) > 0
+		len(output.IdleNATGateways) > 0 ||
+		len(output.IdleLoadBalancers) > 0 ||
+		len(output.OverProvisionedLambdas) > 0
 
 	categories, total := wastesummary.Compute(input)
 	output.TotalEstimatedMonthlyCost = total
@@ -349,6 +353,16 @@ func mapRDSSnapshots(snapshots []model.RDSSnapshotWasteInfo) []model.RDSSnapshot
 	return result
 }
 
+func mapIdleLoadBalancers(idleLBs []model.ELBIdleInfo) []model.ELBIdleJSON {
+	var result []model.ELBIdleJSON
+
+	for _, lb := range idleLBs {
+		result = append(result, model.ELBIdleJSON(lb))
+	}
+
+	return result
+}
+
 func mapRDSIdleInstances(instances []model.RDSIdleInstanceInfo) []model.RDSIdleInstanceJSON {
 	var result []model.RDSIdleInstanceJSON
 
@@ -364,6 +378,16 @@ func mapNATGateways(natGateways []model.NATGatewayWasteInfo) []model.NATGatewayJ
 
 	for _, ng := range natGateways {
 		result = append(result, model.NATGatewayJSON(ng))
+	}
+
+	return result
+}
+
+func mapLambdaOverProvisioned(lambdas []model.LambdaOverProvisionedInfo) []model.LambdaOverProvisionedJSON {
+	var result []model.LambdaOverProvisionedJSON
+
+	for _, fn := range lambdas {
+		result = append(result, model.LambdaOverProvisionedJSON(fn))
 	}
 
 	return result
