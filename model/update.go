@@ -17,3 +17,9 @@ var ErrHomebrewInstall = errors.New("installed via Homebrew")
 
 // ErrGoInstall is returned when the binary was installed via go install.
 var ErrGoInstall = errors.New("installed via go install")
+
+// VersionCheckResult holds the outcome of a background version check.
+type VersionCheckResult struct {
+	LatestVersion *string
+	Err           error
+}

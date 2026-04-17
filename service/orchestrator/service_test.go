@@ -870,26 +870,32 @@ func TestOrchestrate_DefaultWorkflow_VersionCheckError_SilentlyIgnored(t *testin
 	m.output.AssertNotCalled(t, "PrintNewVersionAvailable", mock.Anything, mock.Anything)
 }
 
-func TestOrchestrate_DefaultWorkflow_JSONFormat_SkipsVersionCheck(t *testing.T) {
+func TestOrchestrate_DefaultWorkflow_JSONFormat_RunsVersionCheck(t *testing.T) {
 	versionInfo := model.VersionInfo{Version: "v1.2.0", Commit: "abc", Date: "today"}
 	svc, m := newTestServiceWithMocks(versionInfo)
 	m.setupDefaultWorkflow()
+
+	latestVersion := testLatestVersion
+	m.update.On("CheckForUpdate", mock.Anything).Return(&latestVersion, nil)
+	m.output.On("PrintNewVersionAvailable", "v1.2.0", testLatestVersion).Return()
 
 	err := svc.Orchestrate(model.Flags{Output: "json"})
 	assert.NoError(t, err)
-	m.update.AssertNotCalled(t, "CheckForUpdate", mock.Anything)
-	m.output.AssertNotCalled(t, "PrintNewVersionAvailable", mock.Anything, mock.Anything)
+	m.update.AssertCalled(t, "CheckForUpdate", mock.Anything)
 }
 
-func TestOrchestrate_DefaultWorkflow_CSVFormat_SkipsVersionCheck(t *testing.T) {
+func TestOrchestrate_DefaultWorkflow_CSVFormat_RunsVersionCheck(t *testing.T) {
 	versionInfo := model.VersionInfo{Version: "v1.2.0", Commit: "abc", Date: "today"}
 	svc, m := newTestServiceWithMocks(versionInfo)
 	m.setupDefaultWorkflow()
 
+	latestVersion := testLatestVersion
+	m.update.On("CheckForUpdate", mock.Anything).Return(&latestVersion, nil)
+	m.output.On("PrintNewVersionAvailable", "v1.2.0", testLatestVersion).Return()
+
 	err := svc.Orchestrate(model.Flags{Output: "csv"})
 	assert.NoError(t, err)
-	m.update.AssertNotCalled(t, "CheckForUpdate", mock.Anything)
-	m.output.AssertNotCalled(t, "PrintNewVersionAvailable", mock.Anything, mock.Anything)
+	m.update.AssertCalled(t, "CheckForUpdate", mock.Anything)
 }
 
 func TestOrchestrate_UpdateWorkflow_NoVersionCheck(t *testing.T) {

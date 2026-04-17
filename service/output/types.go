@@ -104,9 +104,10 @@ func (r *realRenderer) PrintHomebrewUpdate() {
 
 func (r *realRenderer) PrintGoInstallUpdate() {
 	fmt.Println()
-	fmt.Println(text.FgHiWhite.Sprint("ℹ️ aws-doctor was installed via go install. To update, run:"))
+	fmt.Println(text.FgHiWhite.Sprint("ℹ️ aws-doctor was installed via go install and reports version \"dev\", so updates cannot be tracked."))
+	fmt.Println(text.FgHiWhite.Sprint("   To receive proper update notifications, remove the binary from your GOPATH/bin and reinstall with the script:"))
 	fmt.Println()
-	fmt.Println(text.FgHiWhite.Sprint("  go install github.com/elC0mpa/aws-doctor@latest"))
+	fmt.Println(text.FgHiWhite.Sprint("  curl -sSL https://raw.githubusercontent.com/elC0mpa/aws-doctor/main/install.sh | sh"))
 	fmt.Println()
 }
 
