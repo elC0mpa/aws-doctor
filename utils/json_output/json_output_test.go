@@ -785,9 +785,16 @@ func TestOutputWasteJSON_SpecialCharactersInNames(t *testing.T) {
 		t.Fatalf("Output is not valid JSON: %v\nOutput was: %s", jsonErr, output)
 	}
 
-	// Verify all 4 buckets were captured
+	// Verify all 4 buckets were captured and names are correctly preserved
 	if len(result.S3Buckets) != 4 {
 		t.Errorf("S3Buckets has %d items, want 4", len(result.S3Buckets))
+	} else {
+		expected := []string{"test<bucket>", "test>bucket", "test&bucket", `test"bucket"`}
+		for i, name := range expected {
+			if result.S3Buckets[i].BucketName != name {
+				t.Errorf("S3Buckets[%d].BucketName = %q, want %q", i, result.S3Buckets[i].BucketName, name)
+			}
+		}
 	}
 }
 

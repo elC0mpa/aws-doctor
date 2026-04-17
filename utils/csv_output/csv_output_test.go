@@ -2,6 +2,7 @@ package csvoutput
 
 import (
 	"bytes"
+	"fmt"
 	"io"
 	"os"
 	"strings"
@@ -189,29 +190,25 @@ func TestMapTotalRow(t *testing.T) {
 		name         string
 		lastTotal    string
 		currentTotal string
-		wantLen      int
-		wantContains []string
+		want         []string // ordered
 	}{
 		{
 			name:         "positive_difference",
 			lastTotal:    "100 USD",
 			currentTotal: "120 USD",
-			wantLen:      4,
-			wantContains: []string{"Total Costs", "100.00 USD", "120.00 USD", "20.00 USD"},
+			want:         []string{"Total Costs", "100.00 USD", "120.00 USD", "20.00 USD"},
 		},
 		{
 			name:         "negative_difference",
 			lastTotal:    "150 USD",
 			currentTotal: "100 USD",
-			wantLen:      4,
-			wantContains: []string{"Total Costs", "150.00 USD", "100.00 USD", "-50.00 USD"},
+			want:         []string{"Total Costs", "150.00 USD", "100.00 USD", "-50.00 USD"},
 		},
 		{
 			name:         "no_difference",
 			lastTotal:    "100 USD",
 			currentTotal: "100 USD",
-			wantLen:      4,
-			wantContains: []string{"Total Costs", "100.00 USD", "100.00 USD", "0.00 USD"},
+			want:         []string{"Total Costs", "100.00 USD", "100.00 USD", "0.00 USD"},
 		},
 	}
 
@@ -219,23 +216,13 @@ func TestMapTotalRow(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			got := mapTotalRow(tt.lastTotal, tt.currentTotal)
 
-			if len(got) != tt.wantLen {
-				t.Errorf("mapTotalRow() returned %d elements, want %d", len(got), tt.wantLen)
+			if len(got) != len(tt.want) {
+				t.Fatalf("mapTotalRow() returned %d elements, want %d", len(got), len(tt.want))
 			}
 
-			for _, want := range tt.wantContains {
-				found := false
-
-				for _, s := range got {
-					if s == want {
-						found = true
-
-						break
-					}
-				}
-
-				if !found {
-					t.Errorf("mapTotalRow() = %v, want contains %s", got, want)
+			for i := range got {
+				if got[i] != tt.want[i] {
+					t.Errorf("mapTotalRow()[%d] = %q, want %q", i, got[i], tt.want[i])
 				}
 			}
 		})
@@ -282,6 +269,18 @@ func TestMapS3Buckets(t *testing.T) {
 			got := mapS3Buckets(tt.buckets)
 			if len(got) != tt.wantLen {
 				t.Errorf("mapS3Buckets() returned %d elements, want %d", len(got), tt.wantLen)
+			}
+
+			// Verify bucket name and reason are correctly mapped
+			// got[i][1] = Identifier (BucketName), got[i][0] = Category (contains Reason)
+			for i, bucket := range tt.buckets {
+				if got[i][1] != bucket.BucketName {
+					t.Errorf("mapS3Buckets()[%d][1] = %q, want %q", i, got[i][1], bucket.BucketName)
+				}
+
+				if got[i][0] != fmt.Sprintf("S3 Bucket (%s)", bucket.Reason) {
+					t.Errorf("mapS3Buckets()[%d][0] = %q, want %q", i, got[i][0], fmt.Sprintf("S3 Bucket (%s)", bucket.Reason))
+				}
 			}
 		})
 	}

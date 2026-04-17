@@ -656,13 +656,8 @@ func TestServiceNameMap(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.shortcut, func(t *testing.T) {
 			got, ok := ServiceNameMap[tt.shortcut]
-			if !ok {
-				t.Errorf("ServiceNameMap[%q] not found", tt.shortcut)
-			}
-
-			if got != tt.expected {
-				t.Errorf("ServiceNameMap[%q] = %q, want %q", tt.shortcut, got, tt.expected)
-			}
+			assert.True(t, ok, "ServiceNameMap[%q] not found", tt.shortcut)
+			assert.Equal(t, tt.expected, got, "ServiceNameMap[%q] mismatch", tt.shortcut)
 		})
 	}
 }
