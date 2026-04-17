@@ -638,3 +638,51 @@ func TestWrappers(t *testing.T) {
 	_, err = s.GetLastMonthTotalCosts(context.Background())
 	assert.NoError(t, err)
 }
+
+// TestServiceNameMap tests that the ServiceNameMap contains expected shortcuts
+func TestServiceNameMap(t *testing.T) {
+	tests := []struct {
+		shortcut string
+		expected string
+	}{
+		{"ec2", "Amazon Elastic Compute Cloud - Compute"},
+		{"s3", "Amazon Simple Storage Service"},
+		{"rds", "Amazon Relational Database Service"},
+		{"lambda", "AWS Lambda"},
+		{"elb", "Amazon Elastic Load Balancing"},
+		{"cloudwatch", "Amazon CloudWatch"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.shortcut, func(t *testing.T) {
+			got, ok := ServiceNameMap[tt.shortcut]
+			if !ok {
+				t.Errorf("ServiceNameMap[%q] not found", tt.shortcut)
+			}
+			if got != tt.expected {
+				t.Errorf("ServiceNameMap[%q] = %q, want %q", tt.shortcut, got, tt.expected)
+			}
+		})
+	}
+}
+
+// TestServiceNameMap_UnknownShortcut tests that unknown shortcuts return false
+func TestServiceNameMap_UnknownShortcut(t *testing.T) {
+	tests := []struct {
+		shortcut string
+	}{
+		{"foo"},
+		{"unknown"},
+		{"invalid"},
+		{""},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.shortcut, func(t *testing.T) {
+			_, ok := ServiceNameMap[tt.shortcut]
+			if ok {
+				t.Errorf("ServiceNameMap[%q] should not exist", tt.shortcut)
+			}
+		})
+	}
+}
