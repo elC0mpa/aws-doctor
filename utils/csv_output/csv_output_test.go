@@ -186,31 +186,31 @@ func TestOutputWasteCSV(t *testing.T) {
 // TestMapTotalRow tests the mapTotalRow function for CSV output
 func TestMapTotalRow(t *testing.T) {
 	tests := []struct {
-		name        string
-		lastTotal   string
+		name         string
+		lastTotal    string
 		currentTotal string
-		wantLen     int
+		wantLen      int
 		wantContains []string
 	}{
 		{
-			name:        "positive_difference",
-			lastTotal:   "100 USD",
+			name:         "positive_difference",
+			lastTotal:    "100 USD",
 			currentTotal: "120 USD",
-			wantLen:     4,
+			wantLen:      4,
 			wantContains: []string{"Total Costs", "100.00 USD", "120.00 USD", "20.00 USD"},
 		},
 		{
-			name:        "negative_difference",
-			lastTotal:   "150 USD",
+			name:         "negative_difference",
+			lastTotal:    "150 USD",
 			currentTotal: "100 USD",
-			wantLen:     4,
+			wantLen:      4,
 			wantContains: []string{"Total Costs", "150.00 USD", "100.00 USD", "-50.00 USD"},
 		},
 		{
-			name:        "no_difference",
-			lastTotal:   "100 USD",
+			name:         "no_difference",
+			lastTotal:    "100 USD",
 			currentTotal: "100 USD",
-			wantLen:     4,
+			wantLen:      4,
 			wantContains: []string{"Total Costs", "100.00 USD", "100.00 USD", "0.00 USD"},
 		},
 	}
@@ -225,12 +225,15 @@ func TestMapTotalRow(t *testing.T) {
 
 			for _, want := range tt.wantContains {
 				found := false
+
 				for _, s := range got {
 					if s == want {
 						found = true
+
 						break
 					}
 				}
+
 				if !found {
 					t.Errorf("mapTotalRow() = %v, want contains %s", got, want)
 				}
@@ -367,7 +370,7 @@ func TestMapTrendRows(t *testing.T) {
 				{CostGroup: model.CostGroup{"Total": {Amount: 150.0, Unit: "USD"}}},
 			},
 			services: []string{},
-			wantLen: 6,
+			wantLen:  6,
 		},
 		{
 			name: "with_services_column",

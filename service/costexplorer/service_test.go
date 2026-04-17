@@ -659,6 +659,7 @@ func TestServiceNameMap(t *testing.T) {
 			if !ok {
 				t.Errorf("ServiceNameMap[%q] not found", tt.shortcut)
 			}
+
 			if got != tt.expected {
 				t.Errorf("ServiceNameMap[%q] = %q, want %q", tt.shortcut, got, tt.expected)
 			}

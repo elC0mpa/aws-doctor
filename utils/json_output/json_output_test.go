@@ -673,6 +673,7 @@ func TestOutputWasteJSON_NilElasticIPs(t *testing.T) {
 	}
 
 	var err error
+
 	output := captureStdout(func() {
 		err = OutputWasteJSON(input)
 	})
@@ -700,6 +701,7 @@ func TestOutputWasteJSON_EmptyElasticIPs(t *testing.T) {
 	}
 
 	var err error
+
 	output := captureStdout(func() {
 		err = OutputWasteJSON(input)
 	})
@@ -735,6 +737,7 @@ func TestOutputWasteJSON_LargeCollection(t *testing.T) {
 	}
 
 	var err error
+
 	output := captureStdout(func() {
 		err = OutputWasteJSON(input)
 	})
@@ -767,6 +770,7 @@ func TestOutputWasteJSON_SpecialCharactersInNames(t *testing.T) {
 	}
 
 	var err error
+
 	output := captureStdout(func() {
 		err = OutputWasteJSON(input)
 	})
@@ -794,6 +798,7 @@ func TestOutputWasteJSON_AllNilFields(t *testing.T) {
 	}
 
 	var err error
+
 	output := captureStdout(func() {
 		err = OutputWasteJSON(input)
 	})
