@@ -207,6 +207,12 @@ func TestUpdatePrintMethods(t *testing.T) {
 		mr.AssertExpectations(t)
 	})
 
+	t.Run("PrintGoInstallUpdate", func(t *testing.T) {
+		mr.On("PrintGoInstallUpdate").Return()
+		s.PrintGoInstallUpdate()
+		mr.AssertExpectations(t)
+	})
+
 	t.Run("PrintRateLimitError", func(t *testing.T) {
 		mr.On("PrintRateLimitError").Return()
 		s.PrintRateLimitError()
@@ -224,6 +230,12 @@ func TestUpdatePrintMethods(t *testing.T) {
 		v := model.VersionInfo{Version: "v1"}
 		mr.On("RenderVersion", v).Return()
 		s.RenderVersion(v)
+		mr.AssertExpectations(t)
+	})
+
+	t.Run("PrintNewVersionAvailable", func(t *testing.T) {
+		mr.On("PrintNewVersionAvailable", "v1.2.0", "v1.3.0").Return()
+		s.PrintNewVersionAvailable("v1.2.0", "v1.3.0")
 		mr.AssertExpectations(t)
 	})
 }

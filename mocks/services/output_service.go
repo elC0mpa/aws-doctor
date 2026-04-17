@@ -48,6 +48,11 @@ func (m *MockOutputService) PrintHomebrewUpdate() {
 	m.Called()
 }
 
+// PrintGoInstallUpdate mocks the PrintGoInstallUpdate method.
+func (m *MockOutputService) PrintGoInstallUpdate() {
+	m.Called()
+}
+
 // PrintRateLimitError mocks the PrintRateLimitError method.
 func (m *MockOutputService) PrintRateLimitError() {
 	m.Called()
@@ -66,4 +71,9 @@ func (m *MockOutputService) RenderVersion(versionInfo model.VersionInfo) {
 // PrintFirstDayOfMonthError mocks the PrintFirstDayOfMonthError method.
 func (m *MockOutputService) PrintFirstDayOfMonthError() {
 	m.Called()
+}
+
+// PrintNewVersionAvailable mocks the PrintNewVersionAvailable method.
+func (m *MockOutputService) PrintNewVersionAvailable(currentVersion, latestVersion string) {
+	m.Called(currentVersion, latestVersion)
 }

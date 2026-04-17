@@ -2,6 +2,7 @@ package output
 
 import (
 	"fmt"
+	"os"
 
 	"github.com/elC0mpa/aws-doctor/model"
 	"github.com/elC0mpa/aws-doctor/utils/barchart"
@@ -37,11 +38,13 @@ type Renderer interface {
 	StopSpinner()
 	PrintAlreadyLatest(version string)
 	PrintHomebrewUpdate()
+	PrintGoInstallUpdate()
 	PrintRateLimitError()
 	PrintUpdateError(err error)
 	RenderVersion(versionInfo model.VersionInfo)
 	PrintReportSuccess(path string)
 	PrintFirstDayOfMonthError()
+	PrintNewVersionAvailable(currentVersion, latestVersion string)
 }
 
 type realRenderer struct{}
@@ -99,6 +102,15 @@ func (r *realRenderer) PrintHomebrewUpdate() {
 	fmt.Println()
 }
 
+func (r *realRenderer) PrintGoInstallUpdate() {
+	fmt.Println()
+	fmt.Println(text.FgHiWhite.Sprint("ℹ️ aws-doctor was installed via go install and reports version \"dev\", so updates cannot be tracked."))
+	fmt.Println(text.FgHiWhite.Sprint("   To receive proper update notifications, remove the binary from your GOPATH/bin and reinstall with the script:"))
+	fmt.Println()
+	fmt.Println(text.FgHiWhite.Sprint("  curl -sSL https://raw.githubusercontent.com/elC0mpa/aws-doctor/main/install.sh | sh"))
+	fmt.Println()
+}
+
 func (r *realRenderer) PrintRateLimitError() {
 	fmt.Println()
 	fmt.Println(text.FgRed.Sprint("❌ Error: could not check GitHub release because of rate limits"))
@@ -124,6 +136,14 @@ func (r *realRenderer) PrintReportSuccess(path string) {
 func (r *realRenderer) PrintFirstDayOfMonthError() {
 	fmt.Println()
 	fmt.Println(text.FgRed.Sprint("Cost data is not available on the first day of the month. Please try again tomorrow."))
+}
+
+func (r *realRenderer) PrintNewVersionAvailable(currentVersion, latestVersion string) {
+	fmt.Fprintln(os.Stderr)
+	fmt.Fprintln(os.Stderr, text.FgHiYellow.Sprintf(
+		"A new version of aws-doctor is available: %s → %s. Run 'aws-doctor update' to upgrade.",
+		currentVersion, latestVersion,
+	))
 }
 
 // service is the internal implementation
@@ -155,6 +175,9 @@ type Service interface {
 	// PrintHomebrewUpdate outputs a message when the binary was installed via Homebrew
 	PrintHomebrewUpdate()
 
+	// PrintGoInstallUpdate outputs a message when the binary was installed via go install
+	PrintGoInstallUpdate()
+
 	// PrintRateLimitError outputs a message when GitHub API rate limit is reached
 	PrintRateLimitError()
 
@@ -166,4 +189,7 @@ type Service interface {
 
 	// PrintFirstDayOfMonthError outputs a message when cost data is not available
 	PrintFirstDayOfMonthError()
+
+	// PrintNewVersionAvailable outputs a notification when a newer version exists
+	PrintNewVersionAvailable(currentVersion, latestVersion string)
 }

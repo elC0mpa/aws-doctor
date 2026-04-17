@@ -5,6 +5,7 @@ import (
 	"context"
 	"errors"
 	"strings"
+	"time"
 
 	"github.com/aws/aws-sdk-go-v2/service/ec2/types"
 	elbtypes "github.com/aws/aws-sdk-go-v2/service/elasticloadbalancingv2/types"
@@ -44,15 +45,38 @@ func (s *service) Orchestrate(flags model.Flags) error {
 		return s.versionWorkflow()
 	}
 
-	if flags.Waste {
-		return s.wasteWorkflow(flags.WasteChecks, flags.Report, flags.ReportPath, flags.LambdaMemoryThreshold)
+	// TODO: cache the version check result locally to avoid hitting the GitHub API on every run.
+	// The notification prints to stderr, so running the check for every output format is safe for piping.
+	versionCh := make(chan model.VersionCheckResult, 1)
+
+	go func() {
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+
+		latest, err := s.updateService.CheckForUpdate(ctx)
+		versionCh <- model.VersionCheckResult{LatestVersion: latest, Err: err}
+	}()
+
+	var workflowErr error
+
+	switch {
+	case flags.Waste:
+		workflowErr = s.wasteWorkflow(flags.WasteChecks, flags.Report, flags.ReportPath, flags.LambdaMemoryThreshold)
+	case flags.Trend:
+		workflowErr = s.trendWorkflow(flags.TrendChecks, flags.Report, flags.ReportPath)
+	default:
+		workflowErr = s.defaultWorkflow(flags.Report, flags.ReportPath)
 	}
 
-	if flags.Trend {
-		return s.trendWorkflow(flags.TrendChecks, flags.Report, flags.ReportPath)
+	select {
+	case result := <-versionCh:
+		if result.Err == nil && result.LatestVersion != nil {
+			s.outputService.PrintNewVersionAvailable(s.versionInfo.Version, *result.LatestVersion)
+		}
+	case <-time.After(500 * time.Millisecond):
 	}
 
-	return s.defaultWorkflow(flags.Report, flags.ReportPath)
+	return workflowErr
 }
 
 func (s *service) versionWorkflow() error {
@@ -73,6 +97,11 @@ func (s *service) updateWorkflow() error {
 
 	if errors.Is(err, model.ErrHomebrewInstall) {
 		s.outputService.PrintHomebrewUpdate()
+		return nil
+	}
+
+	if errors.Is(err, model.ErrGoInstall) {
+		s.outputService.PrintGoInstallUpdate()
 		return nil
 	}
 
