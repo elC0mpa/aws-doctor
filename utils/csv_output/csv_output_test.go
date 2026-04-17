@@ -182,3 +182,209 @@ func TestOutputWasteCSV(t *testing.T) {
 		t.Error("Output missing key pair row")
 	}
 }
+
+// TestMapTotalRow tests the mapTotalRow function for CSV output
+func TestMapTotalRow(t *testing.T) {
+	tests := []struct {
+		name        string
+		lastTotal   string
+		currentTotal string
+		wantLen     int
+		wantContains []string
+	}{
+		{
+			name:        "positive_difference",
+			lastTotal:   "100 USD",
+			currentTotal: "120 USD",
+			wantLen:     4,
+			wantContains: []string{"Total Costs", "100.00 USD", "120.00 USD", "20.00 USD"},
+		},
+		{
+			name:        "negative_difference",
+			lastTotal:   "150 USD",
+			currentTotal: "100 USD",
+			wantLen:     4,
+			wantContains: []string{"Total Costs", "150.00 USD", "100.00 USD", "-50.00 USD"},
+		},
+		{
+			name:        "no_difference",
+			lastTotal:   "100 USD",
+			currentTotal: "100 USD",
+			wantLen:     4,
+			wantContains: []string{"Total Costs", "100.00 USD", "100.00 USD", "0.00 USD"},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := mapTotalRow(tt.lastTotal, tt.currentTotal)
+
+			if len(got) != tt.wantLen {
+				t.Errorf("mapTotalRow() returned %d elements, want %d", len(got), tt.wantLen)
+			}
+
+			for _, want := range tt.wantContains {
+				found := false
+				for _, s := range got {
+					if s == want {
+						found = true
+						break
+					}
+				}
+				if !found {
+					t.Errorf("mapTotalRow() = %v, want contains %s", got, want)
+				}
+			}
+		})
+	}
+}
+
+// TestMapS3Buckets tests the mapS3Buckets function
+func TestMapS3Buckets(t *testing.T) {
+	tests := []struct {
+		name    string
+		buckets []model.S3BucketWasteInfo
+		wantLen int
+	}{
+		{
+			name:    "empty_slice",
+			buckets: []model.S3BucketWasteInfo{},
+			wantLen: 0,
+		},
+		{
+			name:    "nil_slice",
+			buckets: nil,
+			wantLen: 0,
+		},
+		{
+			name: "single_bucket",
+			buckets: []model.S3BucketWasteInfo{
+				{BucketName: "test-bucket-1", Reason: "No lifecycle policy"},
+			},
+			wantLen: 1,
+		},
+		{
+			name: "multiple_buckets",
+			buckets: []model.S3BucketWasteInfo{
+				{BucketName: "test-bucket-1", Reason: "No lifecycle policy"},
+				{BucketName: "test-bucket-2", Reason: "No lifecycle policy"},
+				{BucketName: "test-bucket-3", Reason: "No lifecycle policy"},
+			},
+			wantLen: 3,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := mapS3Buckets(tt.buckets)
+			if len(got) != tt.wantLen {
+				t.Errorf("mapS3Buckets() returned %d elements, want %d", len(got), tt.wantLen)
+			}
+		})
+	}
+}
+
+// TestMapS3MultipartUploads tests the mapS3MultipartUploads function
+func TestMapS3MultipartUploads(t *testing.T) {
+	tests := []struct {
+		name    string
+		uploads []model.S3MultipartUploadWasteInfo
+		wantLen int
+	}{
+		{
+			name:    "empty_slice",
+			uploads: []model.S3MultipartUploadWasteInfo{},
+			wantLen: 0,
+		},
+		{
+			name:    "nil_slice",
+			uploads: nil,
+			wantLen: 0,
+		},
+		{
+			name: "single_upload",
+			uploads: []model.S3MultipartUploadWasteInfo{
+				{BucketName: "test-bucket", UploadCount: 5},
+			},
+			wantLen: 1,
+		},
+		{
+			name: "multiple_uploads",
+			uploads: []model.S3MultipartUploadWasteInfo{
+				{BucketName: "bucket-1", UploadCount: 3},
+				{BucketName: "bucket-2", UploadCount: 7},
+			},
+			wantLen: 2,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := mapS3MultipartUploads(tt.uploads)
+			if len(got) != tt.wantLen {
+				t.Errorf("mapS3MultipartUploads() returned %d elements, want %d", len(got), tt.wantLen)
+			}
+		})
+	}
+}
+
+// TestMapTrendRows tests the mapTrendRows function
+func TestMapTrendRows(t *testing.T) {
+	tests := []struct {
+		name         string
+		monthlyCosts []model.CostInfo
+		services     []string
+		wantLen      int
+	}{
+		{
+			name:         "empty_costs",
+			monthlyCosts: []model.CostInfo{},
+			services:     []string{},
+			wantLen:      0,
+		},
+		{
+			name:         "nil_costs",
+			monthlyCosts: nil,
+			services:     []string{},
+			wantLen:      0,
+		},
+		{
+			name: "single_month",
+			monthlyCosts: []model.CostInfo{
+				{CostGroup: model.CostGroup{"Total": {Amount: 100.0, Unit: "USD"}}},
+			},
+			services: []string{},
+			wantLen:  1,
+		},
+		{
+			name: "six_months",
+			monthlyCosts: []model.CostInfo{
+				{CostGroup: model.CostGroup{"Total": {Amount: 100.0, Unit: "USD"}}},
+				{CostGroup: model.CostGroup{"Total": {Amount: 110.0, Unit: "USD"}}},
+				{CostGroup: model.CostGroup{"Total": {Amount: 120.0, Unit: "USD"}}},
+				{CostGroup: model.CostGroup{"Total": {Amount: 130.0, Unit: "USD"}}},
+				{CostGroup: model.CostGroup{"Total": {Amount: 140.0, Unit: "USD"}}},
+				{CostGroup: model.CostGroup{"Total": {Amount: 150.0, Unit: "USD"}}},
+			},
+			services: []string{},
+			wantLen: 6,
+		},
+		{
+			name: "with_services_column",
+			monthlyCosts: []model.CostInfo{
+				{CostGroup: model.CostGroup{"Total": {Amount: 100.0, Unit: "USD"}}},
+			},
+			services: []string{"ec2", "s3"},
+			wantLen:  1,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := mapTrendRows(tt.monthlyCosts, tt.services)
+			if len(got) != tt.wantLen {
+				t.Errorf("mapTrendRows() returned %d rows, want %d", len(got), tt.wantLen)
+			}
+		})
+	}
+}
