@@ -15,6 +15,8 @@ import (
 
 const homebrewCellarPath = "/Cellar/aws-doctor/"
 
+var goInstallBinPath = string(filepath.Separator) + filepath.Join("go", "bin") + string(filepath.Separator)
+
 type realRunner struct{}
 
 func (r *realRunner) Run(name string, arg ...string) error {
@@ -64,6 +66,10 @@ func (s *service) Update() error {
 		return model.ErrHomebrewInstall
 	}
 
+	if err == nil && strings.Contains(resolvedPath, goInstallBinPath) {
+		return model.ErrGoInstall
+	}
+
 	// Proceed with update
 	if err := s.runner.Run("sh", "-c", "curl -sSL https://raw.githubusercontent.com/elC0mpa/aws-doctor/main/install.sh | sh"); err != nil {
 		return fmt.Errorf("failed to run update script: %w", err)
@@ -72,18 +78,37 @@ func (s *service) Update() error {
 	return nil
 }
 
+func (s *service) CheckForUpdate(ctx context.Context) (*string, error) {
+	if s.versionInfo.Version == "dev" {
+		return nil, nil
+	}
+
+	release, _, err := s.repositories.GetLatestRelease(ctx, model.GitHubOwner, model.GitHubRepo)
+	if err != nil {
+		return nil, fmt.Errorf("failed to fetch latest release: %w", err)
+	}
+
+	if release == nil || release.TagName == nil {
+		return nil, fmt.Errorf("latest release is nil")
+	}
+
+	latestVersion := *release.TagName
+	if version.IsEqual(latestVersion, s.versionInfo.Version) {
+		return nil, nil
+	}
+
+	return &latestVersion, nil
+}
+
 func (s *service) shouldUpdate(ctx context.Context) (bool, error) {
 	if s.versionInfo.Version == "dev" {
 		return true, nil
 	}
 
-	release, _, err := s.repositories.GetLatestRelease(ctx, model.GitHubOwner, model.GitHubRepo)
+	latest, err := s.CheckForUpdate(ctx)
 	if err != nil {
-		return false, fmt.Errorf("failed to fetch latest release: %w", err)
+		return false, err
 	}
 
-	latestVersion := *release.TagName
-	equalVersions := version.IsEqual(latestVersion, s.versionInfo.Version)
-
-	return !equalVersions, nil
+	return latest != nil, nil
 }

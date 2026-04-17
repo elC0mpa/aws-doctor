@@ -14,6 +14,8 @@ import (
 	"github.com/stretchr/testify/mock"
 )
 
+const testLatestVersion = "v1.3.0"
+
 func TestOrchestrate_RouteToDefaultWorkflow(t *testing.T) {
 	// Setup mocks
 	mockSTS := new(services.MockSTSService)
@@ -54,6 +56,7 @@ func TestOrchestrate_RouteToDefaultWorkflow(t *testing.T) {
 	}, nil)
 	mockOutput.On("StopSpinner").Return()
 	mockOutput.On("RenderCostComparison", mock.Anything).Return(nil)
+	mockUpdate.On("CheckForUpdate", mock.Anything).Return(nil, nil)
 
 	// Execute
 	flags := model.Flags{Output: "json"}
@@ -151,6 +154,20 @@ func TestOrchestrate_UpdateWorkflow_HomebrewInstall(t *testing.T) {
 	mockUpdate.AssertExpectations(t)
 }
 
+func TestOrchestrate_UpdateWorkflow_GoInstall(t *testing.T) {
+	svc, m := newTestServiceWithMocks(model.VersionInfo{Version: "v1.0.0", Commit: "abc", Date: "2024-01-01"})
+
+	m.output.On("StopSpinner").Return()
+	m.update.On("Update").Return(model.ErrGoInstall)
+	m.output.On("PrintGoInstallUpdate").Return()
+
+	err := svc.Orchestrate(model.Flags{Update: true})
+
+	assert.NoError(t, err)
+	m.output.AssertExpectations(t)
+	m.update.AssertExpectations(t)
+}
+
 func TestOrchestrate_RouteToVersionWorkflow(t *testing.T) {
 	// Setup mocks
 	mockSTS := new(services.MockSTSService)
@@ -233,6 +250,7 @@ func TestOrchestrate_RouteToTrendWorkflow(t *testing.T) {
 	}, nil)
 	mockOutput.On("StopSpinner").Return()
 	mockOutput.On("RenderTrend", mock.Anything, mock.Anything, mock.Anything).Return(nil)
+	mockUpdate.On("CheckForUpdate", mock.Anything).Return(nil, nil)
 
 	// Execute with Trend flag
 	flags := model.Flags{Trend: true, Output: "json"}
@@ -296,6 +314,7 @@ func TestOrchestrate_RouteToWasteWorkflow(t *testing.T) {
 	}, nil)
 	mockOutput.On("StopSpinner").Return()
 	mockOutput.On("RenderWaste", mock.Anything).Return(nil)
+	mockUpdate.On("CheckForUpdate", mock.Anything).Return(nil, nil)
 
 	// Execute with Waste flag
 	flags := model.Flags{Waste: true, Output: "json"}
@@ -360,6 +379,7 @@ func TestOrchestrate_WasteTakesPrecedenceOverTrend(t *testing.T) {
 	}, nil)
 	mockOutput.On("StopSpinner").Return()
 	mockOutput.On("RenderWaste", mock.Anything).Return(nil)
+	mockUpdate.On("CheckForUpdate", mock.Anything).Return(nil, nil)
 
 	// Execute with both flags - Waste should take precedence
 	flags := model.Flags{Waste: true, Trend: true, Output: "json"}
@@ -416,6 +436,7 @@ func TestOrchestrate_TrendWorkflow_Mapping(t *testing.T) {
 	}, nil)
 	mockOutput.On("StopSpinner").Return()
 	mockOutput.On("RenderTrend", "123456789012", mock.Anything, mock.Anything).Return(nil)
+	mockUpdate.On("CheckForUpdate", mock.Anything).Return(nil, nil)
 
 	// Execute with Trend flag and checks
 	flags := model.Flags{Trend: true, TrendChecks: trendChecks}
@@ -495,6 +516,7 @@ func TestDefaultWorkflow_CostServiceError(t *testing.T) {
 			tt.setupMocks(mockCost, mockSTS)
 			mockOutput.On("StopSpinner").Return().Maybe()
 			mockOutput.On("RenderCostComparison", mock.Anything).Return(nil).Maybe()
+			mockUpdate.On("CheckForUpdate", mock.Anything).Return(nil, nil).Maybe()
 
 			mockRDS := new(services.MockRDSService)
 			config := Config{
@@ -559,6 +581,7 @@ func TestTrendWorkflow_Error(t *testing.T) {
 			tt.setupMocks(mockCost, mockSTS)
 			mockOutput.On("StopSpinner").Return().Maybe()
 			mockOutput.On("RenderTrend", mock.Anything, mock.Anything, mock.Anything).Return(nil).Maybe()
+			mockUpdate.On("CheckForUpdate", mock.Anything).Return(nil, nil).Maybe()
 
 			mockRDS := new(services.MockRDSService)
 			config := Config{
@@ -679,6 +702,7 @@ func TestWasteWorkflow_Error(t *testing.T) {
 			tt.setupMocks(mockEC2, mockELB, mockS3, mockCloudWatch, mockRDS, mockSTS, mockVPC, mockLambda)
 			mockOutput.On("StopSpinner").Return().Maybe()
 			mockOutput.On("RenderWaste", mock.Anything).Return(nil).Maybe()
+			mockUpdate.On("CheckForUpdate", mock.Anything).Return(nil, nil).Maybe()
 
 			config := Config{
 				STSService:            mockSTS,
@@ -749,6 +773,7 @@ func TestOrchestrate_RouteToReportWorkflow(t *testing.T) {
 	reportPath := "report.pdf"
 	mockReport.On("GenerateCostComparisonReport", mock.Anything, "report.html").Return(&reportPath, nil)
 	mockOutput.On("PrintReportSuccess", reportPath).Return()
+	mockUpdate.On("CheckForUpdate", mock.Anything).Return(nil, nil)
 
 	// Execute with Report flag
 	flags := model.Flags{Report: true, ReportPath: "report.html"}
@@ -762,4 +787,136 @@ func TestOrchestrate_RouteToReportWorkflow(t *testing.T) {
 	mockReport.AssertExpectations(t)
 	// Verify RenderCostComparison was NOT called
 	mockOutput.AssertNotCalled(t, "RenderCostComparison", mock.Anything)
+}
+
+type testMocks struct {
+	sts        *services.MockSTSService
+	cost       *services.MockCostService
+	ec2        *services.MockEC2Service
+	elb        *services.MockELBService
+	s3         *services.MockS3Service
+	cloudWatch *services.MockCloudWatchLogsService
+	output     *services.MockOutputService
+	update     *services.MockUpdateService
+	report     *services.MockReportService
+	rds        *services.MockRDSService
+}
+
+func newTestServiceWithMocks(versionInfo model.VersionInfo) (Service, *testMocks) {
+	m := &testMocks{
+		sts:        new(services.MockSTSService),
+		cost:       new(services.MockCostService),
+		ec2:        new(services.MockEC2Service),
+		elb:        new(services.MockELBService),
+		s3:         new(services.MockS3Service),
+		cloudWatch: new(services.MockCloudWatchLogsService),
+		output:     new(services.MockOutputService),
+		update:     new(services.MockUpdateService),
+		report:     new(services.MockReportService),
+		rds:        new(services.MockRDSService),
+	}
+
+	svc := NewService(Config{
+		STSService:            m.sts,
+		CostService:           m.cost,
+		EC2Service:            m.ec2,
+		ELBService:            m.elb,
+		S3Service:             m.s3,
+		CloudWatchLogsService: m.cloudWatch,
+		RDSService:            m.rds,
+		OutputService:         m.output,
+		UpdateService:         m.update,
+		ReportService:         m.report,
+		VersionInfo:           versionInfo,
+	})
+
+	return svc, m
+}
+
+func (m *testMocks) setupDefaultWorkflow() {
+	m.cost.On("GetCurrentMonthCostsByService", mock.Anything).Return(&model.CostInfo{}, nil)
+	m.cost.On("GetLastMonthCostsByService", mock.Anything).Return(&model.CostInfo{}, nil)
+	m.cost.On("GetCurrentMonthTotalCosts", mock.Anything).Return(aws.String("100.00"), nil)
+	m.cost.On("GetLastMonthTotalCosts", mock.Anything).Return(aws.String("90.00"), nil)
+	m.sts.On("GetCallerIdentity", mock.Anything).Return(&sts.GetCallerIdentityOutput{
+		Account: aws.String("123456789012"),
+	}, nil)
+	m.output.On("StopSpinner").Return()
+	m.output.On("RenderCostComparison", mock.Anything).Return(nil)
+}
+
+func TestOrchestrate_DefaultWorkflow_ShowsNewVersionNotification(t *testing.T) {
+	versionInfo := model.VersionInfo{Version: "v1.2.0", Commit: "abc", Date: "today"}
+	svc, m := newTestServiceWithMocks(versionInfo)
+	m.setupDefaultWorkflow()
+
+	latestVersion := testLatestVersion
+	m.update.On("CheckForUpdate", mock.Anything).Return(&latestVersion, nil)
+	m.output.On("PrintNewVersionAvailable", "v1.2.0", testLatestVersion).Return()
+
+	err := svc.Orchestrate(model.Flags{})
+	assert.NoError(t, err)
+	m.output.AssertCalled(t, "PrintNewVersionAvailable", "v1.2.0", testLatestVersion)
+}
+
+func TestOrchestrate_DefaultWorkflow_VersionCheckError_SilentlyIgnored(t *testing.T) {
+	svc, m := newTestServiceWithMocks(model.VersionInfo{Version: "v1.2.0", Commit: "abc", Date: "today"})
+	m.setupDefaultWorkflow()
+
+	m.update.On("CheckForUpdate", mock.Anything).Return(nil, errors.New("github error"))
+
+	err := svc.Orchestrate(model.Flags{})
+	assert.NoError(t, err)
+	m.output.AssertNotCalled(t, "PrintNewVersionAvailable", mock.Anything, mock.Anything)
+}
+
+func TestOrchestrate_DefaultWorkflow_JSONFormat_RunsVersionCheck(t *testing.T) {
+	versionInfo := model.VersionInfo{Version: "v1.2.0", Commit: "abc", Date: "today"}
+	svc, m := newTestServiceWithMocks(versionInfo)
+	m.setupDefaultWorkflow()
+
+	latestVersion := testLatestVersion
+	m.update.On("CheckForUpdate", mock.Anything).Return(&latestVersion, nil)
+	m.output.On("PrintNewVersionAvailable", "v1.2.0", testLatestVersion).Return()
+
+	err := svc.Orchestrate(model.Flags{Output: "json"})
+	assert.NoError(t, err)
+	m.update.AssertCalled(t, "CheckForUpdate", mock.Anything)
+}
+
+func TestOrchestrate_DefaultWorkflow_CSVFormat_RunsVersionCheck(t *testing.T) {
+	versionInfo := model.VersionInfo{Version: "v1.2.0", Commit: "abc", Date: "today"}
+	svc, m := newTestServiceWithMocks(versionInfo)
+	m.setupDefaultWorkflow()
+
+	latestVersion := testLatestVersion
+	m.update.On("CheckForUpdate", mock.Anything).Return(&latestVersion, nil)
+	m.output.On("PrintNewVersionAvailable", "v1.2.0", testLatestVersion).Return()
+
+	err := svc.Orchestrate(model.Flags{Output: "csv"})
+	assert.NoError(t, err)
+	m.update.AssertCalled(t, "CheckForUpdate", mock.Anything)
+}
+
+func TestOrchestrate_UpdateWorkflow_NoVersionCheck(t *testing.T) {
+	svc, m := newTestServiceWithMocks(model.VersionInfo{Version: "v1.2.0", Commit: "abc", Date: "today"})
+
+	m.output.On("StopSpinner").Return()
+	m.update.On("Update").Return(nil)
+
+	err := svc.Orchestrate(model.Flags{Update: true})
+	assert.NoError(t, err)
+	m.update.AssertNotCalled(t, "CheckForUpdate", mock.Anything)
+}
+
+func TestOrchestrate_VersionWorkflow_NoVersionCheck(t *testing.T) {
+	versionInfo := model.VersionInfo{Version: "v1.2.0", Commit: "abc", Date: "today"}
+	svc, m := newTestServiceWithMocks(versionInfo)
+
+	m.output.On("StopSpinner").Return()
+	m.output.On("RenderVersion", versionInfo).Return()
+
+	err := svc.Orchestrate(model.Flags{Version: true})
+	assert.NoError(t, err)
+	m.update.AssertNotCalled(t, "CheckForUpdate", mock.Anything)
 }

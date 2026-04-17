@@ -141,27 +141,37 @@ func TestUpdate_NeedsUpdate(t *testing.T) {
 	mr.AssertExpectations(t)
 }
 
-func TestUpdate_Homebrew(t *testing.T) {
+func TestUpdate_InstallMethod(t *testing.T) {
 	tests := []struct {
 		name         string
 		resolvedPath string
 		pathErr      error
-		expectBrew   bool
+		expectedErr  error
 	}{
 		{
 			name:         "homebrew_apple_silicon",
 			resolvedPath: "/opt/homebrew/Cellar/aws-doctor/1.0.0/bin/aws-doctor",
-			expectBrew:   true,
+			expectedErr:  model.ErrHomebrewInstall,
 		},
 		{
 			name:         "homebrew_intel_mac",
 			resolvedPath: "/usr/local/Cellar/aws-doctor/1.0.0/bin/aws-doctor",
-			expectBrew:   true,
+			expectedErr:  model.ErrHomebrewInstall,
 		},
 		{
 			name:         "homebrew_linux",
 			resolvedPath: "/home/linuxbrew/.linuxbrew/Cellar/aws-doctor/1.0.0/bin/aws-doctor",
-			expectBrew:   true,
+			expectedErr:  model.ErrHomebrewInstall,
+		},
+		{
+			name:         "go_install_default_gopath",
+			resolvedPath: "/home/user/go/bin/aws-doctor",
+			expectedErr:  model.ErrGoInstall,
+		},
+		{
+			name:         "go_install_custom_gopath",
+			resolvedPath: "/opt/go/bin/aws-doctor",
+			expectedErr:  model.ErrGoInstall,
 		},
 		{
 			name:         "non_homebrew_install",
@@ -185,14 +195,14 @@ func TestUpdate_Homebrew(t *testing.T) {
 
 			mp.On("ResolvedExecutablePath").Return(tt.resolvedPath, tt.pathErr)
 
-			if !tt.expectBrew {
+			if tt.expectedErr == nil {
 				mr.On("Run", "sh", installCmd).Return(nil)
 			}
 
 			err := s.Update()
 
-			if tt.expectBrew {
-				assert.ErrorIs(t, err, model.ErrHomebrewInstall)
+			if tt.expectedErr != nil {
+				assert.ErrorIs(t, err, tt.expectedErr)
 				mr.AssertNotCalled(t, "Run", mock.Anything, mock.Anything)
 				mrepo.AssertNotCalled(t, "GetLatestRelease", mock.Anything, mock.Anything, mock.Anything)
 			} else {
@@ -259,6 +269,72 @@ func TestUpdate_ExecutionError(t *testing.T) {
 	err := s.Update()
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "failed to run update script")
+}
+
+func TestCheckForUpdate_DevVersion(t *testing.T) {
+	mrepo := new(mockRepositories)
+	v := model.VersionInfo{Version: "dev"}
+	s := &service{repositories: mrepo, versionInfo: v}
+
+	result, err := s.CheckForUpdate(context.Background())
+	assert.NoError(t, err)
+	assert.Nil(t, result)
+	mrepo.AssertNotCalled(t, "GetLatestRelease", mock.Anything, mock.Anything, mock.Anything)
+}
+
+func TestCheckForUpdate_AlreadyLatest(t *testing.T) {
+	mrepo := new(mockRepositories)
+	v := model.VersionInfo{Version: tag}
+	s := &service{repositories: mrepo, versionInfo: v}
+
+	tagName := tag
+	release := &github.RepositoryRelease{TagName: &tagName}
+	mrepo.On("GetLatestRelease", mock.Anything, model.GitHubOwner, model.GitHubRepo).Return(release, nil, nil)
+
+	result, err := s.CheckForUpdate(context.Background())
+	assert.NoError(t, err)
+	assert.Nil(t, result)
+}
+
+func TestCheckForUpdate_NewVersionAvailable(t *testing.T) {
+	mrepo := new(mockRepositories)
+	v := model.VersionInfo{Version: "v1.2.2"}
+	s := &service{repositories: mrepo, versionInfo: v}
+
+	tagName := tag
+	release := &github.RepositoryRelease{TagName: &tagName}
+	mrepo.On("GetLatestRelease", mock.Anything, model.GitHubOwner, model.GitHubRepo).Return(release, nil, nil)
+
+	result, err := s.CheckForUpdate(context.Background())
+	assert.NoError(t, err)
+	assert.NotNil(t, result)
+	assert.Equal(t, tag, *result)
+}
+
+func TestCheckForUpdate_NilRelease(t *testing.T) {
+	mrepo := new(mockRepositories)
+	v := model.VersionInfo{Version: tag}
+	s := &service{repositories: mrepo, versionInfo: v}
+
+	mrepo.On("GetLatestRelease", mock.Anything, model.GitHubOwner, model.GitHubRepo).Return(nil, nil, nil)
+
+	result, err := s.CheckForUpdate(context.Background())
+	assert.Error(t, err)
+	assert.Nil(t, result)
+	assert.Contains(t, err.Error(), "latest release is nil")
+}
+
+func TestCheckForUpdate_GitHubError(t *testing.T) {
+	mrepo := new(mockRepositories)
+	v := model.VersionInfo{Version: tag}
+	s := &service{repositories: mrepo, versionInfo: v}
+
+	mrepo.On("GetLatestRelease", mock.Anything, model.GitHubOwner, model.GitHubRepo).Return(nil, nil, errors.New("github error"))
+
+	result, err := s.CheckForUpdate(context.Background())
+	assert.Error(t, err)
+	assert.Nil(t, result)
+	assert.Contains(t, err.Error(), "failed to fetch latest release")
 }
 
 func TestRealRunner_Run(t *testing.T) {
