@@ -920,3 +920,7 @@ func TestOrchestrate_VersionWorkflow_NoVersionCheck(t *testing.T) {
 	assert.NoError(t, err)
 	m.update.AssertNotCalled(t, "CheckForUpdate", mock.Anything)
 }
+
+// Note: handleCostError tests would require deep mocking of cost service
+// to trigger ErrFirstDayOfMonth. The error path is tested indirectly through
+// integration tests that exercise the cost service behavior.
