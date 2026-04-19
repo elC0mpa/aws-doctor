@@ -87,6 +87,18 @@ func TestGetReportPath(t *testing.T) {
 		assert.True(t, strings.Contains(result, "aws-doctor-waste-"))
 		assert.True(t, strings.HasSuffix(result, ".pdf"))
 	})
+
+	t.Run("TrendReport", func(t *testing.T) {
+		result := s.getReportPath("", "trend")
+		assert.True(t, strings.Contains(result, "aws-doctor-trend-"))
+		assert.True(t, strings.HasSuffix(result, ".pdf"))
+	})
+
+	t.Run("TimestampFormat", func(t *testing.T) {
+		result := s.getReportPath("DEFAULT", "cost")
+		// Should contain timestamp in format YYYYMMDD-HHMMSS
+		assert.Regexp(t, `aws-doctor-cost-\d{8}-\d{6}\.pdf`, result)
+	})
 }
 
 func TestFormatDayRange(t *testing.T) {

@@ -805,3 +805,219 @@ func TestDrawRDSTable(t *testing.T) {
 		t.Error("drawRDSTable() missing idle instance ID")
 	}
 }
+
+// TestHasAnyWaste tests the hasAnyWaste function that checks if any waste data exists
+func TestHasAnyWaste(t *testing.T) {
+	tests := []struct {
+		name  string
+		input model.RenderWasteInput
+		want  bool
+	}{
+		{
+			name:  "empty_input_returns_false",
+			input: model.RenderWasteInput{},
+			want:  false,
+		},
+		{
+			name: "only_elastic_ips_set_returns_true",
+			input: model.RenderWasteInput{
+				ElasticIPs: []types.Address{
+					{PublicIp: aws.String("1.2.3.4"), AllocationId: aws.String("eipalloc-123")},
+				},
+			},
+			want: true,
+		},
+		{
+			name: "only_unused_volumes_set_returns_true",
+			input: model.RenderWasteInput{
+				UnusedVolumes: []types.Volume{
+					{VolumeId: aws.String("vol-123")},
+				},
+			},
+			want: true,
+		},
+		{
+			name: "only_stopped_volumes_set_returns_true",
+			input: model.RenderWasteInput{
+				StoppedVolumes: []types.Volume{
+					{VolumeId: aws.String("vol-456")},
+				},
+			},
+			want: true,
+		},
+		{
+			name: "only_stopped_instances_set_returns_true",
+			input: model.RenderWasteInput{
+				StoppedInstances: []types.Instance{
+					{InstanceId: aws.String("i-123")},
+				},
+			},
+			want: true,
+		},
+		{
+			name: "only_reserved_instances_set_returns_true",
+			input: model.RenderWasteInput{
+				Ris: []model.RiExpirationInfo{
+					{ReservedInstanceID: "ri-123"},
+				},
+			},
+			want: true,
+		},
+		{
+			name: "only_unused_am_is_set_returns_true",
+			input: model.RenderWasteInput{
+				UnusedAMIs: []model.AMIWasteInfo{
+					{ImageID: "ami-123"},
+				},
+			},
+			want: true,
+		},
+		{
+			name: "only_orphaned_snapshots_set_returns_true",
+			input: model.RenderWasteInput{
+				OrphanedSnapshots: []model.SnapshotWasteInfo{
+					{SnapshotID: "snap-123", Category: model.SnapshotCategoryOrphaned},
+				},
+			},
+			want: true,
+		},
+		{
+			name: "only_unused_key_pairs_set_returns_true",
+			input: model.RenderWasteInput{
+				UnusedKeyPairs: []model.KeyPairWasteInfo{
+					{KeyName: "test-key"},
+				},
+			},
+			want: true,
+		},
+		{
+			name: "only_s3_buckets_set_returns_true",
+			input: model.RenderWasteInput{
+				S3Buckets: []model.S3BucketWasteInfo{
+					{BucketName: "test-bucket"},
+				},
+			},
+			want: true,
+		},
+		{
+			name: "only_s3_multipart_uploads_set_returns_true",
+			input: model.RenderWasteInput{
+				S3MultipartUploads: []model.S3MultipartUploadWasteInfo{
+					{BucketName: "test-bucket", UploadCount: 5},
+				},
+			},
+			want: true,
+		},
+		{
+			name: "only_cloudwatch_log_groups_set_returns_true",
+			input: model.RenderWasteInput{
+				CloudWatchLogGroups: []model.CloudWatchLogsWasteInfo{
+					{LogGroupName: "/aws/lambda/test"},
+				},
+			},
+			want: true,
+		},
+		{
+			name: "only_rds_instances_set_returns_true",
+			input: model.RenderWasteInput{
+				RDSInstances: []model.RDSInstanceWasteInfo{
+					{DBInstanceID: "test-rds"},
+				},
+			},
+			want: true,
+		},
+		{
+			name: "only_rds_snapshots_set_returns_true",
+			input: model.RenderWasteInput{
+				RDSSnapshots: []model.RDSSnapshotWasteInfo{
+					{DBSnapshotID: "rds:snap-123"},
+				},
+			},
+			want: true,
+		},
+		{
+			name: "only_rds_idle_instances_set_returns_true",
+			input: model.RenderWasteInput{
+				RDSIdleInstances: []model.RDSIdleInstanceInfo{
+					{DBInstanceID: "test-rds-idle"},
+				},
+			},
+			want: true,
+		},
+		{
+			name: "only_idle_nat_gateways_set_returns_true",
+			input: model.RenderWasteInput{
+				IdleNATGateways: []model.NATGatewayWasteInfo{
+					{NATGatewayID: "nat-123"},
+				},
+			},
+			want: true,
+		},
+		{
+			name: "only_idle_load_balancers_set_returns_true",
+			input: model.RenderWasteInput{
+				IdleLoadBalancers: []model.ELBIdleInfo{
+					{Name: "lb-123"},
+				},
+			},
+			want: true,
+		},
+		{
+			name: "only_over_provisioned_lambdas_set_returns_true",
+			input: model.RenderWasteInput{
+				OverProvisionedLambdas: []model.LambdaOverProvisionedInfo{
+					{FunctionName: "test-lambda"},
+				},
+			},
+			want: true,
+		},
+		{
+			name: "mix_of_fields_returns_true",
+			input: model.RenderWasteInput{
+				ElasticIPs: []types.Address{
+					{PublicIp: aws.String("1.2.3.4")},
+				},
+				StoppedInstances: []types.Instance{
+					{InstanceId: aws.String("i-123")},
+				},
+				S3Buckets: []model.S3BucketWasteInfo{
+					{BucketName: "test-bucket"},
+				},
+			},
+			want: true,
+		},
+		{
+			name: "all_fields_empty_returns_false",
+			input: model.RenderWasteInput{
+				ElasticIPs:             []types.Address{},
+				UnusedVolumes:          []types.Volume{},
+				StoppedVolumes:         []types.Volume{},
+				StoppedInstances:       []types.Instance{},
+				Ris:                    []model.RiExpirationInfo{},
+				LoadBalancers:          []elbtypes.LoadBalancer{},
+				UnusedAMIs:             []model.AMIWasteInfo{},
+				OrphanedSnapshots:      []model.SnapshotWasteInfo{},
+				UnusedKeyPairs:         []model.KeyPairWasteInfo{},
+				S3Buckets:              []model.S3BucketWasteInfo{},
+				S3MultipartUploads:     []model.S3MultipartUploadWasteInfo{},
+				CloudWatchLogGroups:    []model.CloudWatchLogsWasteInfo{},
+				RDSInstances:           []model.RDSInstanceWasteInfo{},
+				RDSSnapshots:           []model.RDSSnapshotWasteInfo{},
+				RDSIdleInstances:       []model.RDSIdleInstanceInfo{},
+				IdleNATGateways:        []model.NATGatewayWasteInfo{},
+				IdleLoadBalancers:      []model.ELBIdleInfo{},
+				OverProvisionedLambdas: []model.LambdaOverProvisionedInfo{},
+			},
+			want: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := hasAnyWaste(tt.input)
+			if got != tt.want {
+				t.Errorf("hasAnyWaste() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
