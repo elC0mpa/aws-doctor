@@ -200,9 +200,11 @@ func TestUpdate_InstallMethod(t *testing.T) {
 			mrepo := new(mockRepositories)
 			mp := new(mockPathResolver)
 			version := tt.version
+
 			if version == "" {
 				version = "dev"
 			}
+
 			v := model.VersionInfo{Version: version}
 			s := &service{runner: mr, repositories: mrepo, versionInfo: v, pathResolver: mp}
 
