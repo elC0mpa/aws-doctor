@@ -66,7 +66,7 @@ func (s *service) Update() error {
 		return model.ErrHomebrewInstall
 	}
 
-	if err == nil && strings.Contains(resolvedPath, goInstallBinPath) {
+	if err == nil && strings.Contains(resolvedPath, goInstallBinPath) && s.versionInfo.Version == "dev" {
 		return model.ErrGoInstall
 	}
 

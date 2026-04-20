@@ -145,6 +145,7 @@ func TestUpdate_InstallMethod(t *testing.T) {
 	tests := []struct {
 		name         string
 		resolvedPath string
+		version      string
 		pathErr      error
 		expectedErr  error
 	}{
@@ -166,12 +167,20 @@ func TestUpdate_InstallMethod(t *testing.T) {
 		{
 			name:         "go_install_default_gopath",
 			resolvedPath: "/home/user/go/bin/aws-doctor",
+			version:      "dev",
 			expectedErr:  model.ErrGoInstall,
 		},
 		{
 			name:         "go_install_custom_gopath",
 			resolvedPath: "/opt/go/bin/aws-doctor",
+			version:      "dev",
 			expectedErr:  model.ErrGoInstall,
+		},
+		{
+			name:         "go_install_custom_gopath_with_release_version",
+			resolvedPath: "/opt/go/bin/aws-doctor",
+			version:      "v2.9.0",
+			expectedErr:  nil, // Should proceed with update
 		},
 		{
 			name:         "non_homebrew_install",
@@ -190,10 +199,20 @@ func TestUpdate_InstallMethod(t *testing.T) {
 			mr := new(mockRunner)
 			mrepo := new(mockRepositories)
 			mp := new(mockPathResolver)
-			v := model.VersionInfo{Version: "dev"}
+			version := tt.version
+			if version == "" {
+				version = "dev"
+			}
+			v := model.VersionInfo{Version: version}
 			s := &service{runner: mr, repositories: mrepo, versionInfo: v, pathResolver: mp}
 
 			mp.On("ResolvedExecutablePath").Return(tt.resolvedPath, tt.pathErr)
+
+			if version != "dev" {
+				tagName := "v3.0.0"
+				release := &github.RepositoryRelease{TagName: &tagName}
+				mrepo.On("GetLatestRelease", mock.Anything, model.GitHubOwner, model.GitHubRepo).Return(release, nil, nil)
+			}
 
 			if tt.expectedErr == nil {
 				mr.On("Run", "sh", installCmd).Return(nil)
