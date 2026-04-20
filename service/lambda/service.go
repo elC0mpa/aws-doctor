@@ -96,7 +96,7 @@ func (s *service) queryMaxMemoryInBatches(ctx context.Context, logGroupNames []s
 		g.Go(func() error {
 			results, err := s.logsService.GetLambdaMaxMemoryUsedBatch(ctx, batch, startTime, endTime)
 			if err != nil {
-				return nil
+				return fmt.Errorf("batch Insights query failed for %d log groups: %w", len(batch), err)
 			}
 
 			mu.Lock()
@@ -116,8 +116,9 @@ func (s *service) queryMaxMemoryInBatches(ctx context.Context, logGroupNames []s
 	return merged, nil
 }
 
-// buildOverProvisionedResults filters functions whose memory utilization falls below the
-// threshold and returns the corresponding recommendations.
+// buildOverProvisionedResults returns recommendations for functions whose observed max memory
+// falls below memoryThresholdPercent of configured memory. Recommendation is max(observed * 2,
+// minRecommendedMemoryMB) to leave headroom while respecting Lambda's 128 MB floor.
 func buildOverProvisionedResults(
 	logGroupToFunction map[string]lambdatypes.FunctionConfiguration,
 	maxMemByLogGroup map[string]int32,

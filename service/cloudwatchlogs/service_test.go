@@ -195,6 +195,129 @@ func TestGetLambdaMaxMemoryUsedBatch(t *testing.T) {
 	}
 }
 
+func TestGetLambdaMaxMemoryUsedBatch_IssuesGroupByLogQuery(t *testing.T) {
+	mockClient := new(awsinterfaces.MockCloudWatchLogsClient)
+
+	mockClient.On("StartQuery", mock.Anything, mock.MatchedBy(func(input *cloudwatchlogs.StartQueryInput) bool {
+		return input != nil && input.QueryString != nil &&
+			aws.ToString(input.QueryString) == `filter @type = "REPORT" | stats max(@maxMemoryUsed / 1048576) as maxMemMB by @log` &&
+			len(input.LogGroupNames) == 2
+	}), mock.Anything).Return(&cloudwatchlogs.StartQueryOutput{
+		QueryId: aws.String("query-assert"),
+	}, nil)
+
+	mockClient.On("GetQueryResults", mock.Anything, mock.Anything, mock.Anything).Return(&cloudwatchlogs.GetQueryResultsOutput{
+		Status:  types.QueryStatusComplete,
+		Results: [][]types.ResultField{},
+	}, nil)
+
+	svc := &service{client: mockClient}
+	_, err := svc.GetLambdaMaxMemoryUsedBatch(context.Background(), []string{"/aws/lambda/a", "/aws/lambda/b"}, time.Now().AddDate(0, 0, -1), time.Now())
+
+	assert.NoError(t, err)
+	mockClient.AssertExpectations(t)
+}
+
+func TestParseMaxMemMBByGroup_EdgeCases(t *testing.T) {
+	tests := []struct {
+		name    string
+		results [][]types.ResultField
+		want    map[string]int32
+	}{
+		{
+			name: "strips accountId prefix from @log",
+			results: [][]types.ResultField{
+				{
+					{Field: aws.String("@log"), Value: aws.String("999999999999:/aws/lambda/fn")},
+					{Field: aws.String("maxMemMB"), Value: aws.String("10")},
+				},
+			},
+			want: map[string]int32{"/aws/lambda/fn": 10},
+		},
+		{
+			name: "handles @log without colon by using the raw value",
+			results: [][]types.ResultField{
+				{
+					{Field: aws.String("@log"), Value: aws.String("/aws/lambda/fn")},
+					{Field: aws.String("maxMemMB"), Value: aws.String("20")},
+				},
+			},
+			want: map[string]int32{"/aws/lambda/fn": 20},
+		},
+		{
+			name: "drops rows missing @log",
+			results: [][]types.ResultField{
+				{
+					{Field: aws.String("maxMemMB"), Value: aws.String("30")},
+				},
+			},
+			want: map[string]int32{},
+		},
+		{
+			name: "drops rows missing maxMemMB",
+			results: [][]types.ResultField{
+				{
+					{Field: aws.String("@log"), Value: aws.String("1:/aws/lambda/fn")},
+				},
+			},
+			want: map[string]int32{},
+		},
+		{
+			name: "drops rows with unparseable maxMemMB",
+			results: [][]types.ResultField{
+				{
+					{Field: aws.String("@log"), Value: aws.String("1:/aws/lambda/fn")},
+					{Field: aws.String("maxMemMB"), Value: aws.String("not-a-number")},
+				},
+			},
+			want: map[string]int32{},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := parseMaxMemMBByGroup(tt.results)
+			assert.Equal(t, tt.want, got)
+		})
+	}
+}
+
+func TestListExistingLogGroups(t *testing.T) {
+	ctx := context.Background()
+
+	mockClient := new(awsinterfaces.MockCloudWatchLogsClient)
+
+	mockClient.On("DescribeLogGroups", mock.Anything, mock.MatchedBy(func(input *cloudwatchlogs.DescribeLogGroupsInput) bool {
+		return input != nil && aws.ToString(input.LogGroupNamePrefix) == "/aws/lambda/"
+	}), mock.Anything).Return(&cloudwatchlogs.DescribeLogGroupsOutput{
+		LogGroups: []types.LogGroup{
+			{LogGroupName: aws.String("/aws/lambda/fn-a")},
+			{LogGroupName: aws.String("/aws/lambda/fn-b")},
+			{LogGroupName: nil},
+		},
+	}, nil)
+
+	svc := &service{client: mockClient}
+	got, err := svc.ListExistingLogGroups(ctx, "/aws/lambda/")
+
+	assert.NoError(t, err)
+	assert.Equal(t, map[string]struct{}{
+		"/aws/lambda/fn-a": {},
+		"/aws/lambda/fn-b": {},
+	}, got)
+}
+
+func TestListExistingLogGroups_DescribeError(t *testing.T) {
+	mockClient := new(awsinterfaces.MockCloudWatchLogsClient)
+	mockClient.On("DescribeLogGroups", mock.Anything, mock.Anything, mock.Anything).Return((*cloudwatchlogs.DescribeLogGroupsOutput)(nil), errors.New("throttled"))
+
+	svc := &service{client: mockClient}
+	_, err := svc.ListExistingLogGroups(context.Background(), "/aws/lambda/")
+
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "failed to describe log groups")
+}
+
 func TestNewService(t *testing.T) {
 	cfg := aws.Config{}
 	svc := NewService(cfg)

@@ -3,6 +3,9 @@ package lambda
 import (
 	"context"
 	"errors"
+	"fmt"
+	"sort"
+	"sync"
 	"testing"
 	"time"
 
@@ -16,9 +19,16 @@ import (
 
 type mockCWLogsService struct {
 	mock.Mock
+	// GetLambdaMaxMemoryUsedBatchFn, when set, is called instead of the testify mock — useful
+	// when a test needs per-call dynamic returns (e.g., per-batch contents).
+	GetLambdaMaxMemoryUsedBatchFn func(ctx context.Context, logGroupNames []string, startTime, endTime time.Time) (map[string]int32, error)
 }
 
 func (m *mockCWLogsService) GetLambdaMaxMemoryUsedBatch(ctx context.Context, logGroupNames []string, startTime, endTime time.Time) (map[string]int32, error) {
+	if m.GetLambdaMaxMemoryUsedBatchFn != nil {
+		return m.GetLambdaMaxMemoryUsedBatchFn(ctx, logGroupNames, startTime, endTime)
+	}
+
 	args := m.Called(ctx, logGroupNames, startTime, endTime)
 
 	res, _ := args.Get(0).(map[string]int32)
@@ -101,7 +111,7 @@ func TestGetOverProvisionedFunctions_ListFunctionsError(t *testing.T) {
 	mockLambdaClient.AssertExpectations(t)
 }
 
-func TestGetOverProvisionedFunctions_LogsBatchErrorIsSkipped(t *testing.T) {
+func TestGetOverProvisionedFunctions_BatchErrorPropagates(t *testing.T) {
 	mockLambdaClient := new(awsinterfaces.MockLambdaClient)
 	mockLogsService := new(mockCWLogsService)
 
@@ -113,7 +123,7 @@ func TestGetOverProvisionedFunctions_LogsBatchErrorIsSkipped(t *testing.T) {
 	mockLambdaClient.On("ListFunctions", mock.Anything, mock.Anything, mock.Anything).Return(&awslambda.ListFunctionsOutput{
 		Functions: []lambdatypes.FunctionConfiguration{
 			{
-				FunctionName: aws.String("fn-with-no-logs"),
+				FunctionName: aws.String("fn-a"),
 				MemorySize:   aws.Int32(512),
 				Runtime:      lambdatypes.RuntimePython312,
 			},
@@ -121,17 +131,155 @@ func TestGetOverProvisionedFunctions_LogsBatchErrorIsSkipped(t *testing.T) {
 	}, nil)
 
 	mockLogsService.On("ListExistingLogGroups", mock.Anything, "/aws/lambda/").Return(map[string]struct{}{
-		"/aws/lambda/fn-with-no-logs": {},
+		"/aws/lambda/fn-a": {},
 	}, nil)
 
-	mockLogsService.On("GetLambdaMaxMemoryUsedBatch", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return((map[string]int32)(nil), errors.New("insights error"))
+	mockLogsService.On("GetLambdaMaxMemoryUsedBatch", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return((map[string]int32)(nil), errors.New("insights throttled"))
+
+	_, err := s.GetOverProvisionedFunctions(context.Background(), 10)
+
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "insights throttled")
+	mockLambdaClient.AssertExpectations(t)
+	mockLogsService.AssertExpectations(t)
+}
+
+func TestGetOverProvisionedFunctions_ListLogGroupsErrorPropagates(t *testing.T) {
+	mockLambdaClient := new(awsinterfaces.MockLambdaClient)
+	mockLogsService := new(mockCWLogsService)
+
+	s := &service{
+		lambdaClient: mockLambdaClient,
+		logsService:  mockLogsService,
+	}
+
+	mockLambdaClient.On("ListFunctions", mock.Anything, mock.Anything, mock.Anything).Return(&awslambda.ListFunctionsOutput{
+		Functions: []lambdatypes.FunctionConfiguration{
+			{FunctionName: aws.String("fn-a"), MemorySize: aws.Int32(512)},
+		},
+	}, nil)
+
+	mockLogsService.On("ListExistingLogGroups", mock.Anything, "/aws/lambda/").Return((map[string]struct{})(nil), errors.New("access denied"))
+
+	_, err := s.GetOverProvisionedFunctions(context.Background(), 10)
+
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "failed to list Lambda log groups")
+}
+
+func TestGetOverProvisionedFunctions_MissingLogGroupsAreSkipped(t *testing.T) {
+	mockLambdaClient := new(awsinterfaces.MockLambdaClient)
+	mockLogsService := new(mockCWLogsService)
+
+	s := &service{
+		lambdaClient: mockLambdaClient,
+		logsService:  mockLogsService,
+	}
+
+	mockLambdaClient.On("ListFunctions", mock.Anything, mock.Anything, mock.Anything).Return(&awslambda.ListFunctionsOutput{
+		Functions: []lambdatypes.FunctionConfiguration{
+			{FunctionName: aws.String("fn-present"), MemorySize: aws.Int32(1024), Runtime: lambdatypes.RuntimePython312},
+			{FunctionName: aws.String("fn-never-invoked"), MemorySize: aws.Int32(1024), Runtime: lambdatypes.RuntimePython312},
+		},
+	}, nil)
+
+	mockLogsService.On("ListExistingLogGroups", mock.Anything, "/aws/lambda/").Return(map[string]struct{}{
+		"/aws/lambda/fn-present": {},
+	}, nil)
+
+	capturedBatch := mock.MatchedBy(func(groups []string) bool {
+		return len(groups) == 1 && groups[0] == "/aws/lambda/fn-present"
+	})
+
+	mockLogsService.On("GetLambdaMaxMemoryUsedBatch", mock.Anything, capturedBatch, mock.Anything, mock.Anything).Return(map[string]int32{
+		"/aws/lambda/fn-present": 50,
+	}, nil)
+
+	result, err := s.GetOverProvisionedFunctions(context.Background(), 10)
+
+	assert.NoError(t, err)
+	assert.Len(t, result, 1)
+	assert.Equal(t, "fn-present", result[0].FunctionName)
+	mockLogsService.AssertExpectations(t)
+}
+
+func TestGetOverProvisionedFunctions_AllLogGroupsMissing(t *testing.T) {
+	mockLambdaClient := new(awsinterfaces.MockLambdaClient)
+	mockLogsService := new(mockCWLogsService)
+
+	s := &service{
+		lambdaClient: mockLambdaClient,
+		logsService:  mockLogsService,
+	}
+
+	mockLambdaClient.On("ListFunctions", mock.Anything, mock.Anything, mock.Anything).Return(&awslambda.ListFunctionsOutput{
+		Functions: []lambdatypes.FunctionConfiguration{
+			{FunctionName: aws.String("fn-a"), MemorySize: aws.Int32(512)},
+		},
+	}, nil)
+
+	mockLogsService.On("ListExistingLogGroups", mock.Anything, "/aws/lambda/").Return(map[string]struct{}{}, nil)
 
 	result, err := s.GetOverProvisionedFunctions(context.Background(), 10)
 
 	assert.NoError(t, err)
 	assert.Empty(t, result)
-	mockLambdaClient.AssertExpectations(t)
-	mockLogsService.AssertExpectations(t)
+	mockLogsService.AssertNotCalled(t, "GetLambdaMaxMemoryUsedBatch", mock.Anything, mock.Anything, mock.Anything, mock.Anything)
+}
+
+func TestGetOverProvisionedFunctions_ChunksAtFiftyAndMerges(t *testing.T) {
+	mockLambdaClient := new(awsinterfaces.MockLambdaClient)
+	mockLogsService := new(mockCWLogsService)
+
+	s := &service{
+		lambdaClient: mockLambdaClient,
+		logsService:  mockLogsService,
+	}
+
+	const totalFunctions = 101
+
+	functions := make([]lambdatypes.FunctionConfiguration, 0, totalFunctions)
+	existing := make(map[string]struct{}, totalFunctions)
+
+	for i := 0; i < totalFunctions; i++ {
+		name := fmt.Sprintf("fn-%03d", i)
+		functions = append(functions, lambdatypes.FunctionConfiguration{
+			FunctionName: aws.String(name),
+			MemorySize:   aws.Int32(1024),
+			Runtime:      lambdatypes.RuntimePython312,
+		})
+		existing["/aws/lambda/"+name] = struct{}{}
+	}
+
+	mockLambdaClient.On("ListFunctions", mock.Anything, mock.Anything, mock.Anything).Return(&awslambda.ListFunctionsOutput{Functions: functions}, nil)
+	mockLogsService.On("ListExistingLogGroups", mock.Anything, "/aws/lambda/").Return(existing, nil)
+
+	var (
+		mu         sync.Mutex
+		batchSizes []int
+	)
+
+	mockLogsService.GetLambdaMaxMemoryUsedBatchFn = func(_ context.Context, groups []string, _, _ time.Time) (map[string]int32, error) {
+		mu.Lock()
+
+		batchSizes = append(batchSizes, len(groups))
+		mu.Unlock()
+
+		out := make(map[string]int32, len(groups))
+		for _, g := range groups {
+			out[g] = 50
+		}
+
+		return out, nil
+	}
+
+	result, err := s.GetOverProvisionedFunctions(context.Background(), 10)
+
+	assert.NoError(t, err)
+	assert.Len(t, result, totalFunctions, "all functions across batches should be merged into the result")
+
+	sort.Ints(batchSizes)
+	assert.Equal(t, []int{1, 50, 50}, batchSizes, "expected batches of 50, 50, and 1")
 }
 
 func TestGetOverProvisionedFunctions_NoFunctions(t *testing.T) {
