@@ -83,7 +83,6 @@ func TestGetCloudWatchLogsWaste(t *testing.T) {
 
 				if tt.wantCount > 0 {
 					assert.Equal(t, "waste-group", waste[0].LogGroupName)
-					// 1024 bytes / (1024^3) * 0.03 = small value
 					assert.Greater(t, waste[0].EstimatedMonthlyCost, 0.0)
 				}
 			}
@@ -91,19 +90,21 @@ func TestGetCloudWatchLogsWaste(t *testing.T) {
 	}
 }
 
-func TestGetLambdaMaxMemoryUsed(t *testing.T) {
+func TestGetLambdaMaxMemoryUsedBatch(t *testing.T) {
 	ctx := context.Background()
 	startTime := time.Date(2026, 4, 1, 0, 0, 0, 0, time.UTC)
 	endTime := time.Date(2026, 4, 14, 0, 0, 0, 0, time.UTC)
 
 	tests := []struct {
 		name       string
+		logGroups  []string
 		setupMocks func(*awsinterfaces.MockCloudWatchLogsClient)
-		wantMB     int32
+		want       map[string]int32
 		wantErr    bool
 	}{
 		{
-			name: "successful query returns max memory",
+			name:      "successful query returns max memory per log group",
+			logGroups: []string{"/aws/lambda/fn-a", "/aws/lambda/fn-b"},
 			setupMocks: func(m *awsinterfaces.MockCloudWatchLogsClient) {
 				m.On("StartQuery", mock.Anything, mock.Anything, mock.Anything).Return(&cloudwatchlogs.StartQueryOutput{
 					QueryId: aws.String("query-123"),
@@ -112,24 +113,42 @@ func TestGetLambdaMaxMemoryUsed(t *testing.T) {
 					Status: types.QueryStatusComplete,
 					Results: [][]types.ResultField{
 						{
+							{Field: aws.String("@log"), Value: aws.String("123456789012:/aws/lambda/fn-a")},
 							{Field: aws.String("maxMemMB"), Value: aws.String("75.5")},
+						},
+						{
+							{Field: aws.String("@log"), Value: aws.String("123456789012:/aws/lambda/fn-b")},
+							{Field: aws.String("maxMemMB"), Value: aws.String("200")},
 						},
 					},
 				}, nil)
 			},
-			wantMB:  76, // ceil(75.5)
+			want: map[string]int32{
+				"/aws/lambda/fn-a": 76,
+				"/aws/lambda/fn-b": 200,
+			},
 			wantErr: false,
 		},
 		{
-			name: "start query fails",
+			name:      "empty log groups returns empty map without calling AWS",
+			logGroups: []string{},
+			setupMocks: func(_ *awsinterfaces.MockCloudWatchLogsClient) {
+			},
+			want:    map[string]int32{},
+			wantErr: false,
+		},
+		{
+			name:      "start query fails",
+			logGroups: []string{"/aws/lambda/fn-a"},
 			setupMocks: func(m *awsinterfaces.MockCloudWatchLogsClient) {
 				m.On("StartQuery", mock.Anything, mock.Anything, mock.Anything).Return((*cloudwatchlogs.StartQueryOutput)(nil), errors.New("access denied"))
 			},
-			wantMB:  0,
+			want:    nil,
 			wantErr: true,
 		},
 		{
-			name: "query fails status",
+			name:      "query fails status",
+			logGroups: []string{"/aws/lambda/fn-a"},
 			setupMocks: func(m *awsinterfaces.MockCloudWatchLogsClient) {
 				m.On("StartQuery", mock.Anything, mock.Anything, mock.Anything).Return(&cloudwatchlogs.StartQueryOutput{
 					QueryId: aws.String("query-456"),
@@ -138,11 +157,12 @@ func TestGetLambdaMaxMemoryUsed(t *testing.T) {
 					Status: types.QueryStatusFailed,
 				}, nil)
 			},
-			wantMB:  0,
+			want:    nil,
 			wantErr: true,
 		},
 		{
-			name: "empty results returns zero",
+			name:      "empty results returns empty map",
+			logGroups: []string{"/aws/lambda/fn-a"},
 			setupMocks: func(m *awsinterfaces.MockCloudWatchLogsClient) {
 				m.On("StartQuery", mock.Anything, mock.Anything, mock.Anything).Return(&cloudwatchlogs.StartQueryOutput{
 					QueryId: aws.String("query-789"),
@@ -152,7 +172,7 @@ func TestGetLambdaMaxMemoryUsed(t *testing.T) {
 					Results: [][]types.ResultField{},
 				}, nil)
 			},
-			wantMB:  0,
+			want:    map[string]int32{},
 			wantErr: false,
 		},
 	}
@@ -163,13 +183,13 @@ func TestGetLambdaMaxMemoryUsed(t *testing.T) {
 			tt.setupMocks(mockClient)
 
 			svc := &service{client: mockClient}
-			mem, err := svc.GetLambdaMaxMemoryUsed(ctx, "/aws/lambda/test-fn", startTime, endTime)
+			got, err := svc.GetLambdaMaxMemoryUsedBatch(ctx, tt.logGroups, startTime, endTime)
 
 			if tt.wantErr {
 				assert.Error(t, err)
 			} else {
 				assert.NoError(t, err)
-				assert.Equal(t, tt.wantMB, mem)
+				assert.Equal(t, tt.want, got)
 			}
 		})
 	}

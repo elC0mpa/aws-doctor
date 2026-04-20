@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"math"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -54,19 +55,50 @@ func (s *service) GetCloudWatchLogsWaste(ctx context.Context) ([]model.CloudWatc
 
 const queryPollInterval = 500 * time.Millisecond
 
-// GetLambdaMaxMemoryUsed runs a CloudWatch Logs Insights query to find the maximum memory used
-// by a Lambda function within the given time range. Returns the value in MB.
-func (s *service) GetLambdaMaxMemoryUsed(ctx context.Context, logGroupName string, startTime, endTime time.Time) (int32, error) {
-	queryString := `filter @type = "REPORT" | stats max(@maxMemoryUsed / 1048576) as maxMemMB`
+// ListExistingLogGroups returns the set of log group names matching the given name prefix. This
+// is used to pre-filter before calling GetLambdaMaxMemoryUsedBatch, since a StartQuery fails the
+// entire request when any named log group is missing.
+func (s *service) ListExistingLogGroups(ctx context.Context, prefix string) (map[string]struct{}, error) {
+	existing := make(map[string]struct{})
+
+	paginator := cloudwatchlogs.NewDescribeLogGroupsPaginator(s.client, &cloudwatchlogs.DescribeLogGroupsInput{
+		LogGroupNamePrefix: aws.String(prefix),
+	})
+
+	for paginator.HasMorePages() {
+		output, err := paginator.NextPage(ctx)
+		if err != nil {
+			return nil, fmt.Errorf("failed to describe log groups: %w", err)
+		}
+
+		for _, lg := range output.LogGroups {
+			if lg.LogGroupName != nil {
+				existing[*lg.LogGroupName] = struct{}{}
+			}
+		}
+	}
+
+	return existing, nil
+}
+
+// GetLambdaMaxMemoryUsedBatch runs a single CloudWatch Logs Insights query against multiple log
+// groups and returns a map of log group name to the maximum memory used (in MB) within the given
+// time range. Log groups with no REPORT entries are omitted from the result.
+func (s *service) GetLambdaMaxMemoryUsedBatch(ctx context.Context, logGroupNames []string, startTime, endTime time.Time) (map[string]int32, error) {
+	if len(logGroupNames) == 0 {
+		return map[string]int32{}, nil
+	}
+
+	queryString := `filter @type = "REPORT" | stats max(@maxMemoryUsed / 1048576) as maxMemMB by @log`
 
 	startOutput, err := s.client.StartQuery(ctx, &cloudwatchlogs.StartQueryInput{
-		LogGroupName: aws.String(logGroupName),
-		StartTime:    aws.Int64(startTime.Unix()),
-		EndTime:      aws.Int64(endTime.Unix()),
-		QueryString:  aws.String(queryString),
+		LogGroupNames: logGroupNames,
+		StartTime:     aws.Int64(startTime.Unix()),
+		EndTime:       aws.Int64(endTime.Unix()),
+		QueryString:   aws.String(queryString),
 	})
 	if err != nil {
-		return 0, fmt.Errorf("failed to start query for %s: %w", logGroupName, err)
+		return nil, fmt.Errorf("failed to start query: %w", err)
 	}
 
 	for {
@@ -74,35 +106,55 @@ func (s *service) GetLambdaMaxMemoryUsed(ctx context.Context, logGroupName strin
 			QueryId: startOutput.QueryId,
 		})
 		if err != nil {
-			return 0, fmt.Errorf("failed to get query results for %s: %w", logGroupName, err)
+			return nil, fmt.Errorf("failed to get query results: %w", err)
 		}
 
 		if results.Status == cwlogstypes.QueryStatusComplete {
-			return parseMaxMemMB(results.Results), nil
+			return parseMaxMemMBByGroup(results.Results), nil
 		}
 
 		if results.Status == cwlogstypes.QueryStatusFailed || results.Status == cwlogstypes.QueryStatusCancelled || results.Status == cwlogstypes.QueryStatusTimeout {
-			return 0, fmt.Errorf("query %s for %s", results.Status, logGroupName)
+			return nil, fmt.Errorf("query %s", results.Status)
 		}
 
 		time.Sleep(queryPollInterval)
 	}
 }
 
-// parseMaxMemMB extracts the maxMemMB value from CW Logs Insights query results.
-func parseMaxMemMB(results [][]cwlogstypes.ResultField) int32 {
-	for _, row := range results {
-		for _, field := range row {
-			if aws.ToString(field.Field) == "maxMemMB" {
-				val, err := strconv.ParseFloat(aws.ToString(field.Value), 64)
-				if err != nil {
-					return 0
-				}
+// parseMaxMemMBByGroup extracts per-log-group maxMemMB values from CW Logs Insights results. The
+// @log field is returned as "accountId:logGroupName"; this strips the account prefix.
+func parseMaxMemMBByGroup(results [][]cwlogstypes.ResultField) map[string]int32 {
+	out := make(map[string]int32, len(results))
 
-				return int32(math.Ceil(val))
+	for _, row := range results {
+		var (
+			logGroup string
+			maxMemMB int32
+			hasValue bool
+		)
+
+		for _, field := range row {
+			switch aws.ToString(field.Field) {
+			case "@log":
+				logValue := aws.ToString(field.Value)
+				if idx := strings.Index(logValue, ":"); idx >= 0 {
+					logGroup = logValue[idx+1:]
+				} else {
+					logGroup = logValue
+				}
+			case "maxMemMB":
+				val, err := strconv.ParseFloat(aws.ToString(field.Value), 64)
+				if err == nil {
+					maxMemMB = int32(math.Ceil(val))
+					hasValue = true
+				}
 			}
+		}
+
+		if logGroup != "" && hasValue {
+			out[logGroup] = maxMemMB
 		}
 	}
 
-	return 0
+	return out
 }
