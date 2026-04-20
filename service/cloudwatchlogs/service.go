@@ -53,7 +53,7 @@ func (s *service) GetCloudWatchLogsWaste(ctx context.Context) ([]model.CloudWatc
 	return wasteLogGroups, nil
 }
 
-const queryPollInterval = 500 * time.Millisecond
+const queryPollInterval = 1 * time.Second
 
 // ListExistingLogGroups returns the set of log group names matching the given name prefix. This
 // is used to pre-filter before calling GetLambdaMaxMemoryUsedBatch, since a StartQuery fails the
@@ -117,7 +117,11 @@ func (s *service) GetLambdaMaxMemoryUsedBatch(ctx context.Context, logGroupNames
 			return nil, fmt.Errorf("insights query failed with status: %s", results.Status)
 		}
 
-		time.Sleep(queryPollInterval)
+		select {
+		case <-ctx.Done():
+			return nil, ctx.Err()
+		case <-time.After(queryPollInterval):
+		}
 	}
 }
 
