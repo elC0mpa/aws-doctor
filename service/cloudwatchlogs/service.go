@@ -114,7 +114,7 @@ func (s *service) GetLambdaMaxMemoryUsedBatch(ctx context.Context, logGroupNames
 		}
 
 		if results.Status == cwlogstypes.QueryStatusFailed || results.Status == cwlogstypes.QueryStatusCancelled || results.Status == cwlogstypes.QueryStatusTimeout {
-			return nil, fmt.Errorf("query %s", results.Status)
+			return nil, fmt.Errorf("insights query failed with status: %s", results.Status)
 		}
 
 		time.Sleep(queryPollInterval)
