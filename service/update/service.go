@@ -13,7 +13,10 @@ import (
 	"github.com/google/go-github/v62/github"
 )
 
-const homebrewCellarPath = "/Cellar/aws-doctor/"
+const (
+	homebrewCellarPath = "/Cellar/aws-doctor/"
+	goPackageVersion   = "dev"
+)
 
 var goInstallBinPath = string(filepath.Separator) + filepath.Join("go", "bin") + string(filepath.Separator)
 
@@ -66,7 +69,7 @@ func (s *service) Update() error {
 		return model.ErrHomebrewInstall
 	}
 
-	if err == nil && strings.Contains(resolvedPath, goInstallBinPath) && s.versionInfo.Version == "dev" {
+	if err == nil && strings.Contains(resolvedPath, goInstallBinPath) && s.versionInfo.Version == goPackageVersion {
 		return model.ErrGoInstall
 	}
 
@@ -79,7 +82,7 @@ func (s *service) Update() error {
 }
 
 func (s *service) CheckForUpdate(ctx context.Context) (*string, error) {
-	if s.versionInfo.Version == "dev" {
+	if s.versionInfo.Version == goPackageVersion {
 		return nil, nil
 	}
 
@@ -101,7 +104,7 @@ func (s *service) CheckForUpdate(ctx context.Context) (*string, error) {
 }
 
 func (s *service) shouldUpdate(ctx context.Context) (bool, error) {
-	if s.versionInfo.Version == "dev" {
+	if s.versionInfo.Version == goPackageVersion {
 		return true, nil
 	}
 
