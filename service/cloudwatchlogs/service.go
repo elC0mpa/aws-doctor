@@ -137,8 +137,8 @@ func parseMaxMemMBByGroup(results [][]cwlogstypes.ResultField) map[string]int32 
 			switch aws.ToString(field.Field) {
 			case "@log":
 				logValue := aws.ToString(field.Value)
-				if idx := strings.Index(logValue, ":"); idx >= 0 {
-					logGroup = logValue[idx+1:]
+				if _, after, ok := strings.Cut(logValue, ":"); ok {
+					logGroup = after
 				} else {
 					logGroup = logValue
 				}

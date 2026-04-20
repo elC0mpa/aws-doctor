@@ -4,7 +4,8 @@ package lambda
 import (
 	"context"
 	"fmt"
-	"sync"
+	"maps"
+	"slices"
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -47,26 +48,22 @@ func (s *service) GetOverProvisionedFunctions(ctx context.Context, memoryThresho
 	}
 
 	logGroupToFunction := make(map[string]lambdatypes.FunctionConfiguration, len(functions))
-	logGroupNames := make([]string, 0, len(functions))
 
 	for _, fn := range functions {
 		logGroupName := lambdaLogGroupPrefix + aws.ToString(fn.FunctionName)
-		if _, ok := existingLogGroups[logGroupName]; !ok {
-			continue
+		if _, ok := existingLogGroups[logGroupName]; ok {
+			logGroupToFunction[logGroupName] = fn
 		}
-
-		logGroupToFunction[logGroupName] = fn
-		logGroupNames = append(logGroupNames, logGroupName)
 	}
 
-	if len(logGroupNames) == 0 {
+	if len(logGroupToFunction) == 0 {
 		return nil, nil
 	}
 
 	now := time.Now()
 	startTime := now.AddDate(0, 0, -lookbackDays)
 
-	maxMemByLogGroup, err := s.queryMaxMemoryInBatches(ctx, logGroupNames, startTime, now)
+	maxMemByLogGroup, err := s.queryMaxMemoryInBatches(ctx, slices.Collect(maps.Keys(logGroupToFunction)), startTime, now)
 	if err != nil {
 		return nil, err
 	}
@@ -74,36 +71,30 @@ func (s *service) GetOverProvisionedFunctions(ctx context.Context, memoryThresho
 	return buildOverProvisionedResults(logGroupToFunction, maxMemByLogGroup, memoryThresholdPercent), nil
 }
 
+// batchResult carries the per-log-group max memory map from a single Insights query.
+type batchResult struct {
+	memByLogGroup map[string]int32
+}
+
 // queryMaxMemoryInBatches runs batched CloudWatch Logs Insights queries (up to
 // logGroupsPerInsightsQuery per query) concurrently and merges the per-log-group results.
 func (s *service) queryMaxMemoryInBatches(ctx context.Context, logGroupNames []string, startTime, endTime time.Time) (map[string]int32, error) {
-	var (
-		mu     sync.Mutex
-		merged = make(map[string]int32, len(logGroupNames))
-	)
+	batchCount := (len(logGroupNames) + logGroupsPerInsightsQuery - 1) / logGroupsPerInsightsQuery
+	results := make(chan batchResult, batchCount)
 
 	g, ctx := errgroup.WithContext(ctx)
 	g.SetLimit(maxLogsConcurrency)
 
 	for start := 0; start < len(logGroupNames); start += logGroupsPerInsightsQuery {
-		end := start + logGroupsPerInsightsQuery
-		if end > len(logGroupNames) {
-			end = len(logGroupNames)
-		}
-
-		batch := logGroupNames[start:end]
+		batch := logGroupNames[start:min(start+logGroupsPerInsightsQuery, len(logGroupNames))]
 
 		g.Go(func() error {
-			results, err := s.logsService.GetLambdaMaxMemoryUsedBatch(ctx, batch, startTime, endTime)
+			r, err := s.logsService.GetLambdaMaxMemoryUsedBatch(ctx, batch, startTime, endTime)
 			if err != nil {
 				return fmt.Errorf("batch Insights query failed for %d log groups: %w", len(batch), err)
 			}
 
-			mu.Lock()
-			for k, v := range results {
-				merged[k] = v
-			}
-			mu.Unlock()
+			results <- batchResult{memByLogGroup: r}
 
 			return nil
 		})
@@ -111,6 +102,14 @@ func (s *service) queryMaxMemoryInBatches(ctx context.Context, logGroupNames []s
 
 	if err := g.Wait(); err != nil {
 		return nil, err
+	}
+
+	close(results)
+
+	merged := make(map[string]int32, len(logGroupNames))
+
+	for r := range results {
+		maps.Copy(merged, r.memByLogGroup)
 	}
 
 	return merged, nil
