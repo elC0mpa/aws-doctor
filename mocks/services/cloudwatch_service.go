@@ -24,9 +24,24 @@ func (m *MockCloudWatchLogsService) GetCloudWatchLogsWaste(ctx context.Context) 
 	return args.Get(0).([]model.CloudWatchLogsWasteInfo), args.Error(1)
 }
 
-// GetLambdaMaxMemoryUsed mocks the GetLambdaMaxMemoryUsed method.
-func (m *MockCloudWatchLogsService) GetLambdaMaxMemoryUsed(ctx context.Context, logGroupName string, startTime, endTime time.Time) (int32, error) {
-	args := m.Called(ctx, logGroupName, startTime, endTime)
+// GetLambdaMaxMemoryUsedBatch mocks the GetLambdaMaxMemoryUsedBatch method.
+func (m *MockCloudWatchLogsService) GetLambdaMaxMemoryUsedBatch(ctx context.Context, logGroupNames []string, startTime, endTime time.Time) (map[string]int32, error) {
+	args := m.Called(ctx, logGroupNames, startTime, endTime)
 
-	return args.Get(0).(int32), args.Error(1)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+
+	return args.Get(0).(map[string]int32), args.Error(1)
+}
+
+// ListExistingLogGroups mocks the ListExistingLogGroups method.
+func (m *MockCloudWatchLogsService) ListExistingLogGroups(ctx context.Context, prefix string) (map[string]struct{}, error) {
+	args := m.Called(ctx, prefix)
+
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+
+	return args.Get(0).(map[string]struct{}), args.Error(1)
 }
