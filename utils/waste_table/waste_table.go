@@ -724,7 +724,7 @@ func drawSummaryTable(input model.RenderWasteInput) {
 	})
 
 	t.Render()
-	fmt.Println(text.FgHiYellow.Sprint(" * Estimates based on us-east-1 pricing. Actual costs may vary by region."))
+	fmt.Println(text.FgHiYellow.Sprint(" * Estimates use AWS Pricing API rates for the configured region, falling back to us-east-1 defaults when unavailable."))
 	fmt.Println()
 }
 

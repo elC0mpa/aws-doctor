@@ -102,6 +102,7 @@ go install github.com/elC0mpa/aws-doctor@latest
 - **📤 Multiple Output Formats:** Export results in `table`, `json`, or `csv` for easy integration with other tools or reporting.
 - **🔔 Update Notifications:** Automatically checks for new versions in the background and notifies you after command output, so you never miss an update.
 - **🔐 MFA Ready:** Native support for profiles requiring Multi-Factor Authentication.
+- **🌍 Region-Aware Pricing:** Queries the AWS Pricing API at startup to use rates for the configured region, falling back to us-east-1 defaults if the API is unavailable. Requires `pricing:GetProducts` in the caller's IAM policy; without it, estimates silently fall back to defaults.
 
 ## 💡 Motivation
 

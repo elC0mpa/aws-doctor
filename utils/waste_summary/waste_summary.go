@@ -32,7 +32,7 @@ func computeAndStorageCategories(input model.RenderWasteInput) []model.CategoryS
 	var categories []model.CategorySummary
 
 	if n := len(input.ElasticIPs); n > 0 {
-		categories = append(categories, model.CategorySummary{Name: "Elastic IPs", Count: n, Cost: float64(n) * pricing.EIPCostPerMonth})
+		categories = append(categories, model.CategorySummary{Name: "Elastic IPs", Count: n, Cost: float64(n) * pricing.CalculateEIPMonthlyCost()})
 	}
 
 	if n := len(input.UnusedVolumes); n > 0 {
@@ -180,11 +180,7 @@ func lbCost(loadBalancers []elbtypes.LoadBalancer) float64 {
 	var cost float64
 
 	for _, lb := range loadBalancers {
-		if lb.Type == "classic" {
-			cost += pricing.CLBCostPerMonth
-		} else {
-			cost += pricing.ALBCostPerMonth
-		}
+		cost += pricing.CalculateLoadBalancerMonthlyCost(lb.Type)
 	}
 
 	return cost

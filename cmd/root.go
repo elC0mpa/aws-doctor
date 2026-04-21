@@ -3,6 +3,7 @@ package cmd
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/elC0mpa/aws-doctor/model"
 	awsconfig "github.com/elC0mpa/aws-doctor/service/aws_config"
@@ -22,6 +23,7 @@ import (
 	"github.com/elC0mpa/aws-doctor/service/update"
 	awsvpc "github.com/elC0mpa/aws-doctor/service/vpc"
 	"github.com/elC0mpa/aws-doctor/utils/banner"
+	"github.com/elC0mpa/aws-doctor/utils/pricing"
 	"github.com/elC0mpa/aws-doctor/utils/spinner"
 	"github.com/spf13/cobra"
 )
@@ -58,6 +60,10 @@ func buildOrchestrator(needsAWS bool) (orchestrator.Service, error) {
 	}
 
 	spinner.StartSpinner()
+
+	pricingCtx, cancelPricing := context.WithTimeout(context.Background(), 15*time.Second)
+	pricing.Load(pricingCtx, awsCfg)
+	cancelPricing()
 
 	cwMetricsService := cloudwatchmetrics.NewService(awsCfg)
 

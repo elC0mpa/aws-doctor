@@ -11,6 +11,7 @@ aws-doctor is a Go CLI tool that provides AWS cost analysis and waste detection.
 - Cost comparison between current and previous month
 - 6-month trend analysis
 - Waste detection (unused EIPs, EBS volumes, stopped instances, load balancers, idle NAT Gateways, idle SageMaker real-time inference endpoints, etc.)
+- Region-aware cost estimates: `utils/pricing` fetches rates from the AWS Pricing API (always via the `us-east-1` endpoint, filtered by the caller's region) at startup and caches them in memory. The `Calculate*` helpers prefer the cached rate and fall back to the hardcoded us-east-1 defaults. New pricing categories should be added to `loader.go`'s category list and wired into the relevant `Calculate*` function, keeping the constant as a fallback.
 - Startup banner uses ANSI truecolor; title color switches to AmazonOrange when a blue background is detected (Windows console attributes or `COLORFGBG` on Unix-like terminals), otherwise SkypeBlue. Override with `AWS_DOCTOR_BANNER_COLOR` (color name or ANSI code).
 
 ## Quick Reference
