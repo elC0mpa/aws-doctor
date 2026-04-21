@@ -14,4 +14,5 @@ type Flags struct {
 	Report                bool   // Whether to generate a report
 	ReportPath            string // Path to save the report (optional)
 	LambdaMemoryThreshold int    // Memory utilization threshold (%) for Lambda over-provisioned detection (default: 10)
+	SageMakerIdleDays     int    // Lookback window in days for SageMaker endpoint idle detection (default: 14)
 }

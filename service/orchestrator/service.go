@@ -28,6 +28,7 @@ func NewService(cfg Config) Service {
 		cloudwatchlogsService: cfg.CloudWatchLogsService,
 		rdsService:            cfg.RDSService,
 		lambdaService:         cfg.LambdaService,
+		sagemakerService:      cfg.SageMakerService,
 		outputService:         cfg.OutputService,
 		updateService:         cfg.UpdateService,
 		reportService:         cfg.ReportService,
@@ -61,7 +62,7 @@ func (s *service) Orchestrate(flags model.Flags) error {
 
 	switch {
 	case flags.Waste:
-		workflowErr = s.wasteWorkflow(flags.WasteChecks, flags.Report, flags.ReportPath, flags.LambdaMemoryThreshold)
+		workflowErr = s.wasteWorkflow(flags.WasteChecks, flags.Report, flags.ReportPath, flags.LambdaMemoryThreshold, flags.SageMakerIdleDays)
 	case flags.Trend:
 		workflowErr = s.trendWorkflow(flags.TrendChecks, flags.Report, flags.ReportPath)
 	default:
@@ -206,7 +207,7 @@ func (s *service) trendWorkflow(trendChecks []string, generateReport bool, repor
 	return s.outputService.RenderTrend(*stsResult.Account, costInfo, trendChecks)
 }
 
-func (s *service) wasteWorkflow(wasteChecks []string, generateReport bool, reportPath string, lambdaMemoryThreshold int) error {
+func (s *service) wasteWorkflow(wasteChecks []string, generateReport bool, reportPath string, lambdaMemoryThreshold int, sageMakerIdleDays int) error {
 	ctx := context.Background()
 	g, ctx := errgroup.WithContext(ctx)
 
@@ -219,6 +220,7 @@ func (s *service) wasteWorkflow(wasteChecks []string, generateReport bool, repor
 	runRDS := runAll || slice.ContainsIgnoreCase(wasteChecks, "rds")
 	runVPC := runAll || slice.ContainsIgnoreCase(wasteChecks, "vpc")
 	runLambda := runAll || slice.ContainsIgnoreCase(wasteChecks, "lambda")
+	runSageMaker := runAll || slice.ContainsIgnoreCase(wasteChecks, "sagemaker")
 
 	// Results from concurrent API calls
 	var (
@@ -240,6 +242,7 @@ func (s *service) wasteWorkflow(wasteChecks []string, generateReport bool, repor
 		rdsIdleInstances                         []model.RDSIdleInstanceInfo
 		idleNATGateways                          []model.NATGatewayWasteInfo
 		overProvisionedLambdas                   []model.LambdaOverProvisionedInfo
+		idleSageMakerEndpoints                   []model.IdleSageMakerEndpointInfo
 		stsResult                                *sts.GetCallerIdentityOutput
 	)
 
@@ -374,6 +377,8 @@ func (s *service) wasteWorkflow(wasteChecks []string, generateReport bool, repor
 		})
 	}
 
+	s.dispatchSageMaker(ctx, g, runSageMaker, sageMakerIdleDays, &idleSageMakerEndpoints)
+
 	// Fetch caller identity concurrently (always required for output)
 	g.Go(func() error {
 		var err error
@@ -410,6 +415,7 @@ func (s *service) wasteWorkflow(wasteChecks []string, generateReport bool, repor
 		IdleNATGateways:        idleNATGateways,
 		IdleLoadBalancers:      idleLoadBalancers,
 		OverProvisionedLambdas: overProvisionedLambdas,
+		IdleSageMakerEndpoints: idleSageMakerEndpoints,
 	}
 
 	if generateReport {
@@ -436,4 +442,28 @@ func (s *service) handleCostError(err error) error {
 	}
 
 	return err
+}
+
+// dispatchSageMaker launches a goroutine that fetches idle SageMaker endpoints when the
+// sagemaker check is enabled. The extraction exists purely to keep wasteWorkflow under the
+// gocyclo threshold; it has no independent behavior.
+func (s *service) dispatchSageMaker(ctx context.Context, g *errgroup.Group, run bool, idleDays int, out *[]model.IdleSageMakerEndpointInfo) {
+	if !run || s.sagemakerService == nil {
+		return
+	}
+
+	if idleDays <= 0 {
+		idleDays = 14
+	}
+
+	g.Go(func() error {
+		endpoints, err := s.sagemakerService.GetIdleEndpoints(ctx, idleDays)
+		if err != nil {
+			return err
+		}
+
+		*out = endpoints
+
+		return nil
+	})
 }

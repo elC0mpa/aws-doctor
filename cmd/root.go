@@ -17,6 +17,7 @@ import (
 	"github.com/elC0mpa/aws-doctor/service/rds"
 	"github.com/elC0mpa/aws-doctor/service/report"
 	"github.com/elC0mpa/aws-doctor/service/s3"
+	awssagemaker "github.com/elC0mpa/aws-doctor/service/sagemaker"
 	awssts "github.com/elC0mpa/aws-doctor/service/sts"
 	"github.com/elC0mpa/aws-doctor/service/update"
 	awsvpc "github.com/elC0mpa/aws-doctor/service/vpc"
@@ -70,6 +71,7 @@ func buildOrchestrator(needsAWS bool) (orchestrator.Service, error) {
 	config.RDSService = rds.NewService(awsCfg, cwMetricsService)
 	config.VPCService = awsvpc.NewService(awsCfg, cwMetricsService)
 	config.LambdaService = awslambda.NewService(awsCfg, cwLogsService)
+	config.SageMakerService = awssagemaker.NewService(awsCfg, cwMetricsService)
 	config.ReportService = report.NewService()
 
 	return orchestrator.NewService(config), nil

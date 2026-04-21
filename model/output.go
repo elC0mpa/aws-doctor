@@ -33,6 +33,7 @@ type RenderWasteInput struct {
 	IdleNATGateways        []NATGatewayWasteInfo
 	IdleLoadBalancers      []ELBIdleInfo
 	OverProvisionedLambdas []LambdaOverProvisionedInfo
+	IdleSageMakerEndpoints []IdleSageMakerEndpointInfo
 }
 
 // RenderCostComparisonInput represents the input data for rendering the cost comparison report

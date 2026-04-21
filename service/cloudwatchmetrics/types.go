@@ -21,4 +21,5 @@ type Service interface {
 	RDSHasZeroConnectionsInPeriod(ctx context.Context, dbInstanceID string, days int) (bool, error)
 	NATGatewayBytesOut(ctx context.Context, natGatewayID string, days int) (float64, error)
 	ELBHasZeroRequestsInPeriod(ctx context.Context, loadBalancerArn string, lbType elbtypes.LoadBalancerTypeEnum, days int) (bool, error)
+	SageMakerVariantInvocations(ctx context.Context, endpointName, variantName string, days int) (float64, error)
 }
