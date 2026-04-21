@@ -18,7 +18,8 @@ type ClientAPI interface {
 // Service is the interface for AWS CloudWatch Logs service.
 type Service interface {
 	GetCloudWatchLogsWaste(ctx context.Context) ([]model.CloudWatchLogsWasteInfo, error)
-	GetLambdaMaxMemoryUsed(ctx context.Context, logGroupName string, startTime, endTime time.Time) (int32, error)
+	GetLambdaMaxMemoryUsedBatch(ctx context.Context, logGroupNames []string, startTime, endTime time.Time) (map[string]int32, error)
+	ListExistingLogGroups(ctx context.Context, prefix string) (map[string]struct{}, error)
 }
 
 type service struct {

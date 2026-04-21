@@ -4,7 +4,8 @@ package lambda
 import (
 	"context"
 	"fmt"
-	"sync"
+	"maps"
+	"slices"
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -16,8 +17,11 @@ import (
 )
 
 const (
-	lookbackDays       = 14
-	maxLogsConcurrency = 10
+	lookbackDays              = 14
+	maxLogsConcurrency        = 10
+	logGroupsPerInsightsQuery = 50
+	minRecommendedMemoryMB    = 128
+	lambdaLogGroupPrefix      = "/aws/lambda/"
 )
 
 // NewService creates a new Lambda service.
@@ -34,50 +38,63 @@ func (s *service) GetOverProvisionedFunctions(ctx context.Context, memoryThresho
 		return nil, fmt.Errorf("failed to list Lambda functions: %w", err)
 	}
 
+	if len(functions) == 0 {
+		return nil, nil
+	}
+
+	existingLogGroups, err := s.logsService.ListExistingLogGroups(ctx, lambdaLogGroupPrefix)
+	if err != nil {
+		return nil, fmt.Errorf("failed to list Lambda log groups: %w", err)
+	}
+
+	logGroupToFunction := make(map[string]lambdatypes.FunctionConfiguration, len(functions))
+
+	for _, fn := range functions {
+		logGroupName := lambdaLogGroupPrefix + aws.ToString(fn.FunctionName)
+		if _, ok := existingLogGroups[logGroupName]; ok {
+			logGroupToFunction[logGroupName] = fn
+		}
+	}
+
+	if len(logGroupToFunction) == 0 {
+		return nil, nil
+	}
+
 	now := time.Now()
 	startTime := now.AddDate(0, 0, -lookbackDays)
 
-	var (
-		mu     sync.Mutex
-		result []model.LambdaOverProvisionedInfo
-	)
+	maxMemByLogGroup, err := s.queryMaxMemoryInBatches(ctx, slices.Collect(maps.Keys(logGroupToFunction)), startTime, now)
+	if err != nil {
+		return nil, err
+	}
+
+	return buildOverProvisionedResults(logGroupToFunction, maxMemByLogGroup, memoryThresholdPercent), nil
+}
+
+// batchResult carries the per-log-group max memory map from a single Insights query.
+type batchResult struct {
+	memByLogGroup map[string]int32
+}
+
+// queryMaxMemoryInBatches runs batched CloudWatch Logs Insights queries (up to
+// logGroupsPerInsightsQuery per query) concurrently and merges the per-log-group results.
+func (s *service) queryMaxMemoryInBatches(ctx context.Context, logGroupNames []string, startTime, endTime time.Time) (map[string]int32, error) {
+	batchCount := (len(logGroupNames) + logGroupsPerInsightsQuery - 1) / logGroupsPerInsightsQuery
+	results := make(chan batchResult, batchCount)
 
 	g, ctx := errgroup.WithContext(ctx)
 	g.SetLimit(maxLogsConcurrency)
 
-	for _, fn := range functions {
-		fn := fn
+	for start := 0; start < len(logGroupNames); start += logGroupsPerInsightsQuery {
+		batch := logGroupNames[start:min(start+logGroupsPerInsightsQuery, len(logGroupNames))]
 
 		g.Go(func() error {
-			functionName := aws.ToString(fn.FunctionName)
-			configuredMemoryMB := aws.ToInt32(fn.MemorySize)
-			logGroupName := fmt.Sprintf("/aws/lambda/%s", functionName)
-
-			maxMemUsed, err := s.logsService.GetLambdaMaxMemoryUsed(ctx, logGroupName, startTime, now)
-			if err != nil || maxMemUsed <= 0 || configuredMemoryMB <= 0 {
-				return nil
+			r, err := s.logsService.GetLambdaMaxMemoryUsedBatch(ctx, batch, startTime, endTime)
+			if err != nil {
+				return fmt.Errorf("batch Insights query failed for %d log groups: %w", len(batch), err)
 			}
 
-			utilizationPercent := (float64(maxMemUsed) / float64(configuredMemoryMB)) * 100
-
-			if utilizationPercent < float64(memoryThresholdPercent) {
-				recommendedMB := maxMemUsed * 2
-				if recommendedMB < 128 {
-					recommendedMB = 128
-				}
-
-				mu.Lock()
-
-				result = append(result, model.LambdaOverProvisionedInfo{
-					FunctionName:        functionName,
-					Runtime:             string(fn.Runtime),
-					ConfiguredMemoryMB:  configuredMemoryMB,
-					MaxMemoryUsedMB:     maxMemUsed,
-					MemoryUtilization:   utilizationPercent,
-					RecommendedMemoryMB: recommendedMB,
-				})
-				mu.Unlock()
-			}
+			results <- batchResult{memByLogGroup: r}
 
 			return nil
 		})
@@ -87,7 +104,59 @@ func (s *service) GetOverProvisionedFunctions(ctx context.Context, memoryThresho
 		return nil, err
 	}
 
-	return result, nil
+	close(results)
+
+	merged := make(map[string]int32, len(logGroupNames))
+
+	for r := range results {
+		maps.Copy(merged, r.memByLogGroup)
+	}
+
+	return merged, nil
+}
+
+// buildOverProvisionedResults returns recommendations for functions whose observed max memory
+// falls below memoryThresholdPercent of configured memory. Recommendation is max(observed * 2,
+// minRecommendedMemoryMB) to leave headroom while respecting Lambda's 128 MB floor.
+func buildOverProvisionedResults(
+	logGroupToFunction map[string]lambdatypes.FunctionConfiguration,
+	maxMemByLogGroup map[string]int32,
+	memoryThresholdPercent int,
+) []model.LambdaOverProvisionedInfo {
+	result := make([]model.LambdaOverProvisionedInfo, 0, len(maxMemByLogGroup))
+
+	for logGroup, maxMemUsed := range maxMemByLogGroup {
+		fn, ok := logGroupToFunction[logGroup]
+		if !ok {
+			continue
+		}
+
+		configuredMemoryMB := aws.ToInt32(fn.MemorySize)
+		if maxMemUsed <= 0 || configuredMemoryMB <= 0 {
+			continue
+		}
+
+		utilizationPercent := (float64(maxMemUsed) / float64(configuredMemoryMB)) * 100
+		if utilizationPercent >= float64(memoryThresholdPercent) {
+			continue
+		}
+
+		recommendedMB := maxMemUsed * 2
+		if recommendedMB < minRecommendedMemoryMB {
+			recommendedMB = minRecommendedMemoryMB
+		}
+
+		result = append(result, model.LambdaOverProvisionedInfo{
+			FunctionName:        aws.ToString(fn.FunctionName),
+			Runtime:             string(fn.Runtime),
+			ConfiguredMemoryMB:  configuredMemoryMB,
+			MaxMemoryUsedMB:     maxMemUsed,
+			MemoryUtilization:   utilizationPercent,
+			RecommendedMemoryMB: recommendedMB,
+		})
+	}
+
+	return result
 }
 
 func (s *service) listAllFunctions(ctx context.Context) ([]lambdatypes.FunctionConfiguration, error) {
