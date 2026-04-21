@@ -162,12 +162,16 @@ func loadWithClient(ctx context.Context, client clientAPI, region string) {
 		termMatch("operation", "NatGateway"),
 	}, matchUsagetypeContains("NatGateway-Hours"))
 
-	// Application/Network load balancer: usagetype suffix "-LoadBalancerUsage" to skip LCU and
-	// TS/Outposts rows (only the ones prefixed by region code, not "TS-" or "Outposts-").
-	fetch(categoryLBApp, "AWSELB", []pricingtypes.Filter{
-		regionFilter,
-		termMatch("productFamily", "Load Balancer-Application"),
-	}, matchLBUsage)
+	// Application and Network load balancers live under distinct productFamily values. Both
+	// typically price at the same $0.0225/hr rate, but Network LBs are queried separately to
+	// make the lookup robust if the rates ever diverge regionally. The matchLBUsage extractor
+	// drops LCU, TS-, and Outposts-* variants that share the family.
+	for _, family := range []string{"Load Balancer-Application", "Load Balancer-Network"} {
+		fetch(categoryLBApp, "AWSELB", []pricingtypes.Filter{
+			regionFilter,
+			termMatch("productFamily", family),
+		}, matchLBUsage)
+	}
 
 	// Classic load balancer: same matcher under productFamily "Load Balancer".
 	fetch(categoryLBClassic, "AWSELB", []pricingtypes.Filter{
@@ -266,6 +270,10 @@ func parsePriceListDocument(raw string) (productEntry, bool) {
 		return productEntry{}, false
 	}
 
+	// Take the first price dimension found. This is correct for the flat-rate categories we
+	// currently query (EBS, NAT, LB, CW Logs, RDS storage/snapshot, RDS instance) which each
+	// have a single "per unit" dimension. Tiered products (e.g., S3 storage or data transfer)
+	// would require inspecting beginRange/endRange on each dimension.
 	for _, sku := range doc.Terms.OnDemand {
 		for _, dim := range sku.PriceDimensions {
 			usdStr, ok := dim.PricePerUnit["USD"]
