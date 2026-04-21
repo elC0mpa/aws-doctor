@@ -136,19 +136,17 @@ func (s *service) checkEndpoint(ctx context.Context, summary smtypes.EndpointSum
 		return model.IdleSageMakerEndpointInfo{}, false, nil
 	}
 
-	var totalInvocations float64
-
+	// Short-circuit as soon as any variant shows traffic to avoid extra CloudWatch calls on
+	// endpoints that are obviously not idle.
 	for _, v := range variants {
 		n, err := s.cwService.SageMakerVariantInvocations(ctx, name, v.VariantName, idleDays)
 		if err != nil {
 			return model.IdleSageMakerEndpointInfo{}, false, nil
 		}
 
-		totalInvocations += n
-	}
-
-	if totalInvocations > 0 {
-		return model.IdleSageMakerEndpointInfo{}, false, nil
+		if n > 0 {
+			return model.IdleSageMakerEndpointInfo{}, false, nil
+		}
 	}
 
 	costInputs := make([]pricing.SageMakerVariantCost, 0, len(variants))
