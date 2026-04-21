@@ -64,11 +64,11 @@ func buildOrchestrator(needsAWS, needsPricing bool) (orchestrator.Service, error
 
 	if needsPricing {
 		pricingCtx, cancelPricing := context.WithTimeout(context.Background(), 15*time.Second)
+		defer cancelPricing()
+
 		if err := pricing.Load(pricingCtx, awsCfg); err != nil {
 			fmt.Fprintf(os.Stderr, "warning: pricing API partial failure, falling back to defaults: %v\n", err)
 		}
-
-		cancelPricing()
 	}
 
 	cwMetricsService := cloudwatchmetrics.NewService(awsCfg)

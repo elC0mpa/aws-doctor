@@ -140,6 +140,9 @@ func loadWithClient(ctx context.Context, client clientAPI, region string) error 
 	// matchLBUsage accepts standard "LoadBalancerUsage" rows while rejecting "Outposts-" and
 	// "TS-" variants (which use the same productFamily but distinct pricing). The usagetype has
 	// an optional region prefix across both ALB and CLB product families.
+	// Signature matches the extractor shape expected by fetch; the string result is always ""
+	// for classic LB (single variant) and is overridden by the ALB/NLB wrapper.
+	//nolint:unparam // variant intentionally empty for the classic LB caller
 	matchLBUsage := func(attrs map[string]string) (string, bool) {
 		u := attrs["usagetype"]
 		if !strings.Contains(u, "LoadBalancerUsage") {
@@ -181,12 +184,26 @@ func loadWithClient(ctx context.Context, client clientAPI, region string) error 
 	// Application and Network load balancers live under distinct productFamily values. Both
 	// typically price at the same $0.0225/hr rate, but Network LBs are queried separately to
 	// make the lookup robust if the rates ever diverge regionally. The matchLBUsage extractor
-	// drops LCU, TS-, and Outposts-* variants that share the family.
-	for _, family := range []string{"Load Balancer-Application", "Load Balancer-Network"} {
+	// drops LCU, TS-, and Outposts-* variants that share the family. Each is cached under its
+	// own variant key so the two parallel fetches don't overwrite each other.
+	lbFamilies := map[string]string{
+		"Load Balancer-Application": "application",
+		"Load Balancer-Network":     "network",
+	}
+
+	for family, variant := range lbFamilies {
+		variant := variant
+
 		fetch(categoryLBApp, "AWSELB", []pricingtypes.Filter{
 			regionFilter,
 			termMatch("productFamily", family),
-		}, matchLBUsage)
+		}, func(attrs map[string]string) (string, bool) {
+			if _, ok := matchLBUsage(attrs); !ok {
+				return "", false
+			}
+
+			return variant, true
+		})
 	}
 
 	// Classic load balancer: same matcher under productFamily "Load Balancer".

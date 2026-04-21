@@ -112,6 +112,11 @@ func TestLoadWithClient_PopulatesAllCategories(t *testing.T) {
 		buildProductDoc(map[string]string{"usagetype": "EU-TS-LoadBalancerUsage"}, "0.005"),
 	}
 
+	// NLB: distinct productFamily and a different rate to prove variant separation.
+	client.products["AWSELB:regionCode=eu-west-1;productFamily=Load Balancer-Network"] = []map[string]any{
+		buildProductDoc(map[string]string{"usagetype": "EU-LoadBalancerUsage"}, "0.030"),
+	}
+
 	// CLB: same matchLBUsage logic.
 	client.products["AWSELB:regionCode=eu-west-1;productFamily=Load Balancer"] = []map[string]any{
 		buildProductDoc(map[string]string{"usagetype": "EU-LoadBalancerUsage"}, "0.028"),
@@ -144,6 +149,7 @@ func TestLoadWithClient_PopulatesAllCategories(t *testing.T) {
 	assert.InDelta(t, 0.006*hoursPerMonth, CalculateEIPMonthlyCost(), 1e-6)
 	assert.InDelta(t, 0.05*hoursPerMonth, CalculateNATGatewayMonthlyCost(), 1e-6)
 	assert.InDelta(t, 0.025*hoursPerMonth, CalculateLoadBalancerMonthlyCost("application"), 1e-6)
+	assert.InDelta(t, 0.030*hoursPerMonth, CalculateLoadBalancerMonthlyCost("network"), 1e-6)
 	assert.InDelta(t, 0.028*hoursPerMonth, CalculateLoadBalancerMonthlyCost("classic"), 1e-6)
 
 	// 1 GiB of CW Logs at 0.033/GB-mo

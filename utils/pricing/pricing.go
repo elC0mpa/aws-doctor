@@ -96,7 +96,7 @@ func CalculateLoadBalancerMonthlyCost(lbType elbtypes.LoadBalancerTypeEnum) floa
 		return CLBCostPerMonth
 	}
 
-	if v, ok := lookupMonthly(priceKey(categoryLBApp, ""), hoursPerMonth); ok {
+	if v, ok := lookupMonthly(priceKey(categoryLBApp, string(lbType)), hoursPerMonth); ok {
 		return v
 	}
 
