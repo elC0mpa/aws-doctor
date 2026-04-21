@@ -32,7 +32,7 @@ func (m *MockOrchestrator) Orchestrate(flags model.Flags) error {
 func setupTest() (*MockOrchestrator, func()) {
 	mockOrch := new(MockOrchestrator)
 	originalBuilder := orchestratorBuilder
-	orchestratorBuilder = func(needsAWS bool) (orchestrator.Service, error) {
+	orchestratorBuilder = func(needsAWS, needsPricing bool) (orchestrator.Service, error) {
 		return mockOrch, nil
 	}
 
@@ -168,7 +168,7 @@ func TestExecuteTrendArgs(t *testing.T) {
 
 func TestCommandFailures(t *testing.T) {
 	originalBuilder := orchestratorBuilder
-	orchestratorBuilder = func(needsAWS bool) (orchestrator.Service, error) {
+	orchestratorBuilder = func(needsAWS, needsPricing bool) (orchestrator.Service, error) {
 		return nil, errors.New("builder error")
 	}
 
@@ -194,7 +194,7 @@ func TestCommandFailures(t *testing.T) {
 }
 
 func TestBuildOrchestratorNoAWS(t *testing.T) {
-	orch, err := buildOrchestrator(false)
+	orch, err := buildOrchestrator(false, false)
 	assert.NoError(t, err)
 	assert.NotNil(t, orch)
 }
@@ -204,7 +204,7 @@ func TestBuildOrchestratorAWS(t *testing.T) {
 	t.Setenv("AWS_SECRET_ACCESS_KEY", "test")
 	t.Setenv("AWS_REGION", "us-east-1")
 
-	orch, err := buildOrchestrator(true)
+	orch, err := buildOrchestrator(true, false)
 	assert.NoError(t, err)
 	assert.NotNil(t, orch)
 }

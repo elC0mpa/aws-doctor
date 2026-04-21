@@ -37,7 +37,7 @@ var (
 	orchestratorBuilder = buildOrchestrator
 )
 
-func buildOrchestrator(needsAWS bool) (orchestrator.Service, error) {
+func buildOrchestrator(needsAWS, needsPricing bool) (orchestrator.Service, error) {
 	outputService := output.NewService(outputFormat)
 	updateService := update.NewService(versionInfo)
 
@@ -62,12 +62,14 @@ func buildOrchestrator(needsAWS bool) (orchestrator.Service, error) {
 
 	spinner.StartSpinner()
 
-	pricingCtx, cancelPricing := context.WithTimeout(context.Background(), 15*time.Second)
-	if err := pricing.Load(pricingCtx, awsCfg); err != nil {
-		fmt.Fprintf(os.Stderr, "warning: pricing API partial failure, falling back to defaults: %v\n", err)
-	}
+	if needsPricing {
+		pricingCtx, cancelPricing := context.WithTimeout(context.Background(), 15*time.Second)
+		if err := pricing.Load(pricingCtx, awsCfg); err != nil {
+			fmt.Fprintf(os.Stderr, "warning: pricing API partial failure, falling back to defaults: %v\n", err)
+		}
 
-	cancelPricing()
+		cancelPricing()
+	}
 
 	cwMetricsService := cloudwatchmetrics.NewService(awsCfg)
 

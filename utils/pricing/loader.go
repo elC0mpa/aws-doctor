@@ -41,6 +41,12 @@ const (
 	categoryRDSSnapshot = "rds-snapshot"
 )
 
+// prices is the in-memory pricing cache. It lives for the process lifetime: Load populates it
+// once at startup (before any Calculate* call) and no code path invalidates or refreshes it.
+// This is intentional — aws-doctor is a short-lived CLI invocation, so a single snapshot is
+// sufficient and avoids re-querying the Pricing API. If aws-doctor ever grows into a long-running
+// process, this cache will need a TTL or explicit invalidation hook.
+//
 //nolint:gochecknoglobals // runtime price cache
 var (
 	priceMu sync.RWMutex

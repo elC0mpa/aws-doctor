@@ -9,7 +9,7 @@ var updateCmd = &cobra.Command{
 	Use:   "update",
 	Short: "Update aws-doctor to the latest version",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		orch, err := orchestratorBuilder(false)
+		orch, err := orchestratorBuilder(false, false)
 		if err != nil {
 			return err
 		}
