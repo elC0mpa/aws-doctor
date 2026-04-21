@@ -3,6 +3,7 @@ package cmd
 import (
 	"context"
 	"fmt"
+	"os"
 	"time"
 
 	"github.com/elC0mpa/aws-doctor/model"
@@ -62,7 +63,10 @@ func buildOrchestrator(needsAWS bool) (orchestrator.Service, error) {
 	spinner.StartSpinner()
 
 	pricingCtx, cancelPricing := context.WithTimeout(context.Background(), 15*time.Second)
-	pricing.Load(pricingCtx, awsCfg)
+	if err := pricing.Load(pricingCtx, awsCfg); err != nil {
+		fmt.Fprintf(os.Stderr, "warning: pricing API partial failure, falling back to defaults: %v\n", err)
+	}
+
 	cancelPricing()
 
 	cwMetricsService := cloudwatchmetrics.NewService(awsCfg)

@@ -138,7 +138,7 @@ func TestLoadWithClient_PopulatesAllCategories(t *testing.T) {
 		buildProductDoc(map[string]string{"instanceType": "db.t3.medium"}, "0.068"),
 	}
 
-	loadWithClient(context.Background(), client, "eu-west-1")
+	assert.NoError(t, loadWithClient(context.Background(), client, "eu-west-1"))
 
 	assert.InDelta(t, 0.08, EBSCostPerGBMonth(types.VolumeTypeGp3), 1e-9)
 	assert.InDelta(t, 0.006*hoursPerMonth, CalculateEIPMonthlyCost(), 1e-6)
@@ -167,7 +167,8 @@ func TestLoadWithClient_FallsBackWhenClientErrors(t *testing.T) {
 		},
 	}
 
-	loadWithClient(context.Background(), client, "us-west-2")
+	err := loadWithClient(context.Background(), client, "us-west-2")
+	assert.Error(t, err)
 
 	assert.InDelta(t, EBSgp3CostPerGBMonth, EBSCostPerGBMonth(types.VolumeTypeGp3), 1e-9)
 	assert.InDelta(t, EIPCostPerMonth, CalculateEIPMonthlyCost(), 1e-9)
@@ -190,8 +191,10 @@ func TestLoadWithClient_PartialFailure(t *testing.T) {
 		},
 	}
 
-	loadWithClient(context.Background(), client, "us-east-1")
+	err := loadWithClient(context.Background(), client, "us-east-1")
 
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "throttled")
 	assert.InDelta(t, 0.045*hoursPerMonth, CalculateNATGatewayMonthlyCost(), 1e-6)
 	assert.InDelta(t, ALBCostPerMonth, CalculateLoadBalancerMonthlyCost("application"), 1e-9)
 }

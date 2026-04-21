@@ -7,6 +7,7 @@ package pricing
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"strconv"
 	"strings"
@@ -18,8 +19,9 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
-// The Pricing API is only served from us-east-1 and ap-south-1. We always use us-east-1 since
-// it is available to every AWS account.
+// The Pricing API endpoint is only served from us-east-1 and ap-south-1, but it returns pricing
+// data for every AWS region via the regionCode filter on each query. We always talk to us-east-1
+// since it is available to every AWS account.
 const pricingEndpointRegion = "us-east-1"
 
 // maxPricingConcurrency caps parallel GetProducts calls during Load.
@@ -59,33 +61,41 @@ type clientAPI interface {
 	GetProducts(ctx context.Context, params *pricing.GetProductsInput, optFns ...func(*pricing.Options)) (*pricing.GetProductsOutput, error)
 }
 
-// Load populates the in-memory price cache for the given AWS region. It never returns an error
-// that should abort startup — partial failures are tolerated and missing entries fall back to
-// the hardcoded defaults. awsconfig is cloned with the Pricing API endpoint region so Load works
-// regardless of which region the caller is using.
-func Load(ctx context.Context, awsconfig aws.Config) {
-	region := awsconfig.Region
-	if region == "" {
-		region = pricingEndpointRegion
-	}
-
+// Load populates the in-memory price cache for the given AWS region. Partial failures are
+// tolerated (missing entries fall back to the hardcoded defaults), but any Pricing API errors
+// encountered are joined and returned so the caller can surface them. awsconfig is cloned with
+// the Pricing API endpoint region so Load works regardless of which region the caller is using.
+func Load(ctx context.Context, awsconfig aws.Config) error {
 	cfg := awsconfig.Copy()
 	cfg.Region = pricingEndpointRegion
 
 	client := pricing.NewFromConfig(cfg)
-	loadWithClient(ctx, client, region)
+
+	return loadWithClient(ctx, client, awsconfig.Region)
 }
 
 // loadWithClient is the testable entry point: it accepts a Pricing API client interface and the
 // target AWS region whose prices should be fetched.
-func loadWithClient(ctx context.Context, client clientAPI, region string) {
+func loadWithClient(ctx context.Context, client clientAPI, region string) error {
 	g, ctx := errgroup.WithContext(ctx)
 	g.SetLimit(maxPricingConcurrency)
+
+	var (
+		errMu    sync.Mutex
+		fetchErr []error
+	)
 
 	fetch := func(category, serviceCode string, filters []pricingtypes.Filter, extract func(attrs map[string]string) (variant string, ok bool)) {
 		g.Go(func() error {
 			entries, err := queryProducts(ctx, client, serviceCode, filters)
 			if err != nil {
+				wrapped := fmt.Errorf("%s: %w", category, err)
+
+				errMu.Lock()
+				defer errMu.Unlock()
+
+				fetchErr = append(fetchErr, wrapped)
+
 				return nil
 			}
 
@@ -213,6 +223,8 @@ func loadWithClient(ctx context.Context, client clientAPI, region string) {
 	})
 
 	_ = g.Wait()
+
+	return errors.Join(fetchErr...)
 }
 
 // productEntry captures the parsed essentials of one PriceList JSON document.
