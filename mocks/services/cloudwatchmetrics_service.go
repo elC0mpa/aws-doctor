@@ -31,3 +31,10 @@ func (m *MockCloudWatchMetricsService) ELBHasZeroRequestsInPeriod(ctx context.Co
 
 	return args.Bool(0), args.Error(1)
 }
+
+// SageMakerVariantInvocations mocks the SageMakerVariantInvocations method.
+func (m *MockCloudWatchMetricsService) SageMakerVariantInvocations(ctx context.Context, endpointName, variantName string, days int) (float64, error) {
+	args := m.Called(ctx, endpointName, variantName, days)
+
+	return args.Get(0).(float64), args.Error(1)
+}

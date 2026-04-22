@@ -33,4 +33,5 @@ var ServiceNameMap = map[string]string{
 	"secretsmanager": "AWS Secrets Manager",
 	"ssm":            "AWS Systems Manager",
 	"location":       "Amazon Location Service",
+	"sagemaker":      "Amazon SageMaker",
 }

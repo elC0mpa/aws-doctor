@@ -98,29 +98,12 @@ func OutputWasteJSON(input model.RenderWasteInput) error {
 		IdleNATGateways:        mapNATGateways(input.IdleNATGateways),
 		IdleLoadBalancers:      mapIdleLoadBalancers(input.IdleLoadBalancers),
 		OverProvisionedLambdas: mapLambdaOverProvisioned(input.OverProvisionedLambdas),
+		IdleSageMakerEndpoints: mapIdleSageMakerEndpoints(input.IdleSageMakerEndpoints),
 	}
 
 	output.OrphanedSnapshots, output.StaleSnapshots = mapSnapshots(input.OrphanedSnapshots)
 
-	output.HasWaste = len(output.UnusedElasticIPs) > 0 ||
-		len(output.UnusedEBSVolumes) > 0 ||
-		len(output.StoppedVolumes) > 0 ||
-		len(output.StoppedInstances) > 0 ||
-		len(output.ReservedInstances) > 0 ||
-		len(output.UnusedLoadBalancers) > 0 ||
-		len(output.UnusedAMIs) > 0 ||
-		len(output.OrphanedSnapshots) > 0 ||
-		len(output.StaleSnapshots) > 0 ||
-		len(output.UnusedKeyPairs) > 0 ||
-		len(output.S3Buckets) > 0 ||
-		len(output.S3MultipartUploads) > 0 ||
-		len(output.CloudWatchLogGroups) > 0 ||
-		len(output.StoppedRDSInstances) > 0 ||
-		len(output.OldRDSSnapshots) > 0 ||
-		len(output.IdleRDSInstances) > 0 ||
-		len(output.IdleNATGateways) > 0 ||
-		len(output.IdleLoadBalancers) > 0 ||
-		len(output.OverProvisionedLambdas) > 0
+	output.HasWaste = hasAnyWasteJSON(output)
 
 	categories, total := wastesummary.Compute(input)
 	output.TotalEstimatedMonthlyCost = total
@@ -393,6 +376,16 @@ func mapLambdaOverProvisioned(lambdas []model.LambdaOverProvisionedInfo) []model
 	return result
 }
 
+func mapIdleSageMakerEndpoints(eps []model.IdleSageMakerEndpointInfo) []model.IdleSageMakerEndpointJSON {
+	var result []model.IdleSageMakerEndpointJSON
+
+	for _, ep := range eps {
+		result = append(result, model.IdleSageMakerEndpointJSON(ep))
+	}
+
+	return result
+}
+
 func printJSON(v interface{}) error {
 	data, err := json.MarshalIndent(v, "", "  ")
 	if err != nil {
@@ -402,4 +395,29 @@ func printJSON(v interface{}) error {
 	fmt.Println(string(data))
 
 	return nil
+}
+
+// hasAnyWasteJSON returns true when any category in the JSON report contains entries.
+// Extracted from OutputWasteJSON to keep that function below the gocyclo threshold.
+func hasAnyWasteJSON(o model.WasteReportJSON) bool {
+	return len(o.UnusedElasticIPs) > 0 ||
+		len(o.UnusedEBSVolumes) > 0 ||
+		len(o.StoppedVolumes) > 0 ||
+		len(o.StoppedInstances) > 0 ||
+		len(o.ReservedInstances) > 0 ||
+		len(o.UnusedLoadBalancers) > 0 ||
+		len(o.UnusedAMIs) > 0 ||
+		len(o.OrphanedSnapshots) > 0 ||
+		len(o.StaleSnapshots) > 0 ||
+		len(o.UnusedKeyPairs) > 0 ||
+		len(o.S3Buckets) > 0 ||
+		len(o.S3MultipartUploads) > 0 ||
+		len(o.CloudWatchLogGroups) > 0 ||
+		len(o.StoppedRDSInstances) > 0 ||
+		len(o.OldRDSSnapshots) > 0 ||
+		len(o.IdleRDSInstances) > 0 ||
+		len(o.IdleNATGateways) > 0 ||
+		len(o.IdleLoadBalancers) > 0 ||
+		len(o.OverProvisionedLambdas) > 0 ||
+		len(o.IdleSageMakerEndpoints) > 0
 }

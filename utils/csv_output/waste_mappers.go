@@ -166,3 +166,12 @@ func mapLambdaOverProvisioned(lambdas []model.LambdaOverProvisionedInfo) [][]str
 
 	return result
 }
+
+func mapIdleSageMakerEndpoints(endpoints []model.IdleSageMakerEndpointInfo) [][]string {
+	result := make([][]string, 0, len(endpoints))
+	for _, ep := range endpoints {
+		result = append(result, outputshared.PresentIdleSageMakerEndpoint(ep).ToSlice())
+	}
+
+	return result
+}

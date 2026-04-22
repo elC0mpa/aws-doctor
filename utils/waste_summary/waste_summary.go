@@ -97,6 +97,15 @@ func computeAndStorageCategories(input model.RenderWasteInput) []model.CategoryS
 		categories = append(categories, model.CategorySummary{Name: "RDS Snapshots", Count: n, Cost: cost})
 	}
 
+	if n := len(input.IdleSageMakerEndpoints); n > 0 {
+		var cost float64
+		for _, ep := range input.IdleSageMakerEndpoints {
+			cost += ep.EstimatedMonthlyCost
+		}
+
+		categories = append(categories, model.CategorySummary{Name: "SageMaker Endpoints (Idle)", Count: n, Cost: cost})
+	}
+
 	return categories
 }
 
