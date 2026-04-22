@@ -11,6 +11,7 @@ import (
 	"github.com/elC0mpa/aws-doctor/service/rds"
 	"github.com/elC0mpa/aws-doctor/service/report"
 	"github.com/elC0mpa/aws-doctor/service/s3"
+	"github.com/elC0mpa/aws-doctor/service/sagemaker"
 	awssts "github.com/elC0mpa/aws-doctor/service/sts"
 	"github.com/elC0mpa/aws-doctor/service/update"
 	awsvpc "github.com/elC0mpa/aws-doctor/service/vpc"
@@ -25,6 +26,7 @@ type service struct {
 	cloudwatchlogsService cloudwatchlogs.Service
 	rdsService            rds.Service
 	lambdaService         lambda.Service
+	sagemakerService      sagemaker.Service
 	outputService         output.Service
 	updateService         update.Service
 	reportService         report.Service
@@ -42,6 +44,7 @@ type Config struct {
 	CloudWatchLogsService cloudwatchlogs.Service
 	RDSService            rds.Service
 	LambdaService         lambda.Service
+	SageMakerService      sagemaker.Service
 	OutputService         output.Service
 	UpdateService         update.Service
 	ReportService         report.Service

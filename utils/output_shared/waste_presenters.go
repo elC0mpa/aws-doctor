@@ -2,6 +2,7 @@ package outputshared
 
 import (
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -226,5 +227,23 @@ func PresentLambdaOverProvisioned(fn model.LambdaOverProvisionedInfo) ResourceRo
 		Metric:        fmt.Sprintf("%.1f%% utilization", fn.MemoryUtilization),
 		Age:           NAValue,
 		Details:       fmt.Sprintf("Runtime: %s / Configured: %d MB / Used: %d MB / Recommended: %d MB", fn.Runtime, fn.ConfiguredMemoryMB, fn.MaxMemoryUsedMB, fn.RecommendedMemoryMB),
+	}
+}
+
+// PresentIdleSageMakerEndpoint returns a ResourceRow for an idle SageMaker real-time inference
+// endpoint. The details column summarizes variants in the form "variant(instance_type x count)".
+func PresentIdleSageMakerEndpoint(ep model.IdleSageMakerEndpointInfo) ResourceRow {
+	variantParts := make([]string, 0, len(ep.Variants))
+	for _, v := range ep.Variants {
+		variantParts = append(variantParts, fmt.Sprintf("%s(%s x%d)", v.VariantName, v.InstanceType, v.InstanceCount))
+	}
+
+	return ResourceRow{
+		Category:      "SageMaker Endpoints (Idle)",
+		Identifier:    ep.EndpointName,
+		EstimatedCost: fmt.Sprintf("$%.2f", ep.EstimatedMonthlyCost),
+		Metric:        fmt.Sprintf("0 invocations over %d days", ep.DaysChecked),
+		Age:           NAValue,
+		Details:       strings.Join(variantParts, ", "),
 	}
 }

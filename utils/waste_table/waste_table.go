@@ -51,7 +51,8 @@ func hasAnyWaste(input model.RenderWasteInput) bool {
 		len(input.RDSIdleInstances) > 0 ||
 		len(input.IdleNATGateways) > 0 ||
 		len(input.IdleLoadBalancers) > 0 ||
-		len(input.OverProvisionedLambdas) > 0
+		len(input.OverProvisionedLambdas) > 0 ||
+		len(input.IdleSageMakerEndpoints) > 0
 }
 
 func drawWasteSections(input model.RenderWasteInput) {
@@ -101,6 +102,10 @@ func drawWasteSections(input model.RenderWasteInput) {
 
 	if len(input.OverProvisionedLambdas) > 0 {
 		drawLambdaTable(input.OverProvisionedLambdas)
+	}
+
+	if len(input.IdleSageMakerEndpoints) > 0 {
+		drawSageMakerTable(input.IdleSageMakerEndpoints)
 	}
 }
 
@@ -875,6 +880,49 @@ func populateLambdaRows(lambdas []model.LambdaOverProvisionedInfo) []table.Row {
 			fmt.Sprintf("%d MB", fn.MaxMemoryUsedMB),
 			p.Metric,
 			fmt.Sprintf("%d MB", fn.RecommendedMemoryMB),
+		})
+	}
+
+	return rows
+}
+
+func drawSageMakerTable(endpoints []model.IdleSageMakerEndpointInfo) {
+	t := table.NewWriter()
+	t.SetOutputMirror(os.Stdout)
+	t.SetStyle(table.StyleRounded)
+	t.SetTitle("SageMaker Endpoints (Idle)")
+
+	t.AppendHeader(table.Row{"Status", "Endpoint", "Variants", "Days Checked", "Est. Cost/Mo"})
+
+	t.SetColumnConfigs([]table.ColumnConfig{
+		{Number: 4, Align: text.AlignRight},
+		{Number: 5, Align: text.AlignRight},
+	})
+
+	statusLabel := "Idle"
+	rows := populateSageMakerRows(endpoints)
+
+	if len(rows) > 0 {
+		halfRow := len(rows) / 2
+		rows[halfRow][0] = text.FgHiRed.Sprint(statusLabel)
+	}
+
+	t.AppendRows(rows)
+	t.Render()
+	fmt.Println()
+}
+
+func populateSageMakerRows(endpoints []model.IdleSageMakerEndpointInfo) []table.Row {
+	rows := make([]table.Row, 0, len(endpoints))
+
+	for _, ep := range endpoints {
+		p := outputshared.PresentIdleSageMakerEndpoint(ep)
+		rows = append(rows, table.Row{
+			"",
+			p.Identifier,
+			p.Details,
+			fmt.Sprintf("%d days", ep.DaysChecked),
+			p.EstimatedCost,
 		})
 	}
 

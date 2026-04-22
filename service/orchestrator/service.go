@@ -17,6 +17,11 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
+// sagemakerIdleDays is the lookback window for flagging SageMaker endpoints with zero
+// invocations as idle. Matches the hardcoded windows used by other waste checks
+// (unused AMIs, orphaned snapshots, idle NAT gateways).
+const sagemakerIdleDays = 14
+
 // NewService creates a new orchestrator service.
 func NewService(cfg Config) Service {
 	return &service{
@@ -28,6 +33,7 @@ func NewService(cfg Config) Service {
 		cloudwatchlogsService: cfg.CloudWatchLogsService,
 		rdsService:            cfg.RDSService,
 		lambdaService:         cfg.LambdaService,
+		sagemakerService:      cfg.SageMakerService,
 		outputService:         cfg.OutputService,
 		updateService:         cfg.UpdateService,
 		reportService:         cfg.ReportService,
@@ -206,6 +212,7 @@ func (s *service) trendWorkflow(trendChecks []string, generateReport bool, repor
 	return s.outputService.RenderTrend(*stsResult.Account, costInfo, trendChecks)
 }
 
+//nolint:gocyclo // waste workflow dispatches one check per AWS service; each adds complexity
 func (s *service) wasteWorkflow(wasteChecks []string, generateReport bool, reportPath string, lambdaMemoryThreshold int) error {
 	ctx := context.Background()
 	g, ctx := errgroup.WithContext(ctx)
@@ -240,6 +247,7 @@ func (s *service) wasteWorkflow(wasteChecks []string, generateReport bool, repor
 		rdsIdleInstances                         []model.RDSIdleInstanceInfo
 		idleNATGateways                          []model.NATGatewayWasteInfo
 		overProvisionedLambdas                   []model.LambdaOverProvisionedInfo
+		idleSageMakerEndpoints                   []model.IdleSageMakerEndpointInfo
 		stsResult                                *sts.GetCallerIdentityOutput
 	)
 
@@ -374,6 +382,16 @@ func (s *service) wasteWorkflow(wasteChecks []string, generateReport bool, repor
 		})
 	}
 
+	if s.sagemakerService != nil && (runAll || slice.ContainsIgnoreCase(wasteChecks, "sagemaker")) {
+		g.Go(func() error {
+			var err error
+
+			idleSageMakerEndpoints, err = s.sagemakerService.GetIdleEndpoints(ctx, sagemakerIdleDays)
+
+			return err
+		})
+	}
+
 	// Fetch caller identity concurrently (always required for output)
 	g.Go(func() error {
 		var err error
@@ -410,6 +428,7 @@ func (s *service) wasteWorkflow(wasteChecks []string, generateReport bool, repor
 		IdleNATGateways:        idleNATGateways,
 		IdleLoadBalancers:      idleLoadBalancers,
 		OverProvisionedLambdas: overProvisionedLambdas,
+		IdleSageMakerEndpoints: idleSageMakerEndpoints,
 	}
 
 	if generateReport {

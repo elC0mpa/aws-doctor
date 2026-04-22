@@ -153,3 +153,37 @@ func (s *service) ELBHasZeroRequestsInPeriod(ctx context.Context, loadBalancerAr
 
 	return true, nil
 }
+
+// SageMakerVariantInvocations returns the total Invocations for a SageMaker endpoint production
+// variant over the given number of days. The CloudWatch metric is published per (EndpointName,
+// VariantName) pair, so callers that need an endpoint-wide total must sum across variants.
+func (s *service) SageMakerVariantInvocations(ctx context.Context, endpointName, variantName string, days int) (float64, error) {
+	now := time.Now()
+	startTime := now.AddDate(0, 0, -days)
+
+	output, err := s.client.GetMetricStatistics(ctx, &cloudwatch.GetMetricStatisticsInput{
+		Namespace:  aws.String("AWS/SageMaker"),
+		MetricName: aws.String("Invocations"),
+		Dimensions: []cwtypes.Dimension{
+			{Name: aws.String("EndpointName"), Value: aws.String(endpointName)},
+			{Name: aws.String("VariantName"), Value: aws.String(variantName)},
+		},
+		StartTime:  &startTime,
+		EndTime:    &now,
+		Period:     aws.Int32(metricPeriodSeconds),
+		Statistics: []cwtypes.Statistic{cwtypes.StatisticSum},
+	})
+	if err != nil {
+		return 0, fmt.Errorf("failed to get SageMaker invocations for %s/%s: %w", endpointName, variantName, err)
+	}
+
+	var total float64
+
+	for _, dp := range output.Datapoints {
+		if dp.Sum != nil {
+			total += *dp.Sum
+		}
+	}
+
+	return total, nil
+}

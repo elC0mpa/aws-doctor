@@ -318,6 +318,77 @@ func TestExtractLoadBalancerID(t *testing.T) {
 	}
 }
 
+func TestSageMakerVariantInvocations(t *testing.T) {
+	ctx := context.Background()
+
+	tests := []struct {
+		name       string
+		setupMocks func(*awsinterfaces.MockCloudWatchClient)
+		want       float64
+		wantErr    bool
+	}{
+		{
+			name: "sums Sum datapoints",
+			setupMocks: func(cw *awsinterfaces.MockCloudWatchClient) {
+				cw.On("GetMetricStatistics", mock.Anything, mock.MatchedBy(func(in *cloudwatch.GetMetricStatisticsInput) bool {
+					if aws.ToString(in.Namespace) != "AWS/SageMaker" || aws.ToString(in.MetricName) != "Invocations" {
+						return false
+					}
+
+					names := make(map[string]string, len(in.Dimensions))
+					for _, d := range in.Dimensions {
+						names[aws.ToString(d.Name)] = aws.ToString(d.Value)
+					}
+
+					return names["EndpointName"] == "ep-1" && names["VariantName"] == "AllTraffic"
+				}), mock.Anything).Return(&cloudwatch.GetMetricStatisticsOutput{
+					Datapoints: []cwtypes.Datapoint{
+						{Sum: aws.Float64(10)},
+						{Sum: aws.Float64(5)},
+					},
+				}, nil)
+			},
+			want:    15,
+			wantErr: false,
+		},
+		{
+			name: "zero datapoints returns zero",
+			setupMocks: func(cw *awsinterfaces.MockCloudWatchClient) {
+				cw.On("GetMetricStatistics", mock.Anything, mock.Anything, mock.Anything).Return(&cloudwatch.GetMetricStatisticsOutput{
+					Datapoints: []cwtypes.Datapoint{},
+				}, nil)
+			},
+			want:    0,
+			wantErr: false,
+		},
+		{
+			name: "cloudwatch error propagates",
+			setupMocks: func(cw *awsinterfaces.MockCloudWatchClient) {
+				cw.On("GetMetricStatistics", mock.Anything, mock.Anything, mock.Anything).Return((*cloudwatch.GetMetricStatisticsOutput)(nil), errors.New("access denied"))
+			},
+			want:    0,
+			wantErr: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			mockCW := new(awsinterfaces.MockCloudWatchClient)
+			tt.setupMocks(mockCW)
+
+			svc := &service{client: mockCW}
+			got, err := svc.SageMakerVariantInvocations(ctx, "ep-1", "AllTraffic", 14)
+
+			if tt.wantErr {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+				assert.Equal(t, tt.want, got)
+			}
+		})
+	}
+}
+
 func TestNewService(t *testing.T) {
 	cfg := aws.Config{}
 	svc := NewService(cfg)

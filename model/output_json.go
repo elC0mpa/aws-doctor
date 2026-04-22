@@ -75,7 +75,11 @@ type WasteReportJSON struct {
 	IdleNATGateways           []NATGatewayJSON            `json:"idle_nat_gateways"`
 	IdleLoadBalancers         []ELBIdleJSON               `json:"idle_load_balancers"`
 	OverProvisionedLambdas    []LambdaOverProvisionedJSON `json:"over_provisioned_lambdas"`
+	IdleSageMakerEndpoints    []IdleSageMakerEndpointJSON `json:"idle_sagemaker_endpoints"`
 }
+
+// IdleSageMakerEndpointJSON is the JSON-friendly representation of an idle SageMaker endpoint.
+type IdleSageMakerEndpointJSON IdleSageMakerEndpointInfo
 
 // RDSInstanceJSON represents a stopped RDS instance.
 type RDSInstanceJSON struct {
