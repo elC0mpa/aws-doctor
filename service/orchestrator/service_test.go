@@ -28,6 +28,7 @@ func TestOrchestrate_RouteToDefaultWorkflow(t *testing.T) {
 	mockUpdate := new(services.MockUpdateService)
 	mockReport := new(services.MockReportService)
 	mockLambda := new(services.MockLambdaService)
+	mockSageMaker := new(services.MockSageMakerService)
 
 	// Create service
 	mockRDS := new(services.MockRDSService)
@@ -40,6 +41,7 @@ func TestOrchestrate_RouteToDefaultWorkflow(t *testing.T) {
 		CloudWatchLogsService: mockCloudWatch,
 		RDSService:            mockRDS,
 		LambdaService:         mockLambda,
+		SageMakerService:      mockSageMaker,
 		OutputService:         mockOutput,
 		UpdateService:         mockUpdate,
 		ReportService:         mockReport,
@@ -93,6 +95,7 @@ func TestOrchestrate_RouteToUpdateWorkflow(t *testing.T) {
 		CloudWatchLogsService: mockCloudWatch,
 		RDSService:            mockRDS,
 		LambdaService:         mockLambda,
+		SageMakerService:      new(services.MockSageMakerService),
 		OutputService:         mockOutput,
 		UpdateService:         mockUpdate,
 		ReportService:         mockReport,
@@ -135,6 +138,7 @@ func TestOrchestrate_UpdateWorkflow_HomebrewInstall(t *testing.T) {
 		CloudWatchLogsService: mockCloudWatch,
 		RDSService:            mockRDS,
 		LambdaService:         mockLambda,
+		SageMakerService:      new(services.MockSageMakerService),
 		OutputService:         mockOutput,
 		UpdateService:         mockUpdate,
 		ReportService:         mockReport,
@@ -193,6 +197,7 @@ func TestOrchestrate_RouteToVersionWorkflow(t *testing.T) {
 		CloudWatchLogsService: mockCloudWatch,
 		RDSService:            mockRDS,
 		LambdaService:         mockLambda,
+		SageMakerService:      new(services.MockSageMakerService),
 		OutputService:         mockOutput,
 		UpdateService:         mockUpdate,
 		ReportService:         mockReport,
@@ -237,6 +242,7 @@ func TestOrchestrate_RouteToTrendWorkflow(t *testing.T) {
 		CloudWatchLogsService: mockCloudWatch,
 		RDSService:            mockRDS,
 		LambdaService:         mockLambda,
+		SageMakerService:      new(services.MockSageMakerService),
 		OutputService:         mockOutput,
 		UpdateService:         mockUpdate,
 		ReportService:         mockReport,
@@ -275,6 +281,7 @@ func TestOrchestrate_RouteToWasteWorkflow(t *testing.T) {
 	mockUpdate := new(services.MockUpdateService)
 	mockReport := new(services.MockReportService)
 	mockLambda := new(services.MockLambdaService)
+	mockSageMaker := new(services.MockSageMakerService)
 
 	// Create service
 	mockRDS := new(services.MockRDSService)
@@ -289,6 +296,7 @@ func TestOrchestrate_RouteToWasteWorkflow(t *testing.T) {
 		RDSService:            mockRDS,
 		VPCService:            mockVPC,
 		LambdaService:         mockLambda,
+		SageMakerService:      mockSageMaker,
 		OutputService:         mockOutput,
 		UpdateService:         mockUpdate,
 		ReportService:         mockReport,
@@ -309,6 +317,7 @@ func TestOrchestrate_RouteToWasteWorkflow(t *testing.T) {
 	mockRDS.On("GetRDSWaste", mock.Anything).Return([]model.RDSInstanceWasteInfo{}, []model.RDSSnapshotWasteInfo{}, []model.RDSIdleInstanceInfo{}, nil)
 	mockELB.On("GetLoadBalancerWaste", mock.Anything).Return([]elbtypes.LoadBalancer{}, []model.ELBIdleInfo{}, nil)
 	mockLambda.On("GetOverProvisionedFunctions", mock.Anything, mock.Anything).Return([]model.LambdaOverProvisionedInfo{}, nil)
+	mockSageMaker.On("GetIdleEndpoints", mock.Anything, mock.Anything).Return([]model.IdleSageMakerEndpointInfo{}, nil)
 	mockSTS.On("GetCallerIdentity", mock.Anything).Return(&sts.GetCallerIdentityOutput{
 		Account: aws.String("123456789012"),
 	}, nil)
@@ -340,6 +349,7 @@ func TestOrchestrate_WasteTakesPrecedenceOverTrend(t *testing.T) {
 	mockUpdate := new(services.MockUpdateService)
 	mockReport := new(services.MockReportService)
 	mockLambda := new(services.MockLambdaService)
+	mockSageMaker := new(services.MockSageMakerService)
 
 	// Create service
 	mockRDS := new(services.MockRDSService)
@@ -354,6 +364,7 @@ func TestOrchestrate_WasteTakesPrecedenceOverTrend(t *testing.T) {
 		RDSService:            mockRDS,
 		VPCService:            mockVPC,
 		LambdaService:         mockLambda,
+		SageMakerService:      mockSageMaker,
 		OutputService:         mockOutput,
 		UpdateService:         mockUpdate,
 		ReportService:         mockReport,
@@ -374,6 +385,7 @@ func TestOrchestrate_WasteTakesPrecedenceOverTrend(t *testing.T) {
 	mockRDS.On("GetRDSWaste", mock.Anything).Return([]model.RDSInstanceWasteInfo{}, []model.RDSSnapshotWasteInfo{}, []model.RDSIdleInstanceInfo{}, nil)
 	mockELB.On("GetLoadBalancerWaste", mock.Anything).Return([]elbtypes.LoadBalancer{}, []model.ELBIdleInfo{}, nil)
 	mockLambda.On("GetOverProvisionedFunctions", mock.Anything, mock.Anything).Return([]model.LambdaOverProvisionedInfo{}, nil)
+	mockSageMaker.On("GetIdleEndpoints", mock.Anything, mock.Anything).Return([]model.IdleSageMakerEndpointInfo{}, nil)
 	mockSTS.On("GetCallerIdentity", mock.Anything).Return(&sts.GetCallerIdentityOutput{
 		Account: aws.String("123456789012"),
 	}, nil)
@@ -414,6 +426,7 @@ func TestOrchestrate_TrendWorkflow_Mapping(t *testing.T) {
 		CloudWatchLogsService: mockCloudWatch,
 		RDSService:            mockRDS,
 		LambdaService:         mockLambda,
+		SageMakerService:      new(services.MockSageMakerService),
 		OutputService:         mockOutput,
 		UpdateService:         mockUpdate,
 		ReportService:         mockReport,
@@ -528,6 +541,7 @@ func TestDefaultWorkflow_CostServiceError(t *testing.T) {
 				CloudWatchLogsService: mockCloudWatch,
 				RDSService:            mockRDS,
 				LambdaService:         mockLambda,
+				SageMakerService:      new(services.MockSageMakerService),
 				OutputService:         mockOutput,
 				UpdateService:         mockUpdate,
 				ReportService:         mockReport,
@@ -593,6 +607,7 @@ func TestTrendWorkflow_Error(t *testing.T) {
 				CloudWatchLogsService: mockCloudWatch,
 				RDSService:            mockRDS,
 				LambdaService:         mockLambda,
+				SageMakerService:      new(services.MockSageMakerService),
 				OutputService:         mockOutput,
 				UpdateService:         mockUpdate,
 				ReportService:         mockReport,
@@ -610,12 +625,12 @@ func TestTrendWorkflow_Error(t *testing.T) {
 func TestWasteWorkflow_Error(t *testing.T) {
 	tests := []struct {
 		name        string
-		setupMocks  func(*services.MockEC2Service, *services.MockELBService, *services.MockS3Service, *services.MockCloudWatchLogsService, *services.MockRDSService, *services.MockSTSService, *services.MockVPCService, *services.MockLambdaService)
+		setupMocks  func(*services.MockEC2Service, *services.MockELBService, *services.MockS3Service, *services.MockCloudWatchLogsService, *services.MockRDSService, *services.MockSTSService, *services.MockVPCService, *services.MockLambdaService, *services.MockSageMakerService)
 		expectedErr string
 	}{
 		{
 			name: "GetUnusedElasticIpAddressesInfo_fails",
-			setupMocks: func(mockEC2 *services.MockEC2Service, mockELB *services.MockELBService, mockS3 *services.MockS3Service, mockCloudWatch *services.MockCloudWatchLogsService, mockRDS *services.MockRDSService, mockSTS *services.MockSTSService, mockVPC *services.MockVPCService, mockLambda *services.MockLambdaService) {
+			setupMocks: func(mockEC2 *services.MockEC2Service, mockELB *services.MockELBService, mockS3 *services.MockS3Service, mockCloudWatch *services.MockCloudWatchLogsService, mockRDS *services.MockRDSService, mockSTS *services.MockSTSService, mockVPC *services.MockVPCService, mockLambda *services.MockLambdaService, mockSageMaker *services.MockSageMakerService) {
 				mockEC2.On("GetUnusedElasticIPAddressesInfo", mock.Anything).Return(([]types.Address)(nil), errors.New("EIP error"))
 				mockEC2.On("GetUnusedEBSVolumes", mock.Anything).Return([]types.Volume{}, nil)
 				mockEC2.On("GetStoppedInstancesInfo", mock.Anything).Return([]types.Instance{}, []types.Volume{}, nil)
@@ -628,6 +643,7 @@ func TestWasteWorkflow_Error(t *testing.T) {
 				mockCloudWatch.On("GetCloudWatchLogsWaste", mock.Anything).Return([]model.CloudWatchLogsWasteInfo{}, nil)
 				mockRDS.On("GetRDSWaste", mock.Anything).Return([]model.RDSInstanceWasteInfo{}, []model.RDSSnapshotWasteInfo{}, []model.RDSIdleInstanceInfo{}, nil)
 				mockLambda.On("GetOverProvisionedFunctions", mock.Anything, mock.Anything).Return([]model.LambdaOverProvisionedInfo{}, nil)
+				mockSageMaker.On("GetIdleEndpoints", mock.Anything, mock.Anything).Return([]model.IdleSageMakerEndpointInfo{}, nil)
 
 				mockELB.On("GetLoadBalancerWaste", mock.Anything).Return([]elbtypes.LoadBalancer{}, []model.ELBIdleInfo{}, nil)
 				mockSTS.On("GetCallerIdentity", mock.Anything).Return(&sts.GetCallerIdentityOutput{
@@ -638,7 +654,7 @@ func TestWasteWorkflow_Error(t *testing.T) {
 		},
 		{
 			name: "GetUnusedEBSVolumes_fails",
-			setupMocks: func(mockEC2 *services.MockEC2Service, mockELB *services.MockELBService, mockS3 *services.MockS3Service, mockCloudWatch *services.MockCloudWatchLogsService, mockRDS *services.MockRDSService, mockSTS *services.MockSTSService, mockVPC *services.MockVPCService, mockLambda *services.MockLambdaService) {
+			setupMocks: func(mockEC2 *services.MockEC2Service, mockELB *services.MockELBService, mockS3 *services.MockS3Service, mockCloudWatch *services.MockCloudWatchLogsService, mockRDS *services.MockRDSService, mockSTS *services.MockSTSService, mockVPC *services.MockVPCService, mockLambda *services.MockLambdaService, mockSageMaker *services.MockSageMakerService) {
 				mockEC2.On("GetUnusedElasticIPAddressesInfo", mock.Anything).Return([]types.Address{}, nil)
 				mockEC2.On("GetUnusedEBSVolumes", mock.Anything).Return(([]types.Volume)(nil), errors.New("EBS error"))
 				mockEC2.On("GetStoppedInstancesInfo", mock.Anything).Return([]types.Instance{}, []types.Volume{}, nil)
@@ -651,6 +667,7 @@ func TestWasteWorkflow_Error(t *testing.T) {
 				mockCloudWatch.On("GetCloudWatchLogsWaste", mock.Anything).Return([]model.CloudWatchLogsWasteInfo{}, nil)
 				mockRDS.On("GetRDSWaste", mock.Anything).Return([]model.RDSInstanceWasteInfo{}, []model.RDSSnapshotWasteInfo{}, []model.RDSIdleInstanceInfo{}, nil)
 				mockLambda.On("GetOverProvisionedFunctions", mock.Anything, mock.Anything).Return([]model.LambdaOverProvisionedInfo{}, nil)
+				mockSageMaker.On("GetIdleEndpoints", mock.Anything, mock.Anything).Return([]model.IdleSageMakerEndpointInfo{}, nil)
 
 				mockELB.On("GetLoadBalancerWaste", mock.Anything).Return([]elbtypes.LoadBalancer{}, []model.ELBIdleInfo{}, nil)
 				mockSTS.On("GetCallerIdentity", mock.Anything).Return(&sts.GetCallerIdentityOutput{
@@ -661,7 +678,7 @@ func TestWasteWorkflow_Error(t *testing.T) {
 		},
 		{
 			name: "GetLoadBalancerWaste_fails",
-			setupMocks: func(mockEC2 *services.MockEC2Service, mockELB *services.MockELBService, mockS3 *services.MockS3Service, mockCloudWatch *services.MockCloudWatchLogsService, mockRDS *services.MockRDSService, mockSTS *services.MockSTSService, mockVPC *services.MockVPCService, mockLambda *services.MockLambdaService) {
+			setupMocks: func(mockEC2 *services.MockEC2Service, mockELB *services.MockELBService, mockS3 *services.MockS3Service, mockCloudWatch *services.MockCloudWatchLogsService, mockRDS *services.MockRDSService, mockSTS *services.MockSTSService, mockVPC *services.MockVPCService, mockLambda *services.MockLambdaService, mockSageMaker *services.MockSageMakerService) {
 				mockEC2.On("GetUnusedElasticIPAddressesInfo", mock.Anything).Return([]types.Address{}, nil)
 				mockEC2.On("GetUnusedEBSVolumes", mock.Anything).Return([]types.Volume{}, nil)
 				mockEC2.On("GetStoppedInstancesInfo", mock.Anything).Return([]types.Instance{}, []types.Volume{}, nil)
@@ -674,6 +691,7 @@ func TestWasteWorkflow_Error(t *testing.T) {
 				mockCloudWatch.On("GetCloudWatchLogsWaste", mock.Anything).Return([]model.CloudWatchLogsWasteInfo{}, nil)
 				mockRDS.On("GetRDSWaste", mock.Anything).Return([]model.RDSInstanceWasteInfo{}, []model.RDSSnapshotWasteInfo{}, []model.RDSIdleInstanceInfo{}, nil)
 				mockLambda.On("GetOverProvisionedFunctions", mock.Anything, mock.Anything).Return([]model.LambdaOverProvisionedInfo{}, nil)
+				mockSageMaker.On("GetIdleEndpoints", mock.Anything, mock.Anything).Return([]model.IdleSageMakerEndpointInfo{}, nil)
 
 				mockELB.On("GetLoadBalancerWaste", mock.Anything).Return(nil, nil, errors.New("ELB error"))
 				mockSTS.On("GetCallerIdentity", mock.Anything).Return(&sts.GetCallerIdentityOutput{
@@ -698,8 +716,9 @@ func TestWasteWorkflow_Error(t *testing.T) {
 			mockReport := new(services.MockReportService)
 			mockVPC := new(services.MockVPCService)
 			mockLambda := new(services.MockLambdaService)
+			mockSageMaker := new(services.MockSageMakerService)
 
-			tt.setupMocks(mockEC2, mockELB, mockS3, mockCloudWatch, mockRDS, mockSTS, mockVPC, mockLambda)
+			tt.setupMocks(mockEC2, mockELB, mockS3, mockCloudWatch, mockRDS, mockSTS, mockVPC, mockLambda, mockSageMaker)
 			mockOutput.On("StopSpinner").Return().Maybe()
 			mockOutput.On("RenderWaste", mock.Anything).Return(nil).Maybe()
 			mockUpdate.On("CheckForUpdate", mock.Anything).Return(nil, nil).Maybe()
@@ -714,6 +733,7 @@ func TestWasteWorkflow_Error(t *testing.T) {
 				RDSService:            mockRDS,
 				VPCService:            mockVPC,
 				LambdaService:         mockLambda,
+				SageMakerService:      mockSageMaker,
 				OutputService:         mockOutput,
 				UpdateService:         mockUpdate,
 				ReportService:         mockReport,
@@ -752,6 +772,7 @@ func TestOrchestrate_RouteToReportWorkflow(t *testing.T) {
 		CloudWatchLogsService: mockCloudWatch,
 		RDSService:            mockRDS,
 		LambdaService:         mockLambda,
+		SageMakerService:      new(services.MockSageMakerService),
 		OutputService:         mockOutput,
 		UpdateService:         mockUpdate,
 		ReportService:         mockReport,
@@ -800,6 +821,7 @@ type testMocks struct {
 	update     *services.MockUpdateService
 	report     *services.MockReportService
 	rds        *services.MockRDSService
+	sagemaker  *services.MockSageMakerService
 }
 
 func newTestServiceWithMocks(versionInfo model.VersionInfo) (Service, *testMocks) {
@@ -814,6 +836,7 @@ func newTestServiceWithMocks(versionInfo model.VersionInfo) (Service, *testMocks
 		update:     new(services.MockUpdateService),
 		report:     new(services.MockReportService),
 		rds:        new(services.MockRDSService),
+		sagemaker:  new(services.MockSageMakerService),
 	}
 
 	svc := NewService(Config{
@@ -824,6 +847,7 @@ func newTestServiceWithMocks(versionInfo model.VersionInfo) (Service, *testMocks
 		S3Service:             m.s3,
 		CloudWatchLogsService: m.cloudWatch,
 		RDSService:            m.rds,
+		SageMakerService:      m.sagemaker,
 		OutputService:         m.output,
 		UpdateService:         m.update,
 		ReportService:         m.report,
