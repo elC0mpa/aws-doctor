@@ -62,6 +62,10 @@ func (s *service) StopSpinner() {
 	s.renderer.StopSpinner()
 }
 
+func (s *service) SetSpinnerMessage(message string) {
+	s.renderer.SetSpinnerMessage(message)
+}
+
 func (s *service) PrintReportSuccess(path string) {
 	s.renderer.PrintReportSuccess(path)
 }

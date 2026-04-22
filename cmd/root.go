@@ -3,8 +3,6 @@ package cmd
 import (
 	"context"
 	"fmt"
-	"os"
-	"time"
 
 	"github.com/elC0mpa/aws-doctor/model"
 	awsconfig "github.com/elC0mpa/aws-doctor/service/aws_config"
@@ -24,7 +22,6 @@ import (
 	"github.com/elC0mpa/aws-doctor/service/update"
 	awsvpc "github.com/elC0mpa/aws-doctor/service/vpc"
 	"github.com/elC0mpa/aws-doctor/utils/banner"
-	"github.com/elC0mpa/aws-doctor/utils/pricing"
 	"github.com/elC0mpa/aws-doctor/utils/spinner"
 	"github.com/spf13/cobra"
 )
@@ -37,7 +34,7 @@ var (
 	orchestratorBuilder = buildOrchestrator
 )
 
-func buildOrchestrator(needsAWS, needsPricing bool) (orchestrator.Service, error) {
+func buildOrchestrator(needsAWS bool) (orchestrator.Service, error) {
 	outputService := output.NewService(outputFormat)
 	updateService := update.NewService(versionInfo)
 
@@ -62,14 +59,7 @@ func buildOrchestrator(needsAWS, needsPricing bool) (orchestrator.Service, error
 
 	spinner.StartSpinner()
 
-	if needsPricing {
-		pricingCtx, cancelPricing := context.WithTimeout(context.Background(), 15*time.Second)
-		defer cancelPricing()
-
-		if err := pricing.Load(pricingCtx, awsCfg); err != nil {
-			fmt.Fprintf(os.Stderr, "warning: pricing API partial failure, falling back to defaults: %v\n", err)
-		}
-	}
+	config.AWSConfig = awsCfg
 
 	cwMetricsService := cloudwatchmetrics.NewService(awsCfg)
 

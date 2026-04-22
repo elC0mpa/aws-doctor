@@ -18,7 +18,7 @@ var reportCostCmd = &cobra.Command{
 	Use:   "cost",
 	Short: "Generate a PDF report for cost comparison",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		orch, err := orchestratorBuilder(true, false)
+		orch, err := orchestratorBuilder(true)
 		if err != nil {
 			return err
 		}
@@ -38,7 +38,7 @@ var reportWasteCmd = &cobra.Command{
 	Use:   "waste [checks...]",
 	Short: "Generate a PDF report for AWS waste detection",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		orch, err := orchestratorBuilder(true, true)
+		orch, err := orchestratorBuilder(true)
 		if err != nil {
 			return err
 		}
@@ -66,7 +66,7 @@ var reportTrendCmd = &cobra.Command{
 	Use:   "trend [services...]",
 	Short: "Generate a PDF report for AWS cost trends",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		orch, err := orchestratorBuilder(true, false)
+		orch, err := orchestratorBuilder(true)
 		if err != nil {
 			return err
 		}

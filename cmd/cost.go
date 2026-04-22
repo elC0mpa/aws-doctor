@@ -9,7 +9,7 @@ var costCmd = &cobra.Command{
 	Use:   "cost",
 	Short: "Display comparative cost analytics (Current month vs. Last month)",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		orch, err := orchestratorBuilder(true, false)
+		orch, err := orchestratorBuilder(true)
 		if err != nil {
 			return err
 		}

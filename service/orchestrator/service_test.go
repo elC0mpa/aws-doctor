@@ -55,6 +55,7 @@ func TestOrchestrate_RouteToDefaultWorkflow(t *testing.T) {
 		Account: aws.String("123456789012"),
 	}, nil)
 	mockOutput.On("StopSpinner").Return()
+	mockOutput.On("SetSpinnerMessage", mock.Anything).Return().Maybe()
 	mockOutput.On("RenderCostComparison", mock.Anything).Return(nil)
 	mockUpdate.On("CheckForUpdate", mock.Anything).Return(nil, nil)
 
@@ -101,6 +102,7 @@ func TestOrchestrate_RouteToUpdateWorkflow(t *testing.T) {
 	svc := NewService(config)
 	// Setup expectations
 	mockOutput.On("StopSpinner").Return()
+	mockOutput.On("SetSpinnerMessage", mock.Anything).Return().Maybe()
 	mockUpdate.On("Update").Return(nil)
 
 	// Execute with Update flag
@@ -143,6 +145,7 @@ func TestOrchestrate_UpdateWorkflow_HomebrewInstall(t *testing.T) {
 	svc := NewService(config)
 
 	mockOutput.On("StopSpinner").Return()
+	mockOutput.On("SetSpinnerMessage", mock.Anything).Return().Maybe()
 	mockUpdate.On("Update").Return(model.ErrHomebrewInstall)
 	mockOutput.On("PrintHomebrewUpdate").Return()
 
@@ -202,6 +205,7 @@ func TestOrchestrate_RouteToVersionWorkflow(t *testing.T) {
 
 	// Setup expectations
 	mockOutput.On("StopSpinner").Return()
+	mockOutput.On("SetSpinnerMessage", mock.Anything).Return().Maybe()
 	mockOutput.On("RenderVersion", versionInfo).Return()
 
 	// Execute with Version flag
@@ -249,6 +253,7 @@ func TestOrchestrate_RouteToTrendWorkflow(t *testing.T) {
 		Account: aws.String("123456789012"),
 	}, nil)
 	mockOutput.On("StopSpinner").Return()
+	mockOutput.On("SetSpinnerMessage", mock.Anything).Return().Maybe()
 	mockOutput.On("RenderTrend", mock.Anything, mock.Anything, mock.Anything).Return(nil)
 	mockUpdate.On("CheckForUpdate", mock.Anything).Return(nil, nil)
 
@@ -313,6 +318,7 @@ func TestOrchestrate_RouteToWasteWorkflow(t *testing.T) {
 		Account: aws.String("123456789012"),
 	}, nil)
 	mockOutput.On("StopSpinner").Return()
+	mockOutput.On("SetSpinnerMessage", mock.Anything).Return().Maybe()
 	mockOutput.On("RenderWaste", mock.Anything).Return(nil)
 	mockUpdate.On("CheckForUpdate", mock.Anything).Return(nil, nil)
 
@@ -378,6 +384,7 @@ func TestOrchestrate_WasteTakesPrecedenceOverTrend(t *testing.T) {
 		Account: aws.String("123456789012"),
 	}, nil)
 	mockOutput.On("StopSpinner").Return()
+	mockOutput.On("SetSpinnerMessage", mock.Anything).Return().Maybe()
 	mockOutput.On("RenderWaste", mock.Anything).Return(nil)
 	mockUpdate.On("CheckForUpdate", mock.Anything).Return(nil, nil)
 
@@ -435,6 +442,7 @@ func TestOrchestrate_TrendWorkflow_Mapping(t *testing.T) {
 		Account: aws.String("123456789012"),
 	}, nil)
 	mockOutput.On("StopSpinner").Return()
+	mockOutput.On("SetSpinnerMessage", mock.Anything).Return().Maybe()
 	mockOutput.On("RenderTrend", "123456789012", mock.Anything, mock.Anything).Return(nil)
 	mockUpdate.On("CheckForUpdate", mock.Anything).Return(nil, nil)
 
@@ -515,6 +523,7 @@ func TestDefaultWorkflow_CostServiceError(t *testing.T) {
 
 			tt.setupMocks(mockCost, mockSTS)
 			mockOutput.On("StopSpinner").Return().Maybe()
+			mockOutput.On("SetSpinnerMessage", mock.Anything).Return().Maybe()
 			mockOutput.On("RenderCostComparison", mock.Anything).Return(nil).Maybe()
 			mockUpdate.On("CheckForUpdate", mock.Anything).Return(nil, nil).Maybe()
 
@@ -580,6 +589,7 @@ func TestTrendWorkflow_Error(t *testing.T) {
 
 			tt.setupMocks(mockCost, mockSTS)
 			mockOutput.On("StopSpinner").Return().Maybe()
+			mockOutput.On("SetSpinnerMessage", mock.Anything).Return().Maybe()
 			mockOutput.On("RenderTrend", mock.Anything, mock.Anything, mock.Anything).Return(nil).Maybe()
 			mockUpdate.On("CheckForUpdate", mock.Anything).Return(nil, nil).Maybe()
 
@@ -701,6 +711,7 @@ func TestWasteWorkflow_Error(t *testing.T) {
 
 			tt.setupMocks(mockEC2, mockELB, mockS3, mockCloudWatch, mockRDS, mockSTS, mockVPC, mockLambda)
 			mockOutput.On("StopSpinner").Return().Maybe()
+			mockOutput.On("SetSpinnerMessage", mock.Anything).Return().Maybe()
 			mockOutput.On("RenderWaste", mock.Anything).Return(nil).Maybe()
 			mockUpdate.On("CheckForUpdate", mock.Anything).Return(nil, nil).Maybe()
 
@@ -768,6 +779,7 @@ func TestOrchestrate_RouteToReportWorkflow(t *testing.T) {
 		Account: aws.String("123456789012"),
 	}, nil)
 	mockOutput.On("StopSpinner").Return()
+	mockOutput.On("SetSpinnerMessage", mock.Anything).Return().Maybe()
 
 	// Mock report call
 	reportPath := "report.pdf"
