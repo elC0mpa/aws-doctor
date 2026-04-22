@@ -24,7 +24,7 @@ type cloudwatchMetricsService interface {
 	ELBHasZeroRequestsInPeriod(ctx context.Context, loadBalancerArn string, lbType types.LoadBalancerTypeEnum, days int) (bool, error)
 }
 
-// Service defines the interface for AWS ELB service.
+// Service is the interface for AWS ELB service.
 type Service interface {
 	GetLoadBalancerWaste(ctx context.Context) ([]types.LoadBalancer, []model.ELBIdleInfo, error)
 }

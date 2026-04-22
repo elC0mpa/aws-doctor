@@ -7,12 +7,6 @@ import (
 	"github.com/google/go-github/v62/github"
 )
 
-// Service is the interface for the update service.
-type Service interface {
-	Update() error
-	CheckForUpdate(ctx context.Context) (*string, error)
-}
-
 type commandRunner interface {
 	Run(name string, arg ...string) error
 }
@@ -30,4 +24,10 @@ type service struct {
 	versionInfo  model.VersionInfo
 	repositories repositoryService
 	pathResolver executablePathResolver
+}
+
+// Service is the interface for the update service.
+type Service interface {
+	Update() error
+	CheckForUpdate(ctx context.Context) (*string, error)
 }

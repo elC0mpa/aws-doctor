@@ -152,7 +152,7 @@ type service struct {
 	renderer Renderer
 }
 
-// Service defines the interface for output operations
+// Service is the interface for the output service.
 type Service interface {
 	// RenderCostComparison outputs cost comparison data in the configured format
 	RenderCostComparison(input model.RenderCostComparisonInput) error

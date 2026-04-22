@@ -16,7 +16,7 @@ const (
 	WasteReport Type = "waste"
 )
 
-// Service defines the interface for generating PDF reports.
+// Service is the interface for the report service.
 type Service interface {
 	// GenerateCostComparisonReport creates a PDF report for cost comparison.
 	GenerateCostComparisonReport(input model.RenderCostComparisonInput, reportPath string) (*string, error)
