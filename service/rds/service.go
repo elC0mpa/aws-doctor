@@ -10,7 +10,6 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/rds"
 	"github.com/elC0mpa/aws-doctor/model"
-	"github.com/elC0mpa/aws-doctor/service/cloudwatchmetrics"
 	"github.com/elC0mpa/aws-doctor/utils/pricing"
 	"golang.org/x/sync/errgroup"
 )
@@ -18,7 +17,7 @@ import (
 const idleDaysThreshold = 7
 
 // NewService creates a new RDS service.
-func NewService(awsconfig aws.Config, cwService cloudwatchmetrics.Service) Service {
+func NewService(awsconfig aws.Config, cwService cloudwatchMetricsService) Service {
 	client := rds.NewFromConfig(awsconfig)
 
 	return &service{

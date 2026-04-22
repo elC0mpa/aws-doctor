@@ -5,7 +5,6 @@ import (
 
 	"github.com/aws/aws-sdk-go-v2/service/rds"
 	"github.com/elC0mpa/aws-doctor/model"
-	"github.com/elC0mpa/aws-doctor/service/cloudwatchmetrics"
 )
 
 // ClientAPI is the interface for the AWS RDS client methods used by the service.
@@ -14,12 +13,17 @@ type ClientAPI interface {
 	DescribeDBSnapshots(ctx context.Context, params *rds.DescribeDBSnapshotsInput, optFns ...func(*rds.Options)) (*rds.DescribeDBSnapshotsOutput, error)
 }
 
+type service struct {
+	client    ClientAPI
+	cwService cloudwatchMetricsService
+}
+
+// cloudwatchMetricsService is a local interface for the CloudWatch metrics dependency.
+type cloudwatchMetricsService interface {
+	RDSHasZeroConnectionsInPeriod(ctx context.Context, dbInstanceID string, days int) (bool, error)
+}
+
 // Service is the interface for AWS RDS service.
 type Service interface {
 	GetRDSWaste(ctx context.Context) ([]model.RDSInstanceWasteInfo, []model.RDSSnapshotWasteInfo, []model.RDSIdleInstanceInfo, error)
-}
-
-type service struct {
-	client    ClientAPI
-	cwService cloudwatchmetrics.Service
 }

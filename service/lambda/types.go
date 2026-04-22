@@ -24,7 +24,7 @@ type service struct {
 	logsService  cloudWatchLogsService
 }
 
-// Service defines the interface for AWS Lambda waste detection.
+// Service is the interface for AWS Lambda service.
 type Service interface {
 	GetOverProvisionedFunctions(ctx context.Context, memoryThresholdPercent int) ([]model.LambdaOverProvisionedInfo, error)
 }

@@ -49,7 +49,7 @@ type Config struct {
 	VPCService            awsvpc.Service
 }
 
-// Service is the interface for orchestrator service.
+// Service is the interface for the orchestrator service.
 type Service interface {
 	Orchestrate(flags model.Flags) error
 }

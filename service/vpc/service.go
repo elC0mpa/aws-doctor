@@ -10,13 +10,12 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/ec2"
 	"github.com/aws/aws-sdk-go-v2/service/ec2/types"
 	"github.com/elC0mpa/aws-doctor/model"
-	awscloudwatchmetrics "github.com/elC0mpa/aws-doctor/service/cloudwatchmetrics"
 	"github.com/elC0mpa/aws-doctor/utils/pricing"
 	"golang.org/x/sync/errgroup"
 )
 
-// NewService creates a new VPC service instance.
-func NewService(awsconfig aws.Config, cwService awscloudwatchmetrics.Service) Service {
+// NewService creates a new VPC service.
+func NewService(awsconfig aws.Config, cwService cloudwatchMetricsService) Service {
 	client := ec2.NewFromConfig(awsconfig)
 
 	return &service{
