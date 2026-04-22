@@ -7,8 +7,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/aws/aws-sdk-go-v2/service/ec2/types"
-	elbtypes "github.com/aws/aws-sdk-go-v2/service/elasticloadbalancingv2/types"
 	"github.com/aws/aws-sdk-go-v2/service/sts"
 	"github.com/elC0mpa/aws-doctor/model"
 	awscostexplorer "github.com/elC0mpa/aws-doctor/service/costexplorer"
@@ -212,7 +210,7 @@ func (s *service) trendWorkflow(trendChecks []string, generateReport bool, repor
 	return s.outputService.RenderTrend(*stsResult.Account, costInfo, trendChecks)
 }
 
-//nolint:gocyclo // waste workflow dispatches one check per AWS service; each adds complexity
+// wasteWorkflow dispatches one check per AWS service concurrently.
 func (s *service) wasteWorkflow(wasteChecks []string, generateReport bool, reportPath string, lambdaMemoryThreshold int) error {
 	ctx := context.Background()
 	g, ctx := errgroup.WithContext(ctx)
@@ -226,170 +224,42 @@ func (s *service) wasteWorkflow(wasteChecks []string, generateReport bool, repor
 	runRDS := runAll || slice.ContainsIgnoreCase(wasteChecks, "rds")
 	runVPC := runAll || slice.ContainsIgnoreCase(wasteChecks, "vpc")
 	runLambda := runAll || slice.ContainsIgnoreCase(wasteChecks, "lambda")
+	runSagemaker := runAll || slice.ContainsIgnoreCase(wasteChecks, "sagemaker")
 
-	// Results from concurrent API calls
-	var (
-		elasticIPInfo                            []types.Address
-		availableEBSVolumesInfo                  []types.Volume
-		stoppedInstancesMoreThan30Days           []types.Instance
-		attachedToStoppedInstancesEBSVolumesInfo []types.Volume
-		expireReservedInstancesInfo              []model.RiExpirationInfo
-		unusedLoadBalancers                      []elbtypes.LoadBalancer
-		idleLoadBalancers                        []model.ELBIdleInfo
-		unusedAMIs                               []model.AMIWasteInfo
-		orphanedSnapshots                        []model.SnapshotWasteInfo
-		unusedKeyPairs                           []model.KeyPairWasteInfo
-		s3Buckets                                []model.S3BucketWasteInfo
-		s3MultipartUploads                       []model.S3MultipartUploadWasteInfo
-		cloudwatchLogs                           []model.CloudWatchLogsWasteInfo
-		rdsInstances                             []model.RDSInstanceWasteInfo
-		rdsSnapshots                             []model.RDSSnapshotWasteInfo
-		rdsIdleInstances                         []model.RDSIdleInstanceInfo
-		idleNATGateways                          []model.NATGatewayWasteInfo
-		overProvisionedLambdas                   []model.LambdaOverProvisionedInfo
-		idleSageMakerEndpoints                   []model.IdleSageMakerEndpointInfo
-		stsResult                                *sts.GetCallerIdentityOutput
-	)
+	var input model.RenderWasteInput
+
+	var stsResult *sts.GetCallerIdentityOutput
 
 	if runEC2 {
-		// Fetch unused Elastic IPs concurrently
-		g.Go(func() error {
-			var err error
-
-			elasticIPInfo, err = s.ec2Service.GetUnusedElasticIPAddressesInfo(ctx)
-
-			return err
-		})
-
-		// Fetch unused EBS volumes concurrently
-		g.Go(func() error {
-			var err error
-
-			availableEBSVolumesInfo, err = s.ec2Service.GetUnusedEBSVolumes(ctx)
-
-			return err
-		})
-
-		// Fetch stopped instances info concurrently
-		g.Go(func() error {
-			var err error
-
-			stoppedInstancesMoreThan30Days, attachedToStoppedInstancesEBSVolumesInfo, err = s.ec2Service.GetStoppedInstancesInfo(ctx)
-
-			return err
-		})
-
-		// Fetch reserved instance expiration info concurrently
-		g.Go(func() error {
-			var err error
-
-			expireReservedInstancesInfo, err = s.ec2Service.GetReservedInstanceExpiringOrExpired30DaysWaste(ctx)
-
-			return err
-		})
-
-		// Fetch unused AMIs concurrently
-		g.Go(func() error {
-			var err error
-
-			unusedAMIs, err = s.ec2Service.GetUnusedAMIs(ctx, 90)
-
-			return err
-		})
-
-		// Fetch orphaned EBS snapshots concurrently
-		g.Go(func() error {
-			var err error
-
-			orphanedSnapshots, err = s.ec2Service.GetOrphanedSnapshots(ctx, 90)
-
-			return err
-		})
-
-		// Fetch unused keypairs concurrently
-		g.Go(func() error {
-			var err error
-
-			unusedKeyPairs, err = s.ec2Service.GetUnusedKeyPairs(ctx)
-
-			return err
-		})
+		s.queueEC2Checks(ctx, g, &input)
 	}
 
 	if runVPC {
-		// Fetch idle NAT Gateways concurrently
-		g.Go(func() error {
-			var err error
-
-			idleNATGateways, err = s.vpcService.GetIdleNATGateways(ctx, 7)
-
-			return err
-		})
+		s.queueVPCChecks(ctx, g, &input)
 	}
 
 	if runELB {
-		// Fetch unused and idle Load Balancers concurrently
-		g.Go(func() error {
-			var err error
-
-			unusedLoadBalancers, idleLoadBalancers, err = s.elbService.GetLoadBalancerWaste(ctx)
-
-			return err
-		})
+		s.queueELBChecks(ctx, g, &input)
 	}
 
 	if runS3 {
-		// Fetch S3 waste concurrently
-		g.Go(func() error {
-			var err error
-
-			s3Buckets, s3MultipartUploads, err = s.s3Service.GetS3Waste(ctx)
-
-			return err
-		})
+		s.queueS3Checks(ctx, g, &input)
 	}
 
 	if runCloudWatchLogs {
-		// Fetch CloudWatch Logs waste concurrently
-		g.Go(func() error {
-			var err error
-
-			cloudwatchLogs, err = s.cloudwatchlogsService.GetCloudWatchLogsWaste(ctx)
-
-			return err
-		})
+		s.queueCloudWatchLogsChecks(ctx, g, &input)
 	}
 
 	if runRDS {
-		// Fetch RDS waste concurrently
-		g.Go(func() error {
-			var err error
-
-			rdsInstances, rdsSnapshots, rdsIdleInstances, err = s.rdsService.GetRDSWaste(ctx)
-
-			return err
-		})
+		s.queueRDSChecks(ctx, g, &input)
 	}
 
 	if runLambda {
-		// Fetch over-provisioned Lambda functions concurrently
-		g.Go(func() error {
-			var err error
-
-			overProvisionedLambdas, err = s.lambdaService.GetOverProvisionedFunctions(ctx, lambdaMemoryThreshold)
-
-			return err
-		})
+		s.queueLambdaChecks(ctx, g, &input, lambdaMemoryThreshold)
 	}
 
-	if s.sagemakerService != nil && (runAll || slice.ContainsIgnoreCase(wasteChecks, "sagemaker")) {
-		g.Go(func() error {
-			var err error
-
-			idleSageMakerEndpoints, err = s.sagemakerService.GetIdleEndpoints(ctx, sagemakerIdleDays)
-
-			return err
-		})
+	if runSagemaker {
+		s.queueSagemakerChecks(ctx, g, &input)
 	}
 
 	// Fetch caller identity concurrently (always required for output)
@@ -408,28 +278,7 @@ func (s *service) wasteWorkflow(wasteChecks []string, generateReport bool, repor
 
 	s.outputService.StopSpinner()
 
-	input := model.RenderWasteInput{
-		AccountID:              *stsResult.Account,
-		ElasticIPs:             elasticIPInfo,
-		UnusedVolumes:          availableEBSVolumesInfo,
-		StoppedVolumes:         attachedToStoppedInstancesEBSVolumesInfo,
-		Ris:                    expireReservedInstancesInfo,
-		StoppedInstances:       stoppedInstancesMoreThan30Days,
-		LoadBalancers:          unusedLoadBalancers,
-		UnusedAMIs:             unusedAMIs,
-		OrphanedSnapshots:      orphanedSnapshots,
-		UnusedKeyPairs:         unusedKeyPairs,
-		S3Buckets:              s3Buckets,
-		S3MultipartUploads:     s3MultipartUploads,
-		CloudWatchLogGroups:    cloudwatchLogs,
-		RDSInstances:           rdsInstances,
-		RDSSnapshots:           rdsSnapshots,
-		RDSIdleInstances:       rdsIdleInstances,
-		IdleNATGateways:        idleNATGateways,
-		IdleLoadBalancers:      idleLoadBalancers,
-		OverProvisionedLambdas: overProvisionedLambdas,
-		IdleSageMakerEndpoints: idleSageMakerEndpoints,
-	}
+	input.AccountID = *stsResult.Account
 
 	if generateReport {
 		path, err := s.reportService.GenerateWasteReport(input, reportPath)
