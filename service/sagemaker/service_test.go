@@ -182,33 +182,6 @@ func TestGetIdleEndpoints_ListEndpointsError(t *testing.T) {
 	assert.Contains(t, err.Error(), "failed to list SageMaker endpoints")
 }
 
-func TestGetIdleEndpoints_ZeroIdleDaysUsesDefault(t *testing.T) {
-	mockClient := new(awsinterfaces.MockSageMakerClient)
-	mockCW := new(mockCWMetricsService)
-
-	s := &service{client: mockClient, cwService: mockCW}
-
-	mockClient.On("ListEndpoints", mock.Anything, mock.Anything, mock.Anything).Return(&sm.ListEndpointsOutput{
-		Endpoints: []smtypes.EndpointSummary{
-			{
-				EndpointName:   aws.String("idle-ep"),
-				EndpointStatus: smtypes.EndpointStatusInService,
-			},
-		},
-	}, nil)
-
-	wireEndpoint(mockClient, "idle-ep", "idle-ep-cfg", "ml.t3.medium")
-
-	// Days argument is 0; default 14 must be used.
-	mockCW.On("SageMakerVariantInvocations", mock.Anything, "idle-ep", "AllTraffic", 14).Return(float64(0), nil)
-
-	result, err := s.GetIdleEndpoints(context.Background(), 0)
-
-	assert.NoError(t, err)
-	assert.Len(t, result, 1)
-	assert.Equal(t, 14, result[0].DaysChecked)
-}
-
 func TestGetIdleEndpoints_CloudWatchErrorDropsEndpointWithoutAborting(t *testing.T) {
 	mockClient := new(awsinterfaces.MockSageMakerClient)
 	mockCW := new(mockCWMetricsService)

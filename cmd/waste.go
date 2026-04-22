@@ -7,10 +7,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var (
-	lambdaMemoryThreshold int
-	sageMakerIdleDays     int
-)
+var lambdaMemoryThreshold int
 
 var wasteCmd = &cobra.Command{
 	Use:   "waste [checks...]",
@@ -34,7 +31,6 @@ var wasteCmd = &cobra.Command{
 			Waste:                 true,
 			WasteChecks:           parsedChecks,
 			LambdaMemoryThreshold: lambdaMemoryThreshold,
-			SageMakerIdleDays:     sageMakerIdleDays,
 		}
 
 		return orch.Orchestrate(flags)
@@ -44,7 +40,5 @@ var wasteCmd = &cobra.Command{
 func init() {
 	wasteCmd.Flags().IntVar(&lambdaMemoryThreshold, "lambda-memory-threshold", 10,
 		"Memory utilization threshold (%) below which Lambda functions are flagged as over-provisioned")
-	wasteCmd.Flags().IntVar(&sageMakerIdleDays, "sagemaker-idle-days", 14,
-		"Lookback window in days for flagging SageMaker endpoints with zero invocations as idle")
 	rootCmd.AddCommand(wasteCmd)
 }

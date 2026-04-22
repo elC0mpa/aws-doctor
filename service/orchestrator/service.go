@@ -17,6 +17,11 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
+// sagemakerIdleDays is the lookback window for flagging SageMaker endpoints with zero
+// invocations as idle. Matches the hardcoded windows used by other waste checks
+// (unused AMIs, orphaned snapshots, idle NAT gateways).
+const sagemakerIdleDays = 14
+
 // NewService creates a new orchestrator service.
 func NewService(cfg Config) Service {
 	return &service{
@@ -62,7 +67,7 @@ func (s *service) Orchestrate(flags model.Flags) error {
 
 	switch {
 	case flags.Waste:
-		workflowErr = s.wasteWorkflow(flags.WasteChecks, flags.Report, flags.ReportPath, flags.LambdaMemoryThreshold, flags.SageMakerIdleDays)
+		workflowErr = s.wasteWorkflow(flags.WasteChecks, flags.Report, flags.ReportPath, flags.LambdaMemoryThreshold)
 	case flags.Trend:
 		workflowErr = s.trendWorkflow(flags.TrendChecks, flags.Report, flags.ReportPath)
 	default:
@@ -207,7 +212,8 @@ func (s *service) trendWorkflow(trendChecks []string, generateReport bool, repor
 	return s.outputService.RenderTrend(*stsResult.Account, costInfo, trendChecks)
 }
 
-func (s *service) wasteWorkflow(wasteChecks []string, generateReport bool, reportPath string, lambdaMemoryThreshold int, sageMakerIdleDays int) error {
+//nolint:gocyclo // waste workflow dispatches one check per AWS service; each adds complexity
+func (s *service) wasteWorkflow(wasteChecks []string, generateReport bool, reportPath string, lambdaMemoryThreshold int) error {
 	ctx := context.Background()
 	g, ctx := errgroup.WithContext(ctx)
 
@@ -220,7 +226,6 @@ func (s *service) wasteWorkflow(wasteChecks []string, generateReport bool, repor
 	runRDS := runAll || slice.ContainsIgnoreCase(wasteChecks, "rds")
 	runVPC := runAll || slice.ContainsIgnoreCase(wasteChecks, "vpc")
 	runLambda := runAll || slice.ContainsIgnoreCase(wasteChecks, "lambda")
-	runSageMaker := runAll || slice.ContainsIgnoreCase(wasteChecks, "sagemaker")
 
 	// Results from concurrent API calls
 	var (
@@ -377,7 +382,15 @@ func (s *service) wasteWorkflow(wasteChecks []string, generateReport bool, repor
 		})
 	}
 
-	s.dispatchSageMaker(ctx, g, runSageMaker, sageMakerIdleDays, &idleSageMakerEndpoints)
+	if s.sagemakerService != nil && (runAll || slice.ContainsIgnoreCase(wasteChecks, "sagemaker")) {
+		g.Go(func() error {
+			var err error
+
+			idleSageMakerEndpoints, err = s.sagemakerService.GetIdleEndpoints(ctx, sagemakerIdleDays)
+
+			return err
+		})
+	}
 
 	// Fetch caller identity concurrently (always required for output)
 	g.Go(func() error {
@@ -442,28 +455,4 @@ func (s *service) handleCostError(err error) error {
 	}
 
 	return err
-}
-
-// dispatchSageMaker launches a goroutine that fetches idle SageMaker endpoints when the
-// sagemaker check is enabled. The extraction exists purely to keep wasteWorkflow under the
-// gocyclo threshold; it has no independent behavior.
-func (s *service) dispatchSageMaker(ctx context.Context, g *errgroup.Group, run bool, idleDays int, out *[]model.IdleSageMakerEndpointInfo) {
-	if !run || s.sagemakerService == nil {
-		return
-	}
-
-	if idleDays <= 0 {
-		idleDays = 14
-	}
-
-	g.Go(func() error {
-		endpoints, err := s.sagemakerService.GetIdleEndpoints(ctx, idleDays)
-		if err != nil {
-			return err
-		}
-
-		*out = endpoints
-
-		return nil
-	})
 }

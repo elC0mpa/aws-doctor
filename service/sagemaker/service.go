@@ -1,4 +1,23 @@
 // Package sagemaker provides a service for detecting idle SageMaker real-time inference endpoints.
+//
+// Flow of GetIdleEndpoints:
+//
+//  1. ListEndpoints (paginated): pull every endpoint in the region whose status is InService.
+//     Non-InService endpoints (Creating, Updating, Failed, Deleting) are skipped because we cannot
+//     meaningfully assess traffic on them.
+//  2. For each endpoint, concurrently run checkEndpoint:
+//     a. DescribeEndpoint to read the ProductionVariants currently attached (name + instance count).
+//     b. DescribeEndpointConfig to read the instance type per variant (the summary only has
+//     counts, not types, so both calls are needed).
+//     c. For each variant, query CloudWatch Invocations (AWS/SageMaker namespace, dimensions
+//     EndpointName + VariantName) over the lookback window. The first variant with any
+//     invocation short-circuits the endpoint as active.
+//  3. An endpoint is idle only when every variant reports zero invocations for the whole window.
+//     Idle endpoints are costed via pricing.CalculateSageMakerEndpointMonthlyCost, which sums the
+//     hourly rate for each variant's instance type times its instance count.
+//
+// Per-endpoint CloudWatch errors are swallowed (endpoint dropped from results) so one bad metric
+// call does not abort the scan. DescribeEndpoint / DescribeEndpointConfig errors propagate.
 package sagemaker
 
 import (
@@ -14,10 +33,7 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
-const (
-	defaultIdleDays = 14
-	maxConcurrency  = 8
-)
+const maxConcurrency = 8
 
 // NewService creates a new SageMaker service.
 func NewService(awsconfig aws.Config, cwService cloudwatchmetrics.Service) Service {
@@ -28,13 +44,8 @@ func NewService(awsconfig aws.Config, cwService cloudwatchmetrics.Service) Servi
 }
 
 // GetIdleEndpoints returns InService SageMaker real-time inference endpoints whose production
-// variants served zero invocations over the last idleDays days. When idleDays <= 0 a default of
-// 14 days is used.
+// variants served zero invocations over the last idleDays days.
 func (s *service) GetIdleEndpoints(ctx context.Context, idleDays int) ([]model.IdleSageMakerEndpointInfo, error) {
-	if idleDays <= 0 {
-		idleDays = defaultIdleDays
-	}
-
 	endpoints, err := s.listEndpoints(ctx)
 	if err != nil {
 		return nil, err
@@ -88,27 +99,22 @@ type endpointCheckResult struct {
 }
 
 func (s *service) listEndpoints(ctx context.Context) ([]smtypes.EndpointSummary, error) {
+	paginator := sm.NewListEndpointsPaginator(s.client, &sm.ListEndpointsInput{
+		StatusEquals: smtypes.EndpointStatusInService,
+	})
+
 	var endpoints []smtypes.EndpointSummary
 
-	var nextToken *string
-
-	for {
-		out, err := s.client.ListEndpoints(ctx, &sm.ListEndpointsInput{
-			StatusEquals: smtypes.EndpointStatusInService,
-			NextToken:    nextToken,
-		})
+	for paginator.HasMorePages() {
+		out, err := paginator.NextPage(ctx)
 		if err != nil {
 			return nil, fmt.Errorf("failed to list SageMaker endpoints: %w", err)
 		}
 
 		endpoints = append(endpoints, out.Endpoints...)
-
-		if out.NextToken == nil || *out.NextToken == "" {
-			return endpoints, nil
-		}
-
-		nextToken = out.NextToken
 	}
+
+	return endpoints, nil
 }
 
 // checkEndpoint returns (info, true, nil) when the endpoint is idle, (_, false, nil) when it has
