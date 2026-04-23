@@ -36,6 +36,7 @@ type Renderer interface {
 	OutputWasteJSON(input model.RenderWasteInput) error
 	OutputWasteCSV(input model.RenderWasteInput) error
 	StopSpinner()
+	SetSpinnerMessage(message string)
 	PrintAlreadyLatest(version string)
 	PrintHomebrewUpdate()
 	PrintGoInstallUpdate()
@@ -87,6 +88,10 @@ func (r *realRenderer) OutputWasteCSV(input model.RenderWasteInput) error {
 
 func (r *realRenderer) StopSpinner() {
 	spinner.StopSpinner()
+}
+
+func (r *realRenderer) SetSpinnerMessage(message string) {
+	spinner.SetMessage(message)
 }
 
 func (r *realRenderer) PrintAlreadyLatest(version string) {
@@ -165,6 +170,9 @@ type Service interface {
 
 	// StopSpinner stops the loading spinner before rendering output
 	StopSpinner()
+
+	// SetSpinnerMessage updates the spinner's status text in place
+	SetSpinnerMessage(message string)
 
 	// PrintReportSuccess outputs a success message with the report path
 	PrintReportSuccess(path string)

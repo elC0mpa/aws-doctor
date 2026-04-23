@@ -59,6 +59,8 @@ func buildOrchestrator(needsAWS bool) (orchestrator.Service, error) {
 
 	spinner.StartSpinner()
 
+	config.AWSConfig = awsCfg
+
 	cwMetricsService := cloudwatchmetrics.NewService(awsCfg)
 
 	config.STSService = awssts.NewService(awsCfg)

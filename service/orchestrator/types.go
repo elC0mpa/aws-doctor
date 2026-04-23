@@ -1,6 +1,7 @@
 package orchestrator
 
 import (
+	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/elC0mpa/aws-doctor/model"
 	"github.com/elC0mpa/aws-doctor/service/cloudwatchlogs"
 	awscostexplorer "github.com/elC0mpa/aws-doctor/service/costexplorer"
@@ -32,6 +33,7 @@ type service struct {
 	reportService         report.Service
 	versionInfo           model.VersionInfo
 	vpcService            awsvpc.Service
+	awsConfig             aws.Config
 }
 
 // Config holds the dependencies for the orchestrator service.
@@ -50,6 +52,9 @@ type Config struct {
 	ReportService         report.Service
 	VersionInfo           model.VersionInfo
 	VPCService            awsvpc.Service
+	// AWSConfig is used by workflows that need to bootstrap region-aware helpers at runtime
+	// (currently just the pricing cache). Empty on paths that don't need AWS (version/update).
+	AWSConfig aws.Config
 }
 
 // Service is the interface for the orchestrator service.

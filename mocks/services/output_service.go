@@ -33,6 +33,11 @@ func (m *MockOutputService) StopSpinner() {
 	m.Called()
 }
 
+// SetSpinnerMessage mocks the SetSpinnerMessage method.
+func (m *MockOutputService) SetSpinnerMessage(message string) {
+	m.Called(message)
+}
+
 // PrintReportSuccess mocks the PrintReportSuccess method.
 func (m *MockOutputService) PrintReportSuccess(path string) {
 	m.Called(path)

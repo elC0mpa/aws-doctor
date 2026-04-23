@@ -23,3 +23,11 @@ func StopSpinner() {
 		loader.Stop()
 	}
 }
+
+// SetMessage updates the spinner suffix in place so callers can surface what phase of work is
+// currently running without stopping and restarting the spinner.
+func SetMessage(message string) {
+	if loader != nil {
+		loader.Suffix = " " + message
+	}
+}

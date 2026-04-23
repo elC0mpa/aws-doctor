@@ -4,12 +4,15 @@ package orchestrator
 import (
 	"context"
 	"errors"
+	"fmt"
+	"os"
 	"strings"
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/service/sts"
 	"github.com/elC0mpa/aws-doctor/model"
 	awscostexplorer "github.com/elC0mpa/aws-doctor/service/costexplorer"
+	"github.com/elC0mpa/aws-doctor/utils/pricing"
 	"github.com/elC0mpa/aws-doctor/utils/slice"
 	"github.com/google/go-github/v62/github"
 	"golang.org/x/sync/errgroup"
@@ -37,6 +40,7 @@ func NewService(cfg Config) Service {
 		reportService:         cfg.ReportService,
 		versionInfo:           cfg.VersionInfo,
 		vpcService:            cfg.VPCService,
+		awsConfig:             cfg.AWSConfig,
 	}
 }
 
@@ -213,6 +217,9 @@ func (s *service) trendWorkflow(trendChecks []string, generateReport bool, repor
 // wasteWorkflow dispatches one check per AWS service concurrently.
 func (s *service) wasteWorkflow(wasteChecks []string, generateReport bool, reportPath string, lambdaMemoryThreshold int) error {
 	ctx := context.Background()
+
+	s.loadPricing(ctx)
+
 	g, ctx := errgroup.WithContext(ctx)
 
 	// Determine which checks to run
@@ -304,4 +311,21 @@ func (s *service) handleCostError(err error) error {
 	}
 
 	return err
+}
+
+// loadPricing fetches region-aware pricing at the start of the waste workflow so the Calculate*
+// helpers can surface accurate rates instead of the hardcoded us-east-1 defaults. The call is
+// best-effort: any Pricing API failures are surfaced to stderr and the fallback constants cover
+// the missing entries. The spinner is updated in place so the user sees why startup is pausing.
+func (s *service) loadPricing(ctx context.Context) {
+	s.outputService.SetSpinnerMessage("Gathering pricing data...")
+
+	pricingCtx, cancel := context.WithTimeout(ctx, 15*time.Second)
+	defer cancel()
+
+	if err := pricing.Load(pricingCtx, s.awsConfig); err != nil {
+		fmt.Fprintf(os.Stderr, "warning: pricing API partial failure, falling back to defaults: %v\n", err)
+	}
+
+	s.outputService.SetSpinnerMessage("Please wait while data is being fetched...")
 }
