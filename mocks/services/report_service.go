@@ -6,6 +6,7 @@ import (
 	"github.com/stretchr/testify/mock"
 )
 
+// MockReportService is a mock implementation of the report service.
 type MockReportService struct {
 	mock.Mock
 }

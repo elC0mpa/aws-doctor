@@ -6,6 +6,7 @@ import (
 	"github.com/stretchr/testify/mock"
 )
 
+// MockOutputService is a mock implementation of the output service.
 type MockOutputService struct {
 	mock.Mock
 }

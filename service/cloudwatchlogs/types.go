@@ -31,4 +31,3 @@ type service struct {
 type pricingService interface {
 	CalculateCloudWatchLogsMonthlyCost(storedBytes int64) float64
 }
-

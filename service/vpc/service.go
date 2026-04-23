@@ -136,7 +136,7 @@ func (s *service) natGatewayToWasteInfo(natGateway types.NatGateway) model.NATGa
 		SubnetID:              aws.ToString(natGateway.SubnetId),
 		State:                 string(natGateway.State),
 		BytesOutToDestination: 0,
-		EstimatedMonthlyCost: s.pricingService.CalculateNATGatewayMonthlyCost(),
+		EstimatedMonthlyCost:  s.pricingService.CalculateNATGatewayMonthlyCost(),
 		DaysSinceCreate:       daysSinceCreate,
 	}
 }

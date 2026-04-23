@@ -93,6 +93,7 @@ func TestGetCloudWatchLogsWaste(t *testing.T) {
 					assert.Greater(t, waste[0].EstimatedMonthlyCost, 0.0)
 				}
 			}
+
 			mockPricing.AssertExpectations(t)
 		})
 	}

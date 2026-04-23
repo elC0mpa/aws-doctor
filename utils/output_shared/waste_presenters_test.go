@@ -93,6 +93,7 @@ func TestPresentEBSVolume(t *testing.T) {
 			if p.EstimatedCost != tt.wantCost {
 				t.Errorf("EstimatedCost = %v, want %v", p.EstimatedCost, tt.wantCost)
 			}
+
 			m.AssertExpectations(t)
 		})
 	}
@@ -112,9 +113,11 @@ func TestPresentElasticIP(t *testing.T) {
 	if p.Identifier != "1.2.3.4" {
 		t.Errorf("Identifier = %v, want '1.2.3.4'", p.Identifier)
 	}
+
 	if p.EstimatedCost != "$3.65" {
 		t.Errorf("EstimatedCost = %v, want '$3.65'", p.EstimatedCost)
 	}
+
 	m.AssertExpectations(t)
 }
 
@@ -134,9 +137,11 @@ func TestPresentLoadBalancer(t *testing.T) {
 	if p.Identifier != "arn:aws:elb:us-east-1:123:lb/app/my-lb/123" {
 		t.Errorf("Identifier = %v, want 'arn:aws:elb:us-east-1:123:lb/app/my-lb/123'", p.Identifier)
 	}
+
 	if p.EstimatedCost != "$16.43" {
 		t.Errorf("EstimatedCost = %v, want '$16.43'", p.EstimatedCost)
 	}
+
 	m.AssertExpectations(t)
 }
 
@@ -152,6 +157,7 @@ func TestPresentCloudWatchLogGroup(t *testing.T) {
 	if p.Identifier != "test-lg" {
 		t.Errorf("Identifier = %v, want 'test-lg'", p.Identifier)
 	}
+
 	if p.EstimatedCost != "$0.50" {
 		t.Errorf("EstimatedCost = %v, want '$0.50'", p.EstimatedCost)
 	}
@@ -194,6 +200,7 @@ func TestPresentSnapshot(t *testing.T) {
 	if p.Identifier != "snap-123" {
 		t.Errorf("Identifier = %v, want 'snap-123'", p.Identifier)
 	}
+
 	if p.EstimatedCost != "$5.00" {
 		t.Errorf("EstimatedCost = %v, want '$5.00'", p.EstimatedCost)
 	}
@@ -210,6 +217,7 @@ func TestPresentKeyPair(t *testing.T) {
 	if p.Identifier != "test-key" {
 		t.Errorf("Identifier = %v, want 'test-key'", p.Identifier)
 	}
+
 	if p.Age != "30" {
 		t.Errorf("Age = %v, want '30'", p.Age)
 	}
@@ -221,7 +229,9 @@ func TestPresentRDS(t *testing.T) {
 			DBInstanceID:         "db-1",
 			EstimatedMonthlyCost: 20.0,
 		}
+
 		p := PresentRDSInstance(inst)
+
 		if p.EstimatedCost != "$20.00" {
 			t.Errorf("got %v, want $20.00", p.EstimatedCost)
 		}
@@ -232,7 +242,9 @@ func TestPresentRDS(t *testing.T) {
 			DBSnapshotID:         "snap-1",
 			EstimatedMonthlyCost: 5.0,
 		}
+
 		p := PresentRDSSnapshot(snap)
+
 		if p.EstimatedCost != "$5.00" {
 			t.Errorf("got %v, want $5.00", p.EstimatedCost)
 		}
@@ -243,7 +255,9 @@ func TestPresentRDS(t *testing.T) {
 			DBInstanceID:         "idle-1",
 			EstimatedMonthlyCost: 45.0,
 		}
+
 		p := PresentRDSIdleInstance(inst)
+
 		if p.EstimatedCost != "$45.00" {
 			t.Errorf("got %v, want $45.00", p.EstimatedCost)
 		}
@@ -261,6 +275,7 @@ func TestPresentIdleNATGateway(t *testing.T) {
 	if p.Identifier != "nat-123" {
 		t.Errorf("Identifier = %v, want 'nat-123'", p.Identifier)
 	}
+
 	if p.EstimatedCost != "$32.85" {
 		t.Errorf("EstimatedCost = %v, want '$32.85'", p.EstimatedCost)
 	}
@@ -277,6 +292,7 @@ func TestPresentIdleLoadBalancer(t *testing.T) {
 	if p.Identifier != "idle-lb" {
 		t.Errorf("Identifier = %v, want 'idle-lb'", p.Identifier)
 	}
+
 	if p.EstimatedCost != "$16.43" {
 		t.Errorf("EstimatedCost = %v, want '$16.43'", p.EstimatedCost)
 	}
@@ -308,6 +324,7 @@ func TestPresentIdleSageMakerEndpoint(t *testing.T) {
 	if p.Identifier != "test-ep" {
 		t.Errorf("Identifier = %v, want 'test-ep'", p.Identifier)
 	}
+
 	if p.EstimatedCost != "$46.72" {
 		t.Errorf("EstimatedCost = %v, want '$46.72'", p.EstimatedCost)
 	}

@@ -5,7 +5,7 @@ import (
 	"github.com/elC0mpa/aws-doctor/service/pricing"
 )
 
-// Service is the interface for the report service.
+// Type represents the type of report to generate.
 type Type string
 
 const (
@@ -17,6 +17,7 @@ const (
 	WasteReport Type = "waste"
 )
 
+// Service is the interface for the report service.
 type Service interface {
 	// GenerateCostComparisonReport creates a PDF report for cost comparison.
 	GenerateCostComparisonReport(input model.RenderCostComparisonInput, reportPath string) (*string, error)

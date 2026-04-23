@@ -1,7 +1,6 @@
 package orchestrator
 
 import (
-	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/elC0mpa/aws-doctor/model"
 	"github.com/elC0mpa/aws-doctor/service/cloudwatchlogs"
 	awscostexplorer "github.com/elC0mpa/aws-doctor/service/costexplorer"
@@ -35,7 +34,6 @@ type service struct {
 	reportService         report.Service
 	versionInfo           model.VersionInfo
 	vpcService            awsvpc.Service
-	awsConfig             aws.Config
 }
 
 // Config holds the dependencies for the orchestrator service.

@@ -10,12 +10,12 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/elasticloadbalancingv2/types"
 	"github.com/elC0mpa/aws-doctor/model"
 	"golang.org/x/sync/errgroup"
-	)
+)
 
-	const idleDaysThreshold = 7
+const idleDaysThreshold = 7
 
-	// NewService creates a new ELB service.
-	func NewService(awsconfig aws.Config, cwService cloudwatchMetricsService, pricingSvc pricingService) Service {
+// NewService creates a new ELB service.
+func NewService(awsconfig aws.Config, cwService cloudwatchMetricsService, pricingSvc pricingService) Service {
 	client := elb.NewFromConfig(awsconfig)
 
 	return &service{
@@ -23,7 +23,7 @@ import (
 		cwService:      cwService,
 		pricingService: pricingSvc,
 	}
-	}
+}
 
 // fetchLoadBalancersAndTargetGroups paginates all load balancers and target groups,
 // returning the full LB list and a set of LB ARNs that have at least one target group.

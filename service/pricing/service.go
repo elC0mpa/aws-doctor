@@ -147,9 +147,12 @@ func (s *service) LoadRegionRates(ctx context.Context) error {
 			entries, err := s.queryProducts(ctx, serviceCode, filters)
 			if err != nil {
 				wrapped := fmt.Errorf("%s: %w", category, err)
+
 				errMu.Lock()
+
 				fetchErr = append(fetchErr, wrapped)
 				errMu.Unlock()
+
 				return nil
 			}
 
@@ -158,8 +161,10 @@ func (s *service) LoadRegionRates(ctx context.Context) error {
 				if !ok {
 					continue
 				}
+
 				s.setPrice(priceKey(category, variant), entry.pricePerUnit)
 			}
+
 			return nil
 		})
 	}
@@ -170,20 +175,25 @@ func (s *service) LoadRegionRates(ctx context.Context) error {
 		Value: aws.String(s.region),
 	}
 
+	//nolint:unparam
 	matchUsagetypeContains := func(needle string) func(attrs map[string]string) (string, bool) {
 		return func(attrs map[string]string) (string, bool) {
-			if !strings.Contains(attrs["usagetype"], needle) {
+			ut := attrs["usagetype"]
+			if !strings.Contains(ut, needle) {
 				return "", false
 			}
+
 			return "", true
 		}
 	}
 
+	//nolint:unparam
 	matchLBUsage := func(attrs map[string]string) (string, bool) {
-		u := attrs["usagetype"]
-		if !strings.Contains(u, "LoadBalancerUsage") || strings.Contains(u, "Outposts-") || strings.Contains(u, "TS-") {
+		ut := attrs["usagetype"]
+		if !strings.Contains(ut, "LoadBalancerUsage") || strings.Contains(ut, "Outposts-") || strings.Contains(ut, "TS-") {
 			return "", false
 		}
+
 		return "", true
 	}
 
@@ -223,6 +233,7 @@ func (s *service) LoadRegionRates(ctx context.Context) error {
 			if _, ok := matchLBUsage(attrs); !ok {
 				return "", false
 			}
+
 			return variant, true
 		})
 	}
@@ -284,6 +295,7 @@ func (s *service) CalculateEIPMonthlyCost() float64 {
 	if v, ok := s.lookupMonthly(priceKey(categoryEIP, ""), hoursPerMonth); ok {
 		return v
 	}
+
 	return EIPCostPerMonth
 }
 
@@ -292,21 +304,25 @@ func (s *service) CalculateLoadBalancerMonthlyCost(lbType elbtypes.LoadBalancerT
 		if v, ok := s.lookupMonthly(priceKey(categoryLBClassic, ""), hoursPerMonth); ok {
 			return v
 		}
+
 		return CLBCostPerMonth
 	}
 
 	if v, ok := s.lookupMonthly(priceKey(categoryLBApp, string(lbType)), hoursPerMonth); ok {
 		return v
 	}
+
 	return ALBCostPerMonth
 }
 
 func (s *service) CalculateCloudWatchLogsMonthlyCost(storedBytes int64) float64 {
 	storedGB := float64(storedBytes) / (1024 * 1024 * 1024)
 	rate := CloudWatchLogsCostPerGBMonth
+
 	if v, ok := s.lookupMonthly(priceKey(categoryCWLogs, ""), 0); ok {
 		rate = v
 	}
+
 	return storedGB * rate
 }
 
@@ -314,14 +330,17 @@ func (s *service) CalculateNATGatewayMonthlyCost() float64 {
 	if v, ok := s.lookupMonthly(priceKey(categoryNAT, ""), hoursPerMonth); ok {
 		return v
 	}
+
 	return NatGatewayCostPerMonth
 }
 
 func (s *service) CalculateRDSInstanceMonthlyCost(allocatedGB int32, multiAZ bool) float64 {
 	cost := float64(allocatedGB) * s.rdsStoragePerGBMonth()
+
 	if multiAZ {
 		cost *= 2
 	}
+
 	return cost
 }
 
@@ -333,17 +352,21 @@ func (s *service) CalculateRDSIdleInstanceMonthlyCost(instanceClass string, allo
 	computeCost := s.rdsInstanceComputeCost(instanceClass)
 	storageCost := float64(allocatedGB) * s.rdsStoragePerGBMonth()
 	total := computeCost + storageCost
+
 	if multiAZ {
 		total *= 2
 	}
+
 	return total
 }
 
 func (s *service) CalculateSageMakerEndpointMonthlyCost(variants []model.SageMakerVariant) float64 {
 	var total float64
+
 	for _, v := range variants {
 		total += sagemakerInstancePricing[v.InstanceType] * float64(v.InstanceCount)
 	}
+
 	return total
 }
 
@@ -353,6 +376,7 @@ func (s *service) rdsStoragePerGBMonth() float64 {
 	if v, ok := s.lookupMonthly(priceKey(categoryRDSStorage, ""), 0); ok {
 		return v
 	}
+
 	return RDSStorageCostPerGBMonth
 }
 
@@ -360,6 +384,7 @@ func (s *service) rdsSnapshotPerGBMonth() float64 {
 	if v, ok := s.lookupMonthly(priceKey(categoryRDSSnapshot, ""), 0); ok {
 		return v
 	}
+
 	return RDSSnapshotCostPerGBMonth
 }
 
@@ -367,30 +392,36 @@ func (s *service) rdsInstanceComputeCost(instanceClass string) float64 {
 	if v, ok := s.lookupMonthly(priceKey(categoryRDSInstance, instanceClass), hoursPerMonth); ok {
 		return v
 	}
+
 	if trimmed := strings.TrimPrefix(instanceClass, "db."); trimmed != instanceClass {
 		if v, ok := s.lookupMonthly(priceKey(categoryRDSInstance, trimmed), hoursPerMonth); ok {
 			return v
 		}
 	}
+
 	return rdsInstancePricing[instanceClass]
 }
 
 func (s *service) setPrice(k string, v float64) {
 	s.priceMu.Lock()
 	defer s.priceMu.Unlock()
+
 	s.prices[k] = v
 }
 
 func (s *service) lookupMonthly(k string, hoursInMonth float64) (float64, bool) {
 	s.priceMu.RLock()
 	defer s.priceMu.RUnlock()
+
 	v, ok := s.prices[k]
 	if !ok {
 		return 0, false
 	}
+
 	if hoursInMonth > 0 {
 		return v * hoursInMonth, true
 	}
+
 	return v, true
 }
 
@@ -406,18 +437,22 @@ func (s *service) queryProducts(ctx context.Context, serviceCode string, filters
 		FormatVersion: aws.String("aws_v1"),
 	}
 	paginator := awspricing.NewGetProductsPaginator(s.client, input)
+
 	var out []productEntry
+
 	for paginator.HasMorePages() {
 		resp, err := paginator.NextPage(ctx)
 		if err != nil {
 			return nil, fmt.Errorf("GetProducts %s: %w", serviceCode, err)
 		}
+
 		for _, raw := range resp.PriceList {
 			if entry, ok := parsePriceListDocument(raw); ok {
 				out = append(out, entry)
 			}
 		}
 	}
+
 	return out, nil
 }
 
@@ -437,19 +472,23 @@ func parsePriceListDocument(raw string) (productEntry, bool) {
 	if err := json.Unmarshal([]byte(raw), &doc); err != nil {
 		return productEntry{}, false
 	}
+
 	for _, sku := range doc.Terms.OnDemand {
 		for _, dim := range sku.PriceDimensions {
 			usdStr, ok := dim.PricePerUnit["USD"]
 			if !ok {
 				continue
 			}
+
 			usd, err := strconv.ParseFloat(usdStr, 64)
 			if err != nil {
 				continue
 			}
+
 			return productEntry{attrs: doc.Product.Attributes, pricePerUnit: usd}, true
 		}
 	}
+
 	return productEntry{}, false
 }
 
@@ -457,6 +496,7 @@ func priceKey(category, variant string) string {
 	if variant == "" {
 		return category
 	}
+
 	return category + ":" + variant
 }
 
