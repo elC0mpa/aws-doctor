@@ -14,18 +14,27 @@ import (
 	"github.com/stretchr/testify/mock"
 )
 
+type mockPricingService struct {
+	mock.Mock
+}
+
+func (m *mockPricingService) CalculateCloudWatchLogsMonthlyCost(storedBytes int64) float64 {
+	args := m.Called(storedBytes)
+	return args.Get(0).(float64)
+}
+
 func TestGetCloudWatchLogsWaste(t *testing.T) {
 	ctx := context.Background()
 
 	tests := []struct {
 		name       string
-		setupMocks func(*awsinterfaces.MockCloudWatchLogsClient)
+		setupMocks func(*awsinterfaces.MockCloudWatchLogsClient, *mockPricingService)
 		wantCount  int
 		wantErr    bool
 	}{
 		{
 			name: "log group without retention policy",
-			setupMocks: func(m *awsinterfaces.MockCloudWatchLogsClient) {
+			setupMocks: func(m *awsinterfaces.MockCloudWatchLogsClient, ps *mockPricingService) {
 				m.On("DescribeLogGroups", mock.Anything, mock.Anything, mock.Anything).Return(&cloudwatchlogs.DescribeLogGroupsOutput{
 					LogGroups: []types.LogGroup{
 						{
@@ -36,13 +45,15 @@ func TestGetCloudWatchLogsWaste(t *testing.T) {
 						},
 					},
 				}, nil)
+
+				ps.On("CalculateCloudWatchLogsMonthlyCost", int64(1024)).Return(0.03)
 			},
 			wantCount: 1,
 			wantErr:   false,
 		},
 		{
 			name: "log group with retention policy",
-			setupMocks: func(m *awsinterfaces.MockCloudWatchLogsClient) {
+			setupMocks: func(m *awsinterfaces.MockCloudWatchLogsClient, ps *mockPricingService) {
 				m.On("DescribeLogGroups", mock.Anything, mock.Anything, mock.Anything).Return(&cloudwatchlogs.DescribeLogGroupsOutput{
 					LogGroups: []types.LogGroup{
 						{
@@ -59,7 +70,7 @@ func TestGetCloudWatchLogsWaste(t *testing.T) {
 		},
 		{
 			name: "describe log groups fails",
-			setupMocks: func(m *awsinterfaces.MockCloudWatchLogsClient) {
+			setupMocks: func(m *awsinterfaces.MockCloudWatchLogsClient, ps *mockPricingService) {
 				m.On("DescribeLogGroups", mock.Anything, mock.Anything, mock.Anything).Return((*cloudwatchlogs.DescribeLogGroupsOutput)(nil), errors.New("api error"))
 			},
 			wantCount: 0,
@@ -70,9 +81,13 @@ func TestGetCloudWatchLogsWaste(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			mockClient := new(awsinterfaces.MockCloudWatchLogsClient)
-			tt.setupMocks(mockClient)
+			mockPricing := new(mockPricingService)
+			tt.setupMocks(mockClient, mockPricing)
 
-			svc := &service{client: mockClient}
+			svc := &service{
+				client:         mockClient,
+				pricingService: mockPricing,
+			}
 			waste, err := svc.GetCloudWatchLogsWaste(ctx)
 
 			if tt.wantErr {
@@ -86,6 +101,7 @@ func TestGetCloudWatchLogsWaste(t *testing.T) {
 					assert.Greater(t, waste[0].EstimatedMonthlyCost, 0.0)
 				}
 			}
+			mockPricing.AssertExpectations(t)
 		})
 	}
 }
@@ -320,6 +336,6 @@ func TestListExistingLogGroups_DescribeError(t *testing.T) {
 
 func TestNewService(t *testing.T) {
 	cfg := aws.Config{}
-	svc := NewService(cfg)
+	svc := NewService(cfg, nil)
 	assert.NotNil(t, svc)
 }

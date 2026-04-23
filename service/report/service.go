@@ -9,6 +9,7 @@ import (
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/elC0mpa/aws-doctor/model"
+	"github.com/elC0mpa/aws-doctor/service/pricing"
 	"github.com/johnfercher/maroto/v2"
 	"github.com/johnfercher/maroto/v2/pkg/components/col"
 	"github.com/johnfercher/maroto/v2/pkg/components/image"
@@ -61,14 +62,14 @@ func (s *service) GenerateTrendReport(accountID string, costInfo []model.CostInf
 	return s.generateAndSave(m, path)
 }
 
-func (s *service) GenerateWasteReport(input model.RenderWasteInput, reportPath string) (*string, error) {
+func (s *service) GenerateWasteReport(input model.RenderWasteInput, pricingSvc pricing.Service, reportPath string) (*string, error) {
 	path := s.getReportPath(reportPath, "waste")
 
 	m := maroto.New()
 
 	s.addHeader(m, WasteReport, input.AccountID)
 
-	hasWaste := s.addWasteSections(m, input)
+	hasWaste := s.addWasteSections(m, input, pricingSvc)
 
 	if !hasWaste {
 		m.AddRow(20,
@@ -80,7 +81,7 @@ func (s *service) GenerateWasteReport(input model.RenderWasteInput, reportPath s
 			}),
 		)
 	} else {
-		s.addWasteSummary(m, input)
+		s.addWasteSummary(m, input, pricingSvc)
 	}
 
 	s.addFooter(m, WasteReport)

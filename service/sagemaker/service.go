@@ -28,18 +28,17 @@ import (
 	sm "github.com/aws/aws-sdk-go-v2/service/sagemaker"
 	smtypes "github.com/aws/aws-sdk-go-v2/service/sagemaker/types"
 	"github.com/elC0mpa/aws-doctor/model"
-	"github.com/elC0mpa/aws-doctor/service/cloudwatchmetrics"
-	"github.com/elC0mpa/aws-doctor/utils/pricing"
 	"golang.org/x/sync/errgroup"
 )
 
 const maxConcurrency = 8
 
 // NewService creates a new SageMaker service.
-func NewService(awsconfig aws.Config, cwService cloudwatchmetrics.Service) Service {
+func NewService(awsconfig aws.Config, cwService cloudWatchMetricsService, pricingSvc pricingService) Service {
 	return &service{
-		client:    sm.NewFromConfig(awsconfig),
-		cwService: cwService,
+		client:         sm.NewFromConfig(awsconfig),
+		cwService:      cwService,
+		pricingService: pricingSvc,
 	}
 }
 
@@ -155,21 +154,13 @@ func (s *service) checkEndpoint(ctx context.Context, summary smtypes.EndpointSum
 		}
 	}
 
-	costInputs := make([]pricing.SageMakerVariantCost, 0, len(variants))
-	for _, v := range variants {
-		costInputs = append(costInputs, pricing.SageMakerVariantCost{
-			InstanceType:  v.InstanceType,
-			InstanceCount: v.InstanceCount,
-		})
-	}
-
 	return model.IdleSageMakerEndpointInfo{
 		EndpointName:         name,
 		EndpointARN:          aws.ToString(summary.EndpointArn),
 		Status:               string(summary.EndpointStatus),
 		Variants:             variants,
 		DaysChecked:          idleDays,
-		EstimatedMonthlyCost: pricing.CalculateSageMakerEndpointMonthlyCost(costInputs),
+		EstimatedMonthlyCost: s.pricingService.CalculateSageMakerEndpointMonthlyCost(variants),
 	}, true, nil
 }
 

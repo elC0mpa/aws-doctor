@@ -1,6 +1,7 @@
 package report
 
 import (
+	"context"
 	"os"
 	"path/filepath"
 	"strings"
@@ -13,7 +14,43 @@ import (
 	elbtypes "github.com/aws/aws-sdk-go-v2/service/elasticloadbalancingv2/types"
 	"github.com/elC0mpa/aws-doctor/model"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 )
+
+type mockPricingService struct {
+	mock.Mock
+}
+
+func (m *mockPricingService) CalculateEIPMonthlyCost() float64 {
+	return 3.65
+}
+
+func (m *mockPricingService) CalculateLoadBalancerMonthlyCost(lbType elbtypes.LoadBalancerTypeEnum) float64 {
+	return 16.43
+}
+
+func (m *mockPricingService) CalculateEBSMonthlyCost(sizeGiB int32, volumeType ec2types.VolumeType) float64 {
+	return float64(sizeGiB) * 0.10
+}
+
+func (m *mockPricingService) LoadRegionRates(ctx context.Context) error { return nil }
+func (m *mockPricingService) CalculateEBSSnapshotMonthlyCost(sizeGB int64) float64      { return 0 }
+func (m *mockPricingService) CalculateCloudWatchLogsMonthlyCost(storedBytes int64) float64 {
+	return 0
+}
+func (m *mockPricingService) CalculateNATGatewayMonthlyCost() float64 { return 0 }
+func (m *mockPricingService) CalculateRDSInstanceMonthlyCost(allocatedGB int32, multiAZ bool) float64 {
+	return 0
+}
+func (m *mockPricingService) CalculateRDSSnapshotMonthlyCost(allocatedGB int32) float64 {
+	return 0
+}
+func (m *mockPricingService) CalculateRDSIdleInstanceMonthlyCost(instanceClass string, allocatedGB int32, multiAZ bool) float64 {
+	return 0
+}
+func (m *mockPricingService) CalculateSageMakerEndpointMonthlyCost(variants []model.SageMakerVariant) float64 {
+	return 0
+}
 
 func TestFormatDateToMonthYear(t *testing.T) {
 	s := &service{}
@@ -233,7 +270,7 @@ func TestGenerateReports(t *testing.T) {
 		}
 
 		absPath, _ := filepath.Abs(path)
-		gotPath, err := s.GenerateWasteReport(input, path)
+		gotPath, err := s.GenerateWasteReport(input, new(mockPricingService), path)
 		assert.NoError(t, err)
 		assert.Equal(t, absPath, *gotPath)
 		_, err = os.Stat(absPath)
@@ -247,7 +284,7 @@ func TestGenerateReports(t *testing.T) {
 		}
 
 		absPath, _ := filepath.Abs(path)
-		gotPath, err := s.GenerateWasteReport(input, path)
+		gotPath, err := s.GenerateWasteReport(input, new(mockPricingService), path)
 		assert.NoError(t, err)
 		assert.Equal(t, absPath, *gotPath)
 		_, err = os.Stat(absPath)

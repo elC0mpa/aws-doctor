@@ -19,6 +19,7 @@ import (
 	"github.com/elC0mpa/aws-doctor/service/s3"
 	awssagemaker "github.com/elC0mpa/aws-doctor/service/sagemaker"
 	awssts "github.com/elC0mpa/aws-doctor/service/sts"
+	"github.com/elC0mpa/aws-doctor/service/pricing"
 	"github.com/elC0mpa/aws-doctor/service/update"
 	awsvpc "github.com/elC0mpa/aws-doctor/service/vpc"
 	"github.com/elC0mpa/aws-doctor/utils/banner"
@@ -59,21 +60,21 @@ func buildOrchestrator(needsAWS bool) (orchestrator.Service, error) {
 
 	spinner.StartSpinner()
 
-	config.AWSConfig = awsCfg
-
 	cwMetricsService := cloudwatchmetrics.NewService(awsCfg)
+	pricingSvc := pricing.NewService(awsCfg)
 
 	config.STSService = awssts.NewService(awsCfg)
 	config.CostService = awscostexplorer.NewService(awsCfg)
-	config.EC2Service = awsec2.NewService(awsCfg)
-	config.ELBService = elb.NewService(awsCfg, cwMetricsService)
+	config.EC2Service = awsec2.NewService(awsCfg, pricingSvc)
+	config.ELBService = elb.NewService(awsCfg, cwMetricsService, pricingSvc)
 	config.S3Service = s3.NewService(awsCfg)
-	cwLogsService := cloudwatchlogs.NewService(awsCfg)
+	cwLogsService := cloudwatchlogs.NewService(awsCfg, pricingSvc)
 	config.CloudWatchLogsService = cwLogsService
-	config.RDSService = rds.NewService(awsCfg, cwMetricsService)
-	config.VPCService = awsvpc.NewService(awsCfg, cwMetricsService)
+	config.RDSService = rds.NewService(awsCfg, cwMetricsService, pricingSvc)
+	config.VPCService = awsvpc.NewService(awsCfg, cwMetricsService, pricingSvc)
 	config.LambdaService = awslambda.NewService(awsCfg, cwLogsService)
-	config.SageMakerService = awssagemaker.NewService(awsCfg, cwMetricsService)
+	config.SageMakerService = awssagemaker.NewService(awsCfg, cwMetricsService, pricingSvc)
+	config.PricingService = pricingSvc
 	config.ReportService = report.NewService()
 
 	return orchestrator.NewService(config), nil

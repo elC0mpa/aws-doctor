@@ -9,6 +9,7 @@ import (
 	"github.com/elC0mpa/aws-doctor/service/elb"
 	"github.com/elC0mpa/aws-doctor/service/lambda"
 	"github.com/elC0mpa/aws-doctor/service/output"
+	"github.com/elC0mpa/aws-doctor/service/pricing"
 	"github.com/elC0mpa/aws-doctor/service/rds"
 	"github.com/elC0mpa/aws-doctor/service/report"
 	"github.com/elC0mpa/aws-doctor/service/s3"
@@ -28,6 +29,7 @@ type service struct {
 	rdsService            rds.Service
 	lambdaService         lambda.Service
 	sagemakerService      sagemaker.Service
+	pricingService        pricing.Service
 	outputService         output.Service
 	updateService         update.Service
 	reportService         report.Service
@@ -47,14 +49,12 @@ type Config struct {
 	RDSService            rds.Service
 	LambdaService         lambda.Service
 	SageMakerService      sagemaker.Service
+	PricingService        pricing.Service
 	OutputService         output.Service
 	UpdateService         update.Service
 	ReportService         report.Service
 	VersionInfo           model.VersionInfo
 	VPCService            awsvpc.Service
-	// AWSConfig is used by workflows that need to bootstrap region-aware helpers at runtime
-	// (currently just the pricing cache). Empty on paths that don't need AWS (version/update).
-	AWSConfig aws.Config
 }
 
 // Service is the interface for the orchestrator service.

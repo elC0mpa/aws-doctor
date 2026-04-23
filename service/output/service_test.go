@@ -6,6 +6,7 @@ import (
 	"github.com/elC0mpa/aws-doctor/mocks/renderers"
 	"github.com/elC0mpa/aws-doctor/model"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 )
 
 func TestNewService(t *testing.T) {
@@ -143,9 +144,9 @@ func TestRenderWaste(t *testing.T) {
 	t.Run("TableFormat", func(t *testing.T) {
 		mr := new(renderers.MockRenderer)
 		s := &service{format: FormatTable, renderer: mr}
-		mr.On("DrawWasteTable", input).Return()
+		mr.On("DrawWasteTable", input, mock.Anything).Return()
 
-		err := s.RenderWaste(input)
+		err := s.RenderWaste(input, nil)
 		assert.NoError(t, err)
 		mr.AssertExpectations(t)
 	})
@@ -153,9 +154,9 @@ func TestRenderWaste(t *testing.T) {
 	t.Run("JSONFormat", func(t *testing.T) {
 		mr := new(renderers.MockRenderer)
 		s := &service{format: FormatJSON, renderer: mr}
-		mr.On("OutputWasteJSON", input).Return(nil)
+		mr.On("OutputWasteJSON", input, mock.Anything).Return(nil)
 
-		err := s.RenderWaste(input)
+		err := s.RenderWaste(input, nil)
 		assert.NoError(t, err)
 		mr.AssertExpectations(t)
 	})
@@ -163,9 +164,9 @@ func TestRenderWaste(t *testing.T) {
 	t.Run("CSVFormat", func(t *testing.T) {
 		mr := new(renderers.MockRenderer)
 		s := &service{format: FormatCSV, renderer: mr}
-		mr.On("OutputWasteCSV", input).Return(nil)
+		mr.On("OutputWasteCSV", input, mock.Anything).Return(nil)
 
-		err := s.RenderWaste(input)
+		err := s.RenderWaste(input, nil)
 		assert.NoError(t, err)
 		mr.AssertExpectations(t)
 	})

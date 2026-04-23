@@ -2,6 +2,7 @@ package csvoutput
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"io"
 	"os"
@@ -14,6 +15,36 @@ import (
 	elbtypes "github.com/aws/aws-sdk-go-v2/service/elasticloadbalancingv2/types"
 	"github.com/elC0mpa/aws-doctor/model"
 )
+
+type mockPricingService struct{}
+
+func (m *mockPricingService) LoadRegionRates(ctx context.Context) error { return nil }
+func (m *mockPricingService) CalculateEIPMonthlyCost() float64                        { return 3.65 }
+func (m *mockPricingService) CalculateLoadBalancerMonthlyCost(lbType elbtypes.LoadBalancerTypeEnum) float64 {
+	return 16.425
+}
+func (m *mockPricingService) CalculateEBSMonthlyCost(sizeGiB int32, volumeType types.VolumeType) float64 {
+	return float64(sizeGiB) * 0.10
+}
+func (m *mockPricingService) CalculateEBSSnapshotMonthlyCost(sizeGB int64) float64 {
+	return float64(sizeGB) * 0.05
+}
+func (m *mockPricingService) CalculateCloudWatchLogsMonthlyCost(storedBytes int64) float64 {
+	return float64(storedBytes) * 0.03
+}
+func (m *mockPricingService) CalculateNATGatewayMonthlyCost() float64 { return 32.85 }
+func (m *mockPricingService) CalculateRDSInstanceMonthlyCost(allocatedGB int32, multiAZ bool) float64 {
+	return 10.0
+}
+func (m *mockPricingService) CalculateRDSSnapshotMonthlyCost(allocatedGB int32) float64 {
+	return 5.0
+}
+func (m *mockPricingService) CalculateRDSIdleInstanceMonthlyCost(instanceClass string, allocatedGB int32, multiAZ bool) float64 {
+	return 50.0
+}
+func (m *mockPricingService) CalculateSageMakerEndpointMonthlyCost(variants []model.SageMakerVariant) float64 {
+	return 46.72
+}
 
 func captureStdout(f func()) string {
 	old := os.Stdout
@@ -140,7 +171,7 @@ func TestOutputWasteCSV(t *testing.T) {
 	}
 
 	output := captureStdout(func() {
-		_ = OutputWasteCSV(input)
+		_ = OutputWasteCSV(input, new(mockPricingService))
 	})
 
 	if !strings.Contains(output, "Resource Category,Resource Identifier,Estimated Monthly Cost (USD),Metric / Size,Age (Days),Additional Details") {

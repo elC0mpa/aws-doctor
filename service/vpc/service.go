@@ -10,17 +10,17 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/ec2"
 	"github.com/aws/aws-sdk-go-v2/service/ec2/types"
 	"github.com/elC0mpa/aws-doctor/model"
-	"github.com/elC0mpa/aws-doctor/utils/pricing"
 	"golang.org/x/sync/errgroup"
 )
 
 // NewService creates a new VPC service.
-func NewService(awsconfig aws.Config, cwService cloudwatchMetricsService) Service {
+func NewService(awsconfig aws.Config, cwService cloudwatchMetricsService, pricingSvc pricingService) Service {
 	client := ec2.NewFromConfig(awsconfig)
 
 	return &service{
-		client:    client,
-		cwService: cwService,
+		client:         client,
+		cwService:      cwService,
+		pricingService: pricingSvc,
 	}
 }
 
@@ -111,6 +111,10 @@ func (s *service) buildIdleNATGateways(gateways []types.NatGateway, results []na
 			continue
 		}
 
+		if natGateway.State != types.NatGatewayStateAvailable {
+			continue
+		}
+
 		if result.bytesOut == 0 {
 			idle = append(idle, s.natGatewayToWasteInfo(natGateway))
 		}
@@ -132,7 +136,7 @@ func (s *service) natGatewayToWasteInfo(natGateway types.NatGateway) model.NATGa
 		SubnetID:              aws.ToString(natGateway.SubnetId),
 		State:                 string(natGateway.State),
 		BytesOutToDestination: 0,
-		EstimatedMonthlyCost:  pricing.CalculateNATGatewayMonthlyCost(),
+		EstimatedMonthlyCost: s.pricingService.CalculateNATGatewayMonthlyCost(),
 		DaysSinceCreate:       daysSinceCreate,
 	}
 }

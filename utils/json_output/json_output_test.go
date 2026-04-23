@@ -2,6 +2,7 @@ package jsonoutput
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -11,10 +12,40 @@ import (
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
-	"github.com/aws/aws-sdk-go-v2/service/ec2/types"
+	ec2types "github.com/aws/aws-sdk-go-v2/service/ec2/types"
 	elbtypes "github.com/aws/aws-sdk-go-v2/service/elasticloadbalancingv2/types"
 	"github.com/elC0mpa/aws-doctor/model"
 )
+
+type mockPricingService struct{}
+
+func (m *mockPricingService) LoadRegionRates(ctx context.Context) error { return nil }
+func (m *mockPricingService) CalculateEIPMonthlyCost() float64                        { return 3.65 }
+func (m *mockPricingService) CalculateLoadBalancerMonthlyCost(lbType elbtypes.LoadBalancerTypeEnum) float64 {
+	return 16.425
+}
+func (m *mockPricingService) CalculateEBSMonthlyCost(sizeGiB int32, volumeType ec2types.VolumeType) float64 {
+	return float64(sizeGiB) * 0.10
+}
+func (m *mockPricingService) CalculateEBSSnapshotMonthlyCost(sizeGB int64) float64 {
+	return float64(sizeGB) * 0.05
+}
+func (m *mockPricingService) CalculateCloudWatchLogsMonthlyCost(storedBytes int64) float64 {
+	return float64(storedBytes) * 0.03
+}
+func (m *mockPricingService) CalculateNATGatewayMonthlyCost() float64 { return 32.85 }
+func (m *mockPricingService) CalculateRDSInstanceMonthlyCost(allocatedGB int32, multiAZ bool) float64 {
+	return 10.0
+}
+func (m *mockPricingService) CalculateRDSSnapshotMonthlyCost(allocatedGB int32) float64 {
+	return 5.0
+}
+func (m *mockPricingService) CalculateRDSIdleInstanceMonthlyCost(instanceClass string, allocatedGB int32, multiAZ bool) float64 {
+	return 50.0
+}
+func (m *mockPricingService) CalculateSageMakerEndpointMonthlyCost(variants []model.SageMakerVariant) float64 {
+	return 46.72
+}
 
 // captureStdout captures stdout during function execution
 func captureStdout(f func()) string {
@@ -227,19 +258,19 @@ func TestOutputTrendJSON_SkipsNonTotal(t *testing.T) {
 }
 
 func TestOutputWasteJSON(t *testing.T) {
-	elasticIPs := []types.Address{
+	elasticIPs := []ec2types.Address{
 		{PublicIp: aws.String("1.2.3.4"), AllocationId: aws.String("eipalloc-123")},
 	}
 
-	unusedVolumes := []types.Volume{
+	unusedVolumes := []ec2types.Volume{
 		{VolumeId: aws.String("vol-123"), Size: aws.Int32(100)},
 	}
 
-	stoppedVolumes := []types.Volume{
+	stoppedVolumes := []ec2types.Volume{
 		{VolumeId: aws.String("vol-456"), Size: aws.Int32(200)},
 	}
 
-	stoppedInstances := []types.Instance{
+	stoppedInstances := []ec2types.Instance{
 		{
 			InstanceId:            aws.String("i-123"),
 			StateTransitionReason: aws.String("User initiated (2024-01-01 00:00:00 UTC)"),
@@ -303,7 +334,7 @@ func TestOutputWasteJSON(t *testing.T) {
 			UnusedKeyPairs:     unusedKeyPairs,
 			S3Buckets:          s3Buckets,
 			S3MultipartUploads: s3Multipart,
-		})
+		}, new(mockPricingService))
 	})
 
 	if err != nil {
@@ -391,7 +422,7 @@ func TestOutputWasteJSON_WithSnapshots(t *testing.T) {
 		err = OutputWasteJSON(model.RenderWasteInput{
 			AccountID:         "123456789012",
 			OrphanedSnapshots: orphanedSnapshots,
-		})
+		}, new(mockPricingService))
 	})
 
 	if err != nil {
@@ -416,7 +447,7 @@ func TestOutputWasteJSON_NoWaste(t *testing.T) {
 	var err error
 
 	output := captureStdout(func() {
-		err = OutputWasteJSON(model.RenderWasteInput{AccountID: "123456789012"})
+		err = OutputWasteJSON(model.RenderWasteInput{AccountID: "123456789012"}, new(mockPricingService))
 	})
 
 	if err != nil {
@@ -434,7 +465,7 @@ func TestOutputWasteJSON_NoWaste(t *testing.T) {
 }
 
 func TestOutputWasteJSON_InstanceWithoutTransitionReason(t *testing.T) {
-	stoppedInstances := []types.Instance{
+	stoppedInstances := []ec2types.Instance{
 		{
 			InstanceId:            aws.String("i-123"),
 			StateTransitionReason: nil, // No reason
@@ -447,7 +478,7 @@ func TestOutputWasteJSON_InstanceWithoutTransitionReason(t *testing.T) {
 		err = OutputWasteJSON(model.RenderWasteInput{
 			AccountID:        "123456789012",
 			StoppedInstances: stoppedInstances,
-		})
+		}, new(mockPricingService))
 	})
 
 	if err != nil {
@@ -470,7 +501,7 @@ func TestOutputWasteJSON_InstanceWithoutTransitionReason(t *testing.T) {
 }
 
 func TestOutputWasteJSON_InstanceWithInvalidTransitionReason(t *testing.T) {
-	stoppedInstances := []types.Instance{
+	stoppedInstances := []ec2types.Instance{
 		{
 			InstanceId:            aws.String("i-123"),
 			StateTransitionReason: aws.String("invalid reason without date"),
@@ -483,7 +514,7 @@ func TestOutputWasteJSON_InstanceWithInvalidTransitionReason(t *testing.T) {
 		err = OutputWasteJSON(model.RenderWasteInput{
 			AccountID:        "123456789012",
 			StoppedInstances: stoppedInstances,
-		})
+		}, new(mockPricingService))
 	})
 
 	if err != nil {
@@ -524,7 +555,7 @@ func TestOutputWasteJSON_WithUnusedAMIs(t *testing.T) {
 		err = OutputWasteJSON(model.RenderWasteInput{
 			AccountID:  "123456789012",
 			UnusedAMIs: unusedAMIs,
-		})
+		}, new(mockPricingService))
 	})
 
 	if err != nil {
@@ -589,7 +620,7 @@ func TestOutputWasteJSON_AMIWithEmptySnapshots(t *testing.T) {
 		err = OutputWasteJSON(model.RenderWasteInput{
 			AccountID:  "123456789012",
 			UnusedAMIs: unusedAMIs,
-		})
+		}, new(mockPricingService))
 	})
 
 	if err != nil {
@@ -639,7 +670,7 @@ func TestOutputWasteJSON_WithIdleNATGateways(t *testing.T) {
 		err = OutputWasteJSON(model.RenderWasteInput{
 			AccountID:       "123456789012",
 			IdleNATGateways: idleNATGateways,
-		})
+		}, new(mockPricingService))
 	})
 
 	if err != nil {
@@ -675,7 +706,7 @@ func TestOutputWasteJSON_NilElasticIPs(t *testing.T) {
 	var err error
 
 	output := captureStdout(func() {
-		err = OutputWasteJSON(input)
+		err = OutputWasteJSON(input, new(mockPricingService))
 	})
 
 	if err != nil {
@@ -697,13 +728,13 @@ func TestOutputWasteJSON_NilElasticIPs(t *testing.T) {
 func TestOutputWasteJSON_EmptyElasticIPs(t *testing.T) {
 	input := model.RenderWasteInput{
 		AccountID:  "123456789012",
-		ElasticIPs: []types.Address{},
+		ElasticIPs: []ec2types.Address{},
 	}
 
 	var err error
 
 	output := captureStdout(func() {
-		err = OutputWasteJSON(input)
+		err = OutputWasteJSON(input, new(mockPricingService))
 	})
 
 	if err != nil {
@@ -723,9 +754,9 @@ func TestOutputWasteJSON_EmptyElasticIPs(t *testing.T) {
 // TestOutputWasteJSON_LargeCollection tests that large collections are handled properly
 func TestOutputWasteJSON_LargeCollection(t *testing.T) {
 	// Create 100 elastic IPs
-	elasticIPs := make([]types.Address, 100)
+	elasticIPs := make([]ec2types.Address, 100)
 	for i := range 100 {
-		elasticIPs[i] = types.Address{
+		elasticIPs[i] = ec2types.Address{
 			PublicIp:     aws.String(fmt.Sprintf("1.2.3.%d", i)),
 			AllocationId: aws.String(fmt.Sprintf("eipalloc-%d", i)),
 		}
@@ -739,7 +770,7 @@ func TestOutputWasteJSON_LargeCollection(t *testing.T) {
 	var err error
 
 	output := captureStdout(func() {
-		err = OutputWasteJSON(input)
+		err = OutputWasteJSON(input, new(mockPricingService))
 	})
 
 	if err != nil {
@@ -772,7 +803,7 @@ func TestOutputWasteJSON_SpecialCharactersInNames(t *testing.T) {
 	var err error
 
 	output := captureStdout(func() {
-		err = OutputWasteJSON(input)
+		err = OutputWasteJSON(input, new(mockPricingService))
 	})
 
 	if err != nil {
@@ -807,7 +838,7 @@ func TestOutputWasteJSON_AllNilFields(t *testing.T) {
 	var err error
 
 	output := captureStdout(func() {
-		err = OutputWasteJSON(input)
+		err = OutputWasteJSON(input, new(mockPricingService))
 	})
 
 	if err != nil {
@@ -827,9 +858,9 @@ func TestOutputWasteJSON_AllNilFields(t *testing.T) {
 }
 
 func BenchmarkOutputWasteJSON(b *testing.B) {
-	elasticIPs := make([]types.Address, 10)
+	elasticIPs := make([]ec2types.Address, 10)
 	for i := range 10 {
-		elasticIPs[i] = types.Address{
+		elasticIPs[i] = ec2types.Address{
 			PublicIp:     aws.String("1.2.3." + string(rune('0'+i))),
 			AllocationId: aws.String("eipalloc-" + string(rune('a'+i))),
 		}
@@ -847,6 +878,6 @@ func BenchmarkOutputWasteJSON(b *testing.B) {
 		_ = OutputWasteJSON(model.RenderWasteInput{
 			AccountID:  "123456789012",
 			ElasticIPs: elasticIPs,
-		})
+		}, new(mockPricingService))
 	}
 }

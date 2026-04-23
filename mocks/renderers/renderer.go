@@ -2,6 +2,7 @@ package renderers
 
 import (
 	"github.com/elC0mpa/aws-doctor/model"
+	"github.com/elC0mpa/aws-doctor/service/pricing"
 	"github.com/stretchr/testify/mock"
 )
 
@@ -45,19 +46,19 @@ func (m *MockRenderer) OutputTrendCSV(costInfo []model.CostInfo, services []stri
 }
 
 // DrawWasteTable mocks DrawWasteTable
-func (m *MockRenderer) DrawWasteTable(input model.RenderWasteInput) {
-	m.Called(input)
+func (m *MockRenderer) DrawWasteTable(input model.RenderWasteInput, pricingSvc pricing.Service) {
+	m.Called(input, pricingSvc)
 }
 
 // OutputWasteJSON mocks OutputWasteJSON
-func (m *MockRenderer) OutputWasteJSON(input model.RenderWasteInput) error {
-	args := m.Called(input)
+func (m *MockRenderer) OutputWasteJSON(input model.RenderWasteInput, pricingSvc pricing.Service) error {
+	args := m.Called(input, pricingSvc)
 	return args.Error(0)
 }
 
 // OutputWasteCSV mocks OutputWasteCSV
-func (m *MockRenderer) OutputWasteCSV(input model.RenderWasteInput) error {
-	args := m.Called(input)
+func (m *MockRenderer) OutputWasteCSV(input model.RenderWasteInput, pricingSvc pricing.Service) error {
+	args := m.Called(input, pricingSvc)
 	return args.Error(0)
 }
 

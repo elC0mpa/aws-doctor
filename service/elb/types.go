@@ -15,13 +15,19 @@ type ClientAPI interface {
 }
 
 type service struct {
-	client    ClientAPI
-	cwService cloudwatchMetricsService
+	client         ClientAPI
+	cwService      cloudwatchMetricsService
+	pricingService pricingService
 }
 
 // cloudwatchMetricsService is a local interface for the CloudWatch metrics dependency.
 type cloudwatchMetricsService interface {
 	ELBHasZeroRequestsInPeriod(ctx context.Context, loadBalancerArn string, lbType types.LoadBalancerTypeEnum, days int) (bool, error)
+}
+
+// pricingService is a local interface for the pricing dependency.
+type pricingService interface {
+	CalculateLoadBalancerMonthlyCost(lbType types.LoadBalancerTypeEnum) float64
 }
 
 // Service is the interface for AWS ELB service.

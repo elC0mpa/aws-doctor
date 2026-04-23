@@ -3,6 +3,7 @@ package output
 
 import (
 	"github.com/elC0mpa/aws-doctor/model"
+	"github.com/elC0mpa/aws-doctor/service/pricing"
 )
 
 // NewService creates a new output service with the specified format
@@ -46,14 +47,14 @@ func (s *service) RenderTrend(accountID string, costInfo []model.CostInfo, servi
 	}
 }
 
-func (s *service) RenderWaste(input model.RenderWasteInput) error {
+func (s *service) RenderWaste(input model.RenderWasteInput, pricingSvc pricing.Service) error {
 	switch s.format {
 	case FormatJSON:
-		return s.renderer.OutputWasteJSON(input)
+		return s.renderer.OutputWasteJSON(input, pricingSvc)
 	case FormatCSV:
-		return s.renderer.OutputWasteCSV(input)
+		return s.renderer.OutputWasteCSV(input, pricingSvc)
 	default:
-		s.renderer.DrawWasteTable(input)
+		s.renderer.DrawWasteTable(input, pricingSvc)
 		return nil
 	}
 }

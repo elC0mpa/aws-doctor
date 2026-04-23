@@ -2,10 +2,10 @@ package services
 
 import (
 	"github.com/elC0mpa/aws-doctor/model"
+	"github.com/elC0mpa/aws-doctor/service/pricing"
 	"github.com/stretchr/testify/mock"
 )
 
-// MockReportService is a mock implementation of the ReportService interface
 type MockReportService struct {
 	mock.Mock
 }
@@ -31,8 +31,8 @@ func (m *MockReportService) GenerateTrendReport(accountID string, costInfo []mod
 }
 
 // GenerateWasteReport is a mock implementation of the ReportService interface
-func (m *MockReportService) GenerateWasteReport(input model.RenderWasteInput, reportPath string) (*string, error) {
-	args := m.Called(input, reportPath)
+func (m *MockReportService) GenerateWasteReport(input model.RenderWasteInput, pricingSvc pricing.Service, reportPath string) (*string, error) {
+	args := m.Called(input, pricingSvc, reportPath)
 	if args.Get(0) == nil {
 		return nil, args.Error(1)
 	}

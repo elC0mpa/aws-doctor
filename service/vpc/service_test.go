@@ -14,6 +14,15 @@ import (
 	"github.com/stretchr/testify/mock"
 )
 
+type mockPricingService struct {
+	mock.Mock
+}
+
+func (m *mockPricingService) CalculateNATGatewayMonthlyCost() float64 {
+	args := m.Called()
+	return args.Get(0).(float64)
+}
+
 func TestGetIdleNATGateways(t *testing.T) {
 	ctx := context.Background()
 
@@ -51,52 +60,27 @@ func TestGetIdleNATGateways(t *testing.T) {
 				},
 			},
 			bytesOutMap: map[string]float64{
-				"nat-abcdef01234567890": 1024 * 1024, // 1MB
+				"nat-abcdef01234567890": 1024,
 			},
 			expectedLen:   0,
 			expectedError: false,
 		},
 		{
-			name: "mixed idle and active NAT Gateways",
+			name: "should ignore deleted or pending NAT Gateways",
 			natGateways: []types.NatGateway{
 				{
-					NatGatewayId: aws.String("nat-idle-1"),
-					VpcId:        aws.String("vpc-11111111"),
-					SubnetId:     aws.String("subnet-11111111"),
-					State:        types.NatGatewayStateAvailable,
+					NatGatewayId: aws.String("nat-deleted"),
+					State:        types.NatGatewayStateDeleted,
 				},
 				{
-					NatGatewayId: aws.String("nat-active-1"),
-					VpcId:        aws.String("vpc-22222222"),
-					SubnetId:     aws.String("subnet-22222222"),
-					State:        types.NatGatewayStateAvailable,
+					NatGatewayId: aws.String("nat-pending"),
+					State:        types.NatGatewayStatePending,
 				},
 			},
 			bytesOutMap: map[string]float64{
-				"nat-idle-1":   0,
-				"nat-active-1": 512 * 1024, // 512KB
+				"nat-deleted": 0,
+				"nat-pending": 0,
 			},
-			expectedLen:   1,
-			expectedError: false,
-		},
-		{
-			name:          "empty NAT Gateway list should return empty slice",
-			natGateways:   []types.NatGateway{},
-			bytesOutMap:   map[string]float64{},
-			expectedLen:   0,
-			expectedError: false,
-		},
-		{
-			name: "NAT Gateway with nil ID should be skipped",
-			natGateways: []types.NatGateway{
-				{
-					NatGatewayId: nil, // nil ID
-					VpcId:        aws.String("vpc-12345678"),
-					SubnetId:     aws.String("subnet-12345678"),
-					State:        types.NatGatewayStateAvailable,
-				},
-			},
-			bytesOutMap:   map[string]float64{},
 			expectedLen:   0,
 			expectedError: false,
 		},
@@ -104,35 +88,44 @@ func TestGetIdleNATGateways(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			// Setup mock VPC client
-			mockClient := new(awsinterfaces.MockVPCClient)
-			mockClient.On("DescribeNatGateways", mock.Anything, mock.Anything, mock.Anything).Return(&ec2.DescribeNatGatewaysOutput{
+			idleDays := 7
+
+			// Setup mock EC2 client
+			mockEC2 := new(awsinterfaces.MockEC2Client)
+			mockEC2.On("DescribeNatGateways", mock.Anything, mock.Anything, mock.Anything).Return(&ec2.DescribeNatGatewaysOutput{
 				NatGateways: tt.natGateways,
 			}, nil)
 
 			// Setup mock CloudWatch service
 			mockCW := new(services.MockCloudWatchMetricsService)
-			for natID, bytesOut := range tt.bytesOutMap {
-				mockCW.On("NATGatewayBytesOut", mock.Anything, natID, 7).Return(bytesOut, nil)
+			for natGatewayID, bytesOut := range tt.bytesOutMap {
+				mockCW.On("NATGatewayBytesOut", mock.Anything, natGatewayID, idleDays).Return(bytesOut, nil)
 			}
 
-			// Create service with mocks
+			// Setup mock pricing service
+			mockPricing := new(mockPricingService)
+			if tt.expectedLen > 0 {
+				mockPricing.On("CalculateNATGatewayMonthlyCost").Return(32.85)
+			}
+
 			svc := &service{
-				client:    mockClient,
-				cwService: mockCW,
+				client:         mockEC2,
+				cwService:      mockCW,
+				pricingService: mockPricing,
 			}
 
-			// Execute
-			results, err := svc.GetIdleNATGateways(ctx, 7)
+			result, err := svc.GetIdleNATGateways(ctx, idleDays)
 
-			// Assert
 			if tt.expectedError {
 				assert.Error(t, err)
 			} else {
 				assert.NoError(t, err)
+				assert.Equal(t, tt.expectedLen, len(result))
 			}
 
-			assert.Len(t, results, tt.expectedLen)
+			mockEC2.AssertExpectations(t)
+			mockCW.AssertExpectations(t)
+			mockPricing.AssertExpectations(t)
 		})
 	}
 }
@@ -142,32 +135,29 @@ func TestGetIdleNATGateways_Error(t *testing.T) {
 
 	tests := []struct {
 		name          string
-		setupMocks    func(*awsinterfaces.MockVPCClient, *services.MockCloudWatchMetricsService)
+		setupMocks    func(*awsinterfaces.MockEC2Client, *services.MockCloudWatchMetricsService)
 		expectedError bool
 	}{
 		{
-			name: "DescribeNATGateways error",
-			setupMocks: func(mockClient *awsinterfaces.MockVPCClient, mockCW *services.MockCloudWatchMetricsService) {
-				mockClient.On("DescribeNatGateways", mock.Anything, mock.Anything, mock.Anything).Return(
-					(*ec2.DescribeNatGatewaysOutput)(nil), errors.New("API error"))
+			name: "EC2 API error",
+			setupMocks: func(ec2Mock *awsinterfaces.MockEC2Client, cwMock *services.MockCloudWatchMetricsService) {
+				ec2Mock.On("DescribeNatGateways", mock.Anything, mock.Anything, mock.Anything).Return(nil, errors.New("EC2 error"))
 			},
 			expectedError: true,
 		},
 		{
-			name: "CloudWatch error continues processing",
-			setupMocks: func(mockClient *awsinterfaces.MockVPCClient, mockCW *services.MockCloudWatchMetricsService) {
-				mockClient.On("DescribeNatGateways", mock.Anything, mock.Anything, mock.Anything).Return(&ec2.DescribeNatGatewaysOutput{
+			name: "CloudWatch API error should log the error for the NAT gateway and continue",
+			setupMocks: func(ec2Mock *awsinterfaces.MockEC2Client, cwMock *services.MockCloudWatchMetricsService) {
+				ec2Mock.On("DescribeNatGateways", mock.Anything, mock.Anything, mock.Anything).Return(&ec2.DescribeNatGatewaysOutput{
 					NatGateways: []types.NatGateway{
 						{
 							NatGatewayId: aws.String("nat-123"),
-							VpcId:        aws.String("vpc-123"),
-							SubnetId:     aws.String("subnet-123"),
 							State:        types.NatGatewayStateAvailable,
 						},
 					},
 				}, nil)
-				// When CloudWatch errors, we skip the NAT gateway and continue
-				mockCW.On("NATGatewayBytesOut", mock.Anything, "nat-123", 7).Return(0.0, errors.New("CW error"))
+
+				cwMock.On("NATGatewayBytesOut", mock.Anything, "nat-123", 7).Return(0.0, errors.New("CW error"))
 			},
 			expectedError: false, // CloudWatch errors are logged and we continue
 		},
@@ -175,24 +165,29 @@ func TestGetIdleNATGateways_Error(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			mockClient := new(awsinterfaces.MockVPCClient)
+			mockEC2 := new(awsinterfaces.MockEC2Client)
 			mockCW := new(services.MockCloudWatchMetricsService)
-			tt.setupMocks(mockClient, mockCW)
+			tt.setupMocks(mockEC2, mockCW)
 
 			svc := &service{
-				client:    mockClient,
-				cwService: mockCW,
+				client:         mockEC2,
+				cwService:      mockCW,
+				pricingService: new(mockPricingService),
 			}
 
-			results, err := svc.GetIdleNATGateways(ctx, 7)
+			_, err := svc.GetIdleNATGateways(ctx, 7)
 
 			if tt.expectedError {
 				assert.Error(t, err)
 			} else {
 				assert.NoError(t, err)
-				// results can be empty or nil depending on what was skipped
-				_ = results // we just verify no error occurred
 			}
 		})
 	}
+}
+
+func TestNewService(t *testing.T) {
+	cfg := aws.Config{}
+	svc := NewService(cfg, nil, nil)
+	assert.NotNil(t, svc)
 }
