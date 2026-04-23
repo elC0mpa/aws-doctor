@@ -36,3 +36,26 @@ type service struct {
 	prices  map[string]float64
 	region  string
 }
+
+// Internal structs for unmarshaling Pricing API JSON responses.
+
+type priceListDimension struct {
+	PricePerUnit map[string]string `json:"pricePerUnit"`
+}
+
+type priceListOnDemand struct {
+	PriceDimensions map[string]priceListDimension `json:"priceDimensions"`
+}
+
+type priceListTerms struct {
+	OnDemand map[string]priceListOnDemand `json:"OnDemand"`
+}
+
+type priceListProduct struct {
+	Attributes map[string]string `json:"attributes"`
+}
+
+type priceListDocument struct {
+	Product priceListProduct `json:"product"`
+	Terms   priceListTerms   `json:"terms"`
+}
