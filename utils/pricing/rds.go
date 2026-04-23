@@ -1,13 +1,17 @@
 package pricing
 
+import "strings"
+
 const (
-	// RDSStorageCostPerGBMonth is the cost of RDS gp2 storage per GB per month.
+	// RDSStorageCostPerGBMonth is the default cost of RDS gp2 storage per GB per month.
 	RDSStorageCostPerGBMonth = 0.115
-	// RDSSnapshotCostPerGBMonth is the cost of RDS snapshot storage per GB per month.
+	// RDSSnapshotCostPerGBMonth is the default cost of RDS snapshot storage per GB per month.
 	RDSSnapshotCostPerGBMonth = 0.095
 )
 
-// rdsInstancePricing maps RDS instance classes to approximate monthly compute costs (us-east-1, Single-AZ, On-Demand).
+// rdsInstancePricing maps RDS instance classes to approximate monthly compute costs (us-east-1,
+// Single-AZ, On-Demand MySQL). Used as a fallback when the AWS Pricing API lookup is unavailable
+// or returns no entry for the instance class.
 //
 //nolint:gochecknoglobals // pricing lookup table
 var rdsInstancePricing = map[string]float64{
@@ -75,9 +79,27 @@ var rdsInstancePricing = map[string]float64{
 	"db.r7g.16xlarge": 5723.20,
 }
 
+// rdsStoragePerGBMonth returns the runtime-loaded RDS gp2 storage rate, or the default constant.
+func rdsStoragePerGBMonth() float64 {
+	if v, ok := lookupMonthly(priceKey(categoryRDSStorage, ""), 0); ok {
+		return v
+	}
+
+	return RDSStorageCostPerGBMonth
+}
+
+// rdsSnapshotPerGBMonth returns the runtime-loaded RDS snapshot storage rate, or the default.
+func rdsSnapshotPerGBMonth() float64 {
+	if v, ok := lookupMonthly(priceKey(categoryRDSSnapshot, ""), 0); ok {
+		return v
+	}
+
+	return RDSSnapshotCostPerGBMonth
+}
+
 // CalculateRDSInstanceMonthlyCost calculates the estimated monthly storage cost for a stopped RDS instance.
 func CalculateRDSInstanceMonthlyCost(allocatedGB int32, multiAZ bool) float64 {
-	cost := float64(allocatedGB) * RDSStorageCostPerGBMonth
+	cost := float64(allocatedGB) * rdsStoragePerGBMonth()
 	if multiAZ {
 		cost *= 2
 	}
@@ -87,17 +109,13 @@ func CalculateRDSInstanceMonthlyCost(allocatedGB int32, multiAZ bool) float64 {
 
 // CalculateRDSSnapshotMonthlyCost calculates the estimated monthly storage cost for an RDS snapshot.
 func CalculateRDSSnapshotMonthlyCost(allocatedGB int32) float64 {
-	return float64(allocatedGB) * RDSSnapshotCostPerGBMonth
+	return float64(allocatedGB) * rdsSnapshotPerGBMonth()
 }
 
 // CalculateRDSIdleInstanceMonthlyCost calculates the estimated monthly cost for an idle RDS instance (compute + storage).
 func CalculateRDSIdleInstanceMonthlyCost(instanceClass string, allocatedGB int32, multiAZ bool) float64 {
-	computeCost, ok := rdsInstancePricing[instanceClass]
-	if !ok {
-		computeCost = 0
-	}
-
-	storageCost := float64(allocatedGB) * RDSStorageCostPerGBMonth
+	computeCost := RDSInstanceComputeCost(instanceClass)
+	storageCost := float64(allocatedGB) * rdsStoragePerGBMonth()
 
 	total := computeCost + storageCost
 	if multiAZ {
@@ -107,7 +125,20 @@ func CalculateRDSIdleInstanceMonthlyCost(instanceClass string, allocatedGB int32
 	return total
 }
 
-// RDSInstanceComputeCost returns the monthly compute cost for an RDS instance class, or 0 if unknown.
+// RDSInstanceComputeCost returns the monthly compute cost for an RDS instance class, or 0 if
+// unknown. The runtime cache is checked first (trying both the full class and the class with the
+// "db." prefix stripped, since the Pricing API uses either in different contexts), and the
+// returned hourly rate is multiplied by hoursPerMonth.
 func RDSInstanceComputeCost(instanceClass string) float64 {
+	if v, ok := lookupMonthly(priceKey(categoryRDSInstance, instanceClass), hoursPerMonth); ok {
+		return v
+	}
+
+	if trimmed := strings.TrimPrefix(instanceClass, "db."); trimmed != instanceClass {
+		if v, ok := lookupMonthly(priceKey(categoryRDSInstance, trimmed), hoursPerMonth); ok {
+			return v
+		}
+	}
+
 	return rdsInstancePricing[instanceClass]
 }

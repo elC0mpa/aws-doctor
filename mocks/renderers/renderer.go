@@ -66,6 +66,11 @@ func (m *MockRenderer) StopSpinner() {
 	m.Called()
 }
 
+// SetSpinnerMessage mocks SetSpinnerMessage
+func (m *MockRenderer) SetSpinnerMessage(message string) {
+	m.Called(message)
+}
+
 // PrintAlreadyLatest mocks PrintAlreadyLatest
 func (m *MockRenderer) PrintAlreadyLatest(version string) {
 	m.Called(version)
