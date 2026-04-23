@@ -110,6 +110,11 @@ layout: "hextra-home"
     title="Redes"
     subtitle="Identifica IPs Elásticas sin asociar y Load Balancers sin objetivos saludables."
   >}}
+  {{< hextra/feature-card
+    icon="chip"
+    title="Machine Learning"
+    subtitle="Detecta endpoints de SageMaker inactivos con cero invocaciones recientes."
+  >}}
 {{< /hextra/feature-grid >}}
 
 <div class="hx:mt-16"></div>

@@ -31,10 +31,11 @@ Si sólo desea escanear servicios de AWS específicos, puede pasarlos como argum
 | `lambda` | Detección de memoria sobre-provisionada en Lambda. |
 | `vpc` | NAT Gateways y recursos de VPC inactivos. |
 | `cloudwatch` | Grupos de logs de CloudWatch sin políticas de retención. |
+| `sagemaker` | Detección de endpoints de SageMaker inactivos (cero invocaciones en 14 días). |
 
 ```bash
-# Ejemplo: Escanear solo recursos de EC2 y Lambda
-aws-doctor waste ec2 lambda
+# Ejemplo: Escanear solo recursos de EC2 y SageMaker
+aws-doctor waste ec2 sagemaker
 ```
 
 ### Flags de Configuración
@@ -79,6 +80,12 @@ Agrupamos el desperdicio en categorías principales de infraestructura:
     title="Redes"
     link="networking/"
     subtitle="IPs Elásticas sin asociar, Load Balancers inactivos y NAT Gateways inactivos."
+  >}}
+  {{< hextra/feature-card
+    icon="chip"
+    title="Machine Learning"
+    link="machine-learning/"
+    subtitle="Endpoints de SageMaker activos con cero invocaciones en los últimos 14 días."
   >}}
 {{< /hextra/feature-grid >}}
 

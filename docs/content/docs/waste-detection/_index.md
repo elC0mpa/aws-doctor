@@ -32,10 +32,11 @@ If you only want to scan specific AWS services, you can pass them as arguments t
 | `lambda` | Lambda over-provisioned memory detection. |
 | `vpc` | NAT Gateways and idle VPC resources. |
 | `cloudwatch` | CloudWatch Log Groups without retention policies. |
+| `sagemaker` | SageMaker idle endpoint detection (zero invocations in 14 days). |
 
 ```bash
-# Example: Scan only EC2 and Lambda resources
-aws-doctor waste ec2 lambda
+# Example: Scan only EC2 and SageMaker resources
+aws-doctor waste ec2 sagemaker
 ```
 
 ### Configuration Flags
@@ -80,6 +81,12 @@ We group waste into primary infrastructure categories:
     title="Networking"
     link="networking/"
     subtitle="Unassociated Elastic IPs, idle Load Balancers, and idle NAT Gateways."
+  >}}
+  {{< hextra/feature-card
+    icon="chip"
+    title="Machine Learning"
+    link="machine-learning/"
+    subtitle="Active SageMaker endpoints with zero invocations in the last 14 days."
   >}}
 {{< /hextra/feature-grid >}}
 
