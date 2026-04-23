@@ -10,6 +10,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/ec2"
 	"github.com/aws/aws-sdk-go-v2/service/ec2/types"
 	"github.com/elC0mpa/aws-doctor/mocks/awsinterfaces"
+	"github.com/elC0mpa/aws-doctor/mocks/services"
 	"github.com/elC0mpa/aws-doctor/model"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -17,7 +18,7 @@ import (
 
 func TestGetElasticIPAddressesInfo(t *testing.T) {
 	mockClient := new(awsinterfaces.MockEC2Client)
-	s := &service{client: mockClient}
+	s := &service{client: mockClient, pricingService: new(services.MockPricingService)}
 
 	// Setup mock data
 	mockClient.On("DescribeAddresses", mock.Anything, mock.Anything, mock.Anything).Return(&ec2.DescribeAddressesOutput{
@@ -94,7 +95,7 @@ func TestGetElasticIPAddressesInfo(t *testing.T) {
 
 func TestGetElasticIPAddressesInfo_Error(t *testing.T) {
 	mockClient := new(awsinterfaces.MockEC2Client)
-	s := &service{client: mockClient}
+	s := &service{client: mockClient, pricingService: new(services.MockPricingService)}
 
 	mockClient.On("DescribeAddresses", mock.Anything, mock.Anything, mock.Anything).Return(nil, errors.New("API error"))
 
@@ -105,7 +106,7 @@ func TestGetElasticIPAddressesInfo_Error(t *testing.T) {
 
 func TestGetElasticIPAddressesInfo_ENIError(t *testing.T) {
 	mockClient := new(awsinterfaces.MockEC2Client)
-	s := &service{client: mockClient}
+	s := &service{client: mockClient, pricingService: new(services.MockPricingService)}
 
 	mockClient.On("DescribeAddresses", mock.Anything, mock.Anything, mock.Anything).Return(&ec2.DescribeAddressesOutput{
 		Addresses: []types.Address{
@@ -127,7 +128,7 @@ func TestGetElasticIPAddressesInfo_ENIError(t *testing.T) {
 
 func TestGetUnusedElasticIPAddressesInfo(t *testing.T) {
 	mockClient := new(awsinterfaces.MockEC2Client)
-	s := &service{client: mockClient}
+	s := &service{client: mockClient, pricingService: new(services.MockPricingService)}
 
 	mockClient.On("DescribeAddresses", mock.Anything, mock.Anything, mock.Anything).Return(&ec2.DescribeAddressesOutput{
 		Addresses: []types.Address{
@@ -146,7 +147,7 @@ func TestGetUnusedElasticIPAddressesInfo(t *testing.T) {
 
 func TestGetUnusedEBSVolumes(t *testing.T) {
 	mockClient := new(awsinterfaces.MockEC2Client)
-	s := &service{client: mockClient}
+	s := &service{client: mockClient, pricingService: new(services.MockPricingService)}
 
 	mockClient.On("DescribeVolumes", mock.Anything, mock.Anything, mock.Anything).Return(&ec2.DescribeVolumesOutput{
 		Volumes: []types.Volume{
@@ -164,7 +165,7 @@ func TestGetUnusedEBSVolumes(t *testing.T) {
 
 func TestGetReservedInstanceExpiringOrExpired30DaysWaste(t *testing.T) {
 	mockClient := new(awsinterfaces.MockEC2Client)
-	s := &service{client: mockClient}
+	s := &service{client: mockClient, pricingService: new(services.MockPricingService)}
 
 	now := time.Now()
 	expiringSoon := now.Add(5 * 24 * time.Hour)
@@ -221,7 +222,7 @@ func TestGetReservedInstanceExpiringOrExpired30DaysWaste(t *testing.T) {
 
 func TestGetStoppedInstancesInfo(t *testing.T) {
 	mockClient := new(awsinterfaces.MockEC2Client)
-	s := &service{client: mockClient}
+	s := &service{client: mockClient, pricingService: new(services.MockPricingService)}
 
 	now := time.Now()
 	oldDate := now.Add(-35*24*time.Hour).Format("2006-01-02 15:04:05") + " GMT"
@@ -276,7 +277,10 @@ func TestGetStoppedInstancesInfo(t *testing.T) {
 
 func TestGetUnusedAMIs(t *testing.T) {
 	mockClient := new(awsinterfaces.MockEC2Client)
-	s := &service{client: mockClient}
+	s := &service{client: mockClient, pricingService: new(services.MockPricingService)}
+
+	mockPricing := s.pricingService.(*services.MockPricingService)
+	mockPricing.On("CalculateEBSSnapshotMonthlyCost", int64(100)).Return(5.0)
 
 	staleDays := 90
 	oldDate := time.Now().AddDate(0, 0, -100).Format(time.RFC3339)
@@ -337,7 +341,12 @@ func TestGetUnusedAMIs(t *testing.T) {
 
 func TestGetOrphanedSnapshots(t *testing.T) {
 	mockClient := new(awsinterfaces.MockEC2Client)
-	s := &service{client: mockClient}
+	s := &service{client: mockClient, pricingService: new(services.MockPricingService)}
+
+	mockPricing := s.pricingService.(*services.MockPricingService)
+	mockPricing.On("CalculateEBSSnapshotMonthlyCost", int64(0)).Return(0.0)
+	mockPricing.On("CalculateEBSSnapshotMonthlyCost", int64(50)).Return(2.5)
+	mockPricing.On("CalculateEBSSnapshotMonthlyCost", int64(100)).Return(5.0)
 
 	staleDays := 90
 	now := time.Now()
@@ -438,7 +447,7 @@ func TestGetOrphanedSnapshots(t *testing.T) {
 
 func TestGetUnusedKeyPairs(t *testing.T) {
 	mockClient := new(awsinterfaces.MockEC2Client)
-	s := &service{client: mockClient}
+	s := &service{client: mockClient, pricingService: new(services.MockPricingService)}
 
 	now := time.Now()
 	createTime := now.AddDate(0, 0, -10)

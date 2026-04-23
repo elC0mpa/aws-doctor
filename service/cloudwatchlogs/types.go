@@ -23,5 +23,11 @@ type Service interface {
 }
 
 type service struct {
-	client ClientAPI
+	client         ClientAPI
+	pricingService pricingService
+}
+
+// pricingService is a local interface for the pricing dependency.
+type pricingService interface {
+	CalculateCloudWatchLogsMonthlyCost(storedBytes int64) float64
 }

@@ -14,14 +14,13 @@ import (
 	utilsec2 "github.com/elC0mpa/aws-doctor/utils/ec2"
 )
 
-const ebsSnapshotCostPerGBMonth = 0.05
-
 // NewService creates a new EC2 service.
-func NewService(awsconfig aws.Config) Service {
+func NewService(awsconfig aws.Config, pricingSvc pricingService) Service {
 	client := ec2.NewFromConfig(awsconfig)
 
 	return &service{
-		client: client,
+		client:         client,
+		pricingService: pricingSvc,
 	}
 }
 
@@ -319,9 +318,8 @@ func (s *service) GetUnusedAMIs(ctx context.Context, staleDays int) ([]model.AMI
 					}
 				}
 
-				// EBS Snapshot pricing: ~$0.05 per GB per month
-				// Note: This is max potential savings - actual snapshot billing is incremental
-				maxPotentialSaving := float64(totalSnapshotSize) * 0.05
+				// EBS Snapshot pricing
+				maxPotentialSaving := s.pricingService.CalculateEBSSnapshotMonthlyCost(totalSnapshotSize)
 
 				// Safety warning: AMI may be used by ASGs or Launch Templates
 				safetyWarning := "Verify before deleting: AMI may be used by Auto Scaling Groups or Launch Templates not currently running instances"
@@ -428,9 +426,8 @@ func (s *service) GetOrphanedSnapshots(ctx context.Context, staleDays int) ([]mo
 			sizeGB = *snapshot.VolumeSize
 		}
 
-		// EBS Snapshot pricing: ~$0.05 per GB per month
-		// Note: Actual savings may be lower due to incremental storage
-		maxPotentialSavings := float64(sizeGB) * ebsSnapshotCostPerGBMonth
+		// EBS Snapshot pricing
+		maxPotentialSavings := s.pricingService.CalculateEBSSnapshotMonthlyCost(int64(sizeGB))
 
 		// Categorize based on whether source volume exists
 		if !volumeExists {

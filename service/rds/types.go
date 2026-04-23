@@ -14,13 +14,21 @@ type ClientAPI interface {
 }
 
 type service struct {
-	client    ClientAPI
-	cwService cloudwatchMetricsService
+	client         ClientAPI
+	cwService      cloudwatchMetricsService
+	pricingService pricingService
 }
 
 // cloudwatchMetricsService is a local interface for the CloudWatch metrics dependency.
 type cloudwatchMetricsService interface {
 	RDSHasZeroConnectionsInPeriod(ctx context.Context, dbInstanceID string, days int) (bool, error)
+}
+
+// pricingService is a local interface for the pricing dependency.
+type pricingService interface {
+	CalculateRDSInstanceMonthlyCost(allocatedGB int32, multiAZ bool) float64
+	CalculateRDSSnapshotMonthlyCost(allocatedGB int32) float64
+	CalculateRDSIdleInstanceMonthlyCost(instanceClass string, allocatedGB int32, multiAZ bool) float64
 }
 
 // Service is the interface for AWS RDS service.

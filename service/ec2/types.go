@@ -21,7 +21,14 @@ type ClientAPI interface {
 }
 
 type service struct {
-	client ClientAPI
+	client         ClientAPI
+	pricingService pricingService
+}
+
+// pricingService is a local interface for the pricing dependency.
+type pricingService interface {
+	CalculateEBSMonthlyCost(sizeGiB int32, volumeType types.VolumeType) float64
+	CalculateEBSSnapshotMonthlyCost(sizeGB int64) float64
 }
 
 // Service is the interface for AWS EC2 service.

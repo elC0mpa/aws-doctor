@@ -13,15 +13,15 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/cloudwatchlogs"
 	cwlogstypes "github.com/aws/aws-sdk-go-v2/service/cloudwatchlogs/types"
 	"github.com/elC0mpa/aws-doctor/model"
-	"github.com/elC0mpa/aws-doctor/utils/pricing"
 )
 
 // NewService creates a new CloudWatch Logs service.
-func NewService(awsconfig aws.Config) Service {
+func NewService(awsconfig aws.Config, pricingSvc pricingService) Service {
 	client := cloudwatchlogs.NewFromConfig(awsconfig)
 
 	return &service{
-		client: client,
+		client:         client,
+		pricingService: pricingSvc,
 	}
 }
 
@@ -44,7 +44,7 @@ func (s *service) GetCloudWatchLogsWaste(ctx context.Context) ([]model.CloudWatc
 					LogGroupName:         *logGroup.LogGroupName,
 					CreationTime:         time.Unix(0, *logGroup.CreationTime*int64(time.Millisecond)),
 					StoredBytes:          storedBytes,
-					EstimatedMonthlyCost: pricing.CalculateCloudWatchLogsMonthlyCost(storedBytes),
+					EstimatedMonthlyCost: s.pricingService.CalculateCloudWatchLogsMonthlyCost(storedBytes),
 				})
 			}
 		}

@@ -29,6 +29,7 @@ func TestOrchestrate_RouteToDefaultWorkflow(t *testing.T) {
 	mockReport := new(services.MockReportService)
 	mockLambda := new(services.MockLambdaService)
 	mockSageMaker := new(services.MockSageMakerService)
+	mockPricing := new(services.MockPricingService)
 
 	// Create service
 	mockRDS := new(services.MockRDSService)
@@ -42,6 +43,7 @@ func TestOrchestrate_RouteToDefaultWorkflow(t *testing.T) {
 		RDSService:            mockRDS,
 		LambdaService:         mockLambda,
 		SageMakerService:      mockSageMaker,
+		PricingService:        mockPricing,
 		OutputService:         mockOutput,
 		UpdateService:         mockUpdate,
 		ReportService:         mockReport,
@@ -97,6 +99,7 @@ func TestOrchestrate_RouteToUpdateWorkflow(t *testing.T) {
 		RDSService:            mockRDS,
 		LambdaService:         mockLambda,
 		SageMakerService:      new(services.MockSageMakerService),
+		PricingService:        new(services.MockPricingService),
 		OutputService:         mockOutput,
 		UpdateService:         mockUpdate,
 		ReportService:         mockReport,
@@ -141,6 +144,7 @@ func TestOrchestrate_UpdateWorkflow_HomebrewInstall(t *testing.T) {
 		RDSService:            mockRDS,
 		LambdaService:         mockLambda,
 		SageMakerService:      new(services.MockSageMakerService),
+		PricingService:        new(services.MockPricingService),
 		OutputService:         mockOutput,
 		UpdateService:         mockUpdate,
 		ReportService:         mockReport,
@@ -201,6 +205,7 @@ func TestOrchestrate_RouteToVersionWorkflow(t *testing.T) {
 		RDSService:            mockRDS,
 		LambdaService:         mockLambda,
 		SageMakerService:      new(services.MockSageMakerService),
+		PricingService:        new(services.MockPricingService),
 		OutputService:         mockOutput,
 		UpdateService:         mockUpdate,
 		ReportService:         mockReport,
@@ -247,6 +252,7 @@ func TestOrchestrate_RouteToTrendWorkflow(t *testing.T) {
 		RDSService:            mockRDS,
 		LambdaService:         mockLambda,
 		SageMakerService:      new(services.MockSageMakerService),
+		PricingService:        new(services.MockPricingService),
 		OutputService:         mockOutput,
 		UpdateService:         mockUpdate,
 		ReportService:         mockReport,
@@ -287,6 +293,7 @@ func TestOrchestrate_RouteToWasteWorkflow(t *testing.T) {
 	mockReport := new(services.MockReportService)
 	mockLambda := new(services.MockLambdaService)
 	mockSageMaker := new(services.MockSageMakerService)
+	mockPricing := new(services.MockPricingService)
 
 	// Create service
 	mockRDS := new(services.MockRDSService)
@@ -302,6 +309,7 @@ func TestOrchestrate_RouteToWasteWorkflow(t *testing.T) {
 		VPCService:            mockVPC,
 		LambdaService:         mockLambda,
 		SageMakerService:      mockSageMaker,
+		PricingService:        mockPricing,
 		OutputService:         mockOutput,
 		UpdateService:         mockUpdate,
 		ReportService:         mockReport,
@@ -309,6 +317,7 @@ func TestOrchestrate_RouteToWasteWorkflow(t *testing.T) {
 	}
 	svc := NewService(config)
 	// Setup expectations for waste workflow
+	mockPricing.On("LoadRegionRates", mock.Anything, mock.Anything).Return(nil)
 	mockEC2.On("GetUnusedElasticIPAddressesInfo", mock.Anything).Return([]types.Address{}, nil)
 	mockEC2.On("GetUnusedEBSVolumes", mock.Anything).Return([]types.Volume{}, nil)
 	mockEC2.On("GetStoppedInstancesInfo", mock.Anything).Return([]types.Instance{}, []types.Volume{}, nil)
@@ -328,7 +337,7 @@ func TestOrchestrate_RouteToWasteWorkflow(t *testing.T) {
 	}, nil)
 	mockOutput.On("StopSpinner").Return()
 	mockOutput.On("SetSpinnerMessage", mock.Anything).Return().Maybe()
-	mockOutput.On("RenderWaste", mock.Anything).Return(nil)
+	mockOutput.On("RenderWaste", mock.Anything, mockPricing).Return(nil)
 	mockUpdate.On("CheckForUpdate", mock.Anything).Return(nil, nil)
 
 	// Execute with Waste flag
@@ -356,6 +365,7 @@ func TestOrchestrate_WasteTakesPrecedenceOverTrend(t *testing.T) {
 	mockReport := new(services.MockReportService)
 	mockLambda := new(services.MockLambdaService)
 	mockSageMaker := new(services.MockSageMakerService)
+	mockPricing := new(services.MockPricingService)
 
 	// Create service
 	mockRDS := new(services.MockRDSService)
@@ -371,6 +381,7 @@ func TestOrchestrate_WasteTakesPrecedenceOverTrend(t *testing.T) {
 		VPCService:            mockVPC,
 		LambdaService:         mockLambda,
 		SageMakerService:      mockSageMaker,
+		PricingService:        mockPricing,
 		OutputService:         mockOutput,
 		UpdateService:         mockUpdate,
 		ReportService:         mockReport,
@@ -378,6 +389,7 @@ func TestOrchestrate_WasteTakesPrecedenceOverTrend(t *testing.T) {
 	}
 	svc := NewService(config)
 	// Setup expectations for waste workflow (should be called, not trend)
+	mockPricing.On("LoadRegionRates", mock.Anything, mock.Anything).Return(nil)
 	mockEC2.On("GetUnusedElasticIPAddressesInfo", mock.Anything).Return([]types.Address{}, nil)
 	mockEC2.On("GetUnusedEBSVolumes", mock.Anything).Return([]types.Volume{}, nil)
 	mockEC2.On("GetStoppedInstancesInfo", mock.Anything).Return([]types.Instance{}, []types.Volume{}, nil)
@@ -397,7 +409,7 @@ func TestOrchestrate_WasteTakesPrecedenceOverTrend(t *testing.T) {
 	}, nil)
 	mockOutput.On("StopSpinner").Return()
 	mockOutput.On("SetSpinnerMessage", mock.Anything).Return().Maybe()
-	mockOutput.On("RenderWaste", mock.Anything).Return(nil)
+	mockOutput.On("RenderWaste", mock.Anything, mockPricing).Return(nil)
 	mockUpdate.On("CheckForUpdate", mock.Anything).Return(nil, nil)
 
 	// Execute with both flags - Waste should take precedence
@@ -434,6 +446,7 @@ func TestOrchestrate_TrendWorkflow_Mapping(t *testing.T) {
 		RDSService:            mockRDS,
 		LambdaService:         mockLambda,
 		SageMakerService:      new(services.MockSageMakerService),
+		PricingService:        new(services.MockPricingService),
 		OutputService:         mockOutput,
 		UpdateService:         mockUpdate,
 		ReportService:         mockReport,
@@ -727,11 +740,13 @@ func TestWasteWorkflow_Error(t *testing.T) {
 			mockVPC := new(services.MockVPCService)
 			mockLambda := new(services.MockLambdaService)
 			mockSageMaker := new(services.MockSageMakerService)
+			mockPricing := new(services.MockPricingService)
 
 			tt.setupMocks(mockEC2, mockELB, mockS3, mockCloudWatch, mockRDS, mockSTS, mockVPC, mockLambda, mockSageMaker)
+			mockPricing.On("LoadRegionRates", mock.Anything, mock.Anything).Return(nil).Maybe()
 			mockOutput.On("StopSpinner").Return().Maybe()
 			mockOutput.On("SetSpinnerMessage", mock.Anything).Return().Maybe()
-			mockOutput.On("RenderWaste", mock.Anything).Return(nil).Maybe()
+			mockOutput.On("RenderWaste", mock.Anything, mock.Anything).Return(nil).Maybe()
 			mockUpdate.On("CheckForUpdate", mock.Anything).Return(nil, nil).Maybe()
 
 			config := Config{
@@ -745,6 +760,7 @@ func TestWasteWorkflow_Error(t *testing.T) {
 				VPCService:            mockVPC,
 				LambdaService:         mockLambda,
 				SageMakerService:      mockSageMaker,
+				PricingService:        mockPricing,
 				OutputService:         mockOutput,
 				UpdateService:         mockUpdate,
 				ReportService:         mockReport,
@@ -784,6 +800,7 @@ func TestOrchestrate_RouteToReportWorkflow(t *testing.T) {
 		RDSService:            mockRDS,
 		LambdaService:         mockLambda,
 		SageMakerService:      new(services.MockSageMakerService),
+		PricingService:        new(services.MockPricingService),
 		OutputService:         mockOutput,
 		UpdateService:         mockUpdate,
 		ReportService:         mockReport,
@@ -834,6 +851,7 @@ type testMocks struct {
 	report     *services.MockReportService
 	rds        *services.MockRDSService
 	sagemaker  *services.MockSageMakerService
+	pricing    *services.MockPricingService
 }
 
 func newTestServiceWithMocks(versionInfo model.VersionInfo) (Service, *testMocks) {
@@ -849,6 +867,7 @@ func newTestServiceWithMocks(versionInfo model.VersionInfo) (Service, *testMocks
 		report:     new(services.MockReportService),
 		rds:        new(services.MockRDSService),
 		sagemaker:  new(services.MockSageMakerService),
+		pricing:    new(services.MockPricingService),
 	}
 
 	svc := NewService(Config{
@@ -860,6 +879,7 @@ func newTestServiceWithMocks(versionInfo model.VersionInfo) (Service, *testMocks
 		CloudWatchLogsService: m.cloudWatch,
 		RDSService:            m.rds,
 		SageMakerService:      m.sagemaker,
+		PricingService:        m.pricing,
 		OutputService:         m.output,
 		UpdateService:         m.update,
 		ReportService:         m.report,

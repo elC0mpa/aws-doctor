@@ -11,6 +11,7 @@ import (
 	cetypes "github.com/aws/aws-sdk-go-v2/service/costexplorer/types"
 	ec2types "github.com/aws/aws-sdk-go-v2/service/ec2/types"
 	elbtypes "github.com/aws/aws-sdk-go-v2/service/elasticloadbalancingv2/types"
+	"github.com/elC0mpa/aws-doctor/mocks/services"
 	"github.com/elC0mpa/aws-doctor/model"
 	"github.com/stretchr/testify/assert"
 )
@@ -233,7 +234,7 @@ func TestGenerateReports(t *testing.T) {
 		}
 
 		absPath, _ := filepath.Abs(path)
-		gotPath, err := s.GenerateWasteReport(input, path)
+		gotPath, err := s.GenerateWasteReport(input, services.NewMockPricingService(), path)
 		assert.NoError(t, err)
 		assert.Equal(t, absPath, *gotPath)
 		_, err = os.Stat(absPath)
@@ -247,7 +248,7 @@ func TestGenerateReports(t *testing.T) {
 		}
 
 		absPath, _ := filepath.Abs(path)
-		gotPath, err := s.GenerateWasteReport(input, path)
+		gotPath, err := s.GenerateWasteReport(input, services.NewMockPricingService(), path)
 		assert.NoError(t, err)
 		assert.Equal(t, absPath, *gotPath)
 		_, err = os.Stat(absPath)
