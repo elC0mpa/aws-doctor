@@ -229,3 +229,20 @@ func TestCompute_MixedWaste(t *testing.T) {
 	assert.Equal(t, "Unused Key Pairs", categories[1].Name)
 	assert.Equal(t, 0.0, categories[1].Cost)
 }
+
+func TestCompute_SageMaker(t *testing.T) {
+	input := model.RenderWasteInput{
+		IdleSageMakerEndpoints: []model.IdleSageMakerEndpointInfo{
+			{EndpointName: "ep-1", EstimatedMonthlyCost: 50.0},
+			{EndpointName: "ep-2", EstimatedMonthlyCost: 75.0},
+		},
+	}
+
+	categories, total := Compute(input)
+
+	assert.Len(t, categories, 1)
+	assert.Equal(t, "SageMaker Endpoints (Idle)", categories[0].Name)
+	assert.Equal(t, 2, categories[0].Count)
+	assert.Equal(t, 125.0, categories[0].Cost)
+	assert.Equal(t, 125.0, total)
+}
