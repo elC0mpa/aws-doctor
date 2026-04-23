@@ -111,6 +111,11 @@ layout: "hextra-home"
     title="Networking"
     subtitle="Identify unassociated Elastic IPs and Load Balancers without healthy targets."
   >}}
+  {{< hextra/feature-card
+    icon="chip"
+    title="Machine Learning"
+    subtitle="Detect idle SageMaker endpoints with zero recent invocations."
+  >}}
 {{< /hextra/feature-grid >}}
 
 <div class="hx:mt-16"></div>
