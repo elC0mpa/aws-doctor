@@ -9,7 +9,7 @@ import (
 	sm "github.com/aws/aws-sdk-go-v2/service/sagemaker"
 	smtypes "github.com/aws/aws-sdk-go-v2/service/sagemaker/types"
 	"github.com/elC0mpa/aws-doctor/mocks/awsinterfaces"
-	"github.com/elC0mpa/aws-doctor/model"
+	"github.com/elC0mpa/aws-doctor/mocks/services"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )
@@ -22,15 +22,6 @@ func (m *mockCWMetricsService) SageMakerVariantInvocations(ctx context.Context, 
 	args := m.Called(ctx, endpointName, variantName, days)
 
 	return args.Get(0).(float64), args.Error(1)
-}
-
-type mockPricingService struct {
-	mock.Mock
-}
-
-func (m *mockPricingService) CalculateSageMakerEndpointMonthlyCost(variants []model.SageMakerVariant) float64 {
-	args := m.Called(variants)
-	return args.Get(0).(float64)
 }
 
 // wireEndpoint builds a minimal endpoint setup: a DescribeEndpoint response and a matching
@@ -71,7 +62,7 @@ func TestGetIdleEndpoints_IdleEndpointReported(t *testing.T) {
 		ctx          = context.Background()
 		client       = new(awsinterfaces.MockSageMakerClient)
 		cw           = new(mockCWMetricsService)
-		pricingSvc   = new(mockPricingService)
+		pricingSvc   = new(services.MockPricingService)
 		name         = "idle-endpoint"
 		cfgName      = "idle-cfg"
 		instanceType = "ml.t2.medium"
@@ -101,7 +92,7 @@ func TestGetIdleEndpoints_ActiveEndpointSkipped(t *testing.T) {
 		ctx          = context.Background()
 		client       = new(awsinterfaces.MockSageMakerClient)
 		cw           = new(mockCWMetricsService)
-		pricingSvc   = new(mockPricingService)
+		pricingSvc   = new(services.MockPricingService)
 		name         = "active-endpoint"
 		cfgName      = "active-cfg"
 		instanceType = "ml.t2.medium"

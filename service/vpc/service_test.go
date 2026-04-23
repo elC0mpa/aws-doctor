@@ -14,15 +14,6 @@ import (
 	"github.com/stretchr/testify/mock"
 )
 
-type mockPricingService struct {
-	mock.Mock
-}
-
-func (m *mockPricingService) CalculateNATGatewayMonthlyCost() float64 {
-	args := m.Called()
-	return args.Get(0).(float64)
-}
-
 func TestGetIdleNATGateways(t *testing.T) {
 	ctx := context.Background()
 
@@ -103,7 +94,7 @@ func TestGetIdleNATGateways(t *testing.T) {
 			}
 
 			// Setup mock pricing service
-			mockPricing := new(mockPricingService)
+			mockPricing := new(services.MockPricingService)
 			if tt.expectedLen > 0 {
 				mockPricing.On("CalculateNATGatewayMonthlyCost").Return(32.85)
 			}
@@ -172,7 +163,7 @@ func TestGetIdleNATGateways_Error(t *testing.T) {
 			svc := &service{
 				client:         mockEC2,
 				cwService:      mockCW,
-				pricingService: new(mockPricingService),
+				pricingService: new(services.MockPricingService),
 			}
 
 			_, err := svc.GetIdleNATGateways(ctx, 7)

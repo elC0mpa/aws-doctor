@@ -1,7 +1,6 @@
 package outputshared
 
 import (
-	"context"
 	"strings"
 	"testing"
 	"time"
@@ -9,68 +8,9 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/ec2/types"
 	elbtypes "github.com/aws/aws-sdk-go-v2/service/elasticloadbalancingv2/types"
+	"github.com/elC0mpa/aws-doctor/mocks/services"
 	"github.com/elC0mpa/aws-doctor/model"
-	"github.com/stretchr/testify/mock"
 )
-
-type mockPricingService struct {
-	mock.Mock
-}
-
-func (m *mockPricingService) LoadRegionRates(ctx context.Context) error {
-	args := m.Called(ctx)
-	return args.Error(0)
-}
-
-func (m *mockPricingService) CalculateEIPMonthlyCost() float64 {
-	args := m.Called()
-	return args.Get(0).(float64)
-}
-
-func (m *mockPricingService) CalculateEBSMonthlyCost(sizeGiB int32, volumeType types.VolumeType) float64 {
-	args := m.Called(sizeGiB, volumeType)
-	return args.Get(0).(float64)
-}
-
-func (m *mockPricingService) CalculateEBSSnapshotMonthlyCost(sizeGB int64) float64 {
-	args := m.Called(sizeGB)
-	return args.Get(0).(float64)
-}
-
-func (m *mockPricingService) CalculateLoadBalancerMonthlyCost(lbType elbtypes.LoadBalancerTypeEnum) float64 {
-	args := m.Called(lbType)
-	return args.Get(0).(float64)
-}
-
-func (m *mockPricingService) CalculateCloudWatchLogsMonthlyCost(storedBytes int64) float64 {
-	args := m.Called(storedBytes)
-	return args.Get(0).(float64)
-}
-
-func (m *mockPricingService) CalculateNATGatewayMonthlyCost() float64 {
-	args := m.Called()
-	return args.Get(0).(float64)
-}
-
-func (m *mockPricingService) CalculateRDSInstanceMonthlyCost(allocatedGB int32, multiAZ bool) float64 {
-	args := m.Called(allocatedGB, multiAZ)
-	return args.Get(0).(float64)
-}
-
-func (m *mockPricingService) CalculateRDSSnapshotMonthlyCost(allocatedGB int32) float64 {
-	args := m.Called(allocatedGB)
-	return args.Get(0).(float64)
-}
-
-func (m *mockPricingService) CalculateRDSIdleInstanceMonthlyCost(instanceClass string, allocatedGB int32, multiAZ bool) float64 {
-	args := m.Called(instanceClass, allocatedGB, multiAZ)
-	return args.Get(0).(float64)
-}
-
-func (m *mockPricingService) CalculateSageMakerEndpointMonthlyCost(variants []model.SageMakerVariant) float64 {
-	args := m.Called(variants)
-	return args.Get(0).(float64)
-}
 
 func TestPresentS3Bucket(t *testing.T) {
 	b := model.S3BucketWasteInfo{
@@ -145,7 +85,7 @@ func TestPresentEBSVolume(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			m := new(mockPricingService)
+			m := new(services.MockPricingService)
 			m.On("CalculateEBSMonthlyCost", *tt.vol.Size, tt.vol.VolumeType).Return(tt.mockValue)
 
 			p := PresentEBSVolume(tt.vol, tt.status, m)
@@ -164,7 +104,7 @@ func TestPresentElasticIP(t *testing.T) {
 		AllocationId: aws.String("eipalloc-1"),
 	}
 
-	m := new(mockPricingService)
+	m := new(services.MockPricingService)
 	m.On("CalculateEIPMonthlyCost").Return(3.65)
 
 	p := PresentElasticIP(ip, m)
@@ -186,7 +126,7 @@ func TestPresentLoadBalancer(t *testing.T) {
 		CreatedTime:      aws.Time(time.Now()),
 	}
 
-	m := new(mockPricingService)
+	m := new(services.MockPricingService)
 	m.On("CalculateLoadBalancerMonthlyCost", lb.Type).Return(16.43)
 
 	p := PresentLoadBalancer(lb, m)

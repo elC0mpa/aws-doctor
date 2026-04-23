@@ -9,6 +9,7 @@ import (
 	elb "github.com/aws/aws-sdk-go-v2/service/elasticloadbalancingv2"
 	"github.com/aws/aws-sdk-go-v2/service/elasticloadbalancingv2/types"
 	"github.com/elC0mpa/aws-doctor/mocks/awsinterfaces"
+	"github.com/elC0mpa/aws-doctor/mocks/services"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )
@@ -24,19 +25,10 @@ func (m *mockCWMetricsService) ELBHasZeroRequestsInPeriod(ctx context.Context, l
 	return args.Bool(0), args.Error(1)
 }
 
-type mockPricingService struct {
-	mock.Mock
-}
-
-func (m *mockPricingService) CalculateLoadBalancerMonthlyCost(lbType types.LoadBalancerTypeEnum) float64 {
-	args := m.Called(lbType)
-	return args.Get(0).(float64)
-}
-
 func TestGetLoadBalancerWaste(t *testing.T) {
 	tests := []struct {
 		name          string
-		setupMocks    func(*awsinterfaces.MockELBClient, *mockCWMetricsService, *mockPricingService)
+		setupMocks    func(*awsinterfaces.MockELBClient, *mockCWMetricsService, *services.MockPricingService)
 		wantUnused    int
 		wantIdle      int
 		wantErr       bool
@@ -44,7 +36,7 @@ func TestGetLoadBalancerWaste(t *testing.T) {
 	}{
 		{
 			name: "separates unused and idle load balancers",
-			setupMocks: func(mc *awsinterfaces.MockELBClient, cw *mockCWMetricsService, ps *mockPricingService) {
+			setupMocks: func(mc *awsinterfaces.MockELBClient, cw *mockCWMetricsService, ps *services.MockPricingService) {
 				mc.On("DescribeLoadBalancers", mock.Anything, mock.Anything, mock.Anything).Return(&elb.DescribeLoadBalancersOutput{
 					LoadBalancers: []types.LoadBalancer{
 						{
@@ -84,7 +76,7 @@ func TestGetLoadBalancerWaste(t *testing.T) {
 		},
 		{
 			name: "aws api error",
-			setupMocks: func(mc *awsinterfaces.MockELBClient, cw *mockCWMetricsService, ps *mockPricingService) {
+			setupMocks: func(mc *awsinterfaces.MockELBClient, cw *mockCWMetricsService, ps *services.MockPricingService) {
 				mc.On("DescribeLoadBalancers", mock.Anything, mock.Anything, mock.Anything).Return(nil, errors.New("aws error"))
 			},
 			wantUnused: 0,
@@ -97,7 +89,7 @@ func TestGetLoadBalancerWaste(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			mockELB := new(awsinterfaces.MockELBClient)
 			mockCW := new(mockCWMetricsService)
-			mockPricing := new(mockPricingService)
+			mockPricing := new(services.MockPricingService)
 			tt.setupMocks(mockELB, mockCW, mockPricing)
 
 			svc := &service{

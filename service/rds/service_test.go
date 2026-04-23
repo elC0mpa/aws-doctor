@@ -15,31 +15,12 @@ import (
 	"github.com/stretchr/testify/mock"
 )
 
-type mockPricingService struct {
-	mock.Mock
-}
-
-func (m *mockPricingService) CalculateRDSInstanceMonthlyCost(allocatedGB int32, multiAZ bool) float64 {
-	args := m.Called(allocatedGB, multiAZ)
-	return args.Get(0).(float64)
-}
-
-func (m *mockPricingService) CalculateRDSSnapshotMonthlyCost(allocatedGB int32) float64 {
-	args := m.Called(allocatedGB)
-	return args.Get(0).(float64)
-}
-
-func (m *mockPricingService) CalculateRDSIdleInstanceMonthlyCost(instanceClass string, allocatedGB int32, multiAZ bool) float64 {
-	args := m.Called(instanceClass, allocatedGB, multiAZ)
-	return args.Get(0).(float64)
-}
-
 func TestGetRDSWaste(t *testing.T) {
 	ctx := context.Background()
 
 	tests := []struct {
 		name              string
-		setupMocks        func(*awsinterfaces.MockRDSClient, *services.MockCloudWatchMetricsService, *mockPricingService)
+		setupMocks        func(*awsinterfaces.MockRDSClient, *services.MockCloudWatchMetricsService, *services.MockPricingService)
 		wantInstanceCount int
 		wantSnapshotCount int
 		wantIdleCount     int
@@ -47,7 +28,7 @@ func TestGetRDSWaste(t *testing.T) {
 	}{
 		{
 			name: "stopped instance detected",
-			setupMocks: func(m *awsinterfaces.MockRDSClient, cw *services.MockCloudWatchMetricsService, ps *mockPricingService) {
+			setupMocks: func(m *awsinterfaces.MockRDSClient, cw *services.MockCloudWatchMetricsService, ps *services.MockPricingService) {
 				m.On("DescribeDBInstances", mock.Anything, mock.Anything, mock.Anything).Return(&rds.DescribeDBInstancesOutput{
 					DBInstances: []rdstypes.DBInstance{
 						{
@@ -81,7 +62,7 @@ func TestGetRDSWaste(t *testing.T) {
 		},
 		{
 			name: "old snapshot detected",
-			setupMocks: func(m *awsinterfaces.MockRDSClient, cw *services.MockCloudWatchMetricsService, ps *mockPricingService) {
+			setupMocks: func(m *awsinterfaces.MockRDSClient, cw *services.MockCloudWatchMetricsService, ps *services.MockPricingService) {
 				m.On("DescribeDBInstances", mock.Anything, mock.Anything, mock.Anything).Return(&rds.DescribeDBInstancesOutput{
 					DBInstances: []rdstypes.DBInstance{},
 				}, nil)
@@ -108,7 +89,7 @@ func TestGetRDSWaste(t *testing.T) {
 		},
 		{
 			name: "idle instance detected",
-			setupMocks: func(m *awsinterfaces.MockRDSClient, cw *services.MockCloudWatchMetricsService, ps *mockPricingService) {
+			setupMocks: func(m *awsinterfaces.MockRDSClient, cw *services.MockCloudWatchMetricsService, ps *services.MockPricingService) {
 				m.On("DescribeDBInstances", mock.Anything, mock.Anything, mock.Anything).Return(&rds.DescribeDBInstancesOutput{
 					DBInstances: []rdstypes.DBInstance{
 						{
@@ -137,7 +118,7 @@ func TestGetRDSWaste(t *testing.T) {
 		},
 		{
 			name: "aws api error",
-			setupMocks: func(m *awsinterfaces.MockRDSClient, cw *services.MockCloudWatchMetricsService, ps *mockPricingService) {
+			setupMocks: func(m *awsinterfaces.MockRDSClient, cw *services.MockCloudWatchMetricsService, ps *services.MockPricingService) {
 				m.On("DescribeDBInstances", mock.Anything, mock.Anything, mock.Anything).Return(nil, errors.New("aws error"))
 				m.On("DescribeDBSnapshots", mock.Anything, mock.Anything, mock.Anything).Return(&rds.DescribeDBSnapshotsOutput{}, nil)
 			},
@@ -152,7 +133,7 @@ func TestGetRDSWaste(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			mockRDS := new(awsinterfaces.MockRDSClient)
 			mockCW := new(services.MockCloudWatchMetricsService)
-			mockPricing := new(mockPricingService)
+			mockPricing := new(services.MockPricingService)
 			tt.setupMocks(mockRDS, mockCW, mockPricing)
 
 			svc := &service{

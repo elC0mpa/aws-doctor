@@ -82,3 +82,20 @@ func (m *MockPricingService) CalculateSageMakerEndpointMonthlyCost(variants []mo
 	args := m.Called(variants)
 	return args.Get(0).(float64)
 }
+
+// NewMockPricingService returns a MockPricingService with default expectations set for all methods.
+func NewMockPricingService() *MockPricingService {
+	m := new(MockPricingService)
+	m.On("LoadRegionRates", mock.Anything).Return(nil).Maybe()
+	m.On("CalculateEBSMonthlyCost", mock.Anything, mock.Anything).Return(10.0).Maybe()
+	m.On("CalculateEBSSnapshotMonthlyCost", mock.Anything).Return(5.0).Maybe()
+	m.On("CalculateEIPMonthlyCost").Return(3.65).Maybe()
+	m.On("CalculateLoadBalancerMonthlyCost", mock.Anything).Return(16.43).Maybe()
+	m.On("CalculateCloudWatchLogsMonthlyCost", mock.Anything).Return(1.0).Maybe()
+	m.On("CalculateNATGatewayMonthlyCost").Return(32.85).Maybe()
+	m.On("CalculateRDSInstanceMonthlyCost", mock.Anything, mock.Anything).Return(20.0).Maybe()
+	m.On("CalculateRDSSnapshotMonthlyCost", mock.Anything).Return(5.0).Maybe()
+	m.On("CalculateRDSIdleInstanceMonthlyCost", mock.Anything, mock.Anything, mock.Anything).Return(45.0).Maybe()
+	m.On("CalculateSageMakerEndpointMonthlyCost", mock.Anything).Return(50.0).Maybe()
+	return m
+}

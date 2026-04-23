@@ -2,7 +2,6 @@ package wastetable
 
 import (
 	"bytes"
-	"context"
 	"io"
 	"os"
 	"strings"
@@ -12,38 +11,9 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/ec2/types"
 	elbtypes "github.com/aws/aws-sdk-go-v2/service/elasticloadbalancingv2/types"
+	"github.com/elC0mpa/aws-doctor/mocks/services"
 	"github.com/elC0mpa/aws-doctor/model"
 )
-
-type mockPricingService struct{}
-
-func (m *mockPricingService) LoadRegionRates(ctx context.Context) error { return nil }
-func (m *mockPricingService) CalculateEIPMonthlyCost() float64                        { return 3.65 }
-func (m *mockPricingService) CalculateLoadBalancerMonthlyCost(lbType elbtypes.LoadBalancerTypeEnum) float64 {
-	return 16.425
-}
-func (m *mockPricingService) CalculateEBSMonthlyCost(sizeGiB int32, volumeType types.VolumeType) float64 {
-	return float64(sizeGiB) * 0.10
-}
-func (m *mockPricingService) CalculateEBSSnapshotMonthlyCost(sizeGB int64) float64 {
-	return float64(sizeGB) * 0.05
-}
-func (m *mockPricingService) CalculateCloudWatchLogsMonthlyCost(storedBytes int64) float64 {
-	return float64(storedBytes) * 0.00000000003
-}
-func (m *mockPricingService) CalculateNATGatewayMonthlyCost() float64 { return 32.85 }
-func (m *mockPricingService) CalculateRDSInstanceMonthlyCost(allocatedGB int32, multiAZ bool) float64 {
-	return float64(allocatedGB) * 0.115
-}
-func (m *mockPricingService) CalculateRDSSnapshotMonthlyCost(allocatedGB int32) float64 {
-	return float64(allocatedGB) * 0.095
-}
-func (m *mockPricingService) CalculateRDSIdleInstanceMonthlyCost(instanceClass string, allocatedGB int32, multiAZ bool) float64 {
-	return 50.0
-}
-func (m *mockPricingService) CalculateSageMakerEndpointMonthlyCost(variants []model.SageMakerVariant) float64 {
-	return 46.72
-}
 
 // captureWasteOutput captures stdout during function execution
 func captureWasteOutput(f func()) string {
@@ -65,7 +35,7 @@ func captureWasteOutput(f func()) string {
 
 func TestDrawWasteTable_NoWaste(t *testing.T) {
 	output := captureWasteOutput(func() {
-		DrawWasteTable(model.RenderWasteInput{AccountID: "123456789012"}, new(mockPricingService))
+		DrawWasteTable(model.RenderWasteInput{AccountID: "123456789012"}, services.NewMockPricingService())
 	})
 
 	if !strings.Contains(output, "AWS DOCTOR CHECKUP") {
@@ -90,7 +60,7 @@ func TestDrawWasteTable_WithElasticIPs(t *testing.T) {
 		DrawWasteTable(model.RenderWasteInput{
 			AccountID:  "123456789012",
 			ElasticIPs: elasticIPs,
-		}, new(mockPricingService))
+		}, services.NewMockPricingService())
 	})
 
 	if !strings.Contains(output, "Elastic IP") {
@@ -111,7 +81,7 @@ func TestDrawWasteTable_WithEBSVolumes(t *testing.T) {
 		DrawWasteTable(model.RenderWasteInput{
 			AccountID:     "123456789012",
 			UnusedVolumes: unusedVolumes,
-		}, new(mockPricingService))
+		}, services.NewMockPricingService())
 	})
 
 	if !strings.Contains(output, "EBS") {
@@ -131,7 +101,7 @@ func TestDrawWasteTable_WithStoppedInstances(t *testing.T) {
 		DrawWasteTable(model.RenderWasteInput{
 			AccountID:        "123456789012",
 			StoppedInstances: stoppedInstances,
-		}, new(mockPricingService))
+		}, services.NewMockPricingService())
 	})
 
 	if !strings.Contains(output, "EC2") || !strings.Contains(output, "Reserved Instance") {
@@ -152,7 +122,7 @@ func TestDrawWasteTable_WithReservedInstances(t *testing.T) {
 		DrawWasteTable(model.RenderWasteInput{
 			AccountID: "123456789012",
 			Ris:       ris,
-		}, new(mockPricingService))
+		}, services.NewMockPricingService())
 	})
 
 	if !strings.Contains(output, "Reserved Instance") {
@@ -173,7 +143,7 @@ func TestDrawWasteTable_WithLoadBalancers(t *testing.T) {
 		DrawWasteTable(model.RenderWasteInput{
 			AccountID:     "123456789012",
 			LoadBalancers: loadBalancers,
-		}, new(mockPricingService))
+		}, services.NewMockPricingService())
 	})
 
 	if !strings.Contains(output, "Load Balancer") {
@@ -222,7 +192,7 @@ func TestDrawWasteTable_AllWasteTypes(t *testing.T) {
 			Ris:              ris,
 			StoppedInstances: stoppedInstances,
 			LoadBalancers:    loadBalancers,
-		}, new(mockPricingService))
+		}, services.NewMockPricingService())
 	})
 
 	// Should have all sections
@@ -265,7 +235,7 @@ func TestDrawEBSTable(t *testing.T) {
 	}
 
 	output := captureWasteOutput(func() {
-		drawEBSTable(unusedVolumes, stoppedVolumes, new(mockPricingService))
+		drawEBSTable(unusedVolumes, stoppedVolumes, services.NewMockPricingService())
 	})
 
 	if !strings.Contains(output, "EBS Volume Waste") {
@@ -291,7 +261,7 @@ func TestDrawEBSTable_OnlyUnused(t *testing.T) {
 	}
 
 	output := captureWasteOutput(func() {
-		drawEBSTable(unusedVolumes, nil, new(mockPricingService))
+		drawEBSTable(unusedVolumes, nil, services.NewMockPricingService())
 	})
 
 	if !strings.Contains(output, "Available") {
@@ -309,7 +279,7 @@ func TestDrawEBSTable_OnlyStopped(t *testing.T) {
 	}
 
 	output := captureWasteOutput(func() {
-		drawEBSTable(nil, stoppedVolumes, new(mockPricingService))
+		drawEBSTable(nil, stoppedVolumes, services.NewMockPricingService())
 	})
 
 	if !strings.Contains(output, "Stopped Instance") {
@@ -381,7 +351,7 @@ func TestDrawElasticIPTable(t *testing.T) {
 	}
 
 	output := captureWasteOutput(func() {
-		drawElasticIPTable(elasticIPs, new(mockPricingService))
+		drawElasticIPTable(elasticIPs, services.NewMockPricingService())
 	})
 
 	if !strings.Contains(output, "Elastic IP Waste") {
@@ -412,7 +382,7 @@ func TestDrawLoadBalancerTable(t *testing.T) {
 	}
 
 	output := captureWasteOutput(func() {
-		drawLoadBalancerTable(loadBalancers, nil, new(mockPricingService))
+		drawLoadBalancerTable(loadBalancers, nil, services.NewMockPricingService())
 	})
 
 	if !strings.Contains(output, "Load Balancer Waste") {
@@ -479,7 +449,7 @@ func TestDrawWasteTable_IndividualResources(t *testing.T) {
 		DrawWasteTable(model.RenderWasteInput{
 			AccountID:     accountID,
 			UnusedVolumes: unusedVolumes,
-		}, new(mockPricingService))
+		}, services.NewMockPricingService())
 	})
 
 	if !strings.Contains(output, "EBS Volume Waste") {
@@ -499,7 +469,7 @@ func TestDrawWasteTable_IndividualResources(t *testing.T) {
 		DrawWasteTable(model.RenderWasteInput{
 			AccountID:     accountID,
 			LoadBalancers: lbs,
-		}, new(mockPricingService))
+		}, services.NewMockPricingService())
 	})
 
 	if !strings.Contains(output, "Load Balancer Waste") {
@@ -513,7 +483,7 @@ func TestDrawWasteTable_IndividualResources(t *testing.T) {
 		DrawWasteTable(model.RenderWasteInput{
 			AccountID:  accountID,
 			UnusedAMIs: amis,
-		}, new(mockPricingService))
+		}, services.NewMockPricingService())
 	})
 
 	if !strings.Contains(output, "Unused AMI Waste") {
@@ -527,7 +497,7 @@ func TestDrawWasteTable_IndividualResources(t *testing.T) {
 		DrawWasteTable(model.RenderWasteInput{
 			AccountID:         accountID,
 			OrphanedSnapshots: snaps,
-		}, new(mockPricingService))
+		}, services.NewMockPricingService())
 	})
 
 	if !strings.Contains(output, "EBS Snapshot Waste") {
@@ -595,7 +565,7 @@ func TestDrawWasteTable_WithUnusedAMIs(t *testing.T) {
 		DrawWasteTable(model.RenderWasteInput{
 			AccountID:  "123456789012",
 			UnusedAMIs: unusedAMIs,
-		}, new(mockPricingService))
+		}, services.NewMockPricingService())
 	})
 
 	if !strings.Contains(output, "Unused AMI") {
@@ -648,7 +618,7 @@ func TestDrawWasteTable_WithKeyPairs(t *testing.T) {
 		DrawWasteTable(model.RenderWasteInput{
 			AccountID:      "123456789012",
 			UnusedKeyPairs: keyPairs,
-		}, new(mockPricingService))
+		}, services.NewMockPricingService())
 	})
 
 	if !strings.Contains(output, "Key Pair Waste") {
@@ -714,7 +684,7 @@ func TestDrawWasteTable_WithS3Buckets(t *testing.T) {
 		DrawWasteTable(model.RenderWasteInput{
 			AccountID: "123456789012",
 			S3Buckets: buckets,
-		}, new(mockPricingService))
+		}, services.NewMockPricingService())
 	})
 
 	if !strings.Contains(output, "S3 Bucket Waste") {
@@ -738,7 +708,7 @@ func TestDrawWasteTable_WithS3Multipart(t *testing.T) {
 		DrawWasteTable(model.RenderWasteInput{
 			AccountID:          "123456789012",
 			S3MultipartUploads: buckets,
-		}, new(mockPricingService))
+		}, services.NewMockPricingService())
 	})
 
 	if !strings.Contains(output, "S3 Bucket Waste") {
@@ -793,7 +763,7 @@ func TestDrawWasteTable_WithCloudWatchLogs(t *testing.T) {
 		DrawWasteTable(model.RenderWasteInput{
 			AccountID:           "123456789012",
 			CloudWatchLogGroups: logGroups,
-		}, new(mockPricingService))
+		}, services.NewMockPricingService())
 	})
 
 	if !strings.Contains(output, "CloudWatch Log Group Waste") {
