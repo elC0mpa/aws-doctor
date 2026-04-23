@@ -6,6 +6,7 @@ import (
 	"os"
 
 	"github.com/elC0mpa/aws-doctor/model"
+	"github.com/elC0mpa/aws-doctor/service/pricing"
 )
 
 // OutputCostComparisonCSV outputs cost comparison data as CSV
@@ -56,7 +57,7 @@ func OutputTrendCSV(monthlyCosts []model.CostInfo, services []string) error {
 }
 
 // OutputWasteCSV outputs waste detection data as CSV
-func OutputWasteCSV(input model.RenderWasteInput) error {
+func OutputWasteCSV(input model.RenderWasteInput, pricingSvc pricing.Service) error {
 	w := csv.NewWriter(os.Stdout)
 	defer w.Flush()
 
@@ -67,14 +68,14 @@ func OutputWasteCSV(input model.RenderWasteInput) error {
 
 	var rows [][]string
 
-	rows = append(rows, mapEBSVolumes(input.StoppedVolumes, "stopped")...)
-	rows = append(rows, mapEBSVolumes(input.UnusedVolumes, "unattached")...)
-	rows = append(rows, mapElasticIPs(input.ElasticIPs)...)
+	rows = append(rows, mapEBSVolumes(input.StoppedVolumes, "stopped", pricingSvc)...)
+	rows = append(rows, mapEBSVolumes(input.UnusedVolumes, "unattached", pricingSvc)...)
+	rows = append(rows, mapElasticIPs(input.ElasticIPs, pricingSvc)...)
 	rows = append(rows, mapS3Buckets(input.S3Buckets)...)
 	rows = append(rows, mapS3MultipartUploads(input.S3MultipartUploads)...)
 	rows = append(rows, mapStoppedInstances(input.StoppedInstances)...)
 	rows = append(rows, mapReservedInstances(input.Ris)...)
-	rows = append(rows, mapLoadBalancers(input.LoadBalancers)...)
+	rows = append(rows, mapLoadBalancers(input.LoadBalancers, pricingSvc)...)
 	rows = append(rows, mapAMIs(input.UnusedAMIs)...)
 
 	orphaned, stale := mapSnapshots(input.OrphanedSnapshots)

@@ -9,19 +9,19 @@ import (
 	elb "github.com/aws/aws-sdk-go-v2/service/elasticloadbalancingv2"
 	"github.com/aws/aws-sdk-go-v2/service/elasticloadbalancingv2/types"
 	"github.com/elC0mpa/aws-doctor/model"
-	"github.com/elC0mpa/aws-doctor/utils/pricing"
 	"golang.org/x/sync/errgroup"
 )
 
-const idleCheckDays = 7
+const idleDaysThreshold = 7
 
 // NewService creates a new ELB service.
-func NewService(awsconfig aws.Config, cwService cloudwatchMetricsService) Service {
+func NewService(awsconfig aws.Config, cwService cloudwatchMetricsService, pricingSvc pricingService) Service {
 	client := elb.NewFromConfig(awsconfig)
 
 	return &service{
-		client:    client,
-		cwService: cwService,
+		client:         client,
+		cwService:      cwService,
+		pricingService: pricingSvc,
 	}
 }
 
@@ -99,7 +99,7 @@ func (s *service) GetLoadBalancerWaste(ctx context.Context) ([]types.LoadBalance
 		g.Go(func() error {
 			arn := aws.ToString(lb.LoadBalancerArn)
 
-			idle, cwErr := s.cwService.ELBHasZeroRequestsInPeriod(ctx, arn, lb.Type, idleCheckDays)
+			idle, cwErr := s.cwService.ELBHasZeroRequestsInPeriod(ctx, arn, lb.Type, idleDaysThreshold)
 			if cwErr != nil {
 				return cwErr
 			}
@@ -111,8 +111,8 @@ func (s *service) GetLoadBalancerWaste(ctx context.Context) ([]types.LoadBalance
 					Name:                 aws.ToString(lb.LoadBalancerName),
 					ARN:                  arn,
 					Type:                 string(lb.Type),
-					DaysChecked:          idleCheckDays,
-					EstimatedMonthlyCost: pricing.CalculateLoadBalancerMonthlyCost(lb.Type),
+					DaysChecked:          idleDaysThreshold,
+					EstimatedMonthlyCost: s.pricingService.CalculateLoadBalancerMonthlyCost(lb.Type),
 				})
 				mu.Unlock()
 			}

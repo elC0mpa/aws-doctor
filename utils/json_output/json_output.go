@@ -6,12 +6,12 @@ import (
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
-	"github.com/aws/aws-sdk-go-v2/service/ec2/types"
+	ec2types "github.com/aws/aws-sdk-go-v2/service/ec2/types"
 	elbtypes "github.com/aws/aws-sdk-go-v2/service/elasticloadbalancingv2/types"
 	"github.com/elC0mpa/aws-doctor/model"
+	"github.com/elC0mpa/aws-doctor/service/pricing"
 	"github.com/elC0mpa/aws-doctor/utils/cost"
 	"github.com/elC0mpa/aws-doctor/utils/ec2"
-	"github.com/elC0mpa/aws-doctor/utils/pricing"
 	wastesummary "github.com/elC0mpa/aws-doctor/utils/waste_summary"
 )
 
@@ -77,16 +77,16 @@ func OutputTrendJSON(accountID string, costInfo []model.CostInfo, services []str
 }
 
 // OutputWasteJSON outputs waste detection data as JSON
-func OutputWasteJSON(input model.RenderWasteInput) error {
+func OutputWasteJSON(input model.RenderWasteInput, pricingSvc pricing.Service) error {
 	output := model.WasteReportJSON{
 		AccountID:              input.AccountID,
 		GeneratedAt:            time.Now().UTC().Format(time.RFC3339),
-		UnusedElasticIPs:       mapElasticIPs(input.ElasticIPs),
-		UnusedEBSVolumes:       mapEBSVolumes(input.UnusedVolumes, "available"),
-		StoppedVolumes:         mapEBSVolumes(input.StoppedVolumes, "attached_to_stopped"),
+		UnusedElasticIPs:       mapElasticIPs(input.ElasticIPs, pricingSvc),
+		UnusedEBSVolumes:       mapEBSVolumes(input.UnusedVolumes, "available", pricingSvc),
+		StoppedVolumes:         mapEBSVolumes(input.StoppedVolumes, "attached_to_stopped", pricingSvc),
 		StoppedInstances:       mapStoppedInstances(input.StoppedInstances),
 		ReservedInstances:      mapReservedInstances(input.Ris),
-		UnusedLoadBalancers:    mapLoadBalancers(input.LoadBalancers),
+		UnusedLoadBalancers:    mapLoadBalancers(input.LoadBalancers, pricingSvc),
 		UnusedAMIs:             mapAMIs(input.UnusedAMIs),
 		UnusedKeyPairs:         mapKeyPairs(input.UnusedKeyPairs),
 		S3Buckets:              mapS3Buckets(input.S3Buckets),
@@ -105,7 +105,7 @@ func OutputWasteJSON(input model.RenderWasteInput) error {
 
 	output.HasWaste = hasAnyWasteJSON(output)
 
-	categories, total := wastesummary.Compute(input)
+	categories, total := wastesummary.Compute(input, pricingSvc)
 	output.TotalEstimatedMonthlyCost = total
 
 	for _, cat := range categories {
@@ -142,21 +142,21 @@ func mapS3MultipartUploads(buckets []model.S3MultipartUploadWasteInfo) []model.S
 	return result
 }
 
-func mapElasticIPs(elasticIPs []types.Address) []model.ElasticIPJSON {
+func mapElasticIPs(elasticIPs []ec2types.Address, pricingSvc pricing.Service) []model.ElasticIPJSON {
 	var result []model.ElasticIPJSON
 
 	for _, ip := range elasticIPs {
 		result = append(result, model.ElasticIPJSON{
 			PublicIP:             aws.ToString(ip.PublicIp),
 			AllocationID:         aws.ToString(ip.AllocationId),
-			EstimatedMonthlyCost: pricing.CalculateEIPMonthlyCost(),
+			EstimatedMonthlyCost: pricingSvc.CalculateEIPMonthlyCost(),
 		})
 	}
 
 	return result
 }
 
-func mapEBSVolumes(volumes []types.Volume, status string) []model.EBSVolumeJSON {
+func mapEBSVolumes(volumes []ec2types.Volume, status string, pricingSvc pricing.Service) []model.EBSVolumeJSON {
 	var result []model.EBSVolumeJSON
 
 	for _, vol := range volumes {
@@ -166,14 +166,14 @@ func mapEBSVolumes(volumes []types.Volume, status string) []model.EBSVolumeJSON 
 			VolumeID:             aws.ToString(vol.VolumeId),
 			Size:                 size,
 			Status:               status,
-			EstimatedMonthlyCost: pricing.CalculateEBSMonthlyCost(size, vol.VolumeType),
+			EstimatedMonthlyCost: pricingSvc.CalculateEBSMonthlyCost(size, vol.VolumeType),
 		})
 	}
 
 	return result
 }
 
-func mapStoppedInstances(stoppedInstances []types.Instance) []model.StoppedInstanceJSON {
+func mapStoppedInstances(stoppedInstances []ec2types.Instance) []model.StoppedInstanceJSON {
 	var result []model.StoppedInstanceJSON
 
 	now := time.Now()
@@ -213,7 +213,7 @@ func mapReservedInstances(ris []model.RiExpirationInfo) []model.ReservedInstance
 	return result
 }
 
-func mapLoadBalancers(loadBalancers []elbtypes.LoadBalancer) []model.LoadBalancerJSON {
+func mapLoadBalancers(loadBalancers []elbtypes.LoadBalancer, pricingSvc pricing.Service) []model.LoadBalancerJSON {
 	var result []model.LoadBalancerJSON
 
 	for _, lb := range loadBalancers {
@@ -221,7 +221,7 @@ func mapLoadBalancers(loadBalancers []elbtypes.LoadBalancer) []model.LoadBalance
 			Name:                 aws.ToString(lb.LoadBalancerName),
 			ARN:                  aws.ToString(lb.LoadBalancerArn),
 			Type:                 string(lb.Type),
-			EstimatedMonthlyCost: pricing.CalculateLoadBalancerMonthlyCost(lb.Type),
+			EstimatedMonthlyCost: pricingSvc.CalculateLoadBalancerMonthlyCost(lb.Type),
 		})
 	}
 

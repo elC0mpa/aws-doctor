@@ -2,15 +2,16 @@
 package wastesummary
 
 import (
+	"github.com/aws/aws-sdk-go-v2/aws"
 	ec2types "github.com/aws/aws-sdk-go-v2/service/ec2/types"
 	elbtypes "github.com/aws/aws-sdk-go-v2/service/elasticloadbalancingv2/types"
 	"github.com/elC0mpa/aws-doctor/model"
-	"github.com/elC0mpa/aws-doctor/utils/pricing"
+	"github.com/elC0mpa/aws-doctor/service/pricing"
 )
 
 // Compute returns per-category summaries and the total estimated monthly cost.
-func Compute(input model.RenderWasteInput) ([]model.CategorySummary, float64) {
-	categories := costCategories(input)
+func Compute(input model.RenderWasteInput, pricingSvc pricing.Service) ([]model.CategorySummary, float64) {
+	categories := costCategories(input, pricingSvc)
 	categories = append(categories, countOnlyCategories(input)...)
 
 	var total float64
@@ -21,26 +22,26 @@ func Compute(input model.RenderWasteInput) ([]model.CategorySummary, float64) {
 	return categories, total
 }
 
-func costCategories(input model.RenderWasteInput) []model.CategorySummary {
-	categories := computeAndStorageCategories(input)
-	categories = append(categories, networkingCategories(input)...)
+func costCategories(input model.RenderWasteInput, pricingSvc pricing.Service) []model.CategorySummary {
+	categories := computeAndStorageCategories(input, pricingSvc)
+	categories = append(categories, networkingCategories(input, pricingSvc)...)
 
 	return categories
 }
 
-func computeAndStorageCategories(input model.RenderWasteInput) []model.CategorySummary {
+func computeAndStorageCategories(input model.RenderWasteInput, pricingSvc pricing.Service) []model.CategorySummary {
 	var categories []model.CategorySummary
 
 	if n := len(input.ElasticIPs); n > 0 {
-		categories = append(categories, model.CategorySummary{Name: "Elastic IPs", Count: n, Cost: float64(n) * pricing.CalculateEIPMonthlyCost()})
+		categories = append(categories, model.CategorySummary{Name: "Elastic IPs", Count: n, Cost: float64(n) * pricingSvc.CalculateEIPMonthlyCost()})
 	}
 
 	if n := len(input.UnusedVolumes); n > 0 {
-		categories = append(categories, model.CategorySummary{Name: "EBS Volumes (Unattached)", Count: n, Cost: ebsVolumeCost(input.UnusedVolumes)})
+		categories = append(categories, model.CategorySummary{Name: "EBS Volumes (Unattached)", Count: n, Cost: ebsVolumeCost(input.UnusedVolumes, pricingSvc)})
 	}
 
 	if n := len(input.StoppedVolumes); n > 0 {
-		categories = append(categories, model.CategorySummary{Name: "EBS Volumes (Stopped Inst.)", Count: n, Cost: ebsVolumeCost(input.StoppedVolumes)})
+		categories = append(categories, model.CategorySummary{Name: "EBS Volumes (Stopped Inst.)", Count: n, Cost: ebsVolumeCost(input.StoppedVolumes, pricingSvc)})
 	}
 
 	if n := len(input.CloudWatchLogGroups); n > 0 {
@@ -109,11 +110,11 @@ func computeAndStorageCategories(input model.RenderWasteInput) []model.CategoryS
 	return categories
 }
 
-func networkingCategories(input model.RenderWasteInput) []model.CategorySummary {
+func networkingCategories(input model.RenderWasteInput, pricingSvc pricing.Service) []model.CategorySummary {
 	var categories []model.CategorySummary
 
 	if n := len(input.LoadBalancers); n > 0 {
-		categories = append(categories, model.CategorySummary{Name: "Load Balancers", Count: n, Cost: lbCost(input.LoadBalancers)})
+		categories = append(categories, model.CategorySummary{Name: "Load Balancers", Count: n, Cost: lbCost(input.LoadBalancers, pricingSvc)})
 	}
 
 	if n := len(input.IdleLoadBalancers); n > 0 {
@@ -167,20 +168,20 @@ func countOnlyCategories(input model.RenderWasteInput) []model.CategorySummary {
 	return categories
 }
 
-func ebsVolumeCost(volumes []ec2types.Volume) float64 {
+func ebsVolumeCost(volumes []ec2types.Volume, pricingSvc pricing.Service) float64 {
 	var cost float64
 	for _, vol := range volumes {
-		cost += float64(*vol.Size) * pricing.EBSCostPerGBMonth(vol.VolumeType)
+		cost += pricingSvc.CalculateEBSMonthlyCost(aws.ToInt32(vol.Size), vol.VolumeType)
 	}
 
 	return cost
 }
 
-func lbCost(loadBalancers []elbtypes.LoadBalancer) float64 {
+func lbCost(loadBalancers []elbtypes.LoadBalancer, pricingSvc pricing.Service) float64 {
 	var cost float64
 
 	for _, lb := range loadBalancers {
-		cost += pricing.CalculateLoadBalancerMonthlyCost(lb.Type)
+		cost += pricingSvc.CalculateLoadBalancerMonthlyCost(lb.Type)
 	}
 
 	return cost

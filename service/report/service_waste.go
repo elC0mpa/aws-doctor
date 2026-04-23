@@ -5,6 +5,7 @@ import (
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/elC0mpa/aws-doctor/model"
+	"github.com/elC0mpa/aws-doctor/service/pricing"
 	outputshared "github.com/elC0mpa/aws-doctor/utils/output_shared"
 	wastesummary "github.com/elC0mpa/aws-doctor/utils/waste_summary"
 	"github.com/johnfercher/maroto/v2/pkg/components/col"
@@ -16,10 +17,10 @@ import (
 	"github.com/johnfercher/maroto/v2/pkg/props"
 )
 
-func (s *service) addWasteSections(m core.Maroto, input model.RenderWasteInput) bool {
-	hasWaste := s.addEBSWaste(m, input)
+func (s *service) addWasteSections(m core.Maroto, input model.RenderWasteInput, pricingSvc pricing.Service) bool {
+	hasWaste := s.addEBSWaste(m, input, pricingSvc)
 
-	if s.addElasticIPWaste(m, input) {
+	if s.addElasticIPWaste(m, input, pricingSvc) {
 		hasWaste = true
 	}
 
@@ -27,7 +28,7 @@ func (s *service) addWasteSections(m core.Maroto, input model.RenderWasteInput) 
 		hasWaste = true
 	}
 
-	if s.addLBWaste(m, input) {
+	if s.addLBWaste(m, input, pricingSvc) {
 		hasWaste = true
 	}
 
@@ -63,10 +64,14 @@ func (s *service) addWasteSections(m core.Maroto, input model.RenderWasteInput) 
 		hasWaste = true
 	}
 
+	if s.addSageMakerWaste(m, input) {
+		hasWaste = true
+	}
+
 	return hasWaste
 }
 
-func (s *service) addEBSWaste(m core.Maroto, input model.RenderWasteInput) bool {
+func (s *service) addEBSWaste(m core.Maroto, input model.RenderWasteInput, pricingSvc pricing.Service) bool {
 	if len(input.UnusedVolumes) == 0 && len(input.StoppedVolumes) == 0 {
 		return false
 	}
@@ -74,12 +79,12 @@ func (s *service) addEBSWaste(m core.Maroto, input model.RenderWasteInput) bool 
 	s.addWasteSection(m, "EBS Volume Waste", []string{"Status", "Volume ID", "Size", "Est. Cost"})
 
 	for _, v := range input.UnusedVolumes {
-		p := outputshared.PresentEBSVolume(v, "unattached")
+		p := outputshared.PresentEBSVolume(v, "unattached", pricingSvc)
 		s.addWasteRow(m, []string{"Unattached", p.Identifier, p.Metric, p.EstimatedCost})
 	}
 
 	for _, v := range input.StoppedVolumes {
-		p := outputshared.PresentEBSVolume(v, "stopped")
+		p := outputshared.PresentEBSVolume(v, "stopped", pricingSvc)
 		s.addWasteRow(m, []string{"Stopped Inst.", p.Identifier, p.Metric, p.EstimatedCost})
 	}
 
@@ -88,7 +93,7 @@ func (s *service) addEBSWaste(m core.Maroto, input model.RenderWasteInput) bool 
 	return true
 }
 
-func (s *service) addElasticIPWaste(m core.Maroto, input model.RenderWasteInput) bool {
+func (s *service) addElasticIPWaste(m core.Maroto, input model.RenderWasteInput, pricingSvc pricing.Service) bool {
 	if len(input.ElasticIPs) == 0 {
 		return false
 	}
@@ -96,7 +101,7 @@ func (s *service) addElasticIPWaste(m core.Maroto, input model.RenderWasteInput)
 	s.addWasteSection(m, "Elastic IP Waste", []string{"Status", "IP Address", "Allocation ID", "Est. Cost"})
 
 	for _, ip := range input.ElasticIPs {
-		p := outputshared.PresentElasticIP(ip)
+		p := outputshared.PresentElasticIP(ip, pricingSvc)
 		s.addWasteRow(m, []string{"Unassociated", p.Identifier, aws.ToString(ip.AllocationId), p.EstimatedCost})
 	}
 
@@ -141,7 +146,7 @@ func (s *service) addEC2Waste(m core.Maroto, input model.RenderWasteInput) bool 
 	return true
 }
 
-func (s *service) addLBWaste(m core.Maroto, input model.RenderWasteInput) bool {
+func (s *service) addLBWaste(m core.Maroto, input model.RenderWasteInput, pricingSvc pricing.Service) bool {
 	if len(input.LoadBalancers) == 0 && len(input.IdleLoadBalancers) == 0 {
 		return false
 	}
@@ -149,7 +154,7 @@ func (s *service) addLBWaste(m core.Maroto, input model.RenderWasteInput) bool {
 	s.addWasteSection(m, "Load Balancer Waste", []string{"Status", "Name", "Type", "Est. Cost"})
 
 	for _, lb := range input.LoadBalancers {
-		p := outputshared.PresentLoadBalancer(lb)
+		p := outputshared.PresentLoadBalancer(lb, pricingSvc)
 		s.addWasteRow(m, []string{"Unused", aws.ToString(lb.LoadBalancerName), p.Metric, p.EstimatedCost})
 	}
 
@@ -329,8 +334,25 @@ func (s *service) addLambdaWaste(m core.Maroto, input model.RenderWasteInput) bo
 	return true
 }
 
-func (s *service) addWasteSummary(m core.Maroto, input model.RenderWasteInput) {
-	categories, totalCost := wastesummary.Compute(input)
+func (s *service) addSageMakerWaste(m core.Maroto, input model.RenderWasteInput) bool {
+	if len(input.IdleSageMakerEndpoints) == 0 {
+		return false
+	}
+
+	s.addWasteSection(m, "SageMaker Endpoints (Idle)", []string{"Status", "Endpoint", "Variants", "Est. Cost"})
+
+	for _, ep := range input.IdleSageMakerEndpoints {
+		p := outputshared.PresentIdleSageMakerEndpoint(ep)
+		s.addWasteRow(m, []string{"Idle", p.Identifier, p.Details, p.EstimatedCost})
+	}
+
+	m.AddRow(5, col.New(12))
+
+	return true
+}
+
+func (s *service) addWasteSummary(m core.Maroto, input model.RenderWasteInput, pricingSvc pricing.Service) {
+	categories, totalCost := wastesummary.Compute(input, pricingSvc)
 
 	if len(categories) == 0 {
 		return

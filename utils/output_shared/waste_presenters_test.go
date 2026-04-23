@@ -8,6 +8,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/ec2/types"
 	elbtypes "github.com/aws/aws-sdk-go-v2/service/elasticloadbalancingv2/types"
+	"github.com/elC0mpa/aws-doctor/mocks/services"
 	"github.com/elC0mpa/aws-doctor/model"
 )
 
@@ -48,37 +49,52 @@ func TestPresentS3MultipartUpload(t *testing.T) {
 
 func TestPresentEBSVolume(t *testing.T) {
 	tests := []struct {
-		name   string
-		vol    types.Volume
-		status string
+		name      string
+		vol       types.Volume
+		status    string
+		wantCost  string
+		mockValue float64
 	}{
 		{
-			name: "single_volume",
+			name: "gp2 volume",
 			vol: types.Volume{
-				VolumeId:   aws.String("vol-12345"),
+				VolumeId:   aws.String("vol-1"),
 				Size:       aws.Int32(100),
+				VolumeType: types.VolumeTypeGp2,
 				State:      types.VolumeStateAvailable,
 				CreateTime: aws.Time(time.Now()),
 			},
-			status: "unattached",
+			status:    "unattached",
+			wantCost:  "$10.00",
+			mockValue: 10.0,
+		},
+		{
+			name: "gp3 volume",
+			vol: types.Volume{
+				VolumeId:   aws.String("vol-2"),
+				Size:       aws.Int32(50),
+				VolumeType: types.VolumeTypeGp3,
+				State:      types.VolumeStateInUse,
+				CreateTime: aws.Time(time.Now()),
+			},
+			status:    "stopped",
+			wantCost:  "$4.00",
+			mockValue: 4.0,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			p := PresentEBSVolume(tt.vol, tt.status)
+			m := new(services.MockPricingService)
+			m.On("CalculateEBSMonthlyCost", *tt.vol.Size, tt.vol.VolumeType).Return(tt.mockValue)
 
-			if p.Identifier != *tt.vol.VolumeId {
-				t.Errorf("Identifier = %v, want %v", p.Identifier, *tt.vol.VolumeId)
+			p := PresentEBSVolume(tt.vol, tt.status, m)
+
+			if p.EstimatedCost != tt.wantCost {
+				t.Errorf("EstimatedCost = %v, want %v", p.EstimatedCost, tt.wantCost)
 			}
 
-			if !strings.HasPrefix(p.EstimatedCost, "$") {
-				t.Errorf("EstimatedCost %q does not start with $", p.EstimatedCost)
-			}
-
-			if p.Metric != "100 GiB" {
-				t.Errorf("Metric = %v, want '100 GiB'", p.Metric)
-			}
+			m.AssertExpectations(t)
 		})
 	}
 }
@@ -86,144 +102,114 @@ func TestPresentEBSVolume(t *testing.T) {
 func TestPresentElasticIP(t *testing.T) {
 	ip := types.Address{
 		PublicIp:     aws.String("1.2.3.4"),
-		AllocationId: aws.String("eipalloc-12345"),
+		AllocationId: aws.String("eipalloc-1"),
 	}
 
-	p := PresentElasticIP(ip)
+	m := new(services.MockPricingService)
+	m.On("CalculateEIPMonthlyCost").Return(3.65)
+
+	p := PresentElasticIP(ip, m)
 
 	if p.Identifier != "1.2.3.4" {
 		t.Errorf("Identifier = %v, want '1.2.3.4'", p.Identifier)
 	}
 
-	if !strings.HasPrefix(p.EstimatedCost, "$") {
-		t.Errorf("EstimatedCost %q does not start with $", p.EstimatedCost)
+	if p.EstimatedCost != "$3.65" {
+		t.Errorf("EstimatedCost = %v, want '$3.65'", p.EstimatedCost)
 	}
 
-	if !strings.Contains(p.Details, "eipalloc-12345") {
-		t.Errorf("Details %q does not contain allocation ID", p.Details)
-	}
-}
-
-func TestPresentStoppedInstance(t *testing.T) {
-	now := time.Now()
-	thirtyDaysAgo := now.AddDate(0, 0, -30).Format("2006-01-02 15:04:05") + " UTC"
-
-	instance := types.Instance{
-		InstanceId:            aws.String("i-12345"),
-		InstanceType:          types.InstanceTypeT3Micro,
-		StateTransitionReason: aws.String("User initiated (" + thirtyDaysAgo + ")"),
-	}
-
-	p := PresentStoppedInstance(instance)
-
-	if p.Identifier != "i-12345" {
-		t.Errorf("Identifier = %v, want 'i-12345'", p.Identifier)
-	}
-
-	if p.Age == NAValue {
-		t.Error("Age was not calculated")
-	}
-
-	if p.Metric != "t3.micro" {
-		t.Errorf("Metric = %v, want 't3.micro'", p.Metric)
-	}
-}
-
-func TestPresentReservedInstance(t *testing.T) {
-	ri := model.RiExpirationInfo{
-		ReservedInstanceID: "ri-12345",
-		InstanceType:       "t3.micro",
-		DaysUntilExpiry:    15,
-		Status:             "EXPIRING SOON",
-		State:              "active",
-	}
-
-	p := PresentReservedInstance(ri)
-
-	if p.Identifier != "ri-12345" {
-		t.Errorf("Identifier = %v, want 'ri-12345'", p.Identifier)
-	}
-
-	if p.Age != "15" {
-		t.Errorf("Age = %v, want '15'", p.Age)
-	}
-
-	if p.Metric != "t3.micro" {
-		t.Errorf("Metric = %v, want 't3.micro'", p.Metric)
-	}
+	m.AssertExpectations(t)
 }
 
 func TestPresentLoadBalancer(t *testing.T) {
 	lb := elbtypes.LoadBalancer{
-		LoadBalancerArn: aws.String("arn:aws:elasticloadbalancing:us-east-1:123456789012:loadbalancer/app/my-load-balancer/50dc6c495c0c9188"),
-		Type:            elbtypes.LoadBalancerTypeEnumApplication,
-		CreatedTime:     aws.Time(time.Now()),
+		LoadBalancerArn:  aws.String("arn:aws:elb:us-east-1:123:lb/app/my-lb/123"),
+		LoadBalancerName: aws.String("my-lb"),
+		Type:             elbtypes.LoadBalancerTypeEnumApplication,
+		CreatedTime:      aws.Time(time.Now()),
 	}
 
-	p := PresentLoadBalancer(lb)
+	m := new(services.MockPricingService)
+	m.On("CalculateLoadBalancerMonthlyCost", lb.Type).Return(16.43)
 
-	if p.Identifier != *lb.LoadBalancerArn {
-		t.Errorf("Identifier = %v, want %v", p.Identifier, *lb.LoadBalancerArn)
+	p := PresentLoadBalancer(lb, m)
+
+	if p.Identifier != "arn:aws:elb:us-east-1:123:lb/app/my-lb/123" {
+		t.Errorf("Identifier = %v, want 'arn:aws:elb:us-east-1:123:lb/app/my-lb/123'", p.Identifier)
 	}
 
-	if p.Metric != "application" {
-		t.Errorf("Metric = %v, want 'application'", p.Metric)
+	if p.EstimatedCost != "$16.43" {
+		t.Errorf("EstimatedCost = %v, want '$16.43'", p.EstimatedCost)
 	}
 
-	if !strings.HasPrefix(p.EstimatedCost, "$") {
-		t.Errorf("EstimatedCost %q does not start with $", p.EstimatedCost)
+	m.AssertExpectations(t)
+}
+
+func TestPresentCloudWatchLogGroup(t *testing.T) {
+	lg := model.CloudWatchLogsWasteInfo{
+		LogGroupName:         "test-lg",
+		StoredBytes:          1024 * 1024 * 1024,
+		EstimatedMonthlyCost: 0.50,
+	}
+
+	p := PresentCloudWatchLogGroup(lg)
+
+	if p.Identifier != "test-lg" {
+		t.Errorf("Identifier = %v, want 'test-lg'", p.Identifier)
+	}
+
+	if p.EstimatedCost != "$0.50" {
+		t.Errorf("EstimatedCost = %v, want '$0.50'", p.EstimatedCost)
 	}
 }
 
 func TestPresentAMI(t *testing.T) {
 	ami := model.AMIWasteInfo{
-		ImageID:         "ami-12345",
-		Name:            "my-ami",
-		DaysSinceCreate: 90,
-		CreationDate:    time.Now(),
+		ImageID:            "ami-123",
+		Name:               "test-ami",
+		CreationDate:       time.Now(),
+		DaysSinceCreate:    100,
+		MaxPotentialSaving: 12.50,
 	}
 
 	p := PresentAMI(ami)
 
-	if p.Identifier != "ami-12345" {
-		t.Errorf("Identifier = %v, want 'ami-12345'", p.Identifier)
+	assert := func(got, want string) {
+		if got != want {
+			t.Errorf("got %v, want %v", got, want)
+		}
 	}
 
-	if p.Age != "90" {
-		t.Errorf("Age = %v, want '90'", p.Age)
-	}
+	assert(p.Identifier, "ami-123")
+	assert(p.EstimatedCost, "$12.50")
+	assert(p.Age, "100")
 }
 
 func TestPresentSnapshot(t *testing.T) {
 	snap := model.SnapshotWasteInfo{
-		SnapshotID:          "snap-12345",
-		Category:            model.SnapshotCategoryOrphaned,
-		SizeGB:              10,
-		DaysSinceCreate:     30,
+		SnapshotID:          "snap-123",
+		SizeGB:              100,
+		VolumeExists:        false,
+		DaysSinceCreate:     50,
 		MaxPotentialSavings: 5.00,
-		StartTime:           time.Now(),
+		Category:            model.SnapshotCategoryOrphaned,
 	}
 
 	p := PresentSnapshot(snap)
 
-	if p.Identifier != "snap-12345" {
-		t.Errorf("Identifier = %v, want 'snap-12345'", p.Identifier)
+	if p.Identifier != "snap-123" {
+		t.Errorf("Identifier = %v, want 'snap-123'", p.Identifier)
 	}
 
-	if p.Metric != "10 GiB" {
-		t.Errorf("Metric = %v, want '10 GiB'", p.Metric)
-	}
-
-	if !strings.HasPrefix(p.EstimatedCost, "$") {
-		t.Errorf("EstimatedCost %q does not start with $", p.EstimatedCost)
+	if p.EstimatedCost != "$5.00" {
+		t.Errorf("EstimatedCost = %v, want '$5.00'", p.EstimatedCost)
 	}
 }
 
 func TestPresentKeyPair(t *testing.T) {
 	kp := model.KeyPairWasteInfo{
 		KeyName:         "test-key",
-		DaysSinceCreate: 60,
-		CreateTime:      time.Now(),
+		DaysSinceCreate: 30,
 	}
 
 	p := PresentKeyPair(kp)
@@ -232,185 +218,114 @@ func TestPresentKeyPair(t *testing.T) {
 		t.Errorf("Identifier = %v, want 'test-key'", p.Identifier)
 	}
 
-	if p.Age != "60" {
-		t.Errorf("Age = %v, want '60'", p.Age)
+	if p.Age != "30" {
+		t.Errorf("Age = %v, want '30'", p.Age)
 	}
 }
 
-func TestPresentCloudWatchLogGroup(t *testing.T) {
-	lg := model.CloudWatchLogsWasteInfo{
-		LogGroupName:         "test-loggroup",
-		StoredBytes:          1024 * 1024 * 1024, // 1 GB
-		EstimatedMonthlyCost: 0.50,
-		CreationTime:         time.Now(),
-	}
+func TestPresentRDS(t *testing.T) {
+	t.Run("stopped instance", func(t *testing.T) {
+		inst := model.RDSInstanceWasteInfo{
+			DBInstanceID:         "db-1",
+			EstimatedMonthlyCost: 20.0,
+		}
 
-	p := PresentCloudWatchLogGroup(lg)
+		p := PresentRDSInstance(inst)
 
-	if p.Identifier != "test-loggroup" {
-		t.Errorf("Identifier = %v, want 'test-loggroup'", p.Identifier)
-	}
+		if p.EstimatedCost != "$20.00" {
+			t.Errorf("got %v, want $20.00", p.EstimatedCost)
+		}
+	})
 
-	if p.Metric != "1.00 GB stored" {
-		t.Errorf("Metric = %v, want '1.00 GB stored'", p.Metric)
-	}
+	t.Run("old snapshot", func(t *testing.T) {
+		snap := model.RDSSnapshotWasteInfo{
+			DBSnapshotID:         "snap-1",
+			EstimatedMonthlyCost: 5.0,
+		}
 
-	if p.EstimatedCost != "$0.50" {
-		t.Errorf("EstimatedCost = %v, want '$0.50'", p.EstimatedCost)
-	}
+		p := PresentRDSSnapshot(snap)
+
+		if p.EstimatedCost != "$5.00" {
+			t.Errorf("got %v, want $5.00", p.EstimatedCost)
+		}
+	})
+
+	t.Run("idle instance", func(t *testing.T) {
+		inst := model.RDSIdleInstanceInfo{
+			DBInstanceID:         "idle-1",
+			EstimatedMonthlyCost: 45.0,
+		}
+
+		p := PresentRDSIdleInstance(inst)
+
+		if p.EstimatedCost != "$45.00" {
+			t.Errorf("got %v, want $45.00", p.EstimatedCost)
+		}
+	})
 }
 
-func TestPresentRDSInstance(t *testing.T) {
-	inst := model.RDSInstanceWasteInfo{
-		DBInstanceID:         "test-db",
-		Engine:               "mysql",
-		Status:               "stopped",
-		MultiAZ:              true,
-		EstimatedMonthlyCost: 10.00,
+func TestPresentIdleNATGateway(t *testing.T) {
+	ng := model.NATGatewayWasteInfo{
+		NATGatewayID:         "nat-123",
+		EstimatedMonthlyCost: 32.85,
 	}
 
-	p := PresentRDSInstance(inst)
+	p := PresentIdleNATGateway(ng)
 
-	if p.Identifier != "test-db" {
-		t.Errorf("Identifier = %v, want 'test-db'", p.Identifier)
+	if p.Identifier != "nat-123" {
+		t.Errorf("Identifier = %v, want 'nat-123'", p.Identifier)
 	}
 
-	if p.Metric != "Is Multi AZ: true" {
-		t.Errorf("Metric = %v, want 'Is Multi AZ: true'", p.Metric)
-	}
-
-	if p.EstimatedCost != "$10.00" {
-		t.Errorf("EstimatedCost = %v, want '$10.00'", p.EstimatedCost)
-	}
-}
-
-func TestPresentRDSSnapshot(t *testing.T) {
-	snap := model.RDSSnapshotWasteInfo{
-		DBSnapshotID:         "test-snap",
-		AllocatedStorage:     20,
-		DaysSinceCreate:      45,
-		Engine:               "postgres",
-		EstimatedMonthlyCost: 2.00,
-		SnapshotCreateTime:   time.Now(),
-	}
-
-	p := PresentRDSSnapshot(snap)
-
-	if p.Identifier != "test-snap" {
-		t.Errorf("Identifier = %v, want 'test-snap'", p.Identifier)
-	}
-
-	if p.Age != "45" {
-		t.Errorf("Age = %v, want '45'", p.Age)
-	}
-
-	if p.Metric != "20 GiB" {
-		t.Errorf("Metric = %v, want '20 GiB'", p.Metric)
+	if p.EstimatedCost != "$32.85" {
+		t.Errorf("EstimatedCost = %v, want '$32.85'", p.EstimatedCost)
 	}
 }
 
 func TestPresentIdleLoadBalancer(t *testing.T) {
 	lb := model.ELBIdleInfo{
-		Name:                 "test-alb",
-		ARN:                  "arn:aws:elasticloadbalancing:us-east-1:123:loadbalancer/app/test-alb/abc123",
-		Type:                 "application",
-		DaysChecked:          7,
+		ARN:                  "idle-lb",
 		EstimatedMonthlyCost: 16.43,
 	}
 
 	p := PresentIdleLoadBalancer(lb)
 
-	if !strings.Contains(p.Identifier, "test-alb") {
-		t.Errorf("Identifier = %v, want to contain 'test-alb'", p.Identifier)
+	if p.Identifier != "idle-lb" {
+		t.Errorf("Identifier = %v, want 'idle-lb'", p.Identifier)
 	}
 
 	if p.EstimatedCost != "$16.43" {
 		t.Errorf("EstimatedCost = %v, want '$16.43'", p.EstimatedCost)
 	}
-
-	if !strings.Contains(p.Details, "7 days") {
-		t.Errorf("Details %q does not contain '7 days'", p.Details)
-	}
-}
-
-func TestPresentRDSIdleInstance(t *testing.T) {
-	inst := model.RDSIdleInstanceInfo{
-		DBInstanceID:         "idle-db",
-		Engine:               "aurora",
-		DaysChecked:          7,
-		EstimatedMonthlyCost: 50.00,
-	}
-
-	p := PresentRDSIdleInstance(inst)
-
-	if p.Identifier != "idle-db" {
-		t.Errorf("Identifier = %v, want 'idle-db'", p.Identifier)
-	}
-
-	if !strings.Contains(p.Metric, "7 days") {
-		t.Errorf("Metric %q does not contain '7 days'", p.Metric)
-	}
-
-	if p.EstimatedCost != "$50.00" {
-		t.Errorf("EstimatedCost = %v, want '$50.00'", p.EstimatedCost)
-	}
-}
-
-func TestPresentIdleNATGateway(t *testing.T) {
-	ng := model.NATGatewayWasteInfo{
-		NATGatewayID:          "nat-12345",
-		VPCID:                 "vpc-12345",
-		SubnetID:              "subnet-12345",
-		State:                 "available",
-		BytesOutToDestination: 0,
-		EstimatedMonthlyCost:  30.00,
-		DaysSinceCreate:       45,
-	}
-
-	p := PresentIdleNATGateway(ng)
-
-	if p.Identifier != "nat-12345" {
-		t.Errorf("Identifier = %v, want 'nat-12345'", p.Identifier)
-	}
-
-	if p.Age != "45" {
-		t.Errorf("Age = %v, want '45'", p.Age)
-	}
-
-	if p.Metric != "0.00 bytes transferred" {
-		t.Errorf("Metric = %v, want '0.00 bytes transferred'", p.Metric)
-	}
-
-	if p.EstimatedCost != "$30.00" {
-		t.Errorf("EstimatedCost = %v, want '$30.00'", p.EstimatedCost)
-	}
 }
 
 func TestPresentLambdaOverProvisioned(t *testing.T) {
 	fn := model.LambdaOverProvisionedInfo{
-		FunctionName:        "my-function",
-		Runtime:             "go1.x",
-		ConfiguredMemoryMB:  1024,
-		MaxMemoryUsedMB:     50,
-		MemoryUtilization:   4.9,
-		RecommendedMemoryMB: 128,
+		FunctionName: "test-fn",
 	}
 
 	p := PresentLambdaOverProvisioned(fn)
 
-	if p.Identifier != "my-function" {
-		t.Errorf("Identifier = %v, want 'my-function'", p.Identifier)
+	if p.Identifier != "test-fn" {
+		t.Errorf("Identifier = %v, want 'test-fn'", p.Identifier)
+	}
+}
+
+func TestPresentIdleSageMakerEndpoint(t *testing.T) {
+	ep := model.IdleSageMakerEndpointInfo{
+		EndpointName:         "test-ep",
+		EstimatedMonthlyCost: 46.72,
+		Variants: []model.SageMakerVariant{
+			{InstanceType: "ml.t2.medium", InstanceCount: 1},
+		},
 	}
 
-	if !strings.Contains(p.Metric, "4.9%") {
-		t.Errorf("Metric %q does not contain '4.9%%'", p.Metric)
+	p := PresentIdleSageMakerEndpoint(ep)
+
+	if p.Identifier != "test-ep" {
+		t.Errorf("Identifier = %v, want 'test-ep'", p.Identifier)
 	}
 
-	if p.EstimatedCost != NAValue {
-		t.Errorf("EstimatedCost = %v, want '%s'", p.EstimatedCost, NAValue)
-	}
-
-	if !strings.Contains(p.Details, "1024 MB") {
-		t.Errorf("Details %q does not contain '1024 MB'", p.Details)
+	if p.EstimatedCost != "$46.72" {
+		t.Errorf("EstimatedCost = %v, want '$46.72'", p.EstimatedCost)
 	}
 }

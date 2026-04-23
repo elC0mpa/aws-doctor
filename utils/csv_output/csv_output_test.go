@@ -12,6 +12,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/ec2/types"
 	elbtypes "github.com/aws/aws-sdk-go-v2/service/elasticloadbalancingv2/types"
+	"github.com/elC0mpa/aws-doctor/mocks/services"
 	"github.com/elC0mpa/aws-doctor/model"
 )
 
@@ -140,7 +141,7 @@ func TestOutputWasteCSV(t *testing.T) {
 	}
 
 	output := captureStdout(func() {
-		_ = OutputWasteCSV(input)
+		_ = OutputWasteCSV(input, services.NewMockPricingService())
 	})
 
 	if !strings.Contains(output, "Resource Category,Resource Identifier,Estimated Monthly Cost (USD),Metric / Size,Age (Days),Additional Details") {

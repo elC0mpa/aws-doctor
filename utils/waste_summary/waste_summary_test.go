@@ -6,13 +6,14 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/ec2/types"
 	elbtypes "github.com/aws/aws-sdk-go-v2/service/elasticloadbalancingv2/types"
+	"github.com/elC0mpa/aws-doctor/mocks/services"
 	"github.com/elC0mpa/aws-doctor/model"
-	"github.com/elC0mpa/aws-doctor/utils/pricing"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestCompute_Empty(t *testing.T) {
-	categories, total := Compute(model.RenderWasteInput{})
+	m := new(services.MockPricingService)
+	categories, total := Compute(model.RenderWasteInput{}, m)
 
 	assert.Empty(t, categories)
 	assert.Equal(t, 0.0, total)
@@ -26,13 +27,16 @@ func TestCompute_ElasticIPs(t *testing.T) {
 		},
 	}
 
-	categories, total := Compute(input)
+	m := new(services.MockPricingService)
+	m.On("CalculateEIPMonthlyCost").Return(3.65)
+
+	categories, total := Compute(input, m)
 
 	assert.Len(t, categories, 1)
 	assert.Equal(t, "Elastic IPs", categories[0].Name)
 	assert.Equal(t, 2, categories[0].Count)
-	assert.Equal(t, 2*pricing.EIPCostPerMonth, categories[0].Cost)
-	assert.Equal(t, 2*pricing.EIPCostPerMonth, total)
+	assert.Equal(t, 2*3.65, categories[0].Cost)
+	assert.Equal(t, 2*3.65, total)
 }
 
 func TestCompute_EBSVolumes(t *testing.T) {
@@ -45,14 +49,18 @@ func TestCompute_EBSVolumes(t *testing.T) {
 		},
 	}
 
-	categories, total := Compute(input)
+	m := new(services.MockPricingService)
+	m.On("CalculateEBSMonthlyCost", int32(100), types.VolumeTypeGp2).Return(10.0)
+	m.On("CalculateEBSMonthlyCost", int32(50), types.VolumeTypeGp3).Return(4.0)
+
+	categories, total := Compute(input, m)
 
 	assert.Len(t, categories, 2)
 	assert.Equal(t, "EBS Volumes (Unattached)", categories[0].Name)
-	assert.Equal(t, 100*pricing.EBSgp2CostPerGBMonth, categories[0].Cost)
+	assert.Equal(t, 10.0, categories[0].Cost)
 	assert.Equal(t, "EBS Volumes (Stopped Inst.)", categories[1].Name)
-	assert.Equal(t, 50*pricing.EBSgp3CostPerGBMonth, categories[1].Cost)
-	assert.Equal(t, 100*pricing.EBSgp2CostPerGBMonth+50*pricing.EBSgp3CostPerGBMonth, total)
+	assert.Equal(t, 4.0, categories[1].Cost)
+	assert.Equal(t, 14.0, total)
 }
 
 func TestCompute_LoadBalancers(t *testing.T) {
@@ -63,12 +71,16 @@ func TestCompute_LoadBalancers(t *testing.T) {
 		},
 	}
 
-	categories, total := Compute(input)
+	m := new(services.MockPricingService)
+	m.On("CalculateLoadBalancerMonthlyCost", elbtypes.LoadBalancerTypeEnumApplication).Return(16.43)
+	m.On("CalculateLoadBalancerMonthlyCost", elbtypes.LoadBalancerTypeEnum("classic")).Return(18.25)
+
+	categories, total := Compute(input, m)
 
 	assert.Len(t, categories, 1)
 	assert.Equal(t, 2, categories[0].Count)
 
-	expectedCost := pricing.ALBCostPerMonth + pricing.CLBCostPerMonth
+	expectedCost := 16.43 + 18.25
 	assert.Equal(t, expectedCost, categories[0].Cost)
 	assert.Equal(t, expectedCost, total)
 }
@@ -81,7 +93,8 @@ func TestCompute_CloudWatchLogGroups(t *testing.T) {
 		},
 	}
 
-	categories, total := Compute(input)
+	m := new(services.MockPricingService)
+	categories, total := Compute(input, m)
 
 	assert.Len(t, categories, 1)
 	assert.Equal(t, 4.0, categories[0].Cost)
@@ -96,7 +109,8 @@ func TestCompute_AMIs(t *testing.T) {
 		},
 	}
 
-	categories, total := Compute(input)
+	m := new(services.MockPricingService)
+	categories, total := Compute(input, m)
 
 	assert.Len(t, categories, 1)
 	assert.Equal(t, "Unused AMIs", categories[0].Name)
@@ -114,7 +128,8 @@ func TestCompute_Snapshots(t *testing.T) {
 		},
 	}
 
-	categories, total := Compute(input)
+	m := new(services.MockPricingService)
+	categories, total := Compute(input, m)
 
 	assert.Len(t, categories, 1)
 	assert.Equal(t, "EBS Snapshots", categories[0].Name)
@@ -139,7 +154,8 @@ func TestCompute_RDS(t *testing.T) {
 		},
 	}
 
-	categories, total := Compute(input)
+	m := new(services.MockPricingService)
+	categories, total := Compute(input, m)
 
 	assert.Len(t, categories, 3)
 	assert.Equal(t, 82.5, total)
@@ -160,18 +176,19 @@ func TestCompute_RDS(t *testing.T) {
 func TestCompute_IdleLoadBalancers(t *testing.T) {
 	input := model.RenderWasteInput{
 		IdleLoadBalancers: []model.ELBIdleInfo{
-			{Name: "idle-alb", Type: "application", EstimatedMonthlyCost: pricing.ALBCostPerMonth},
-			{Name: "idle-nlb", Type: "network", EstimatedMonthlyCost: pricing.ALBCostPerMonth},
+			{Name: "idle-alb", Type: "application", EstimatedMonthlyCost: 16.43},
+			{Name: "idle-nlb", Type: "network", EstimatedMonthlyCost: 16.43},
 		},
 	}
 
-	categories, total := Compute(input)
+	m := new(services.MockPricingService)
+	categories, total := Compute(input, m)
 
 	assert.Len(t, categories, 1)
 	assert.Equal(t, "Load Balancers (Idle)", categories[0].Name)
 	assert.Equal(t, 2, categories[0].Count)
-	assert.Equal(t, pricing.ALBCostPerMonth*2, categories[0].Cost)
-	assert.Equal(t, pricing.ALBCostPerMonth*2, total)
+	assert.Equal(t, 32.86, categories[0].Cost)
+	assert.Equal(t, 32.86, total)
 }
 
 func TestCompute_CountOnlyItems(t *testing.T) {
@@ -183,7 +200,8 @@ func TestCompute_CountOnlyItems(t *testing.T) {
 		UnusedKeyPairs:     []model.KeyPairWasteInfo{{KeyName: "key-1"}},
 	}
 
-	categories, total := Compute(input)
+	m := new(services.MockPricingService)
+	categories, total := Compute(input, m)
 
 	assert.Len(t, categories, 5)
 	assert.Equal(t, 0.0, total)
@@ -202,7 +220,8 @@ func TestCompute_LambdaOverProvisioned(t *testing.T) {
 		},
 	}
 
-	categories, total := Compute(input)
+	m := new(services.MockPricingService)
+	categories, total := Compute(input, m)
 
 	assert.Len(t, categories, 1)
 	assert.Equal(t, "Lambda (Over-Provisioned)", categories[0].Name)
@@ -221,10 +240,13 @@ func TestCompute_MixedWaste(t *testing.T) {
 		},
 	}
 
-	categories, total := Compute(input)
+	m := new(services.MockPricingService)
+	m.On("CalculateEIPMonthlyCost").Return(3.65)
+
+	categories, total := Compute(input, m)
 
 	assert.Len(t, categories, 2)
-	assert.Equal(t, pricing.EIPCostPerMonth, total)
+	assert.Equal(t, 3.65, total)
 	assert.Equal(t, "Elastic IPs", categories[0].Name)
 	assert.Equal(t, "Unused Key Pairs", categories[1].Name)
 	assert.Equal(t, 0.0, categories[1].Cost)
@@ -238,7 +260,8 @@ func TestCompute_SageMaker(t *testing.T) {
 		},
 	}
 
-	categories, total := Compute(input)
+	m := new(services.MockPricingService)
+	categories, total := Compute(input, m)
 
 	assert.Len(t, categories, 1)
 	assert.Equal(t, "SageMaker Endpoints (Idle)", categories[0].Name)

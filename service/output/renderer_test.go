@@ -169,7 +169,7 @@ func TestRealRenderer_OutputWasteCSV(t *testing.T) {
 		_ = f.Close()
 	}()
 
-	err := r.OutputWasteCSV(input)
+	err := r.OutputWasteCSV(input, nil)
 	assert.NoError(t, err)
 }
 
@@ -177,14 +177,14 @@ func TestRealRenderer_DrawWasteTable(t *testing.T) {
 	r := &realRenderer{}
 
 	assert.NotPanics(t, func() {
-		r.DrawWasteTable(model.RenderWasteInput{AccountID: "123456789012"})
+		r.DrawWasteTable(model.RenderWasteInput{AccountID: "123456789012"}, nil)
 	})
 }
 
 func TestRealRenderer_OutputWasteJSON(t *testing.T) {
 	r := &realRenderer{}
 
-	err := r.OutputWasteJSON(model.RenderWasteInput{AccountID: "123456789012"})
+	err := r.OutputWasteJSON(model.RenderWasteInput{AccountID: "123456789012"}, nil)
 	assert.NoError(t, err)
 }
 

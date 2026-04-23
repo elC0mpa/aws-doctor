@@ -12,7 +12,6 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/sts"
 	"github.com/elC0mpa/aws-doctor/model"
 	awscostexplorer "github.com/elC0mpa/aws-doctor/service/costexplorer"
-	"github.com/elC0mpa/aws-doctor/utils/pricing"
 	"github.com/elC0mpa/aws-doctor/utils/slice"
 	"github.com/google/go-github/v62/github"
 	"golang.org/x/sync/errgroup"
@@ -35,12 +34,12 @@ func NewService(cfg Config) Service {
 		rdsService:            cfg.RDSService,
 		lambdaService:         cfg.LambdaService,
 		sagemakerService:      cfg.SageMakerService,
+		pricingService:        cfg.PricingService,
 		outputService:         cfg.OutputService,
 		updateService:         cfg.UpdateService,
 		reportService:         cfg.ReportService,
 		versionInfo:           cfg.VersionInfo,
 		vpcService:            cfg.VPCService,
-		awsConfig:             cfg.AWSConfig,
 	}
 }
 
@@ -288,7 +287,7 @@ func (s *service) wasteWorkflow(wasteChecks []string, generateReport bool, repor
 	input.AccountID = *stsResult.Account
 
 	if generateReport {
-		path, err := s.reportService.GenerateWasteReport(input, reportPath)
+		path, err := s.reportService.GenerateWasteReport(input, s.pricingService, reportPath)
 		if err != nil {
 			return err
 		}
@@ -298,7 +297,7 @@ func (s *service) wasteWorkflow(wasteChecks []string, generateReport bool, repor
 		return nil
 	}
 
-	return s.outputService.RenderWaste(input)
+	return s.outputService.RenderWaste(input, s.pricingService)
 }
 
 func (s *service) handleCostError(err error) error {
@@ -323,7 +322,7 @@ func (s *service) loadPricing(ctx context.Context) {
 	pricingCtx, cancel := context.WithTimeout(ctx, 15*time.Second)
 	defer cancel()
 
-	if err := pricing.Load(pricingCtx, s.awsConfig); err != nil {
+	if err := s.pricingService.LoadRegionRates(pricingCtx); err != nil {
 		fmt.Fprintf(os.Stderr, "warning: pricing API partial failure, falling back to defaults: %v\n", err)
 	}
 

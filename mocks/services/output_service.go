@@ -2,10 +2,11 @@ package services
 
 import (
 	"github.com/elC0mpa/aws-doctor/model"
+	"github.com/elC0mpa/aws-doctor/service/pricing"
 	"github.com/stretchr/testify/mock"
 )
 
-// MockOutputService is a mock implementation of the output service interface.
+// MockOutputService is a mock implementation of the output service.
 type MockOutputService struct {
 	mock.Mock
 }
@@ -23,8 +24,8 @@ func (m *MockOutputService) RenderTrend(accountID string, costInfo []model.CostI
 }
 
 // RenderWaste mocks the RenderWaste method.
-func (m *MockOutputService) RenderWaste(input model.RenderWasteInput) error {
-	args := m.Called(input)
+func (m *MockOutputService) RenderWaste(input model.RenderWasteInput, pricingSvc pricing.Service) error {
+	args := m.Called(input, pricingSvc)
 	return args.Error(0)
 }
 

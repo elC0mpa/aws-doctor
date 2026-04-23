@@ -15,14 +15,20 @@ type ClientAPI interface {
 }
 
 type service struct {
-	client    ClientAPI
-	cwService cloudWatchMetricsService
+	client         ClientAPI
+	cwService      cloudWatchMetricsService
+	pricingService pricingService
 }
 
 // cloudWatchMetricsService is the narrow interface on the CloudWatch metrics service that this
 // package depends on.
 type cloudWatchMetricsService interface {
 	SageMakerVariantInvocations(ctx context.Context, endpointName, variantName string, days int) (float64, error)
+}
+
+// pricingService is a local interface for the pricing dependency.
+type pricingService interface {
+	CalculateSageMakerEndpointMonthlyCost(variants []model.SageMakerVariant) float64
 }
 
 // Service is the interface for SageMaker waste detection.

@@ -9,8 +9,8 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/ec2/types"
 	elbtypes "github.com/aws/aws-sdk-go-v2/service/elasticloadbalancingv2/types"
 	"github.com/elC0mpa/aws-doctor/model"
+	"github.com/elC0mpa/aws-doctor/service/pricing"
 	"github.com/elC0mpa/aws-doctor/utils/ec2"
-	"github.com/elC0mpa/aws-doctor/utils/pricing"
 )
 
 // PresentS3Bucket returns a ResourceRow for an S3 bucket
@@ -38,11 +38,11 @@ func PresentS3MultipartUpload(b model.S3MultipartUploadWasteInfo) ResourceRow {
 }
 
 // PresentElasticIP returns a ResourceRow for an unused Elastic IP
-func PresentElasticIP(ip types.Address) ResourceRow {
+func PresentElasticIP(ip types.Address, pricingSvc pricing.Service) ResourceRow {
 	return ResourceRow{
 		Category:      "Elastic IP",
 		Identifier:    aws.ToString(ip.PublicIp),
-		EstimatedCost: fmt.Sprintf("$%.2f", pricing.CalculateEIPMonthlyCost()),
+		EstimatedCost: fmt.Sprintf("$%.2f", pricingSvc.CalculateEIPMonthlyCost()),
 		Metric:        NAValue,
 		Age:           NAValue,
 		Details:       fmt.Sprintf("Allocation ID: %s", aws.ToString(ip.AllocationId)),
@@ -50,11 +50,11 @@ func PresentElasticIP(ip types.Address) ResourceRow {
 }
 
 // PresentEBSVolume returns a ResourceRow for an EBS volume
-func PresentEBSVolume(vol types.Volume, status string) ResourceRow {
+func PresentEBSVolume(vol types.Volume, status string, pricingSvc pricing.Service) ResourceRow {
 	return ResourceRow{
 		Category:      fmt.Sprintf("EBS Volume (%s)", status),
 		Identifier:    aws.ToString(vol.VolumeId),
-		EstimatedCost: fmt.Sprintf("$%.2f", pricing.CalculateEBSMonthlyCost(aws.ToInt32(vol.Size), vol.VolumeType)),
+		EstimatedCost: fmt.Sprintf("$%.2f", pricingSvc.CalculateEBSMonthlyCost(aws.ToInt32(vol.Size), vol.VolumeType)),
 		Metric:        fmt.Sprintf("%d GiB", aws.ToInt32(vol.Size)),
 		Age:           NAValue,
 		Details:       fmt.Sprintf("State: %s, Created on %s", vol.State, vol.CreateTime.Format(time.RFC3339)),
@@ -97,11 +97,11 @@ func PresentReservedInstance(ri model.RiExpirationInfo) ResourceRow {
 }
 
 // PresentLoadBalancer returns a ResourceRow for an unused load balancer
-func PresentLoadBalancer(lb elbtypes.LoadBalancer) ResourceRow {
+func PresentLoadBalancer(lb elbtypes.LoadBalancer, pricingSvc pricing.Service) ResourceRow {
 	return ResourceRow{
 		Category:      "Elastic Load Balancer",
 		Identifier:    aws.ToString(lb.LoadBalancerArn),
-		EstimatedCost: fmt.Sprintf("$%.2f", pricing.CalculateLoadBalancerMonthlyCost(lb.Type)),
+		EstimatedCost: fmt.Sprintf("$%.2f", pricingSvc.CalculateLoadBalancerMonthlyCost(lb.Type)),
 		Metric:        string(lb.Type),
 		Age:           NAValue,
 		Details:       fmt.Sprintf("Created on %s", lb.CreatedTime.Format(time.RFC3339)),
@@ -113,7 +113,7 @@ func PresentAMI(ami model.AMIWasteInfo) ResourceRow {
 	return ResourceRow{
 		Category:      "Unused AMI",
 		Identifier:    ami.ImageID,
-		EstimatedCost: NAValue,
+		EstimatedCost: fmt.Sprintf("$%.2f", ami.MaxPotentialSaving),
 		Metric:        NAValue,
 		Age:           fmt.Sprintf("%d", ami.DaysSinceCreate),
 		Details:       fmt.Sprintf("Created on %s", ami.CreationDate.Format(time.RFC3339)),

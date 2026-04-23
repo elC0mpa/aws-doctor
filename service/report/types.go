@@ -2,9 +2,10 @@ package report
 
 import (
 	"github.com/elC0mpa/aws-doctor/model"
+	"github.com/elC0mpa/aws-doctor/service/pricing"
 )
 
-// Type represents the type of report being generated.
+// Type represents the type of report to generate.
 type Type string
 
 const (
@@ -25,5 +26,5 @@ type Service interface {
 	GenerateTrendReport(accountID string, costInfo []model.CostInfo, services []string, reportPath string) (*string, error)
 
 	// GenerateWasteReport creates a PDF report for AWS waste detection.
-	GenerateWasteReport(input model.RenderWasteInput, reportPath string) (*string, error)
+	GenerateWasteReport(input model.RenderWasteInput, pricingSvc pricing.Service, reportPath string) (*string, error)
 }

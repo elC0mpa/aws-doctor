@@ -5,6 +5,7 @@ import (
 	"os"
 
 	"github.com/elC0mpa/aws-doctor/model"
+	"github.com/elC0mpa/aws-doctor/service/pricing"
 	"github.com/elC0mpa/aws-doctor/utils/barchart"
 	costtable "github.com/elC0mpa/aws-doctor/utils/cost_table"
 	csvoutput "github.com/elC0mpa/aws-doctor/utils/csv_output"
@@ -32,9 +33,9 @@ type Renderer interface {
 	DrawTrendChart(accountID string, costInfo []model.CostInfo)
 	OutputTrendJSON(accountID string, costInfo []model.CostInfo, services []string) error
 	OutputTrendCSV(monthlyCosts []model.CostInfo, services []string) error
-	DrawWasteTable(input model.RenderWasteInput)
-	OutputWasteJSON(input model.RenderWasteInput) error
-	OutputWasteCSV(input model.RenderWasteInput) error
+	DrawWasteTable(input model.RenderWasteInput, pricingSvc pricing.Service)
+	OutputWasteJSON(input model.RenderWasteInput, pricingSvc pricing.Service) error
+	OutputWasteCSV(input model.RenderWasteInput, pricingSvc pricing.Service) error
 	StopSpinner()
 	SetSpinnerMessage(message string)
 	PrintAlreadyLatest(version string)
@@ -74,16 +75,16 @@ func (r *realRenderer) OutputTrendCSV(monthlyCosts []model.CostInfo, services []
 	return csvoutput.OutputTrendCSV(monthlyCosts, services)
 }
 
-func (r *realRenderer) DrawWasteTable(input model.RenderWasteInput) {
-	wastetable.DrawWasteTable(input)
+func (r *realRenderer) DrawWasteTable(input model.RenderWasteInput, pricingSvc pricing.Service) {
+	wastetable.DrawWasteTable(input, pricingSvc)
 }
 
-func (r *realRenderer) OutputWasteJSON(input model.RenderWasteInput) error {
-	return jsonoutput.OutputWasteJSON(input)
+func (r *realRenderer) OutputWasteJSON(input model.RenderWasteInput, pricingSvc pricing.Service) error {
+	return jsonoutput.OutputWasteJSON(input, pricingSvc)
 }
 
-func (r *realRenderer) OutputWasteCSV(input model.RenderWasteInput) error {
-	return csvoutput.OutputWasteCSV(input)
+func (r *realRenderer) OutputWasteCSV(input model.RenderWasteInput, pricingSvc pricing.Service) error {
+	return csvoutput.OutputWasteCSV(input, pricingSvc)
 }
 
 func (r *realRenderer) StopSpinner() {
@@ -166,7 +167,7 @@ type Service interface {
 	RenderTrend(accountID string, costInfo []model.CostInfo, services []string) error
 
 	// RenderWaste outputs waste report data in the configured format
-	RenderWaste(input model.RenderWasteInput) error
+	RenderWaste(input model.RenderWasteInput, pricingSvc pricing.Service) error
 
 	// StopSpinner stops the loading spinner before rendering output
 	StopSpinner()

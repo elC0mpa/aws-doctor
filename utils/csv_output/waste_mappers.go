@@ -1,9 +1,10 @@
 package csvoutput
 
 import (
-	"github.com/aws/aws-sdk-go-v2/service/ec2/types"
+	ec2types "github.com/aws/aws-sdk-go-v2/service/ec2/types"
 	elbtypes "github.com/aws/aws-sdk-go-v2/service/elasticloadbalancingv2/types"
 	"github.com/elC0mpa/aws-doctor/model"
+	"github.com/elC0mpa/aws-doctor/service/pricing"
 	outputshared "github.com/elC0mpa/aws-doctor/utils/output_shared"
 )
 
@@ -25,25 +26,25 @@ func mapS3MultipartUploads(buckets []model.S3MultipartUploadWasteInfo) [][]strin
 	return result
 }
 
-func mapElasticIPs(elasticIPs []types.Address) [][]string {
+func mapElasticIPs(elasticIPs []ec2types.Address, pricingSvc pricing.Service) [][]string {
 	result := make([][]string, 0, len(elasticIPs))
 	for _, ip := range elasticIPs {
-		result = append(result, outputshared.PresentElasticIP(ip).ToSlice())
+		result = append(result, outputshared.PresentElasticIP(ip, pricingSvc).ToSlice())
 	}
 
 	return result
 }
 
-func mapEBSVolumes(volumes []types.Volume, status string) [][]string {
+func mapEBSVolumes(volumes []ec2types.Volume, status string, pricingSvc pricing.Service) [][]string {
 	result := make([][]string, 0, len(volumes))
 	for _, vol := range volumes {
-		result = append(result, outputshared.PresentEBSVolume(vol, status).ToSlice())
+		result = append(result, outputshared.PresentEBSVolume(vol, status, pricingSvc).ToSlice())
 	}
 
 	return result
 }
 
-func mapStoppedInstances(stoppedInstances []types.Instance) [][]string {
+func mapStoppedInstances(stoppedInstances []ec2types.Instance) [][]string {
 	result := make([][]string, 0, len(stoppedInstances))
 	for _, instance := range stoppedInstances {
 		result = append(result, outputshared.PresentStoppedInstance(instance).ToSlice())
@@ -61,10 +62,10 @@ func mapReservedInstances(ris []model.RiExpirationInfo) [][]string {
 	return result
 }
 
-func mapLoadBalancers(loadBalancers []elbtypes.LoadBalancer) [][]string {
+func mapLoadBalancers(loadBalancers []elbtypes.LoadBalancer, pricingSvc pricing.Service) [][]string {
 	result := make([][]string, 0, len(loadBalancers))
 	for _, lb := range loadBalancers {
-		result = append(result, outputshared.PresentLoadBalancer(lb).ToSlice())
+		result = append(result, outputshared.PresentLoadBalancer(lb, pricingSvc).ToSlice())
 	}
 
 	return result

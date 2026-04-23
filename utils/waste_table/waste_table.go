@@ -5,9 +5,10 @@ import (
 	"os"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
-	"github.com/aws/aws-sdk-go-v2/service/ec2/types"
+	ec2types "github.com/aws/aws-sdk-go-v2/service/ec2/types"
 	elbtypes "github.com/aws/aws-sdk-go-v2/service/elasticloadbalancingv2/types"
 	"github.com/elC0mpa/aws-doctor/model"
+	"github.com/elC0mpa/aws-doctor/service/pricing"
 	outputshared "github.com/elC0mpa/aws-doctor/utils/output_shared"
 	wastesummary "github.com/elC0mpa/aws-doctor/utils/waste_summary"
 	"github.com/jedib0t/go-pretty/v6/table"
@@ -15,7 +16,7 @@ import (
 )
 
 // DrawWasteTable renders a table containing detected AWS waste.
-func DrawWasteTable(input model.RenderWasteInput) {
+func DrawWasteTable(input model.RenderWasteInput, pricingSvc pricing.Service) {
 	drawHeader(input.AccountID)
 
 	if !hasAnyWaste(input) {
@@ -23,8 +24,8 @@ func DrawWasteTable(input model.RenderWasteInput) {
 		return
 	}
 
-	drawWasteSections(input)
-	drawSummaryTable(input)
+	drawWasteSections(input, pricingSvc)
+	drawSummaryTable(input, pricingSvc)
 }
 
 func drawHeader(accountID string) {
@@ -55,13 +56,13 @@ func hasAnyWaste(input model.RenderWasteInput) bool {
 		len(input.IdleSageMakerEndpoints) > 0
 }
 
-func drawWasteSections(input model.RenderWasteInput) {
+func drawWasteSections(input model.RenderWasteInput, pricingSvc pricing.Service) {
 	if len(input.UnusedVolumes) > 0 || len(input.StoppedVolumes) > 0 {
-		drawEBSTable(input.UnusedVolumes, input.StoppedVolumes)
+		drawEBSTable(input.UnusedVolumes, input.StoppedVolumes, pricingSvc)
 	}
 
 	if len(input.ElasticIPs) > 0 {
-		drawElasticIPTable(input.ElasticIPs)
+		drawElasticIPTable(input.ElasticIPs, pricingSvc)
 	}
 
 	if len(input.StoppedInstances) > 0 || len(input.Ris) > 0 {
@@ -69,7 +70,7 @@ func drawWasteSections(input model.RenderWasteInput) {
 	}
 
 	if len(input.LoadBalancers) > 0 || len(input.IdleLoadBalancers) > 0 {
-		drawLoadBalancerTable(input.LoadBalancers, input.IdleLoadBalancers)
+		drawLoadBalancerTable(input.LoadBalancers, input.IdleLoadBalancers, pricingSvc)
 	}
 
 	if len(input.S3Buckets) > 0 || len(input.S3MultipartUploads) > 0 {
@@ -109,7 +110,7 @@ func drawWasteSections(input model.RenderWasteInput) {
 	}
 }
 
-func drawEBSTable(unusedEBSVolumeInfo []types.Volume, attachedToStoppedInstancesEBSVolumeInfo []types.Volume) {
+func drawEBSTable(unusedEBSVolumeInfo []ec2types.Volume, attachedToStoppedInstancesEBSVolumeInfo []ec2types.Volume, pricingSvc pricing.Service) {
 	t := table.NewWriter()
 	t.SetOutputMirror(os.Stdout)
 	t.SetStyle(table.StyleRounded)
@@ -124,7 +125,7 @@ func drawEBSTable(unusedEBSVolumeInfo []types.Volume, attachedToStoppedInstances
 
 	if len(unusedEBSVolumeInfo) > 0 {
 		statusAvailable := "Available (Unattached)"
-		rows := populateEBSRows(unusedEBSVolumeInfo, "unattached")
+		rows := populateEBSRows(unusedEBSVolumeInfo, "unattached", pricingSvc)
 
 		halfRow := len(rows) / 2
 		rows[halfRow][0] = text.FgHiRed.Sprint(statusAvailable)
@@ -138,7 +139,7 @@ func drawEBSTable(unusedEBSVolumeInfo []types.Volume, attachedToStoppedInstances
 
 	if len(attachedToStoppedInstancesEBSVolumeInfo) > 0 {
 		statusStopped := "Attached to Stopped Instance"
-		rows := populateEBSRows(attachedToStoppedInstancesEBSVolumeInfo, "stopped")
+		rows := populateEBSRows(attachedToStoppedInstancesEBSVolumeInfo, "stopped", pricingSvc)
 
 		halfRow := len(rows) / 2
 		rows[halfRow][0] = text.FgHiRed.Sprint(statusStopped)
@@ -152,7 +153,7 @@ func drawEBSTable(unusedEBSVolumeInfo []types.Volume, attachedToStoppedInstances
 	}
 }
 
-func drawEC2Table(instances []types.Instance, ris []model.RiExpirationInfo) {
+func drawEC2Table(instances []ec2types.Instance, ris []model.RiExpirationInfo) {
 	t := table.NewWriter()
 	t.SetOutputMirror(os.Stdout)
 	t.SetStyle(table.StyleRounded)
@@ -224,7 +225,7 @@ func drawEC2Table(instances []types.Instance, ris []model.RiExpirationInfo) {
 	fmt.Println()
 }
 
-func drawElasticIPTable(elasticIPInfo []types.Address) {
+func drawElasticIPTable(elasticIPInfo []ec2types.Address, pricingSvc pricing.Service) {
 	t := table.NewWriter()
 	t.SetOutputMirror(os.Stdout)
 	t.SetStyle(table.StyleRounded)
@@ -233,7 +234,7 @@ func drawElasticIPTable(elasticIPInfo []types.Address) {
 	t.AppendHeader(table.Row{"Status", "IP Address", "Allocation ID", "Est. Cost/Mo"})
 
 	statusUnused := "Unassociated"
-	rows := populateElasticIPRows(elasticIPInfo)
+	rows := populateElasticIPRows(elasticIPInfo, pricingSvc)
 
 	if len(rows) > 0 {
 		halfRow := len(rows) / 2
@@ -245,29 +246,29 @@ func drawElasticIPTable(elasticIPInfo []types.Address) {
 	fmt.Println()
 }
 
-func populateEBSRows(volumes []types.Volume, status string) []table.Row {
+func populateEBSRows(volumes []ec2types.Volume, status string, pricingSvc pricing.Service) []table.Row {
 	rows := make([]table.Row, 0, len(volumes))
 
 	for _, vol := range volumes {
-		p := outputshared.PresentEBSVolume(vol, status)
+		p := outputshared.PresentEBSVolume(vol, status, pricingSvc)
 		rows = append(rows, table.Row{"", p.Identifier, p.Metric, p.EstimatedCost})
 	}
 
 	return rows
 }
 
-func populateElasticIPRows(ips []types.Address) []table.Row {
+func populateElasticIPRows(ips []ec2types.Address, pricingSvc pricing.Service) []table.Row {
 	rows := make([]table.Row, 0, len(ips))
 
 	for _, ip := range ips {
-		p := outputshared.PresentElasticIP(ip)
+		p := outputshared.PresentElasticIP(ip, pricingSvc)
 		rows = append(rows, table.Row{"", p.Identifier, aws.ToString(ip.AllocationId), p.EstimatedCost})
 	}
 
 	return rows
 }
 
-func populateInstanceRows(instances []types.Instance) []table.Row {
+func populateInstanceRows(instances []ec2types.Instance) []table.Row {
 	rows := make([]table.Row, 0, len(instances))
 
 	for _, instance := range instances {
@@ -304,7 +305,7 @@ func populateRiRows(ris []model.RiExpirationInfo) []table.Row {
 	return rows
 }
 
-func drawLoadBalancerTable(loadBalancers []elbtypes.LoadBalancer, idleLoadBalancers []model.ELBIdleInfo) {
+func drawLoadBalancerTable(loadBalancers []elbtypes.LoadBalancer, idleLoadBalancers []model.ELBIdleInfo, pricingSvc pricing.Service) {
 	t := table.NewWriter()
 	t.SetOutputMirror(os.Stdout)
 	t.SetStyle(table.StyleRounded)
@@ -320,7 +321,7 @@ func drawLoadBalancerTable(loadBalancers []elbtypes.LoadBalancer, idleLoadBalanc
 
 	if len(loadBalancers) > 0 {
 		statusUnused := "No Target Groups"
-		rows := populateLoadBalancerRows(loadBalancers)
+		rows := populateLoadBalancerRows(loadBalancers, pricingSvc)
 
 		if len(rows) > 0 {
 			halfRow := len(rows) / 2
@@ -363,11 +364,11 @@ func populateIdleLoadBalancerRows(idleLBs []model.ELBIdleInfo) []table.Row {
 	return rows
 }
 
-func populateLoadBalancerRows(loadBalancers []elbtypes.LoadBalancer) []table.Row {
+func populateLoadBalancerRows(loadBalancers []elbtypes.LoadBalancer, pricingSvc pricing.Service) []table.Row {
 	rows := make([]table.Row, 0, len(loadBalancers))
 
 	for _, lb := range loadBalancers {
-		p := outputshared.PresentLoadBalancer(lb)
+		p := outputshared.PresentLoadBalancer(lb, pricingSvc)
 		// Details: "Created on 2026-03-21T08:00:00Z"
 		// We want the name which is not in ResourceRow, oh wait, Identifier is LoadBalancerArn
 		// In DrawLoadBalancerTable it used lb.LoadBalancerName
@@ -689,8 +690,8 @@ func populateCloudWatchLogsRows(logGroups []model.CloudWatchLogsWasteInfo) []tab
 	return rows
 }
 
-func drawSummaryTable(input model.RenderWasteInput) {
-	categories, totalCost := wastesummary.Compute(input)
+func drawSummaryTable(input model.RenderWasteInput, pricingSvc pricing.Service) {
+	categories, totalCost := wastesummary.Compute(input, pricingSvc)
 
 	if len(categories) == 0 {
 		return

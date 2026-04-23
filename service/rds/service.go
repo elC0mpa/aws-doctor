@@ -10,19 +10,19 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/rds"
 	"github.com/elC0mpa/aws-doctor/model"
-	"github.com/elC0mpa/aws-doctor/utils/pricing"
 	"golang.org/x/sync/errgroup"
 )
 
 const idleDaysThreshold = 7
 
 // NewService creates a new RDS service.
-func NewService(awsconfig aws.Config, cwService cloudwatchMetricsService) Service {
+func NewService(awsconfig aws.Config, cwService cloudwatchMetricsService, pricingSvc pricingService) Service {
 	client := rds.NewFromConfig(awsconfig)
 
 	return &service{
-		client:    client,
-		cwService: cwService,
+		client:         client,
+		cwService:      cwService,
+		pricingService: pricingSvc,
 	}
 }
 
@@ -87,7 +87,7 @@ func (s *service) getInstanceWaste(ctx context.Context) ([]model.RDSInstanceWast
 					Status:               status,
 					MultiAZ:              multiAZ,
 					AllocatedStorage:     allocatedGB,
-					EstimatedMonthlyCost: pricing.CalculateRDSInstanceMonthlyCost(allocatedGB, multiAZ),
+					EstimatedMonthlyCost: s.pricingService.CalculateRDSInstanceMonthlyCost(allocatedGB, multiAZ),
 				})
 			}
 
@@ -105,7 +105,7 @@ func (s *service) getInstanceWaste(ctx context.Context) ([]model.RDSInstanceWast
 						MultiAZ:              multiAZ,
 						AllocatedStorage:     allocatedGB,
 						DaysChecked:          idleDaysThreshold,
-						EstimatedMonthlyCost: pricing.CalculateRDSIdleInstanceMonthlyCost(instanceClass, allocatedGB, multiAZ),
+						EstimatedMonthlyCost: s.pricingService.CalculateRDSIdleInstanceMonthlyCost(instanceClass, allocatedGB, multiAZ),
 					})
 				}
 			}
@@ -143,7 +143,7 @@ func (s *service) getOldManualSnapshots(ctx context.Context) ([]model.RDSSnapsho
 					AllocatedStorage:     allocatedGB,
 					SnapshotCreateTime:   *snap.SnapshotCreateTime,
 					DaysSinceCreate:      daysSince,
-					EstimatedMonthlyCost: pricing.CalculateRDSSnapshotMonthlyCost(allocatedGB),
+					EstimatedMonthlyCost: s.pricingService.CalculateRDSSnapshotMonthlyCost(allocatedGB),
 				})
 			}
 		}

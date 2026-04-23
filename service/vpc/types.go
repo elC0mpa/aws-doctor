@@ -13,13 +13,19 @@ type ClientAPI interface {
 }
 
 type service struct {
-	client    ClientAPI
-	cwService cloudwatchMetricsService
+	client         ClientAPI
+	cwService      cloudwatchMetricsService
+	pricingService pricingService
 }
 
 // cloudwatchMetricsService is a local interface for the CloudWatch metrics dependency.
 type cloudwatchMetricsService interface {
 	NATGatewayBytesOut(ctx context.Context, natGatewayID string, days int) (float64, error)
+}
+
+// pricingService is a local interface for the pricing dependency.
+type pricingService interface {
+	CalculateNATGatewayMonthlyCost() float64
 }
 
 // Service is the interface for AWS VPC service.
