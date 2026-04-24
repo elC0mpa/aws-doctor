@@ -977,6 +977,42 @@ func TestOrchestrate_VersionWorkflow_NoVersionCheck(t *testing.T) {
 	m.update.AssertNotCalled(t, "CheckForUpdate", mock.Anything)
 }
 
-// Note: handleCostError tests would require deep mocking of cost service
-// to trigger ErrFirstDayOfMonth. The error path is tested indirectly through
-// integration tests that exercise the cost service behavior.
+func TestOrchestrate_UpdateWorkflow_RateLimit(t *testing.T) {
+	svc, m := newTestServiceWithMocks(model.VersionInfo{Version: "v1.0.0"})
+
+	m.output.On("StopSpinner").Return()
+	m.update.On("Update").Return(model.ErrRateLimit)
+	m.output.On("PrintRateLimitError").Return()
+
+	err := svc.Orchestrate(model.Flags{Update: true})
+
+	assert.Error(t, err)
+	m.output.AssertExpectations(t)
+}
+
+func TestOrchestrate_UpdateWorkflow_Error(t *testing.T) {
+	svc, m := newTestServiceWithMocks(model.VersionInfo{Version: "v1.0.0"})
+
+	m.output.On("StopSpinner").Return()
+	m.update.On("Update").Return(errors.New("generic error"))
+	m.output.On("PrintUpdateError", mock.Anything).Return()
+
+	err := svc.Orchestrate(model.Flags{Update: true})
+
+	assert.Error(t, err)
+	m.output.AssertExpectations(t)
+}
+
+func TestOrchestrate_HandleCostError_FirstDayOfMonth(t *testing.T) {
+	svc, m := newTestServiceWithMocks(model.VersionInfo{Version: "v1.0.0"})
+
+	m.cost.On("GetCurrentMonthCostsByService", mock.Anything).Return((*model.CostInfo)(nil), model.ErrFirstDayOfMonth)
+	m.output.On("StopSpinner").Return()
+	m.output.On("PrintFirstDayOfMonthError").Return()
+	m.update.On("CheckForUpdate", mock.Anything).Return(nil, nil).Maybe()
+
+	err := svc.Orchestrate(model.Flags{})
+
+	assert.NoError(t, err)
+	m.output.AssertExpectations(t)
+}

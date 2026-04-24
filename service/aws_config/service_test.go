@@ -83,6 +83,41 @@ func TestGetAWSCfg_WithMFAProfile(t *testing.T) {
 		_, _ = s.loadConfigWithManualMFA(context.Background(), "", "any")
 	})
 
+	t.Run("loadConfigWithManualMFA missing role_arn", func(t *testing.T) {
+		loadSharedConfigProfile = func(ctx context.Context, profileName string, optFns ...func(*config.LoadSharedConfigOptions)) (config.SharedConfig, error) {
+			return config.SharedConfig{
+				RoleARN:   "",
+				MFASerial: "arn:aws:iam::123456789012:mfa/test-user",
+			}, nil
+		}
+
+		_, err := s.loadConfigWithManualMFA(context.Background(), "", "any")
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "missing role_arn or mfa_serial")
+	})
+
+	t.Run("loadConfigWithManualMFA with shared config region", func(t *testing.T) {
+		loadSharedConfigProfile = func(ctx context.Context, profileName string, optFns ...func(*config.LoadSharedConfigOptions)) (config.SharedConfig, error) {
+			return config.SharedConfig{
+				RoleARN:   "arn:aws:iam::123456789012:role/test-role",
+				MFASerial: "arn:aws:iam::123456789012:mfa/test-user",
+				Region:    "us-west-1",
+			}, nil
+		}
+
+		_, _ = s.loadConfigWithManualMFA(context.Background(), "", "any")
+	})
+
+	t.Run("loadConfigWithManualMFA loadSharedConfigProfile error", func(t *testing.T) {
+		loadSharedConfigProfile = func(ctx context.Context, profileName string, optFns ...func(*config.LoadSharedConfigOptions)) (config.SharedConfig, error) {
+			return config.SharedConfig{}, errors.New("shared config error")
+		}
+
+		_, err := s.loadConfigWithManualMFA(context.Background(), "", "any")
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "failed to load shared config profile")
+	})
+
 	t.Run("loadConfigWithManualMFA with cancelled context", func(t *testing.T) {
 		ctx, cancel := context.WithCancel(context.Background())
 		cancel()

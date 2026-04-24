@@ -17,6 +17,12 @@ import (
 
 const costsAggregation = "UnblendedCost"
 
+func TestNewService(t *testing.T) {
+	cfg := aws.Config{}
+	svc := NewService(cfg)
+	assert.NotNil(t, svc)
+}
+
 func TestGetFirstDayOfMonth(t *testing.T) {
 	s := &service{}
 
@@ -535,6 +541,26 @@ func TestGetLastSixMonthsCosts_WithServices(t *testing.T) {
 	mockClient.AssertExpectations(t)
 }
 
+func TestGetMonthCostsByService_EmptyResults(t *testing.T) {
+	mockClient := new(awsinterfaces.MockCostExplorerClient)
+	s := &service{client: mockClient}
+
+	if time.Now().Day() == 1 {
+		t.Skip("Skipping test on 1st day of month")
+	}
+
+	mockClient.On("GetCostAndUsage", mock.Anything, mock.Anything, mock.Anything).Return(&costexplorer.GetCostAndUsageOutput{
+		ResultsByTime: []types.ResultByTime{},
+	}, nil)
+
+	costInfo, err := s.GetMonthCostsByService(context.Background(), time.Now())
+
+	assert.NoError(t, err)
+	assert.NotNil(t, costInfo)
+	assert.Empty(t, costInfo.CostGroup)
+	mockClient.AssertExpectations(t)
+}
+
 func TestGetMonthCostsByService_Error(t *testing.T) {
 	mockClient := new(awsinterfaces.MockCostExplorerClient)
 	s := &service{client: mockClient}
@@ -552,7 +578,7 @@ func TestGetMonthCostsByService_Error(t *testing.T) {
 	mockClient.AssertExpectations(t)
 }
 
-func TestGetMonthTotalCosts_Errors(t *testing.T) {
+func TestGetLastSixMonthsCosts_Error(t *testing.T) {
 	mockClient := new(awsinterfaces.MockCostExplorerClient)
 	s := &service{client: mockClient}
 	date := time.Date(2024, 2, 15, 0, 0, 0, 0, time.UTC)

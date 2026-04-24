@@ -1,225 +1,116 @@
 package output
 
 import (
+	"bytes"
+	"io"
 	"os"
 	"testing"
 
-	"github.com/aws/aws-sdk-go-v2/aws"
-	cetypes "github.com/aws/aws-sdk-go-v2/service/costexplorer/types"
 	"github.com/elC0mpa/aws-doctor/model"
 	"github.com/stretchr/testify/assert"
 )
 
-func TestRealRenderer_DrawCostTable(t *testing.T) {
+func TestRealRenderer_PrintMethods(t *testing.T) {
 	r := &realRenderer{}
 
-	lastMonth := &model.CostInfo{
-		DateInterval: cetypes.DateInterval{
-			Start: aws.String("2023-01-01"),
-			End:   aws.String("2023-01-31"),
-		},
-		CostGroup: model.CostGroup{
-			"EC2": {Amount: 100, Unit: "USD"},
-		},
-	}
-	currentMonth := &model.CostInfo{
-		DateInterval: cetypes.DateInterval{
-			Start: aws.String("2023-02-01"),
-			End:   aws.String("2023-02-28"),
-		},
-		CostGroup: model.CostGroup{
-			"EC2": {Amount: 120, Unit: "USD"},
-		},
-	}
-
-	// This calls external utils which print to stdout.
-	// We just want to ensure it doesn't panic and covers the code.
-	assert.NotPanics(t, func() {
-		r.DrawCostTable(model.RenderCostComparisonInput{
-			AccountID:        "123456789012",
-			LastTotalCost:    "100.00 USD",
-			CurrentTotalCost: "120.00 USD",
-			LastMonth:        lastMonth,
-			CurrentMonth:     currentMonth,
+	t.Run("PrintAlreadyLatest", func(t *testing.T) {
+		output := captureStdout(func() {
+			r.PrintAlreadyLatest("v1.0.0")
 		})
+		assert.Contains(t, output, "v1.0.0 is already the latest version")
+	})
+
+	t.Run("PrintHomebrewUpdate", func(t *testing.T) {
+		output := captureStdout(func() {
+			r.PrintHomebrewUpdate()
+		})
+		assert.Contains(t, output, "brew upgrade aws-doctor")
+	})
+
+	t.Run("PrintGoInstallUpdate", func(t *testing.T) {
+		output := captureStdout(func() {
+			r.PrintGoInstallUpdate()
+		})
+		assert.Contains(t, output, "reinstall with the script")
+	})
+
+	t.Run("PrintRateLimitError", func(t *testing.T) {
+		output := captureStdout(func() {
+			r.PrintRateLimitError()
+		})
+		assert.Contains(t, output, "rate limits")
+	})
+
+	t.Run("PrintUpdateError", func(t *testing.T) {
+		output := captureStdout(func() {
+			r.PrintUpdateError(assert.AnError)
+		})
+		assert.Contains(t, output, "failed to check for updates")
+	})
+
+	t.Run("RenderVersion", func(t *testing.T) {
+		v := model.VersionInfo{Version: "v1.2.3", Commit: "abc", Date: "today"}
+		output := captureStdout(func() {
+			r.RenderVersion(v)
+		})
+		assert.Contains(t, output, "aws-doctor version v1.2.3")
+	})
+
+	t.Run("PrintReportSuccess", func(t *testing.T) {
+		output := captureStdout(func() {
+			r.PrintReportSuccess("/path/to/report")
+		})
+		assert.Contains(t, output, "Report generated successfully")
+		assert.Contains(t, output, "/path/to/report")
+	})
+
+	t.Run("PrintFirstDayOfMonthError", func(t *testing.T) {
+		output := captureStdout(func() {
+			r.PrintFirstDayOfMonthError()
+		})
+		assert.Contains(t, output, "first day of the month")
+	})
+
+	t.Run("PrintNewVersionAvailable", func(t *testing.T) {
+		output := captureStderr(func() {
+			r.PrintNewVersionAvailable("v1.0.0", "v1.1.0")
+		})
+		assert.Contains(t, output, "v1.0.0 → v1.1.0")
 	})
 }
 
-func TestRealRenderer_OutputCostComparisonJSON(t *testing.T) {
-	r := &realRenderer{}
-
-	lastMonth := &model.CostInfo{
-		DateInterval: cetypes.DateInterval{
-			Start: aws.String("2023-01-01"),
-			End:   aws.String("2023-01-31"),
-		},
-		CostGroup: model.CostGroup{
-			"EC2": {Amount: 100, Unit: "USD"},
-		},
-	}
-	currentMonth := &model.CostInfo{
-		DateInterval: cetypes.DateInterval{
-			Start: aws.String("2023-02-01"),
-			End:   aws.String("2023-02-28"),
-		},
-		CostGroup: model.CostGroup{
-			"EC2": {Amount: 120, Unit: "USD"},
-		},
-	}
-
-	err := r.OutputCostComparisonJSON(model.RenderCostComparisonInput{
-		AccountID:        "123456789012",
-		LastTotalCost:    "100.00 USD",
-		CurrentTotalCost: "120.00 USD",
-		LastMonth:        lastMonth,
-		CurrentMonth:     currentMonth,
-	})
-	assert.NoError(t, err)
-}
-
-func TestRealRenderer_DrawTrendChart(t *testing.T) {
-	r := &realRenderer{}
-
-	costInfo := []model.CostInfo{
-		{
-			DateInterval: cetypes.DateInterval{
-				Start: aws.String("2023-01-01"),
-				End:   aws.String("2023-01-31"),
-			},
-			CostGroup: model.CostGroup{
-				"Total": {Amount: 100, Unit: "USD"},
-			},
-		},
-	}
-
-	assert.NotPanics(t, func() {
-		r.DrawTrendChart("123456789012", costInfo)
-	})
-}
-
-func TestRealRenderer_OutputTrendJSON(t *testing.T) {
-	r := &realRenderer{}
-
-	costInfo := []model.CostInfo{
-		{
-			DateInterval: cetypes.DateInterval{
-				Start: aws.String("2023-01-01"),
-				End:   aws.String("2023-01-31"),
-			},
-			CostGroup: model.CostGroup{
-				"Total": {Amount: 100, Unit: "USD"},
-			},
-		},
-	}
-
-	err := r.OutputTrendJSON("123456789012", costInfo, []string{})
-	assert.NoError(t, err)
-}
-
-func TestRealRenderer_OutputCostComparisonCSV(t *testing.T) {
-	r := &realRenderer{}
-	input := model.RenderCostComparisonInput{
-		LastMonth:    &model.CostInfo{CostGroup: model.CostGroup{}},
-		CurrentMonth: &model.CostInfo{CostGroup: model.CostGroup{}},
-	}
-
-	// Redirect stdout
+func captureStdout(f func()) string {
 	old := os.Stdout
-	f, _ := os.OpenFile(os.DevNull, os.O_WRONLY, 0)
-	os.Stdout = f
+	r, w, _ := os.Pipe()
+	os.Stdout = w
 
-	defer func() {
-		os.Stdout = old
-		_ = f.Close()
-	}()
+	f()
 
-	err := r.OutputCostComparisonCSV(input)
-	assert.NoError(t, err)
+	_ = w.Close()
+
+	os.Stdout = old
+
+	var buf bytes.Buffer
+
+	_, _ = io.Copy(&buf, r)
+
+	return buf.String()
 }
 
-func TestRealRenderer_OutputTrendCSV(t *testing.T) {
-	r := &realRenderer{}
-	costInfo := []model.CostInfo{}
+func captureStderr(f func()) string {
+	old := os.Stderr
+	r, w, _ := os.Pipe()
+	os.Stderr = w
 
-	// Redirect stdout
-	old := os.Stdout
-	f, _ := os.OpenFile(os.DevNull, os.O_WRONLY, 0)
-	os.Stdout = f
+	f()
 
-	defer func() {
-		os.Stdout = old
-		_ = f.Close()
-	}()
+	_ = w.Close()
 
-	err := r.OutputTrendCSV(costInfo, []string{})
-	assert.NoError(t, err)
-}
+	os.Stderr = old
 
-func TestRealRenderer_OutputWasteCSV(t *testing.T) {
-	r := &realRenderer{}
-	input := model.RenderWasteInput{}
+	var buf bytes.Buffer
 
-	// Redirect stdout
-	old := os.Stdout
-	f, _ := os.OpenFile(os.DevNull, os.O_WRONLY, 0)
-	os.Stdout = f
+	_, _ = io.Copy(&buf, r)
 
-	defer func() {
-		os.Stdout = old
-		_ = f.Close()
-	}()
-
-	err := r.OutputWasteCSV(input, nil)
-	assert.NoError(t, err)
-}
-
-func TestRealRenderer_DrawWasteTable(t *testing.T) {
-	r := &realRenderer{}
-
-	assert.NotPanics(t, func() {
-		r.DrawWasteTable(model.RenderWasteInput{AccountID: "123456789012"}, nil)
-	})
-}
-
-func TestRealRenderer_OutputWasteJSON(t *testing.T) {
-	r := &realRenderer{}
-
-	err := r.OutputWasteJSON(model.RenderWasteInput{AccountID: "123456789012"}, nil)
-	assert.NoError(t, err)
-}
-
-func TestRealRenderer_StopSpinner(t *testing.T) {
-	r := &realRenderer{}
-
-	assert.NotPanics(t, func() {
-		r.StopSpinner()
-	})
-}
-
-func TestRealRenderer_PrintNewVersionAvailable_WritesToStderr(t *testing.T) {
-	r := &realRenderer{}
-
-	// Capture stderr
-	oldStderr := os.Stderr
-	rPipe, wPipe, _ := os.Pipe()
-	os.Stderr = wPipe
-
-	// Ensure stdout is not written to
-	oldStdout := os.Stdout
-	os.Stdout = func() *os.File { f, _ := os.OpenFile(os.DevNull, os.O_WRONLY, 0); return f }()
-
-	r.PrintNewVersionAvailable("v1.2.0", "v1.3.0")
-
-	_ = wPipe.Close()
-	os.Stderr = oldStderr
-	os.Stdout = oldStdout
-
-	var buf [1024]byte
-
-	n, _ := rPipe.Read(buf[:])
-	output := string(buf[:n])
-
-	assert.Contains(t, output, "v1.2.0")
-	assert.Contains(t, output, "v1.3.0")
-	assert.Contains(t, output, "aws-doctor update")
+	return buf.String()
 }

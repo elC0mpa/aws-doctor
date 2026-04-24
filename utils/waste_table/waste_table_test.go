@@ -807,6 +807,74 @@ func TestDrawRDSTable(t *testing.T) {
 	}
 }
 
+func TestDrawNatGatewayTable(t *testing.T) {
+	gateways := []model.NATGatewayWasteInfo{
+		{NATGatewayID: "nat-123", EstimatedMonthlyCost: 32.85},
+	}
+
+	output := captureWasteOutput(func() {
+		drawNatGatewayTable(gateways)
+	})
+
+	if !strings.Contains(output, "NAT Gateway Waste") {
+		t.Error("drawNatGatewayTable() missing title")
+	}
+
+	if !strings.Contains(output, "nat-123") {
+		t.Error("drawNatGatewayTable() missing gateway ID")
+	}
+}
+
+func TestDrawLambdaTable(t *testing.T) {
+	functions := []model.LambdaOverProvisionedInfo{
+		{FunctionName: "test-fn"},
+	}
+
+	output := captureWasteOutput(func() {
+		drawLambdaTable(functions)
+	})
+
+	if !strings.Contains(output, "Lambda Over-Provisioned Memory") {
+		t.Error("drawLambdaTable() missing title")
+	}
+
+	if !strings.Contains(output, "test-fn") {
+		t.Error("drawLambdaTable() missing function name")
+	}
+}
+
+func TestDrawSageMakerTable(t *testing.T) {
+	endpoints := []model.IdleSageMakerEndpointInfo{
+		{EndpointName: "test-ep", EstimatedMonthlyCost: 46.72},
+	}
+
+	output := captureWasteOutput(func() {
+		drawSageMakerTable(endpoints)
+	})
+
+	if !strings.Contains(output, "SageMaker Endpoints (Idle)") {
+		t.Error("drawSageMakerTable() missing title")
+	}
+
+	if !strings.Contains(output, "test-ep") {
+		t.Error("drawSageMakerTable() missing endpoint name")
+	}
+}
+
+func TestDrawLoadBalancerTable_Idle(t *testing.T) {
+	idle := []model.ELBIdleInfo{
+		{ARN: "arn:123", Name: "idle-lb", EstimatedMonthlyCost: 16.43},
+	}
+
+	output := captureWasteOutput(func() {
+		drawLoadBalancerTable(nil, idle, services.NewMockPricingService())
+	})
+
+	if !strings.Contains(output, "idle-lb") {
+		t.Error("drawLoadBalancerTable() with idle LBs missing LB name")
+	}
+}
+
 // TestHasAnyWaste tests the hasAnyWaste function that checks if any waste data exists
 func TestHasAnyWaste(t *testing.T) {
 	tests := []struct {

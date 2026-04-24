@@ -117,6 +117,11 @@ func (s *service) updateWorkflow() error {
 		return nil
 	}
 
+	if errors.Is(err, model.ErrRateLimit) {
+		s.outputService.PrintRateLimitError()
+		return err
+	}
+
 	var rateLimitErr *github.RateLimitError
 	if errors.As(err, &rateLimitErr) {
 		s.outputService.PrintRateLimitError()
