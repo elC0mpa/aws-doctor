@@ -121,6 +121,33 @@ func TestPresentElasticIP(t *testing.T) {
 	m.AssertExpectations(t)
 }
 
+func TestPresentStoppedInstance(t *testing.T) {
+	inst := types.Instance{
+		InstanceId:   aws.String("i-123"),
+		InstanceType: types.InstanceTypeT3Micro,
+		LaunchTime:   aws.Time(time.Now().AddDate(0, 0, -10)),
+	}
+
+	p := PresentStoppedInstance(inst)
+
+	if p.Identifier != "i-123" {
+		t.Errorf("Identifier = %v, want 'i-123'", p.Identifier)
+	}
+}
+
+func TestPresentReservedInstance(t *testing.T) {
+	ri := model.RiExpirationInfo{
+		ReservedInstanceID: "ri-123",
+		DaysUntilExpiry:    15,
+	}
+
+	p := PresentReservedInstance(ri)
+
+	if p.Identifier != "ri-123" {
+		t.Errorf("Identifier = %v, want 'ri-123'", p.Identifier)
+	}
+}
+
 func TestPresentLoadBalancer(t *testing.T) {
 	lb := elbtypes.LoadBalancer{
 		LoadBalancerArn:  aws.String("arn:aws:elb:us-east-1:123:lb/app/my-lb/123"),

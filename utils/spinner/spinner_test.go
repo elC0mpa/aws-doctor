@@ -27,6 +27,17 @@ func TestSpinnerSequence(_ *testing.T) {
 	StopSpinner()
 }
 
+func TestSetMessage(t *testing.T) {
+	// Should not panic even if spinner is not started
+	SetMessage("Test message")
+
+	StartSpinner()
+
+	defer StopSpinner()
+
+	SetMessage("Another message")
+}
+
 func TestStartSpinner_InitializesLoader(t *testing.T) {
 	// After calling StartSpinner, the global loader should be non-nil
 	StartSpinner()
