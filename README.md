@@ -26,15 +26,18 @@ A terminal-based tool that acts as a comprehensive health check for your AWS acc
 ## 👀 Quick glance
 
 ### ⚖️ Comparative Cost Analytics
+
 ![Comparative Cost Analytics](https://github.com/elC0mpa/aws-doctor/blob/main/docs/static/images/demo/basic.gif?raw=true)
 
 ### 📈 6-Month Trend Analysis
+
 ![6-Month Trend Analysis](https://github.com/elC0mpa/aws-doctor/blob/main/docs/static/images/demo/trend.gif?raw=true)
 
 ### 🧟 Waste Detection
+
 ![Waste Detection](https://github.com/elC0mpa/aws-doctor/blob/main/docs/static/images/demo/waste.gif?raw=true)
 
-*Supports selective scanning: `aws-doctor waste ec2 s3 cloudwatch rds vpc lambda sagemaker elb`*
+_Supports selective scanning: `aws-doctor waste ec2 s3 cloudwatch rds vpc lambda sagemaker elb`_
 
 ## 📄 Professional Reporting
 
@@ -44,11 +47,13 @@ A terminal-based tool that acts as a comprehensive health check for your AWS acc
 > **View PDF reporting examples and details at [awsdoctor.compacompila.com/docs/reporting/](https://awsdoctor.compacompila.com/docs/reporting/)**
 
 ### Generate a Cost Comparison Report
+
 ```bash
 aws-doctor report cost
 ```
 
 ### Generate a Waste Analysis Report
+
 ```bash
 # Full waste report
 aws-doctor report waste
@@ -58,6 +63,7 @@ aws-doctor report waste ec2 s3 lambda sagemaker
 ```
 
 ### Generate a Trend Report
+
 ```bash
 # Full trend report (all services)
 aws-doctor report trend
@@ -87,6 +93,12 @@ brew install elC0mpa/homebrew-tap/aws-doctor
 curl -sSfL https://raw.githubusercontent.com/elC0mpa/aws-doctor/main/install.sh | sh
 ```
 
+**Windows (PowerShell):**
+
+```powershell
+irm https://raw.githubusercontent.com/elC0mpa/aws-doctor/main/install.ps1 | iex
+```
+
 **Using Go:**
 
 ```bash
@@ -106,9 +118,9 @@ go install github.com/elC0mpa/aws-doctor@latest
 
 ## 💡 Motivation
 
-As a Cloud Architect, I often need to check AWS costs and billing information. While the AWS Console provides raw data, it lacks the immediate context I need to answer the question: *_"Are we spending efficiently?"_*
+As a Cloud Architect, I often need to check AWS costs and billing information. While the AWS Console provides raw data, it lacks the immediate context I need to answer the question: _*"Are we spending efficiently?"*_
 
-I created ***\*aws-doctor\**** to fill that gap. It doesn't just show you the bill; it acts as a diagnostic tool that helps you understand ***\*where\**** the money is going and ***\*what\**** can be cleaned up. It automates the routine checks I used to perform manually, serving as a free, open-source alternative to the paid recommendations found in AWS Trusted Advisor.
+I created **\*\*aws-doctor\*\*** to fill that gap. It doesn't just show you the bill; it acts as a diagnostic tool that helps you understand **\*\*where\*\*** the money is going and **\*\*what\*\*** can be cleaned up. It automates the routine checks I used to perform manually, serving as a free, open-source alternative to the paid recommendations found in AWS Trusted Advisor.
 
 ## 👥 Community
 

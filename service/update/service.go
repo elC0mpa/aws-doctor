@@ -6,6 +6,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
 	"strings"
 
 	"github.com/elC0mpa/aws-doctor/model"
@@ -73,9 +74,26 @@ func (s *service) Update() error {
 		return model.ErrGoInstall
 	}
 
-	// Proceed with update
-	if err := s.runner.Run("sh", "-c", "curl -sSL https://raw.githubusercontent.com/elC0mpa/aws-doctor/main/install.sh | sh"); err != nil {
-		return fmt.Errorf("failed to run update script: %w", err)
+	// TODO: Remove once Windows installation is thoroughly tested.
+	// Allow override via AWS_DOCTOR_UPDATE_SCRIPT_URL for local development without merging.
+	updateURL := os.Getenv("AWS_DOCTOR_UPDATE_SCRIPT_URL")
+	if updateURL == "" {
+		if runtime.GOOS == "windows" {
+			updateURL = "https://raw.githubusercontent.com/elC0mpa/aws-doctor/main/install.ps1"
+		} else {
+			updateURL = "https://raw.githubusercontent.com/elC0mpa/aws-doctor/main/install.sh"
+		}
+	}
+
+	if runtime.GOOS == "windows" {
+		if err := s.runner.Run("powershell", "-NoProfile", "-ExecutionPolicy", "Bypass", "-Command",
+			fmt.Sprintf("irm %s | iex", updateURL)); err != nil {
+			return fmt.Errorf("failed to run update script: %w", err)
+		}
+	} else {
+		if err := s.runner.Run("sh", "-c", fmt.Sprintf("curl -sSL %s | sh", updateURL)); err != nil {
+			return fmt.Errorf("failed to run update script: %w", err)
+		}
 	}
 
 	return nil
