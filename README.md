@@ -87,6 +87,12 @@ brew install elC0mpa/homebrew-tap/aws-doctor
 curl -sSfL https://raw.githubusercontent.com/elC0mpa/aws-doctor/main/install.sh | sh
 ```
 
+**Windows (PowerShell):**
+
+```powershell
+irm https://raw.githubusercontent.com/elC0mpa/aws-doctor/main/install.ps1 | iex
+```
+
 **Using Go:**
 
 ```bash
