@@ -151,13 +151,71 @@ func TestCalculateRDSIdleInstanceMonthlyCost(t *testing.T) {
 }
 
 func TestCalculateSageMakerEndpointMonthlyCost(t *testing.T) {
-	s := &service{}
-	variants := []model.SageMakerVariant{
-		{InstanceType: "ml.t2.medium", InstanceCount: 2},
+	t.Run("fallback table", func(t *testing.T) {
+		s := &service{prices: make(map[string]float64)}
+		variants := []model.SageMakerVariant{
+			{InstanceType: "ml.t2.medium", InstanceCount: 2},
+		}
+		// 46.72 * 2 = 93.44
+		cost := s.CalculateSageMakerEndpointMonthlyCost(variants)
+		assert.Equal(t, 93.44, cost)
+	})
+
+	t.Run("cached value preferred over fallback", func(t *testing.T) {
+		s := &service{prices: make(map[string]float64)}
+		// hourly rate; lookupMonthly multiplies by hoursPerMonth (730)
+		s.setPrice(priceKey(categorySageMakerHosting, "ml.m5.xlarge"), 0.30)
+
+		variants := []model.SageMakerVariant{
+			{InstanceType: "ml.m5.xlarge", InstanceCount: 1},
+		}
+		assert.InDelta(t, 0.30*hoursPerMonth, s.CalculateSageMakerEndpointMonthlyCost(variants), 0.001)
+	})
+
+	t.Run("mixed cached and fallback variants", func(t *testing.T) {
+		s := &service{prices: make(map[string]float64)}
+		s.setPrice(priceKey(categorySageMakerHosting, "ml.m5.xlarge"), 0.30)
+
+		variants := []model.SageMakerVariant{
+			{InstanceType: "ml.m5.xlarge", InstanceCount: 1}, // cached: 0.30 * 730 = 219.0
+			{InstanceType: "ml.t2.medium", InstanceCount: 1}, // fallback: 46.72
+		}
+		assert.InDelta(t, 0.30*hoursPerMonth+46.72, s.CalculateSageMakerEndpointMonthlyCost(variants), 0.001)
+	})
+
+	t.Run("unknown instance type contributes zero", func(t *testing.T) {
+		s := &service{prices: make(map[string]float64)}
+		variants := []model.SageMakerVariant{
+			{InstanceType: "ml.does-not-exist.xlarge", InstanceCount: 4},
+		}
+		assert.Equal(t, 0.0, s.CalculateSageMakerEndpointMonthlyCost(variants))
+	})
+}
+
+func TestLoadRegionRates_SageMakerHosting(t *testing.T) {
+	ctx := context.Background()
+	mockClient := new(awsinterfaces.MockPricingClient)
+	s := &service{
+		client: mockClient,
+		prices: make(map[string]float64),
+		region: "us-east-1",
 	}
-	// 46.72 * 2 = 93.44
-	cost := s.CalculateSageMakerEndpointMonthlyCost(variants)
-	assert.Equal(t, 93.44, cost)
+
+	sagemakerJSON := `{
+		"product": { "attributes": { "instanceName": "ml.m5.xlarge", "component": "Hosting", "productFamily": "ML Instance" } },
+		"terms": { "OnDemand": { "SKU": { "priceDimensions": { "DIM": { "pricePerUnit": { "USD": "0.30" } } } } } }
+	}`
+
+	mockClient.On("GetProducts", mock.Anything, mock.Anything, mock.Anything).Return(&awspricing.GetProductsOutput{
+		PriceList: []string{sagemakerJSON},
+	}, nil)
+
+	err := s.LoadRegionRates(ctx)
+	assert.NoError(t, err)
+
+	price, ok := s.lookupMonthly(priceKey(categorySageMakerHosting, "ml.m5.xlarge"), 0)
+	assert.True(t, ok)
+	assert.Equal(t, 0.30, price)
 }
 
 func TestLoadRegionRates(t *testing.T) {

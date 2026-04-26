@@ -168,6 +168,17 @@ func (s *service) LoadRegionRates(ctx context.Context) error {
 		return attrs["instanceType"], attrs["instanceType"] != ""
 	})
 
+	// SageMaker real-time inference (component=Hosting). The Pricing API exposes the instance
+	// type under the `instanceName` attribute (e.g. "ml.m5.xlarge"), which matches the value
+	// returned by DescribeEndpointConfig used by the orchestrator.
+	fetch(categorySageMakerHosting, "AmazonSageMaker", []pricingtypes.Filter{
+		regionFilter,
+		termMatch("productFamily", "ML Instance"),
+		termMatch("component", "Hosting"),
+	}, func(attrs map[string]string) (string, bool) {
+		return attrs["instanceName"], attrs["instanceName"] != ""
+	})
+
 	_ = g.Wait()
 
 	return errors.Join(fetchErr...)
@@ -263,10 +274,18 @@ func (s *service) CalculateSageMakerEndpointMonthlyCost(variants []model.SageMak
 	var total float64
 
 	for _, v := range variants {
-		total += sagemakerInstancePricing[v.InstanceType] * float64(v.InstanceCount)
+		total += s.sagemakerInstanceCost(v.InstanceType) * float64(v.InstanceCount)
 	}
 
 	return total
+}
+
+func (s *service) sagemakerInstanceCost(instanceType string) float64 {
+	if v, ok := s.lookupMonthly(priceKey(categorySageMakerHosting, instanceType), hoursPerMonth); ok {
+		return v
+	}
+
+	return sagemakerInstancePricing[instanceType]
 }
 
 // Internal helpers

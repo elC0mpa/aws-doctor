@@ -19,15 +19,16 @@ const hoursPerMonth = 730.0
 // Cache keys are flat strings, usually "category" or "category:variant" (e.g. "nat",
 // "ebs:gp3", "rds-instance:db.t3.medium").
 const (
-	categoryEBS         = "ebs"
-	categoryEIP         = "eip"
-	categoryNAT         = "nat"
-	categoryLBApp       = "lb-app"
-	categoryLBClassic   = "lb-classic"
-	categoryCWLogs      = "cwlogs"
-	categoryRDSInstance = "rds-instance"
-	categoryRDSStorage  = "rds-storage"
-	categoryRDSSnapshot = "rds-snapshot"
+	categoryEBS              = "ebs"
+	categoryEIP              = "eip"
+	categoryNAT              = "nat"
+	categoryLBApp            = "lb-app"
+	categoryLBClassic        = "lb-classic"
+	categoryCWLogs           = "cwlogs"
+	categoryRDSInstance      = "rds-instance"
+	categoryRDSStorage       = "rds-storage"
+	categoryRDSSnapshot      = "rds-snapshot"
+	categorySageMakerHosting = "sagemaker-hosting"
 )
 
 const (
