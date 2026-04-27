@@ -173,6 +173,18 @@ Use [Conventional Commits](https://www.conventionalcommits.org/) style:
 - **AWS clients** use the AWS SDK v2 patterns
 - **Concurrent operations** use `errgroup` for coordination
 
+### Adding a Pricing Category
+
+Cost estimates for waste detection live in `service/pricing`. Each category fetches its rate from the AWS Pricing API at startup (filtered to the caller's region) and falls back to a hardcoded us-east-1 constant when the API call fails or returns no match. To add a new category:
+
+1. **Add a category constant** to the `category*` block in `service/pricing/constants.go`, plus a default rate constant (e.g. `XxxCostPerMonth`) used as the fallback.
+2. **Add a `fetch(...)` call** inside `LoadRegionRates` in `service/pricing/service.go`. Provide the AWS `serviceCode`, the `productFamily` term match, any other filters needed to narrow to the specific SKU, and an `extract` function that returns the cache-key variant (or `""` for single-rate categories) from the SKU attributes. Verify the attribute names against an actual `aws pricing get-products --service-code <SERVICE>` response — the Pricing API uses different keys (`instanceType`, `instanceName`, `volumeApiName`, `usagetype`) across services.
+3. **Wire it into a `Calculate*` method** on `service` in `service/pricing/service.go`. Call `s.lookupMonthly(priceKey(category, variant), hoursPerMonth)` first when the Pricing API returns an hourly rate (e.g. compute instances, NAT, EIP), or `s.lookupMonthly(..., 0)` when it returns an already-monthly per-GB rate (e.g. EBS, CloudWatch Logs). Fall back to the hardcoded constant or table when the lookup misses. The cached value in `s.prices` is always stored as the raw `pricePerUnit` from the API, and `lookupMonthly`'s second argument is the multiplier applied on read.
+4. **Expose the method** on the `Service` interface in `service/pricing/types.go` if it is a new public method.
+5. **Add unit tests** in `service/pricing/service_test.go` covering both the cached path (use `s.setPrice(...)` to seed the cache) and the fallback path. Add a `TestLoadRegionRates_*` case using `mocks.MockPricingClient` with a representative price-list JSON document so the attribute names stay locked in.
+
+Keep the fallback table around — it is used both when the Pricing API is unreachable and when a specific SKU is missing from the response.
+
 ### Import Organization
 
 ```go
