@@ -24,14 +24,21 @@ The fastest way to install the latest version:
 curl -sSfL https://raw.githubusercontent.com/elC0mpa/aws-doctor/main/install.sh | sh
 ```
 
-### 3. Using Go
+### 3. Windows (PowerShell)
+The fastest way to install the latest version on Windows:
+
+```powershell
+irm https://raw.githubusercontent.com/elC0mpa/aws-doctor/main/install.ps1 | iex
+```
+
+### 4. Using Go
 If you have Go installed (1.23+):
 
 ```bash
 go install github.com/elC0mpa/aws-doctor@latest
 ```
 
-### 4. Manual Binary Download
+### 5. Manual Binary Download
 Download the pre-compiled binary for your architecture from the [GitHub Releases](https://github.com/elC0mpa/aws-doctor/releases) page. Supported platforms:
 - **macOS** (Intel & Apple Silicon)
 - **Linux** (amd64 & arm64)
