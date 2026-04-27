@@ -6,7 +6,6 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"runtime"
 	"strings"
 
 	"github.com/elC0mpa/aws-doctor/model"
@@ -74,15 +73,8 @@ func (s *service) Update() error {
 		return model.ErrGoInstall
 	}
 
-	if runtime.GOOS == "windows" {
-		if err := s.runner.Run("powershell", "-NoProfile", "-ExecutionPolicy", "Bypass", "-Command",
-			"irm https://raw.githubusercontent.com/elC0mpa/aws-doctor/main/install.ps1 | iex"); err != nil {
-			return fmt.Errorf("failed to run update script: %w", err)
-		}
-	} else {
-		if err := s.runner.Run("sh", "-c", "curl -sSL https://raw.githubusercontent.com/elC0mpa/aws-doctor/main/install.sh | sh"); err != nil {
-			return fmt.Errorf("failed to run update script: %w", err)
-		}
+	if err := runUpdateScript(s.runner); err != nil {
+		return err
 	}
 
 	return nil
