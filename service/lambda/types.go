@@ -26,5 +26,5 @@ type service struct {
 
 // Service is the interface for AWS Lambda service.
 type Service interface {
-	GetOverProvisionedFunctions(ctx context.Context, memoryThresholdPercent int) ([]model.LambdaOverProvisionedInfo, error)
+	GetOverProvisionedFunctions(ctx context.Context, memoryThresholdPercent int, lookbackDays int) ([]model.LambdaOverProvisionedInfo, error)
 }

@@ -114,7 +114,7 @@ func (s *service) GetUnusedEBSVolumes(ctx context.Context) ([]types.Volume, erro
 	return allVolumes, nil
 }
 
-func (s *service) GetStoppedInstancesInfo(ctx context.Context) ([]types.Instance, []types.Volume, error) {
+func (s *service) GetStoppedInstancesInfo(ctx context.Context, stoppedDays int) ([]types.Instance, []types.Volume, error) {
 	input := &ec2.DescribeInstancesInput{
 		Filters: []types.Filter{
 			{
@@ -125,11 +125,11 @@ func (s *service) GetStoppedInstancesInfo(ctx context.Context) ([]types.Instance
 	}
 
 	var (
-		stoppedInstanceVolumeIDs         []string
-		stoppedInstanceForMoreThan30Days []types.Instance
+		stoppedInstanceVolumeIDs                []string
+		stoppedInstanceForMoreThanThresholdDays []types.Instance
 	)
 
-	thresholdTime := time.Now().Add(-30 * 24 * time.Hour)
+	thresholdTime := time.Now().Add(-time.Duration(stoppedDays) * 24 * time.Hour)
 
 	// Use paginator to handle large numbers of instances
 	paginator := ec2.NewDescribeInstancesPaginator(s.client, input)
@@ -156,7 +156,7 @@ func (s *service) GetStoppedInstancesInfo(ctx context.Context) ([]types.Instance
 				}
 
 				if stoppedAt.Before(thresholdTime) {
-					stoppedInstanceForMoreThan30Days = append(stoppedInstanceForMoreThan30Days, instance)
+					stoppedInstanceForMoreThanThresholdDays = append(stoppedInstanceForMoreThanThresholdDays, instance)
 				}
 			}
 		}
@@ -180,10 +180,10 @@ func (s *service) GetStoppedInstancesInfo(ctx context.Context) ([]types.Instance
 		}
 	}
 
-	return stoppedInstanceForMoreThan30Days, stoppedInstanceVolumes, nil
+	return stoppedInstanceForMoreThanThresholdDays, stoppedInstanceVolumes, nil
 }
 
-func (s *service) GetReservedInstanceExpiringOrExpired30DaysWaste(ctx context.Context) ([]model.RiExpirationInfo, error) {
+func (s *service) GetReservedInstanceExpiringOrExpiredWaste(ctx context.Context, expiringDays int) ([]model.RiExpirationInfo, error) {
 	input := &ec2.DescribeReservedInstancesInput{
 		Filters: []types.Filter{
 			{
@@ -201,8 +201,8 @@ func (s *service) GetReservedInstanceExpiringOrExpired30DaysWaste(ctx context.Co
 	var results []model.RiExpirationInfo
 
 	now := time.Now()
-	next30Days := now.Add(30 * 24 * time.Hour)
-	prev30Days := now.Add(-30 * 24 * time.Hour)
+	nextThresholdDays := now.Add(time.Duration(expiringDays) * 24 * time.Hour)
+	prevThresholdDays := now.Add(-time.Duration(expiringDays) * 24 * time.Hour)
 
 	for _, ri := range output.ReservedInstances {
 		if ri.End == nil {
@@ -212,7 +212,7 @@ func (s *service) GetReservedInstanceExpiringOrExpired30DaysWaste(ctx context.Co
 		endTime := *ri.End
 		daysDiff := int(endTime.Sub(now).Hours() / 24)
 
-		if ri.State == types.ReservedInstanceStateActive && endTime.Before(next30Days) {
+		if ri.State == types.ReservedInstanceStateActive && endTime.Before(nextThresholdDays) {
 			results = append(results, model.RiExpirationInfo{
 				ReservedInstanceID: aws.ToString(ri.ReservedInstancesId),
 				InstanceType:       string(ri.InstanceType),
@@ -223,7 +223,7 @@ func (s *service) GetReservedInstanceExpiringOrExpired30DaysWaste(ctx context.Co
 			})
 		}
 
-		if endTime.After(prev30Days) && endTime.Before(now) {
+		if endTime.After(prevThresholdDays) && endTime.Before(now) {
 			results = append(results, model.RiExpirationInfo{
 				ReservedInstanceID: aws.ToString(ri.ReservedInstancesId),
 				InstanceType:       string(ri.InstanceType),

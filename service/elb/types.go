@@ -32,5 +32,5 @@ type pricingService interface {
 
 // Service is the interface for AWS ELB service.
 type Service interface {
-	GetLoadBalancerWaste(ctx context.Context) ([]types.LoadBalancer, []model.ELBIdleInfo, error)
+	GetLoadBalancerWaste(ctx context.Context, idleDays int) ([]types.LoadBalancer, []model.ELBIdleInfo, error)
 }

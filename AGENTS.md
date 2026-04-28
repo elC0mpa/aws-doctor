@@ -96,6 +96,7 @@ func NewService(awsconfig aws.Config) ServiceInterface {
 
 - **Method Naming**: Always use the `Get` prefix for service methods that retrieve information (e.g., `GetIdleNATGateways`, `GetRDSWaste`).
 - **Service Boundaries**: Keep resources in their appropriate service. For example, NAT Gateway detection logic must reside in the `vpc` service, even if it uses the EC2 client under the hood.
+- **Day Thresholds**: Never hardcode day thresholds (idle days, stale days, etc.) inside individual services. These must be passed as parameters from the orchestrator and defined as constants in the `orchestrator` service.
 - **Parameter Naming**: Use `awsconfig` as the parameter name for `aws.Config` in all `NewService` constructors.
 
 ## Git Workflow
