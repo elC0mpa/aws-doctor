@@ -163,7 +163,7 @@ func TestGetUnusedEBSVolumes(t *testing.T) {
 	mockClient.AssertExpectations(t)
 }
 
-func TestGetReservedInstanceExpiringOrExpired30DaysWaste(t *testing.T) {
+func TestGetReservedInstanceExpiringOrExpiredWaste(t *testing.T) {
 	mockClient := new(awsinterfaces.MockEC2Client)
 	s := &service{client: mockClient, pricingService: new(services.MockPricingService)}
 
@@ -192,7 +192,7 @@ func TestGetReservedInstanceExpiringOrExpired30DaysWaste(t *testing.T) {
 		},
 	}, nil)
 
-	result, err := s.GetReservedInstanceExpiringOrExpired30DaysWaste(context.Background())
+	result, err := s.GetReservedInstanceExpiringOrExpiredWaste(context.Background(), 30)
 
 	assert.NoError(t, err)
 	assert.Len(t, result, 2)
@@ -265,7 +265,7 @@ func TestGetStoppedInstancesInfo(t *testing.T) {
 		},
 	}, nil)
 
-	instances, volumes, err := s.GetStoppedInstancesInfo(context.Background())
+	instances, volumes, err := s.GetStoppedInstancesInfo(context.Background(), 30)
 
 	assert.NoError(t, err)
 	assert.Len(t, instances, 1)

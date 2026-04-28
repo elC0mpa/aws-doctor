@@ -98,7 +98,7 @@ func TestGetLoadBalancerWaste(t *testing.T) {
 				pricingService: mockPricing,
 			}
 
-			unused, idle, err := svc.GetLoadBalancerWaste(context.Background())
+			unused, idle, err := svc.GetLoadBalancerWaste(context.Background(), 7)
 			if tt.wantErr {
 				assert.Error(t, err)
 				return

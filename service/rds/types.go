@@ -33,5 +33,5 @@ type pricingService interface {
 
 // Service is the interface for AWS RDS service.
 type Service interface {
-	GetRDSWaste(ctx context.Context) ([]model.RDSInstanceWasteInfo, []model.RDSSnapshotWasteInfo, []model.RDSIdleInstanceInfo, error)
+	GetRDSWaste(ctx context.Context, idleDays int, snapshotDays int) ([]model.RDSInstanceWasteInfo, []model.RDSSnapshotWasteInfo, []model.RDSIdleInstanceInfo, error)
 }

@@ -78,7 +78,7 @@ func TestGetOverProvisionedFunctions(t *testing.T) {
 		"/aws/lambda/normal-fn":           200,
 	}, nil)
 
-	result, err := s.GetOverProvisionedFunctions(context.Background(), 10)
+	result, err := s.GetOverProvisionedFunctions(context.Background(), 10, 14)
 
 	assert.NoError(t, err)
 	assert.Len(t, result, 1)
@@ -104,7 +104,7 @@ func TestGetOverProvisionedFunctions_ListFunctionsError(t *testing.T) {
 
 	mockLambdaClient.On("ListFunctions", mock.Anything, mock.Anything, mock.Anything).Return(nil, errors.New("Lambda API error"))
 
-	_, err := s.GetOverProvisionedFunctions(context.Background(), 10)
+	_, err := s.GetOverProvisionedFunctions(context.Background(), 10, 14)
 
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "failed to list Lambda functions")
@@ -136,7 +136,7 @@ func TestGetOverProvisionedFunctions_BatchErrorPropagates(t *testing.T) {
 
 	mockLogsService.On("GetLambdaMaxMemoryUsedBatch", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return((map[string]int32)(nil), errors.New("insights throttled"))
 
-	_, err := s.GetOverProvisionedFunctions(context.Background(), 10)
+	_, err := s.GetOverProvisionedFunctions(context.Background(), 10, 14)
 
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "insights throttled")
@@ -161,7 +161,7 @@ func TestGetOverProvisionedFunctions_ListLogGroupsErrorPropagates(t *testing.T) 
 
 	mockLogsService.On("ListExistingLogGroups", mock.Anything, "/aws/lambda/").Return((map[string]struct{})(nil), errors.New("access denied"))
 
-	_, err := s.GetOverProvisionedFunctions(context.Background(), 10)
+	_, err := s.GetOverProvisionedFunctions(context.Background(), 10, 14)
 
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "failed to list Lambda log groups")
@@ -195,7 +195,7 @@ func TestGetOverProvisionedFunctions_MissingLogGroupsAreSkipped(t *testing.T) {
 		"/aws/lambda/fn-present": 50,
 	}, nil)
 
-	result, err := s.GetOverProvisionedFunctions(context.Background(), 10)
+	result, err := s.GetOverProvisionedFunctions(context.Background(), 10, 14)
 
 	assert.NoError(t, err)
 	assert.Len(t, result, 1)
@@ -220,7 +220,7 @@ func TestGetOverProvisionedFunctions_AllLogGroupsMissing(t *testing.T) {
 
 	mockLogsService.On("ListExistingLogGroups", mock.Anything, "/aws/lambda/").Return(map[string]struct{}{}, nil)
 
-	result, err := s.GetOverProvisionedFunctions(context.Background(), 10)
+	result, err := s.GetOverProvisionedFunctions(context.Background(), 10, 14)
 
 	assert.NoError(t, err)
 	assert.Empty(t, result)
@@ -273,7 +273,7 @@ func TestGetOverProvisionedFunctions_ChunksAtFiftyAndMerges(t *testing.T) {
 		return out, nil
 	}
 
-	result, err := s.GetOverProvisionedFunctions(context.Background(), 10)
+	result, err := s.GetOverProvisionedFunctions(context.Background(), 10, 14)
 
 	assert.NoError(t, err)
 	assert.Len(t, result, totalFunctions, "all functions across batches should be merged into the result")
@@ -295,7 +295,7 @@ func TestGetOverProvisionedFunctions_NoFunctions(t *testing.T) {
 		Functions: []lambdatypes.FunctionConfiguration{},
 	}, nil)
 
-	result, err := s.GetOverProvisionedFunctions(context.Background(), 10)
+	result, err := s.GetOverProvisionedFunctions(context.Background(), 10, 14)
 
 	assert.NoError(t, err)
 	assert.Empty(t, result)

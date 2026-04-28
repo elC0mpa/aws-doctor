@@ -13,8 +13,6 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
-const idleDaysThreshold = 7
-
 // NewService creates a new RDS service.
 func NewService(awsconfig aws.Config, cwService cloudwatchMetricsService, pricingSvc pricingService) Service {
 	client := rds.NewFromConfig(awsconfig)
@@ -26,8 +24,8 @@ func NewService(awsconfig aws.Config, cwService cloudwatchMetricsService, pricin
 	}
 }
 
-// GetRDSWaste returns stopped RDS instances, old manual snapshots (>30 days), and idle instances.
-func (s *service) GetRDSWaste(ctx context.Context) ([]model.RDSInstanceWasteInfo, []model.RDSSnapshotWasteInfo, []model.RDSIdleInstanceInfo, error) {
+// GetRDSWaste returns stopped RDS instances, old manual snapshots, and idle instances.
+func (s *service) GetRDSWaste(ctx context.Context, idleDays int, snapshotDays int) ([]model.RDSInstanceWasteInfo, []model.RDSSnapshotWasteInfo, []model.RDSIdleInstanceInfo, error) {
 	g, ctx := errgroup.WithContext(ctx)
 
 	var (
@@ -39,7 +37,7 @@ func (s *service) GetRDSWaste(ctx context.Context) ([]model.RDSInstanceWasteInfo
 	g.Go(func() error {
 		var err error
 
-		stopped, idle, err = s.getInstanceWaste(ctx)
+		stopped, idle, err = s.getInstanceWaste(ctx, idleDays)
 
 		return err
 	})
@@ -47,7 +45,7 @@ func (s *service) GetRDSWaste(ctx context.Context) ([]model.RDSInstanceWasteInfo
 	g.Go(func() error {
 		var err error
 
-		snapshots, err = s.getOldManualSnapshots(ctx)
+		snapshots, err = s.getOldManualSnapshots(ctx, snapshotDays)
 
 		return err
 	})
@@ -59,7 +57,7 @@ func (s *service) GetRDSWaste(ctx context.Context) ([]model.RDSInstanceWasteInfo
 	return stopped, snapshots, idle, nil
 }
 
-func (s *service) getInstanceWaste(ctx context.Context) ([]model.RDSInstanceWasteInfo, []model.RDSIdleInstanceInfo, error) {
+func (s *service) getInstanceWaste(ctx context.Context, idleDays int) ([]model.RDSInstanceWasteInfo, []model.RDSIdleInstanceInfo, error) {
 	var stopped []model.RDSInstanceWasteInfo
 
 	var idle []model.RDSIdleInstanceInfo
@@ -92,7 +90,7 @@ func (s *service) getInstanceWaste(ctx context.Context) ([]model.RDSInstanceWast
 			}
 
 			if status == "available" {
-				isIdle, err := s.cwService.RDSHasZeroConnectionsInPeriod(ctx, instanceID, idleDaysThreshold)
+				isIdle, err := s.cwService.RDSHasZeroConnectionsInPeriod(ctx, instanceID, idleDays)
 				if err != nil {
 					continue
 				}
@@ -104,7 +102,7 @@ func (s *service) getInstanceWaste(ctx context.Context) ([]model.RDSInstanceWast
 						Engine:               aws.ToString(db.Engine),
 						MultiAZ:              multiAZ,
 						AllocatedStorage:     allocatedGB,
-						DaysChecked:          idleDaysThreshold,
+						DaysChecked:          idleDays,
 						EstimatedMonthlyCost: s.pricingService.CalculateRDSIdleInstanceMonthlyCost(instanceClass, allocatedGB, multiAZ),
 					})
 				}
@@ -115,11 +113,11 @@ func (s *service) getInstanceWaste(ctx context.Context) ([]model.RDSInstanceWast
 	return stopped, idle, nil
 }
 
-func (s *service) getOldManualSnapshots(ctx context.Context) ([]model.RDSSnapshotWasteInfo, error) {
+func (s *service) getOldManualSnapshots(ctx context.Context, snapshotDays int) ([]model.RDSSnapshotWasteInfo, error) {
 	var result []model.RDSSnapshotWasteInfo
 
 	now := time.Now()
-	thirtyDaysAgo := now.AddDate(0, 0, -30)
+	thresholdDate := now.AddDate(0, 0, -snapshotDays)
 
 	paginator := rds.NewDescribeDBSnapshotsPaginator(s.client, &rds.DescribeDBSnapshotsInput{
 		SnapshotType: aws.String("manual"),
@@ -132,7 +130,7 @@ func (s *service) getOldManualSnapshots(ctx context.Context) ([]model.RDSSnapsho
 		}
 
 		for _, snap := range output.DBSnapshots {
-			if snap.SnapshotCreateTime != nil && snap.SnapshotCreateTime.Before(thirtyDaysAgo) {
+			if snap.SnapshotCreateTime != nil && snap.SnapshotCreateTime.Before(thresholdDate) {
 				daysSince := int(math.Floor(now.Sub(*snap.SnapshotCreateTime).Hours() / 24))
 				allocatedGB := aws.ToInt32(snap.AllocatedStorage)
 

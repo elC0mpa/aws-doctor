@@ -14,8 +14,8 @@ type MockELBService struct {
 }
 
 // GetLoadBalancerWaste mocks the GetLoadBalancerWaste method.
-func (m *MockELBService) GetLoadBalancerWaste(ctx context.Context) ([]elbtypes.LoadBalancer, []model.ELBIdleInfo, error) {
-	args := m.Called(ctx)
+func (m *MockELBService) GetLoadBalancerWaste(ctx context.Context, idleDays int) ([]elbtypes.LoadBalancer, []model.ELBIdleInfo, error) {
+	args := m.Called(ctx, idleDays)
 
 	var unused []elbtypes.LoadBalancer
 

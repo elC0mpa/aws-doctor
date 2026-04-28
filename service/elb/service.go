@@ -12,8 +12,6 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
-const idleDaysThreshold = 7
-
 // NewService creates a new ELB service.
 func NewService(awsconfig aws.Config, cwService cloudwatchMetricsService, pricingSvc pricingService) Service {
 	client := elb.NewFromConfig(awsconfig)
@@ -62,7 +60,7 @@ func (s *service) fetchLoadBalancersAndTargetGroups(ctx context.Context) ([]type
 
 // GetLoadBalancerWaste fetches all load balancers and target groups once, then partitions into
 // unused (no target groups) and idle (has target groups but zero traffic via CloudWatch).
-func (s *service) GetLoadBalancerWaste(ctx context.Context) ([]types.LoadBalancer, []model.ELBIdleInfo, error) {
+func (s *service) GetLoadBalancerWaste(ctx context.Context, idleDays int) ([]types.LoadBalancer, []model.ELBIdleInfo, error) {
 	allLoadBalancers, usedLbArns, err := s.fetchLoadBalancersAndTargetGroups(ctx)
 	if err != nil {
 		return nil, nil, err
@@ -99,7 +97,7 @@ func (s *service) GetLoadBalancerWaste(ctx context.Context) ([]types.LoadBalance
 		g.Go(func() error {
 			arn := aws.ToString(lb.LoadBalancerArn)
 
-			idle, cwErr := s.cwService.ELBHasZeroRequestsInPeriod(ctx, arn, lb.Type, idleDaysThreshold)
+			idle, cwErr := s.cwService.ELBHasZeroRequestsInPeriod(ctx, arn, lb.Type, idleDays)
 			if cwErr != nil {
 				return cwErr
 			}
@@ -111,7 +109,7 @@ func (s *service) GetLoadBalancerWaste(ctx context.Context) ([]types.LoadBalance
 					Name:                 aws.ToString(lb.LoadBalancerName),
 					ARN:                  arn,
 					Type:                 string(lb.Type),
-					DaysChecked:          idleDaysThreshold,
+					DaysChecked:          idleDays,
 					EstimatedMonthlyCost: s.pricingService.CalculateLoadBalancerMonthlyCost(lb.Type),
 				})
 				mu.Unlock()

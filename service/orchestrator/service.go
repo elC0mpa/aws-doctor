@@ -20,7 +20,18 @@ import (
 // sagemakerIdleDays is the lookback window for flagging SageMaker endpoints with zero
 // invocations as idle. Matches the hardcoded windows used by other waste checks
 // (unused AMIs, orphaned snapshots, idle NAT gateways).
-const sagemakerIdleDays = 14
+const (
+	sagemakerIdleDays    = 14
+	ec2StoppedDays       = 30
+	ec2RiExpiringDays    = 30
+	ec2AmiStaleDays      = 90
+	ec2SnapshotStaleDays = 90
+	vpcNatIdleDays       = 7
+	elbIdleDays          = 7
+	rdsIdleDays          = 7
+	rdsSnapshotDays      = 30
+	lambdaLookbackDays   = 14
+)
 
 // NewService creates a new orchestrator service.
 func NewService(cfg Config) Service {

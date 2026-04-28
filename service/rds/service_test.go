@@ -142,7 +142,7 @@ func TestGetRDSWaste(t *testing.T) {
 				pricingService: mockPricing,
 			}
 
-			instances, snapshots, idle, err := svc.GetRDSWaste(ctx)
+			instances, snapshots, idle, err := svc.GetRDSWaste(ctx, 7, 30)
 			if tt.wantErr {
 				assert.Error(t, err)
 				return

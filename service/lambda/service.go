@@ -17,7 +17,6 @@ import (
 )
 
 const (
-	lookbackDays              = 14
 	maxLogsConcurrency        = 10
 	logGroupsPerInsightsQuery = 50
 	minRecommendedMemoryMB    = 128
@@ -32,7 +31,7 @@ func NewService(awsconfig aws.Config, cwLogsService cloudwatchlogs.Service) Serv
 	}
 }
 
-func (s *service) GetOverProvisionedFunctions(ctx context.Context, memoryThresholdPercent int) ([]model.LambdaOverProvisionedInfo, error) {
+func (s *service) GetOverProvisionedFunctions(ctx context.Context, memoryThresholdPercent int, lookbackDays int) ([]model.LambdaOverProvisionedInfo, error) {
 	functions, err := s.listAllFunctions(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to list Lambda functions: %w", err)

@@ -168,6 +168,7 @@ Use [Conventional Commits](https://www.conventionalcommits.org/) style:
 - **Service interfaces** are defined in `types.go` files
 - **Service implementations** are in `service.go` files
 - **Method Naming**: Service methods that retrieve data must use the `Get` prefix (e.g., `GetIdleNATGateways`, `GetRDSWaste`).
+- **Day Thresholds**: All time-based thresholds for waste checks (e.g., idle days, stale days) must be parameterized in the service methods and defined as constants in the `service/orchestrator` package to centralize configuration.
 - **Parameter Naming**: Use `awsconfig` consistently for `aws.Config` parameters in `NewService` constructors.
 - **Struct Usage**: Prefer named internal structs over anonymous structs for complex return types or concurrent result collection to improve readability.
 - **AWS clients** use the AWS SDK v2 patterns
