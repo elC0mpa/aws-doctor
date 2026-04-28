@@ -44,8 +44,8 @@ func (m *MockEC2Service) GetUnusedEBSVolumes(ctx context.Context) ([]types.Volum
 }
 
 // GetStoppedInstancesInfo mocks the GetStoppedInstancesInfo method.
-func (m *MockEC2Service) GetStoppedInstancesInfo(ctx context.Context) ([]types.Instance, []types.Volume, error) {
-	args := m.Called(ctx)
+func (m *MockEC2Service) GetStoppedInstancesInfo(ctx context.Context, stoppedDays int) ([]types.Instance, []types.Volume, error) {
+	args := m.Called(ctx, stoppedDays)
 
 	var (
 		instances []types.Instance
@@ -63,9 +63,9 @@ func (m *MockEC2Service) GetStoppedInstancesInfo(ctx context.Context) ([]types.I
 	return instances, volumes, args.Error(2)
 }
 
-// GetReservedInstanceExpiringOrExpired30DaysWaste mocks the GetReservedInstanceExpiringOrExpired30DaysWaste method.
-func (m *MockEC2Service) GetReservedInstanceExpiringOrExpired30DaysWaste(ctx context.Context) ([]model.RiExpirationInfo, error) {
-	args := m.Called(ctx)
+// GetReservedInstanceExpiringOrExpiredWaste mocks the GetReservedInstanceExpiringOrExpiredWaste method.
+func (m *MockEC2Service) GetReservedInstanceExpiringOrExpiredWaste(ctx context.Context, expiringDays int) ([]model.RiExpirationInfo, error) {
+	args := m.Called(ctx, expiringDays)
 	if args.Get(0) == nil {
 		return nil, args.Error(1)
 	}

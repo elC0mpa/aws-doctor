@@ -13,8 +13,8 @@ type MockRDSService struct {
 }
 
 // GetRDSWaste mocks the GetRDSWaste method.
-func (m *MockRDSService) GetRDSWaste(ctx context.Context) ([]model.RDSInstanceWasteInfo, []model.RDSSnapshotWasteInfo, []model.RDSIdleInstanceInfo, error) {
-	args := m.Called(ctx)
+func (m *MockRDSService) GetRDSWaste(ctx context.Context, idleDays int, snapshotDays int) ([]model.RDSInstanceWasteInfo, []model.RDSSnapshotWasteInfo, []model.RDSIdleInstanceInfo, error) {
+	args := m.Called(ctx, idleDays, snapshotDays)
 
 	if args.Get(0) == nil {
 		return nil, nil, nil, args.Error(3)

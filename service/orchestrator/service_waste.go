@@ -27,7 +27,7 @@ func (s *service) queueEC2Checks(ctx context.Context, g *errgroup.Group, input *
 	g.Go(func() error {
 		var err error
 
-		input.StoppedInstances, input.StoppedVolumes, err = s.ec2Service.GetStoppedInstancesInfo(ctx)
+		input.StoppedInstances, input.StoppedVolumes, err = s.ec2Service.GetStoppedInstancesInfo(ctx, ec2StoppedDays)
 
 		return err
 	})
@@ -35,7 +35,7 @@ func (s *service) queueEC2Checks(ctx context.Context, g *errgroup.Group, input *
 	g.Go(func() error {
 		var err error
 
-		input.Ris, err = s.ec2Service.GetReservedInstanceExpiringOrExpired30DaysWaste(ctx)
+		input.Ris, err = s.ec2Service.GetReservedInstanceExpiringOrExpiredWaste(ctx, ec2RiExpiringDays)
 
 		return err
 	})
@@ -43,7 +43,7 @@ func (s *service) queueEC2Checks(ctx context.Context, g *errgroup.Group, input *
 	g.Go(func() error {
 		var err error
 
-		input.UnusedAMIs, err = s.ec2Service.GetUnusedAMIs(ctx, 90)
+		input.UnusedAMIs, err = s.ec2Service.GetUnusedAMIs(ctx, ec2AmiStaleDays)
 
 		return err
 	})
@@ -51,7 +51,7 @@ func (s *service) queueEC2Checks(ctx context.Context, g *errgroup.Group, input *
 	g.Go(func() error {
 		var err error
 
-		input.OrphanedSnapshots, err = s.ec2Service.GetOrphanedSnapshots(ctx, 90)
+		input.OrphanedSnapshots, err = s.ec2Service.GetOrphanedSnapshots(ctx, ec2SnapshotStaleDays)
 
 		return err
 	})
@@ -69,7 +69,7 @@ func (s *service) queueVPCChecks(ctx context.Context, g *errgroup.Group, input *
 	g.Go(func() error {
 		var err error
 
-		input.IdleNATGateways, err = s.vpcService.GetIdleNATGateways(ctx, 7)
+		input.IdleNATGateways, err = s.vpcService.GetIdleNATGateways(ctx, vpcNatIdleDays)
 
 		return err
 	})
@@ -79,7 +79,7 @@ func (s *service) queueELBChecks(ctx context.Context, g *errgroup.Group, input *
 	g.Go(func() error {
 		var err error
 
-		input.LoadBalancers, input.IdleLoadBalancers, err = s.elbService.GetLoadBalancerWaste(ctx)
+		input.LoadBalancers, input.IdleLoadBalancers, err = s.elbService.GetLoadBalancerWaste(ctx, elbIdleDays)
 
 		return err
 	})
@@ -109,7 +109,7 @@ func (s *service) queueRDSChecks(ctx context.Context, g *errgroup.Group, input *
 	g.Go(func() error {
 		var err error
 
-		input.RDSInstances, input.RDSSnapshots, input.RDSIdleInstances, err = s.rdsService.GetRDSWaste(ctx)
+		input.RDSInstances, input.RDSSnapshots, input.RDSIdleInstances, err = s.rdsService.GetRDSWaste(ctx, rdsIdleDays, rdsSnapshotDays)
 
 		return err
 	})
@@ -119,7 +119,7 @@ func (s *service) queueLambdaChecks(ctx context.Context, g *errgroup.Group, inpu
 	g.Go(func() error {
 		var err error
 
-		input.OverProvisionedLambdas, err = s.lambdaService.GetOverProvisionedFunctions(ctx, lambdaMemoryThreshold)
+		input.OverProvisionedLambdas, err = s.lambdaService.GetOverProvisionedFunctions(ctx, lambdaMemoryThreshold, lambdaLookbackDays)
 
 		return err
 	})
