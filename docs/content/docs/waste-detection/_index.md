@@ -48,6 +48,40 @@ The `waste` and `report waste` subcommands support specific flags to tune the de
 | :--- | :--- | :--- |
 | `--lambda-memory-threshold` | `10` | Memory utilization threshold (%) below which Lambda functions are flagged as over-provisioned. |
 
+## Region-Aware Cost Estimation
+
+Every waste check that reports an estimated monthly cost uses **live pricing data** fetched directly from the [AWS Pricing API](https://docs.aws.amazon.com/awsaccountbilling/latest/aboutv2/price-changes.html) at startup.
+
+### How it works
+
+1. When you run `aws-doctor waste`, the tool queries the AWS Pricing API for your configured region before executing any checks.
+2. The fetched rates are cached in memory for the duration of the command.
+3. Each waste check multiplies the resource's usage (size, hours, count) by the region-specific rate to produce an accurate cost estimate.
+
+### Fallback behaviour
+
+If the API call fails for any reason (insufficient permissions, network error, unsupported region), **AWS Doctor silently falls back to built-in default rates** based on us-east-1 pricing. The waste scan always completes — you will never see a hard failure because of pricing data.
+
+{{< callout type="warning" >}}
+Estimates produced without live pricing data will be based on us-east-1 defaults and may not reflect your actual region's rates.
+{{< /callout >}}
+
+### Required IAM permission
+
+To enable live pricing, your IAM principal must have the following permission:
+
+```json
+{
+  "Effect": "Allow",
+  "Action": "pricing:GetProducts",
+  "Resource": "*"
+}
+```
+
+Without this permission, the tool still works and estimates still appear — they just use the built-in defaults.
+
+---
+
 ## Categories of Detection
 
 We group waste into primary infrastructure categories:
