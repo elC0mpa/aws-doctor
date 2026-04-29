@@ -64,6 +64,13 @@ layout: "hextra-home"
   >}}
 
   {{< hextra/feature-card
+    icon="globe-alt"
+    title="Region-Aware Pricing"
+    subtitle="Cost estimates are backed by live data from the AWS Pricing API for your configured region. If the API is unavailable, the tool falls back to built-in defaults so your scan never fails."
+    link="docs/waste-detection/#region-aware-cost-estimation"
+  >}}
+
+  {{< hextra/feature-card
     icon="terminal"
     title="Output Formats"
     subtitle="Choose the format that fits your workflow. Use rich terminal tables for quick manual audits, or generate structured JSON output to feed data into your CI/CD pipelines, custom dashboards, and automation scripts."
@@ -73,13 +80,6 @@ layout: "hextra-home"
     icon="key"
     title="Security & IAM"
     subtitle="Full support for MFA-protected roles and proactive IAM credential audits."
-  >}}
-
-  {{< hextra/feature-card
-    icon="globe-alt"
-    title="Region-Aware Pricing"
-    subtitle="Cost estimates are backed by live data from the AWS Pricing API for your configured region. If the API is unavailable, the tool falls back to built-in defaults so your scan never fails."
-    link="docs/waste-detection/#region-aware-cost-estimation"
   >}}
 
 {{< /hextra/feature-grid >}}

@@ -64,6 +64,13 @@ layout: "hextra-home"
   >}}
 
   {{< hextra/feature-card
+    icon="globe-alt"
+    title="Precios por Región"
+    subtitle="Las estimaciones de costos se respaldan con datos en tiempo real de la API de Precios de AWS para su región configurada. Si la API no está disponible, la herramienta usa valores predeterminados integrados para que su análisis nunca falle."
+    link="docs/waste-detection/#estimación-de-costos-por-región"
+  >}}
+
+  {{< hextra/feature-card
     icon="terminal"
     title="Formatos de Salida"
     subtitle="Elija el formato que mejor se adapte a su flujo de trabajo. Use tablas enriquecidas en la terminal para auditorías manuales rápidas, o genere una salida JSON estructurada para integrarla en sus pipelines de CI/CD."
@@ -73,13 +80,6 @@ layout: "hextra-home"
     icon="key"
     title="Seguridad e IAM"
     subtitle="Soporte completo para roles protegidos por MFA y auditorías proactivas de credenciales IAM."
-  >}}
-
-  {{< hextra/feature-card
-    icon="globe-alt"
-    title="Precios por Región"
-    subtitle="Las estimaciones de costos se respaldan con datos en tiempo real de la API de Precios de AWS para su región configurada. Si la API no está disponible, la herramienta usa valores predeterminados integrados para que su análisis nunca falle."
-    link="docs/waste-detection/#estimación-de-costos-por-región"
   >}}
 
 {{< /hextra/feature-grid >}}
