@@ -49,18 +49,21 @@ layout: "hextra-home"
     icon="trending-up"
     title="Análisis de Costos"
     subtitle="Obtenga una evaluación justa de su velocidad de gasto. AWS Doctor compara los costos del mes actual con el mismo periodo del mes anterior (ej. del 1 al 10), permitiéndole detectar anomalías y picos en tiempo real."
+    link="docs/cost-analytics/"
   >}}
 
   {{< hextra/feature-card
     icon="trash"
     title="Detección 'Zombie'"
     subtitle="Obtenga un chequeo de salud de alto nivel de toda su cuenta de AWS. La herramienta escanea múltiples servicios simultáneamente para identificar recursos inactivos, desconectados u olvidados."
+    link="docs/waste-detection/"
   >}}
 
   {{< hextra/feature-card
     icon="printer"
     title="Reportes PDF"
     subtitle="Genere reportes PDF profesionales para las partes interesadas. AWS Doctor ahora puede exportar todos los hallazgos, tendencias de costos y resúmenes de desperdicio en un documento limpio y listo para compartir."
+    link="docs/reporting/"
   >}}
 
   {{< hextra/feature-card
@@ -74,12 +77,14 @@ layout: "hextra-home"
     icon="terminal"
     title="Formatos de Salida"
     subtitle="Elija el formato que mejor se adapte a su flujo de trabajo. Use tablas enriquecidas en la terminal para auditorías manuales rápidas, o genere una salida JSON estructurada para integrarla en sus pipelines de CI/CD."
+    link="docs/usage/"
   >}}
 
   {{< hextra/feature-card
     icon="key"
     title="Seguridad e IAM"
     subtitle="Soporte completo para roles protegidos por MFA y auditorías proactivas de credenciales IAM."
+    link="docs/usage/#mfa-support"
   >}}
 
 {{< /hextra/feature-grid >}}
