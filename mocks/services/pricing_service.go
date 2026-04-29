@@ -27,6 +27,7 @@ type PricingService interface {
 	CalculateRDSSnapshotMonthlyCost(allocatedGB int32) float64
 	CalculateRDSIdleInstanceMonthlyCost(instanceClass string, allocatedGB int32, multiAZ bool) float64
 	CalculateSageMakerEndpointMonthlyCost(variants []model.SageMakerVariant) float64
+	CalculateECRStorageMonthlyCost(storedBytes int64) float64
 }
 
 // LoadRegionRates mocks the LoadRegionRates method.
@@ -43,6 +44,11 @@ func (m *MockPricingService) CalculateEBSMonthlyCost(sizeGiB int32, volumeType t
 
 // CalculateEBSSnapshotMonthlyCost mocks the CalculateEBSSnapshotMonthlyCost method.
 func (m *MockPricingService) CalculateEBSSnapshotMonthlyCost(sizeGB int64) float64 {
+	args := m.Called(sizeGB)
+	return args.Get(0).(float64)
+}
+
+func (m *MockPricingService) CalculateECRStorageMonthlyCost(sizeGB int64) float64 {
 	args := m.Called(sizeGB)
 	return args.Get(0).(float64)
 }

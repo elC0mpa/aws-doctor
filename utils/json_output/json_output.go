@@ -99,6 +99,9 @@ func OutputWasteJSON(input model.RenderWasteInput, pricingSvc pricing.Service) e
 		IdleLoadBalancers:      mapIdleLoadBalancers(input.IdleLoadBalancers),
 		OverProvisionedLambdas: mapLambdaOverProvisioned(input.OverProvisionedLambdas),
 		IdleSageMakerEndpoints: mapIdleSageMakerEndpoints(input.IdleSageMakerEndpoints),
+		ECRNoLifecyclePolicies: mapECRNoLifecyclePolicies(input.ECRNoLifecyclePolicies),
+		ECREmptyRepositories:   mapECREmptyRepositories(input.ECREmptyRepositories),
+		ECRUntaggedImages:      mapECRUntaggedImages(input.ECRUntaggedImages),
 	}
 
 	output.OrphanedSnapshots, output.StaleSnapshots = mapSnapshots(input.OrphanedSnapshots)
@@ -376,6 +379,36 @@ func mapLambdaOverProvisioned(lambdas []model.LambdaOverProvisionedInfo) []model
 	return result
 }
 
+func mapECRNoLifecyclePolicies(repos []model.ECRNoLifecyclePolicyInfo) []model.ECRNoLifecyclePolicyJSON {
+	var result []model.ECRNoLifecyclePolicyJSON
+
+	for _, r := range repos {
+		result = append(result, model.ECRNoLifecyclePolicyJSON(r))
+	}
+
+	return result
+}
+
+func mapECREmptyRepositories(repos []model.ECREmptyRepositoryInfo) []model.ECREmptyRepositoryJSON {
+	var result []model.ECREmptyRepositoryJSON
+
+	for _, r := range repos {
+		result = append(result, model.ECREmptyRepositoryJSON(r))
+	}
+
+	return result
+}
+
+func mapECRUntaggedImages(repos []model.ECRUntaggedImageInfo) []model.ECRUntaggedImageJSON {
+	var result []model.ECRUntaggedImageJSON
+
+	for _, r := range repos {
+		result = append(result, model.ECRUntaggedImageJSON(r))
+	}
+
+	return result
+}
+
 func mapIdleSageMakerEndpoints(eps []model.IdleSageMakerEndpointInfo) []model.IdleSageMakerEndpointJSON {
 	var result []model.IdleSageMakerEndpointJSON
 
@@ -419,5 +452,8 @@ func hasAnyWasteJSON(o model.WasteReportJSON) bool {
 		len(o.IdleNATGateways) > 0 ||
 		len(o.IdleLoadBalancers) > 0 ||
 		len(o.OverProvisionedLambdas) > 0 ||
-		len(o.IdleSageMakerEndpoints) > 0
+		len(o.IdleSageMakerEndpoints) > 0 ||
+		len(o.ECRNoLifecyclePolicies) > 0 ||
+		len(o.ECREmptyRepositories) > 0 ||
+		len(o.ECRUntaggedImages) > 0
 }

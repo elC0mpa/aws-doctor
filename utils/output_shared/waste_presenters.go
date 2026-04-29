@@ -247,3 +247,40 @@ func PresentIdleSageMakerEndpoint(ep model.IdleSageMakerEndpointInfo) ResourceRo
 		Details:       strings.Join(variantParts, ", "),
 	}
 }
+
+// PresentECRNoLifecyclePolicy returns a ResourceRow for an ECR repository missing a lifecycle policy
+func PresentECRNoLifecyclePolicy(repo model.ECRNoLifecyclePolicyInfo) ResourceRow {
+	return ResourceRow{
+		Category:      "ECR (No Lifecycle Policy)",
+		Identifier:    repo.RepositoryName,
+		EstimatedCost: NAValue,
+		Metric:        NAValue,
+		Age:           NAValue,
+		Details:       "Lifecycle policy is recommended",
+	}
+}
+
+// PresentECREmptyRepository returns a ResourceRow for an empty ECR repository
+func PresentECREmptyRepository(repo model.ECREmptyRepositoryInfo) ResourceRow {
+	return ResourceRow{
+		Category:      "ECR (Empty Repository)",
+		Identifier:    repo.RepositoryName,
+		EstimatedCost: NAValue,
+		Metric:        "0 images",
+		Age:           NAValue,
+		Details:       "Consider deleting empty repositories",
+	}
+}
+
+// PresentECRUntaggedImages returns a ResourceRow for an ECR repository with untagged images
+func PresentECRUntaggedImages(repo model.ECRUntaggedImageInfo) ResourceRow {
+	sizeGB := float64(repo.UntaggedSizeBytes) / (1024 * 1024 * 1024)
+	return ResourceRow{
+		Category:      "ECR (Untagged Images)",
+		Identifier:    repo.RepositoryName,
+		EstimatedCost: fmt.Sprintf("$%.2f", repo.EstimatedMonthlyCost),
+		Metric:        fmt.Sprintf("%d untagged images", repo.UntaggedImageCount),
+		Age:           NAValue,
+		Details:       fmt.Sprintf("Consuming %.2f GB of storage", sizeGB),
+	}
+}

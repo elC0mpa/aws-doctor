@@ -134,3 +134,13 @@ func (s *service) queueSagemakerChecks(ctx context.Context, g *errgroup.Group, i
 		return err
 	})
 }
+
+func (s *service) queueECRChecks(ctx context.Context, g *errgroup.Group, input *model.RenderWasteInput) {
+	g.Go(func() error {
+		var err error
+
+		input.ECRNoLifecyclePolicies, input.ECREmptyRepositories, input.ECRUntaggedImages, err = s.ecrService.GetECRWaste(ctx)
+
+		return err
+	})
+}

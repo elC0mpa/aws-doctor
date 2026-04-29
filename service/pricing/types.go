@@ -28,6 +28,7 @@ type Service interface {
 	CalculateRDSSnapshotMonthlyCost(allocatedGB int32) float64
 	CalculateRDSIdleInstanceMonthlyCost(instanceClass string, allocatedGB int32, multiAZ bool) float64
 	CalculateSageMakerEndpointMonthlyCost(variants []model.SageMakerVariant) float64
+	CalculateECRStorageMonthlyCost(sizeGB int64) float64
 }
 
 type service struct {

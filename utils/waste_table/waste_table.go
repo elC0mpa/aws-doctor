@@ -53,7 +53,10 @@ func hasAnyWaste(input model.RenderWasteInput) bool {
 		len(input.IdleNATGateways) > 0 ||
 		len(input.IdleLoadBalancers) > 0 ||
 		len(input.OverProvisionedLambdas) > 0 ||
-		len(input.IdleSageMakerEndpoints) > 0
+		len(input.IdleSageMakerEndpoints) > 0 ||
+		len(input.ECREmptyRepositories) > 0 ||
+		len(input.ECRNoLifecyclePolicies) > 0 ||
+		len(input.ECRUntaggedImages) > 0
 }
 
 func drawWasteSections(input model.RenderWasteInput, pricingSvc pricing.Service) {
@@ -107,6 +110,10 @@ func drawWasteSections(input model.RenderWasteInput, pricingSvc pricing.Service)
 
 	if len(input.IdleSageMakerEndpoints) > 0 {
 		drawSageMakerTable(input.IdleSageMakerEndpoints)
+	}
+
+	if len(input.ECRNoLifecyclePolicies) > 0 || len(input.ECREmptyRepositories) > 0 || len(input.ECRUntaggedImages) > 0 {
+		drawECRTable(input.ECRNoLifecyclePolicies, input.ECREmptyRepositories, input.ECRUntaggedImages)
 	}
 }
 
@@ -924,6 +931,107 @@ func populateSageMakerRows(endpoints []model.IdleSageMakerEndpointInfo) []table.
 			p.Details,
 			fmt.Sprintf("%d days", ep.DaysChecked),
 			p.EstimatedCost,
+		})
+	}
+
+	return rows
+}
+
+func drawECRTable(noPolicy []model.ECRNoLifecyclePolicyInfo, empty []model.ECREmptyRepositoryInfo, untagged []model.ECRUntaggedImageInfo) {
+	t := table.NewWriter()
+	t.SetOutputMirror(os.Stdout)
+	t.SetStyle(table.StyleRounded)
+	t.SetTitle("ECR Repository Waste")
+
+	t.AppendHeader(table.Row{"Status", "Repository Name", "Metric", "Est. Cost/Mo", "Details"})
+
+	t.SetColumnConfigs([]table.ColumnConfig{
+		{Number: 4, Align: text.AlignRight},
+	})
+
+	var hasPreviousRows bool
+
+	if len(noPolicy) > 0 {
+		statusLabel := "No Lifecycle Policy"
+		rows := populateECRNoPolicyRows(noPolicy)
+		halfRow := len(rows) / 2
+		rows[halfRow][0] = text.FgHiYellow.Sprint(statusLabel)
+		t.AppendRows(rows)
+		hasPreviousRows = true
+	}
+
+	if len(empty) > 0 {
+		if hasPreviousRows {
+			t.AppendSeparator()
+		}
+		statusLabel := "Empty Repository"
+		rows := populateECREmptyRows(empty)
+		halfRow := len(rows) / 2
+		rows[halfRow][0] = text.FgHiYellow.Sprint(statusLabel)
+		t.AppendRows(rows)
+		hasPreviousRows = true
+	}
+
+	if len(untagged) > 0 {
+		if hasPreviousRows {
+			t.AppendSeparator()
+		}
+		statusLabel := "Untagged Images"
+		rows := populateECRUntaggedRows(untagged)
+		halfRow := len(rows) / 2
+		rows[halfRow][0] = text.FgHiRed.Sprint(statusLabel)
+		t.AppendRows(rows)
+	}
+
+	t.Render()
+	fmt.Println()
+}
+
+func populateECRNoPolicyRows(repos []model.ECRNoLifecyclePolicyInfo) []table.Row {
+	rows := make([]table.Row, 0, len(repos))
+
+	for _, repo := range repos {
+		p := outputshared.PresentECRNoLifecyclePolicy(repo)
+		rows = append(rows, table.Row{
+			"",
+			p.Identifier,
+			p.Metric,
+			p.EstimatedCost,
+			p.Details,
+		})
+	}
+
+	return rows
+}
+
+func populateECREmptyRows(repos []model.ECREmptyRepositoryInfo) []table.Row {
+	rows := make([]table.Row, 0, len(repos))
+
+	for _, repo := range repos {
+		p := outputshared.PresentECREmptyRepository(repo)
+		rows = append(rows, table.Row{
+			"",
+			p.Identifier,
+			p.Metric,
+			p.EstimatedCost,
+			p.Details,
+		})
+	}
+
+	return rows
+}
+
+func populateECRUntaggedRows(repos []model.ECRUntaggedImageInfo) []table.Row {
+	rows := make([]table.Row, 0, len(repos))
+
+	for _, repo := range repos {
+		p := outputshared.PresentECRUntaggedImages(repo)
+		rows = append(rows, table.Row{
+			"",
+			p.Identifier,
+			p.Metric,
+			p.EstimatedCost,
+			p.Details,
 		})
 	}
 

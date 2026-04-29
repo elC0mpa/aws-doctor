@@ -5,6 +5,7 @@ import (
 	"github.com/elC0mpa/aws-doctor/service/cloudwatchlogs"
 	awscostexplorer "github.com/elC0mpa/aws-doctor/service/costexplorer"
 	awsec2 "github.com/elC0mpa/aws-doctor/service/ec2"
+	"github.com/elC0mpa/aws-doctor/service/ecr"
 	"github.com/elC0mpa/aws-doctor/service/elb"
 	"github.com/elC0mpa/aws-doctor/service/lambda"
 	"github.com/elC0mpa/aws-doctor/service/output"
@@ -32,6 +33,7 @@ type service struct {
 	outputService         output.Service
 	updateService         update.Service
 	reportService         report.Service
+	ecrService            ecr.Service
 	versionInfo           model.VersionInfo
 	vpcService            awsvpc.Service
 }
@@ -51,6 +53,7 @@ type Config struct {
 	OutputService         output.Service
 	UpdateService         update.Service
 	ReportService         report.Service
+	ECRService            ecr.Service
 	VersionInfo           model.VersionInfo
 	VPCService            awsvpc.Service
 }

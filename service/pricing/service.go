@@ -179,6 +179,11 @@ func (s *service) LoadRegionRates(ctx context.Context) error {
 		return attrs["instanceName"], attrs["instanceName"] != ""
 	})
 
+	fetch(categoryECR, "AmazonECR", []pricingtypes.Filter{
+		regionFilter,
+		termMatch("productFamily", "Storage"),
+	}, matchUsagetypeContains("TimedStorage-ByteHrs"))
+
 	_ = g.Wait()
 
 	return errors.Join(fetchErr...)
@@ -195,6 +200,14 @@ func (s *service) CalculateEBSMonthlyCost(sizeGiB int32, volumeType types.Volume
 	}
 
 	return float64(sizeGiB) * spec.defaultRate
+}
+
+func (s *service) CalculateECRStorageMonthlyCost(sizeGB int64) float64 {
+	if v, ok := s.lookupMonthly(priceKey(categoryECR, ""), 0); ok {
+		return float64(sizeGB) * v
+	}
+
+	return float64(sizeGB) * ECRStorageCostPerGBMonth
 }
 
 func (s *service) CalculateEBSSnapshotMonthlyCost(sizeGB int64) float64 {

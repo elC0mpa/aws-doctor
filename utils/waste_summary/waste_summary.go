@@ -165,6 +165,22 @@ func countOnlyCategories(input model.RenderWasteInput) []model.CategorySummary {
 		categories = append(categories, model.CategorySummary{Name: "Lambda (Over-Provisioned)", Count: n})
 	}
 
+	if n := len(input.ECRNoLifecyclePolicies); n > 0 {
+		categories = append(categories, model.CategorySummary{Name: "ECR (No Lifecycle Policy)", Count: n})
+	}
+
+	if n := len(input.ECREmptyRepositories); n > 0 {
+		categories = append(categories, model.CategorySummary{Name: "ECR (Empty Repository)", Count: n})
+	}
+
+	if n := len(input.ECRUntaggedImages); n > 0 {
+		var cost float64
+		for _, repo := range input.ECRUntaggedImages {
+			cost += repo.EstimatedMonthlyCost
+		}
+		categories = append(categories, model.CategorySummary{Name: "ECR (Untagged Images)", Count: n, Cost: cost})
+	}
+
 	return categories
 }
 

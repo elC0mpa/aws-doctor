@@ -49,6 +49,7 @@ func NewService(cfg Config) Service {
 		outputService:         cfg.OutputService,
 		updateService:         cfg.UpdateService,
 		reportService:         cfg.ReportService,
+		ecrService:            cfg.ECRService,
 		versionInfo:           cfg.VersionInfo,
 		vpcService:            cfg.VPCService,
 	}
@@ -247,6 +248,7 @@ func (s *service) wasteWorkflow(wasteChecks []string, generateReport bool, repor
 	runVPC := runAll || slice.ContainsIgnoreCase(wasteChecks, "vpc")
 	runLambda := runAll || slice.ContainsIgnoreCase(wasteChecks, "lambda")
 	runSagemaker := runAll || slice.ContainsIgnoreCase(wasteChecks, "sagemaker")
+	runECR := runAll || slice.ContainsIgnoreCase(wasteChecks, "ecr")
 
 	var input model.RenderWasteInput
 
@@ -282,6 +284,10 @@ func (s *service) wasteWorkflow(wasteChecks []string, generateReport bool, repor
 
 	if runSagemaker {
 		s.queueSagemakerChecks(ctx, g, &input)
+	}
+
+	if runECR {
+		s.queueECRChecks(ctx, g, &input)
 	}
 
 	// Fetch caller identity concurrently (always required for output)
