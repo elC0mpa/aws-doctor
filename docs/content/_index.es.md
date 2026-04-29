@@ -84,7 +84,7 @@ layout: "hextra-home"
     icon="key"
     title="Seguridad e IAM"
     subtitle="Soporte completo para roles protegidos por MFA y auditorías proactivas de credenciales IAM."
-    link="docs/usage/#mfa-support"
+    link="docs/usage/#soporte-para-mfa"
   >}}
 
 {{< /hextra/feature-grid >}}
