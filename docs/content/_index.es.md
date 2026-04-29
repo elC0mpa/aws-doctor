@@ -74,6 +74,14 @@ layout: "hextra-home"
     title="Seguridad e IAM"
     subtitle="Soporte completo para roles protegidos por MFA y auditorías proactivas de credenciales IAM."
   >}}
+
+  {{< hextra/feature-card
+    icon="globe-alt"
+    title="Precios por Región"
+    subtitle="Las estimaciones de costos se respaldan con datos en tiempo real de la API de Precios de AWS para su región configurada. Si la API no está disponible, la herramienta usa valores predeterminados integrados para que su análisis nunca falle."
+    link="docs/waste-detection/#estimación-de-costos-por-región"
+  >}}
+
 {{< /hextra/feature-grid >}}
 
 <div class="hx:mt-16"></div>
