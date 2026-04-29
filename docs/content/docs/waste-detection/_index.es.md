@@ -32,6 +32,7 @@ Si sólo desea escanear servicios de AWS específicos, puede pasarlos como argum
 | `vpc` | NAT Gateways y recursos de VPC inactivos. |
 | `cloudwatch` | Grupos de logs de CloudWatch sin políticas de retención. |
 | `sagemaker` | Detección de endpoints de SageMaker inactivos (cero invocaciones en 14 días). |
+| `ecr` | Repositorios ECR sin políticas de ciclo de vida, repositorios vacíos e imágenes sin etiqueta. |
 
 ```bash
 # Ejemplo: Escanear solo recursos de EC2 y SageMaker
@@ -73,7 +74,7 @@ Agrupamos el desperdicio en categorías principales de infraestructura:
     icon="archive"
     title="Almacenamiento y Logs"
     link="storage/"
-    subtitle="Buckets sin políticas de ciclo de vida, cargas multipartes incompletas y grupos de logs sin retención."
+    subtitle="Buckets sin políticas de ciclo de vida, cargas multipartes incompletas, grupos de logs sin retención y desperdicio en imágenes de contenedores ECR."
   >}}
   {{< hextra/feature-card
     icon="share"

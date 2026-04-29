@@ -33,6 +33,7 @@ If you only want to scan specific AWS services, you can pass them as arguments t
 | `vpc` | NAT Gateways and idle VPC resources. |
 | `cloudwatch` | CloudWatch Log Groups without retention policies. |
 | `sagemaker` | SageMaker idle endpoint detection (zero invocations in 14 days). |
+| `ecr` | ECR repositories without lifecycle policies, empty repositories, and untagged images. |
 
 ```bash
 # Example: Scan only EC2 and SageMaker resources
@@ -74,7 +75,7 @@ We group waste into primary infrastructure categories:
     icon="archive"
     title="Storage & Logs"
     link="storage/"
-    subtitle="Buckets without lifecycle policies, hidden incomplete multipart uploads, and Log Groups with no retention."
+    subtitle="Buckets without lifecycle policies, hidden incomplete multipart uploads, Log Groups with no retention, and ECR container image waste."
   >}}
   {{< hextra/feature-card
     icon="share"
