@@ -35,75 +35,116 @@ func drawHeader(accountID string) {
 }
 
 func hasAnyWaste(input model.RenderWasteInput) bool {
-	return len(input.ElasticIPs) > 0 ||
-		len(input.UnusedVolumes) > 0 ||
+	return hasEC2Waste(input) ||
+		hasRDSWaste(input) ||
+		hasS3Waste(input) ||
+		hasNetworkWaste(input) ||
+		hasServerlessWaste(input) ||
+		hasECRWaste(input) ||
+		len(input.CloudWatchLogGroups) > 0
+}
+
+func hasEC2Waste(input model.RenderWasteInput) bool {
+	return len(input.UnusedVolumes) > 0 ||
 		len(input.StoppedVolumes) > 0 ||
 		len(input.StoppedInstances) > 0 ||
 		len(input.Ris) > 0 ||
-		len(input.LoadBalancers) > 0 ||
 		len(input.UnusedAMIs) > 0 ||
 		len(input.OrphanedSnapshots) > 0 ||
-		len(input.UnusedKeyPairs) > 0 ||
-		len(input.S3Buckets) > 0 ||
-		len(input.S3MultipartUploads) > 0 ||
-		len(input.CloudWatchLogGroups) > 0 ||
-		len(input.RDSInstances) > 0 ||
+		len(input.UnusedKeyPairs) > 0
+}
+
+func hasRDSWaste(input model.RenderWasteInput) bool {
+	return len(input.RDSInstances) > 0 ||
 		len(input.RDSSnapshots) > 0 ||
-		len(input.RDSIdleInstances) > 0 ||
+		len(input.RDSIdleInstances) > 0
+}
+
+func hasS3Waste(input model.RenderWasteInput) bool {
+	return len(input.S3Buckets) > 0 ||
+		len(input.S3MultipartUploads) > 0
+}
+
+func hasNetworkWaste(input model.RenderWasteInput) bool {
+	return len(input.ElasticIPs) > 0 ||
+		len(input.LoadBalancers) > 0 ||
 		len(input.IdleNATGateways) > 0 ||
-		len(input.IdleLoadBalancers) > 0 ||
-		len(input.OverProvisionedLambdas) > 0 ||
-		len(input.IdleSageMakerEndpoints) > 0 ||
-		len(input.ECREmptyRepositories) > 0 ||
+		len(input.IdleLoadBalancers) > 0
+}
+
+func hasServerlessWaste(input model.RenderWasteInput) bool {
+	return len(input.OverProvisionedLambdas) > 0 ||
+		len(input.IdleSageMakerEndpoints) > 0
+}
+
+func hasECRWaste(input model.RenderWasteInput) bool {
+	return len(input.ECREmptyRepositories) > 0 ||
 		len(input.ECRNoLifecyclePolicies) > 0 ||
 		len(input.ECRUntaggedImages) > 0
 }
 
 func drawWasteSections(input model.RenderWasteInput, pricingSvc pricing.Service) {
+	drawStorageSections(input, pricingSvc)
+	drawNetworkSections(input, pricingSvc)
+	drawComputeSections(input)
+	drawDatabaseSections(input)
+	drawServerlessSections(input)
+	drawContainerSections(input)
+}
+
+func drawStorageSections(input model.RenderWasteInput, pricingSvc pricing.Service) {
 	if len(input.UnusedVolumes) > 0 || len(input.StoppedVolumes) > 0 {
 		drawEBSTable(input.UnusedVolumes, input.StoppedVolumes, pricingSvc)
-	}
-
-	if len(input.ElasticIPs) > 0 {
-		drawElasticIPTable(input.ElasticIPs, pricingSvc)
-	}
-
-	if len(input.StoppedInstances) > 0 || len(input.Ris) > 0 {
-		drawEC2Table(input.StoppedInstances, input.Ris)
-	}
-
-	if len(input.LoadBalancers) > 0 || len(input.IdleLoadBalancers) > 0 {
-		drawLoadBalancerTable(input.LoadBalancers, input.IdleLoadBalancers, pricingSvc)
 	}
 
 	if len(input.S3Buckets) > 0 || len(input.S3MultipartUploads) > 0 {
 		drawS3Table(input.S3Buckets, input.S3MultipartUploads)
 	}
 
-	if len(input.CloudWatchLogGroups) > 0 {
-		drawCloudWatchLogsTable(input.CloudWatchLogGroups)
+	if len(input.OrphanedSnapshots) > 0 {
+		drawSnapshotTable(input.OrphanedSnapshots)
+	}
+}
+
+func drawNetworkSections(input model.RenderWasteInput, pricingSvc pricing.Service) {
+	if len(input.ElasticIPs) > 0 {
+		drawElasticIPTable(input.ElasticIPs, pricingSvc)
+	}
+
+	if len(input.LoadBalancers) > 0 || len(input.IdleLoadBalancers) > 0 {
+		drawLoadBalancerTable(input.LoadBalancers, input.IdleLoadBalancers, pricingSvc)
+	}
+
+	if len(input.IdleNATGateways) > 0 {
+		drawNatGatewayTable(input.IdleNATGateways)
+	}
+}
+
+func drawComputeSections(input model.RenderWasteInput) {
+	if len(input.StoppedInstances) > 0 || len(input.Ris) > 0 {
+		drawEC2Table(input.StoppedInstances, input.Ris)
 	}
 
 	if len(input.UnusedAMIs) > 0 {
 		drawAMITable(input.UnusedAMIs)
 	}
 
-	if len(input.OrphanedSnapshots) > 0 {
-		drawSnapshotTable(input.OrphanedSnapshots)
-	}
-
 	if len(input.UnusedKeyPairs) > 0 {
 		drawKeyPairTable(input.UnusedKeyPairs)
 	}
 
+	if len(input.CloudWatchLogGroups) > 0 {
+		drawCloudWatchLogsTable(input.CloudWatchLogGroups)
+	}
+}
+
+func drawDatabaseSections(input model.RenderWasteInput) {
 	if len(input.RDSInstances) > 0 || len(input.RDSSnapshots) > 0 || len(input.RDSIdleInstances) > 0 {
 		drawRDSTable(input.RDSInstances, input.RDSSnapshots, input.RDSIdleInstances)
 	}
+}
 
-	if len(input.IdleNATGateways) > 0 {
-		drawNatGatewayTable(input.IdleNATGateways)
-	}
-
+func drawServerlessSections(input model.RenderWasteInput) {
 	if len(input.OverProvisionedLambdas) > 0 {
 		drawLambdaTable(input.OverProvisionedLambdas)
 	}
@@ -111,7 +152,9 @@ func drawWasteSections(input model.RenderWasteInput, pricingSvc pricing.Service)
 	if len(input.IdleSageMakerEndpoints) > 0 {
 		drawSageMakerTable(input.IdleSageMakerEndpoints)
 	}
+}
 
+func drawContainerSections(input model.RenderWasteInput) {
 	if len(input.ECRNoLifecyclePolicies) > 0 || len(input.ECREmptyRepositories) > 0 || len(input.ECRUntaggedImages) > 0 {
 		drawECRTable(input.ECRNoLifecyclePolicies, input.ECREmptyRepositories, input.ECRUntaggedImages)
 	}
@@ -957,6 +1000,7 @@ func drawECRTable(noPolicy []model.ECRNoLifecyclePolicyInfo, empty []model.ECREm
 		halfRow := len(rows) / 2
 		rows[halfRow][0] = text.FgHiYellow.Sprint(statusLabel)
 		t.AppendRows(rows)
+
 		hasPreviousRows = true
 	}
 
@@ -964,11 +1008,13 @@ func drawECRTable(noPolicy []model.ECRNoLifecyclePolicyInfo, empty []model.ECREm
 		if hasPreviousRows {
 			t.AppendSeparator()
 		}
+
 		statusLabel := "Empty Repository"
 		rows := populateECREmptyRows(empty)
 		halfRow := len(rows) / 2
 		rows[halfRow][0] = text.FgHiYellow.Sprint(statusLabel)
 		t.AppendRows(rows)
+
 		hasPreviousRows = true
 	}
 
@@ -976,6 +1022,7 @@ func drawECRTable(noPolicy []model.ECRNoLifecyclePolicyInfo, empty []model.ECREm
 		if hasPreviousRows {
 			t.AppendSeparator()
 		}
+
 		statusLabel := "Untagged Images"
 		rows := populateECRUntaggedRows(untagged)
 		halfRow := len(rows) / 2

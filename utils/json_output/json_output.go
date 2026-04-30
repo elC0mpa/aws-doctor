@@ -433,27 +433,51 @@ func printJSON(v interface{}) error {
 // hasAnyWasteJSON returns true when any category in the JSON report contains entries.
 // Extracted from OutputWasteJSON to keep that function below the gocyclo threshold.
 func hasAnyWasteJSON(o model.WasteReportJSON) bool {
-	return len(o.UnusedElasticIPs) > 0 ||
-		len(o.UnusedEBSVolumes) > 0 ||
-		len(o.StoppedVolumes) > 0 ||
-		len(o.StoppedInstances) > 0 ||
+	return hasComputeWasteJSON(o) ||
+		hasStorageWasteJSON(o) ||
+		hasDatabaseWasteJSON(o) ||
+		hasNetworkWasteJSON(o) ||
+		hasServerlessWasteJSON(o) ||
+		hasContainerWasteJSON(o)
+}
+
+func hasComputeWasteJSON(o model.WasteReportJSON) bool {
+	return len(o.StoppedInstances) > 0 ||
 		len(o.ReservedInstances) > 0 ||
-		len(o.UnusedLoadBalancers) > 0 ||
 		len(o.UnusedAMIs) > 0 ||
+		len(o.UnusedKeyPairs) > 0 ||
+		len(o.CloudWatchLogGroups) > 0
+}
+
+func hasStorageWasteJSON(o model.WasteReportJSON) bool {
+	return len(o.UnusedEBSVolumes) > 0 ||
+		len(o.StoppedVolumes) > 0 ||
 		len(o.OrphanedSnapshots) > 0 ||
 		len(o.StaleSnapshots) > 0 ||
-		len(o.UnusedKeyPairs) > 0 ||
 		len(o.S3Buckets) > 0 ||
-		len(o.S3MultipartUploads) > 0 ||
-		len(o.CloudWatchLogGroups) > 0 ||
-		len(o.StoppedRDSInstances) > 0 ||
+		len(o.S3MultipartUploads) > 0
+}
+
+func hasDatabaseWasteJSON(o model.WasteReportJSON) bool {
+	return len(o.StoppedRDSInstances) > 0 ||
 		len(o.OldRDSSnapshots) > 0 ||
-		len(o.IdleRDSInstances) > 0 ||
+		len(o.IdleRDSInstances) > 0
+}
+
+func hasNetworkWasteJSON(o model.WasteReportJSON) bool {
+	return len(o.UnusedElasticIPs) > 0 ||
+		len(o.UnusedLoadBalancers) > 0 ||
 		len(o.IdleNATGateways) > 0 ||
-		len(o.IdleLoadBalancers) > 0 ||
-		len(o.OverProvisionedLambdas) > 0 ||
-		len(o.IdleSageMakerEndpoints) > 0 ||
-		len(o.ECRNoLifecyclePolicies) > 0 ||
+		len(o.IdleLoadBalancers) > 0
+}
+
+func hasServerlessWasteJSON(o model.WasteReportJSON) bool {
+	return len(o.OverProvisionedLambdas) > 0 ||
+		len(o.IdleSageMakerEndpoints) > 0
+}
+
+func hasContainerWasteJSON(o model.WasteReportJSON) bool {
+	return len(o.ECRNoLifecyclePolicies) > 0 ||
 		len(o.ECREmptyRepositories) > 0 ||
 		len(o.ECRUntaggedImages) > 0
 }

@@ -48,6 +48,7 @@ func (m *MockPricingService) CalculateEBSSnapshotMonthlyCost(sizeGB int64) float
 	return args.Get(0).(float64)
 }
 
+// CalculateECRStorageMonthlyCost mocks the CalculateECRStorageMonthlyCost method.
 func (m *MockPricingService) CalculateECRStorageMonthlyCost(sizeGB int64) float64 {
 	args := m.Called(sizeGB)
 	return args.Get(0).(float64)

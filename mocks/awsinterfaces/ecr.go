@@ -12,6 +12,7 @@ type MockECRClient struct {
 	mock.Mock
 }
 
+// DescribeRepositories mocks the DescribeRepositories method.
 func (m *MockECRClient) DescribeRepositories(ctx context.Context, params *ecr.DescribeRepositoriesInput, optFns ...func(*ecr.Options)) (*ecr.DescribeRepositoriesOutput, error) {
 	args := m.Called(ctx, params, optFns)
 	if args.Get(0) == nil {
@@ -21,6 +22,7 @@ func (m *MockECRClient) DescribeRepositories(ctx context.Context, params *ecr.De
 	return args.Get(0).(*ecr.DescribeRepositoriesOutput), args.Error(1)
 }
 
+// DescribeImages mocks the DescribeImages method.
 func (m *MockECRClient) DescribeImages(ctx context.Context, params *ecr.DescribeImagesInput, optFns ...func(*ecr.Options)) (*ecr.DescribeImagesOutput, error) {
 	args := m.Called(ctx, params, optFns)
 	if args.Get(0) == nil {
@@ -30,6 +32,7 @@ func (m *MockECRClient) DescribeImages(ctx context.Context, params *ecr.Describe
 	return args.Get(0).(*ecr.DescribeImagesOutput), args.Error(1)
 }
 
+// GetLifecyclePolicy mocks the GetLifecyclePolicy method.
 func (m *MockECRClient) GetLifecyclePolicy(ctx context.Context, params *ecr.GetLifecyclePolicyInput, optFns ...func(*ecr.Options)) (*ecr.GetLifecyclePolicyOutput, error) {
 	args := m.Called(ctx, params, optFns)
 	if args.Get(0) == nil {

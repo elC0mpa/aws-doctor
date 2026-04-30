@@ -178,6 +178,7 @@ func countOnlyCategories(input model.RenderWasteInput) []model.CategorySummary {
 		for _, repo := range input.ECRUntaggedImages {
 			cost += repo.EstimatedMonthlyCost
 		}
+
 		categories = append(categories, model.CategorySummary{Name: "ECR (Untagged Images)", Count: n, Cost: cost})
 	}
 

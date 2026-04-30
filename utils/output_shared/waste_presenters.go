@@ -275,6 +275,7 @@ func PresentECREmptyRepository(repo model.ECREmptyRepositoryInfo) ResourceRow {
 // PresentECRUntaggedImages returns a ResourceRow for an ECR repository with untagged images
 func PresentECRUntaggedImages(repo model.ECRUntaggedImageInfo) ResourceRow {
 	sizeGB := float64(repo.UntaggedSizeBytes) / (1024 * 1024 * 1024)
+
 	return ResourceRow{
 		Category:      "ECR (Untagged Images)",
 		Identifier:    repo.RepositoryName,

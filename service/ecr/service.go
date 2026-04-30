@@ -26,10 +26,12 @@ func NewService(awsconfig aws.Config, pricingService pricing.Service) Service {
 }
 
 func (s *service) GetECRWaste(ctx context.Context) ([]model.ECRNoLifecyclePolicyInfo, []model.ECREmptyRepositoryInfo, []model.ECRUntaggedImageInfo, error) {
-	var noPolicy []model.ECRNoLifecyclePolicyInfo
-	var emptyRepos []model.ECREmptyRepositoryInfo
-	var untaggedImages []model.ECRUntaggedImageInfo
-	var mu sync.Mutex
+	var (
+		noPolicy       []model.ECRNoLifecyclePolicyInfo
+		emptyRepos     []model.ECREmptyRepositoryInfo
+		untaggedImages []model.ECRUntaggedImageInfo
+		mu             sync.Mutex
+	)
 
 	g, ctx := errgroup.WithContext(ctx)
 	g.SetLimit(10) // Limit concurrency to avoid hitting rate limits
@@ -54,6 +56,7 @@ func (s *service) GetECRWaste(ctx context.Context) ([]model.ECRNoLifecyclePolicy
 					var apiErr smithy.APIError
 					if errors.As(err, &apiErr) && apiErr.ErrorCode() == "LifecyclePolicyNotFoundException" {
 						mu.Lock()
+
 						noPolicy = append(noPolicy, model.ECRNoLifecyclePolicyInfo{RepositoryName: aws.ToString(repoName)})
 						mu.Unlock()
 					} else {
