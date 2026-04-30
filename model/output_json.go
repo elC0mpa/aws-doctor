@@ -76,7 +76,19 @@ type WasteReportJSON struct {
 	IdleLoadBalancers         []ELBIdleJSON               `json:"idle_load_balancers"`
 	OverProvisionedLambdas    []LambdaOverProvisionedJSON `json:"over_provisioned_lambdas"`
 	IdleSageMakerEndpoints    []IdleSageMakerEndpointJSON `json:"idle_sagemaker_endpoints"`
+	ECRNoLifecyclePolicies    []ECRNoLifecyclePolicyJSON  `json:"ecr_no_lifecycle_policies"`
+	ECREmptyRepositories      []ECREmptyRepositoryJSON    `json:"ecr_empty_repositories"`
+	ECRUntaggedImages         []ECRUntaggedImageJSON      `json:"ecr_untagged_images"`
 }
+
+// ECRNoLifecyclePolicyJSON is the JSON-friendly representation of an ECR repository without a lifecycle policy.
+type ECRNoLifecyclePolicyJSON ECRNoLifecyclePolicyInfo
+
+// ECREmptyRepositoryJSON is the JSON-friendly representation of an empty ECR repository.
+type ECREmptyRepositoryJSON ECREmptyRepositoryInfo
+
+// ECRUntaggedImageJSON is the JSON-friendly representation of an ECR repository with untagged images.
+type ECRUntaggedImageJSON ECRUntaggedImageInfo
 
 // IdleSageMakerEndpointJSON is the JSON-friendly representation of an idle SageMaker endpoint.
 type IdleSageMakerEndpointJSON IdleSageMakerEndpointInfo

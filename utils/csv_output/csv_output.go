@@ -91,6 +91,9 @@ func OutputWasteCSV(input model.RenderWasteInput, pricingSvc pricing.Service) er
 	rows = append(rows, mapIdleLoadBalancers(input.IdleLoadBalancers)...)
 	rows = append(rows, mapLambdaOverProvisioned(input.OverProvisionedLambdas)...)
 	rows = append(rows, mapIdleSageMakerEndpoints(input.IdleSageMakerEndpoints)...)
+	rows = append(rows, mapECRNoLifecyclePolicies(input.ECRNoLifecyclePolicies)...)
+	rows = append(rows, mapECREmptyRepositories(input.ECREmptyRepositories)...)
+	rows = append(rows, mapECRUntaggedImages(input.ECRUntaggedImages)...)
 
 	return w.WriteAll(rows)
 }

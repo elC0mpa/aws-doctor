@@ -68,6 +68,10 @@ func (s *service) addWasteSections(m core.Maroto, input model.RenderWasteInput, 
 		hasWaste = true
 	}
 
+	if s.addECRWaste(m, input) {
+		hasWaste = true
+	}
+
 	return hasWaste
 }
 
@@ -417,4 +421,31 @@ func (s *service) addWasteRow(m core.Maroto, values []string) {
 			text.NewCol(2, values[3], props.Text{Size: 8, Align: align.Right}),
 		)
 	}
+}
+
+func (s *service) addECRWaste(m core.Maroto, input model.RenderWasteInput) bool {
+	if len(input.ECRNoLifecyclePolicies) == 0 && len(input.ECREmptyRepositories) == 0 && len(input.ECRUntaggedImages) == 0 {
+		return false
+	}
+
+	s.addWasteSection(m, "ECR Repository Waste", []string{"Status", "Repository", "Info", "Est. Cost"})
+
+	for _, repo := range input.ECRNoLifecyclePolicies {
+		p := outputshared.PresentECRNoLifecyclePolicy(repo)
+		s.addWasteRow(m, []string{"No Policy", p.Identifier, p.Details, p.EstimatedCost})
+	}
+
+	for _, repo := range input.ECREmptyRepositories {
+		p := outputshared.PresentECREmptyRepository(repo)
+		s.addWasteRow(m, []string{"Empty", p.Identifier, p.Details, p.EstimatedCost})
+	}
+
+	for _, repo := range input.ECRUntaggedImages {
+		p := outputshared.PresentECRUntaggedImages(repo)
+		s.addWasteRow(m, []string{"Untagged", p.Identifier, p.Details, p.EstimatedCost})
+	}
+
+	m.AddRow(5, col.New(12))
+
+	return true
 }

@@ -49,6 +49,7 @@ func NewService(cfg Config) Service {
 		outputService:         cfg.OutputService,
 		updateService:         cfg.UpdateService,
 		reportService:         cfg.ReportService,
+		ecrService:            cfg.ECRService,
 		versionInfo:           cfg.VersionInfo,
 		vpcService:            cfg.VPCService,
 	}
@@ -237,52 +238,11 @@ func (s *service) wasteWorkflow(wasteChecks []string, generateReport bool, repor
 
 	g, ctx := errgroup.WithContext(ctx)
 
-	// Determine which checks to run
-	runAll := len(wasteChecks) == 0
-	runEC2 := runAll || slice.ContainsIgnoreCase(wasteChecks, "ec2")
-	runELB := runAll || slice.ContainsIgnoreCase(wasteChecks, "elb")
-	runS3 := runAll || slice.ContainsIgnoreCase(wasteChecks, "s3")
-	runCloudWatchLogs := runAll || slice.ContainsIgnoreCase(wasteChecks, "cloudwatch")
-	runRDS := runAll || slice.ContainsIgnoreCase(wasteChecks, "rds")
-	runVPC := runAll || slice.ContainsIgnoreCase(wasteChecks, "vpc")
-	runLambda := runAll || slice.ContainsIgnoreCase(wasteChecks, "lambda")
-	runSagemaker := runAll || slice.ContainsIgnoreCase(wasteChecks, "sagemaker")
+	input := model.RenderWasteInput{}
 
-	var input model.RenderWasteInput
+	s.dispatchWasteChecks(ctx, g, &input, wasteChecks, lambdaMemoryThreshold)
 
 	var stsResult *sts.GetCallerIdentityOutput
-
-	if runEC2 {
-		s.queueEC2Checks(ctx, g, &input)
-	}
-
-	if runVPC {
-		s.queueVPCChecks(ctx, g, &input)
-	}
-
-	if runELB {
-		s.queueELBChecks(ctx, g, &input)
-	}
-
-	if runS3 {
-		s.queueS3Checks(ctx, g, &input)
-	}
-
-	if runCloudWatchLogs {
-		s.queueCloudWatchLogsChecks(ctx, g, &input)
-	}
-
-	if runRDS {
-		s.queueRDSChecks(ctx, g, &input)
-	}
-
-	if runLambda {
-		s.queueLambdaChecks(ctx, g, &input, lambdaMemoryThreshold)
-	}
-
-	if runSagemaker {
-		s.queueSagemakerChecks(ctx, g, &input)
-	}
 
 	// Fetch caller identity concurrently (always required for output)
 	g.Go(func() error {
@@ -303,17 +263,62 @@ func (s *service) wasteWorkflow(wasteChecks []string, generateReport bool, repor
 	input.AccountID = *stsResult.Account
 
 	if generateReport {
-		path, err := s.reportService.GenerateWasteReport(input, s.pricingService, reportPath)
-		if err != nil {
-			return err
-		}
-
-		s.outputService.PrintReportSuccess(*path)
-
-		return nil
+		return s.handleWasteReport(input, reportPath)
 	}
 
 	return s.outputService.RenderWaste(input, s.pricingService)
+}
+
+func (s *service) dispatchWasteChecks(ctx context.Context, g *errgroup.Group, input *model.RenderWasteInput, wasteChecks []string, lambdaMemoryThreshold int) {
+	// Determine which checks to run
+	runAll := len(wasteChecks) == 0
+
+	if runAll || slice.ContainsIgnoreCase(wasteChecks, "ec2") {
+		s.queueEC2Checks(ctx, g, input)
+	}
+
+	if runAll || slice.ContainsIgnoreCase(wasteChecks, "vpc") {
+		s.queueVPCChecks(ctx, g, input)
+	}
+
+	if runAll || slice.ContainsIgnoreCase(wasteChecks, "elb") {
+		s.queueELBChecks(ctx, g, input)
+	}
+
+	if runAll || slice.ContainsIgnoreCase(wasteChecks, "s3") {
+		s.queueS3Checks(ctx, g, input)
+	}
+
+	if runAll || slice.ContainsIgnoreCase(wasteChecks, "cloudwatch") {
+		s.queueCloudWatchLogsChecks(ctx, g, input)
+	}
+
+	if runAll || slice.ContainsIgnoreCase(wasteChecks, "rds") {
+		s.queueRDSChecks(ctx, g, input)
+	}
+
+	if runAll || slice.ContainsIgnoreCase(wasteChecks, "lambda") {
+		s.queueLambdaChecks(ctx, g, input, lambdaMemoryThreshold)
+	}
+
+	if runAll || slice.ContainsIgnoreCase(wasteChecks, "sagemaker") {
+		s.queueSagemakerChecks(ctx, g, input)
+	}
+
+	if runAll || slice.ContainsIgnoreCase(wasteChecks, "ecr") {
+		s.queueECRChecks(ctx, g, input)
+	}
+}
+
+func (s *service) handleWasteReport(input model.RenderWasteInput, reportPath string) error {
+	path, err := s.reportService.GenerateWasteReport(input, s.pricingService, reportPath)
+	if err != nil {
+		return err
+	}
+
+	s.outputService.PrintReportSuccess(*path)
+
+	return nil
 }
 
 func (s *service) handleCostError(err error) error {
