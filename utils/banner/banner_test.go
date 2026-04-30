@@ -122,16 +122,6 @@ func TestPrintCenteredLines(t *testing.T) {
 	}
 }
 
-func TestDrawBannerTitle(t *testing.T) {
-	output := captureOutput(func() {
-		DrawBannerTitle()
-	})
-
-	if len(output) == 0 {
-		t.Error("DrawBannerTitle() produced no output")
-	}
-}
-
 func TestDrawBannerTitle_NonTerminal(t *testing.T) {
 	// When stderr is a pipe (non-TTY), only the short label should be printed.
 	output := captureOutput(func() {

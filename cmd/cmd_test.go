@@ -13,12 +13,13 @@ import (
 )
 
 const (
-	ec2     = "ec2"
-	s3Const = "s3"
-	dev     = "dev"
-	none    = "none"
-	unknown = "unknown"
-	table   = "table"
+	ec2        = "ec2"
+	s3Const    = "s3"
+	dev        = "dev"
+	none       = "none"
+	unknown    = "unknown"
+	table      = "table"
+	outputJSON = "json"
 )
 
 // MockOrchestrator is a mock implementation of the orchestrator service.
@@ -147,10 +148,10 @@ func TestPersistentFlags(t *testing.T) {
 	defer teardown()
 
 	mockOrch.On("Orchestrate", mock.MatchedBy(func(f model.Flags) bool {
-		return f.Region == "us-west-2" && f.Profile == "test-profile" && f.Output == "json"
+		return f.Region == "us-west-2" && f.Profile == "test-profile" && f.Output == outputJSON
 	})).Return(nil)
 
-	rootCmd.SetArgs([]string{"cost", "--region", "us-west-2", "--profile", "test-profile", "--output", "json"})
+	rootCmd.SetArgs([]string{"cost", "--region", "us-west-2", "--profile", "test-profile", "--output", outputJSON})
 
 	err := Execute(dev, none, unknown)
 	assert.NoError(t, err)
@@ -339,19 +340,25 @@ func TestExecuteWasteLambdaMemoryThresholdDefault(t *testing.T) {
 	mockOrch.AssertExpectations(t)
 }
 
-func TestBuildOrchestrator_NonTTY_DefaultsToJSON(t *testing.T) {
+// TestExecute_NonTTY_DefaultsToJSON verifies that PersistentPreRunE auto-selects JSON
+// when stdout is not a TTY and --output was not explicitly passed.
+func TestExecute_NonTTY_DefaultsToJSON(t *testing.T) {
 	if term.IsTerminal(int(os.Stdout.Fd())) {
 		t.Skip("skipping: stdout is a TTY, auto-detect does not apply")
 	}
 
-	outputFormat = table
+	mockOrch, teardown := setupTest()
+	defer teardown()
 
-	defer func() { outputFormat = table }()
+	mockOrch.On("Orchestrate", mock.MatchedBy(func(f model.Flags) bool {
+		return f.Waste == true && f.Output == outputJSON
+	})).Return(nil)
 
-	_, err := buildOrchestrator(false)
+	rootCmd.SetArgs([]string{"waste"})
 
+	err := Execute(dev, none, unknown)
 	assert.NoError(t, err)
-	assert.Equal(t, "json", outputFormat)
+	mockOrch.AssertExpectations(t)
 }
 
 func TestExecuteWaste_ExplicitTableOutput_Respected(t *testing.T) {
