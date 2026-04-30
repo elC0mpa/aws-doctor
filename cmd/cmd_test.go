@@ -18,6 +18,7 @@ const (
 	dev     = "dev"
 	none    = "none"
 	unknown = "unknown"
+	table   = "table"
 )
 
 // MockOrchestrator is a mock implementation of the orchestrator service.
@@ -43,7 +44,7 @@ func setupTest() (*MockOrchestrator, func()) {
 		// Reset persistent flags to default values and changed state
 		region = ""
 		profile = ""
-		outputFormat = "table"
+		outputFormat = table
 		lambdaMemoryThreshold = 10
 		rootCmd.PersistentFlags().Lookup("output").Changed = false
 		rootCmd.PersistentFlags().Lookup("region").Changed = false
@@ -343,9 +344,9 @@ func TestBuildOrchestrator_NonTTY_DefaultsToJSON(t *testing.T) {
 		t.Skip("skipping: stdout is a TTY, auto-detect does not apply")
 	}
 
-	outputFormat = "table"
+	outputFormat = table
 
-	defer func() { outputFormat = "table" }()
+	defer func() { outputFormat = table }()
 
 	_, err := buildOrchestrator(false)
 
@@ -358,10 +359,10 @@ func TestExecuteWaste_ExplicitTableOutput_Respected(t *testing.T) {
 	defer teardown()
 
 	mockOrch.On("Orchestrate", mock.MatchedBy(func(f model.Flags) bool {
-		return f.Waste == true && f.Output == "table"
+		return f.Waste == true && f.Output == table
 	})).Return(nil)
 
-	rootCmd.SetArgs([]string{"waste", "--output", "table"})
+	rootCmd.SetArgs([]string{"waste", "--output", table})
 
 	err := Execute(dev, none, unknown)
 	assert.NoError(t, err)
