@@ -1,13 +1,13 @@
 ---
 title: "Almacenamiento y Logs"
-description: "Optimice los costos de almacenamiento de S3 y CloudWatch identificando buckets sin políticas de ciclo de vida y grupos de logs sin retención."
+description: "Optimice los costos de almacenamiento de S3, CloudWatch y ECR identificando buckets sin políticas de ciclo de vida, grupos de logs sin retención y desperdicio en imágenes de contenedores."
 weight: 20
 ---
 
-Optimice sus costos de S3 y CloudWatch asegurando una gestión adecuada del ciclo de vida de los datos y limpiando el desperdicio oculto.
+Optimice sus costos de S3, CloudWatch y ECR asegurando una gestión adecuada del ciclo de vida de los datos y limpiando el desperdicio oculto.
 
 {{< callout type="info" >}}
-**Permisos Requeridos**: `s3:ListAllMyBuckets`, `s3:GetLifecycleConfiguration`, `s3:ListBucketMultipartUploads`, `logs:DescribeLogGroups`.
+**Permisos Requeridos**: `s3:ListAllMyBuckets`, `s3:GetLifecycleConfiguration`, `s3:ListBucketMultipartUploads`, `logs:DescribeLogGroups`, `ecr:DescribeRepositories`, `ecr:DescribeImages`, `ecr:GetLifecyclePolicy`.
 {{< /callout >}}
 
 ## Auditoría de Políticas de Ciclo de Vida de S3
@@ -59,3 +59,33 @@ Por defecto, los Grupos de Logs de CloudWatch se crean con un periodo de retenci
 
 ### Solución
 Establezca un **Periodo de Retención** (ej., 30, 90, o 365 días) para cada Grupo de Logs basándose en sus necesidades de negocio y cumplimiento.
+
+---
+
+## Desperdicio en ECR (Elastic Container Registry)
+
+**AWS Doctor** audita cada repositorio de **Elastic Container Registry (ECR)** en su cuenta en busca de tres categorías de desperdicio.
+
+```bash
+aws-doctor waste ecr
+```
+
+### Sin Política de Ciclo de Vida
+
+Los repositorios sin política de ciclo de vida acumulan imágenes indefinidamente. Cada imagen enviada permanece en el registro para siempre, incrementando los costos de almacenamiento con el tiempo.
+
+**Solución**: Agregue una política de ciclo de vida que expire las imágenes sin etiqueta después de un número determinado de días y conserve solo las últimas N imágenes etiquetadas.
+
+### Repositorios Vacíos
+
+Los repositorios sin imágenes son probablemente remanentes de servicios dados de baja o pipelines de CI antiguos.
+
+**Solución**: Elimine los repositorios vacíos para mantener su registro limpio y evitar confusiones en el equipo.
+
+### Imágenes Sin Etiqueta
+
+Las imágenes sin etiqueta (también llamadas imágenes "dangling") son típicamente capas de compilación intermedias o envíos antiguos que han sido reemplazados por una etiqueta más reciente. Se facturan por almacenamiento pero no tienen ningún propósito.
+
+**AWS Doctor** cuenta las imágenes sin etiqueta por repositorio, mide su tamaño total y estima el costo mensual de almacenamiento utilizando la tarifa regional de ECR obtenida de la API de precios de AWS.
+
+**Solución**: Agregue una regla de política de ciclo de vida para expirar las imágenes sin etiqueta después de 1 a 7 días.

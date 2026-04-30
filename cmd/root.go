@@ -10,6 +10,7 @@ import (
 	"github.com/elC0mpa/aws-doctor/service/cloudwatchmetrics"
 	awscostexplorer "github.com/elC0mpa/aws-doctor/service/costexplorer"
 	awsec2 "github.com/elC0mpa/aws-doctor/service/ec2"
+	"github.com/elC0mpa/aws-doctor/service/ecr"
 	"github.com/elC0mpa/aws-doctor/service/elb"
 	awslambda "github.com/elC0mpa/aws-doctor/service/lambda"
 	"github.com/elC0mpa/aws-doctor/service/orchestrator"
@@ -68,6 +69,7 @@ func buildOrchestrator(needsAWS bool) (orchestrator.Service, error) {
 	config.EC2Service = awsec2.NewService(awsCfg, pricingSvc)
 	config.ELBService = elb.NewService(awsCfg, cwMetricsService, pricingSvc)
 	config.S3Service = s3.NewService(awsCfg)
+	config.ECRService = ecr.NewService(awsCfg, pricingSvc)
 	cwLogsService := cloudwatchlogs.NewService(awsCfg, pricingSvc)
 	config.CloudWatchLogsService = cwLogsService
 	config.RDSService = rds.NewService(awsCfg, cwMetricsService, pricingSvc)

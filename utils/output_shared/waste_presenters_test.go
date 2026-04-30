@@ -337,6 +337,69 @@ func TestPresentLambdaOverProvisioned(t *testing.T) {
 	}
 }
 
+func TestPresentECRNoLifecyclePolicy(t *testing.T) {
+	repo := model.ECRNoLifecyclePolicyInfo{RepositoryName: "my-repo"}
+
+	p := PresentECRNoLifecyclePolicy(repo)
+
+	if p.Identifier != "my-repo" {
+		t.Errorf("Identifier = %v, want 'my-repo'", p.Identifier)
+	}
+
+	if p.EstimatedCost != NAValue {
+		t.Errorf("EstimatedCost = %v, want %v", p.EstimatedCost, NAValue)
+	}
+
+	if p.Details != "Lifecycle policy is recommended" {
+		t.Errorf("Details = %v, want 'Lifecycle policy is recommended'", p.Details)
+	}
+}
+
+func TestPresentECREmptyRepository(t *testing.T) {
+	repo := model.ECREmptyRepositoryInfo{RepositoryName: "empty-repo"}
+
+	p := PresentECREmptyRepository(repo)
+
+	if p.Identifier != "empty-repo" {
+		t.Errorf("Identifier = %v, want 'empty-repo'", p.Identifier)
+	}
+
+	if p.Metric != "0 images" {
+		t.Errorf("Metric = %v, want '0 images'", p.Metric)
+	}
+
+	if p.Details != "Consider deleting empty repositories" {
+		t.Errorf("Details = %v, want 'Consider deleting empty repositories'", p.Details)
+	}
+}
+
+func TestPresentECRUntaggedImages(t *testing.T) {
+	repo := model.ECRUntaggedImageInfo{
+		RepositoryName:       "untagged-repo",
+		UntaggedImageCount:   3,
+		UntaggedSizeBytes:    2 * 1024 * 1024 * 1024,
+		EstimatedMonthlyCost: 0.20,
+	}
+
+	p := PresentECRUntaggedImages(repo)
+
+	if p.Identifier != "untagged-repo" {
+		t.Errorf("Identifier = %v, want 'untagged-repo'", p.Identifier)
+	}
+
+	if p.EstimatedCost != "$0.20" {
+		t.Errorf("EstimatedCost = %v, want '$0.20'", p.EstimatedCost)
+	}
+
+	if p.Metric != "3 untagged images" {
+		t.Errorf("Metric = %v, want '3 untagged images'", p.Metric)
+	}
+
+	if p.Details != "Consuming 2.00 GB of storage" {
+		t.Errorf("Details = %v, want 'Consuming 2.00 GB of storage'", p.Details)
+	}
+}
+
 func TestPresentIdleSageMakerEndpoint(t *testing.T) {
 	ep := model.IdleSageMakerEndpointInfo{
 		EndpointName:         "test-ep",

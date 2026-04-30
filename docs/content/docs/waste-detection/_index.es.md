@@ -32,6 +32,7 @@ Si sólo desea escanear servicios de AWS específicos, puede pasarlos como argum
 | `vpc` | NAT Gateways y recursos de VPC inactivos. |
 | `cloudwatch` | Grupos de logs de CloudWatch sin políticas de retención. |
 | `sagemaker` | Detección de endpoints de SageMaker inactivos (cero invocaciones en 14 días). |
+| `ecr` | Repositorios ECR sin políticas de ciclo de vida, repositorios vacíos e imágenes sin etiqueta. |
 
 ```bash
 # Ejemplo: Escanear solo recursos de EC2 y SageMaker
@@ -45,6 +46,40 @@ Los subcomandos `waste` y `report waste` soportan flags específicos para ajusta
 | Flag | Por Defecto | Descripción |
 | :--- | :--- | :--- |
 | `--lambda-memory-threshold` | `10` | Umbral de utilización de memoria (%) por debajo del cual las funciones Lambda se marcan como sobre-provisionadas. |
+
+## Estimación de Costos por Región
+
+Cada verificación de desperdicio que reporta un costo mensual estimado utiliza **datos de precios en tiempo real** obtenidos directamente desde la [API de Precios de AWS](https://docs.aws.amazon.com/awsaccountbilling/latest/aboutv2/price-changes.html) al inicio del comando.
+
+### Cómo funciona
+
+1. Al ejecutar `aws-doctor waste`, la herramienta consulta la API de Precios de AWS para su región configurada antes de ejecutar cualquier verificación.
+2. Las tarifas obtenidas se almacenan en memoria durante la duración del comando.
+3. Cada verificación de desperdicio multiplica el uso del recurso (tamaño, horas, cantidad) por la tarifa específica de la región para producir una estimación de costo precisa.
+
+### Comportamiento de respaldo
+
+Si la llamada a la API falla por cualquier motivo (permisos insuficientes, error de red, región no soportada), **AWS Doctor recurre silenciosamente a tarifas predeterminadas integradas** basadas en los precios de us-east-1. El análisis de desperdicio siempre se completa — nunca verá un fallo por datos de precios.
+
+{{< callout type="warning" >}}
+Las estimaciones producidas sin datos de precios en tiempo real se basarán en los valores predeterminados de us-east-1 y pueden no reflejar las tarifas reales de su región.
+{{< /callout >}}
+
+### Permiso IAM requerido
+
+Para habilitar los precios en tiempo real, su principal de IAM debe tener el siguiente permiso:
+
+```json
+{
+  "Effect": "Allow",
+  "Action": "pricing:GetProducts",
+  "Resource": "*"
+}
+```
+
+Sin este permiso, la herramienta sigue funcionando y las estimaciones siguen apareciendo — simplemente utilizan los valores predeterminados integrados.
+
+---
 
 ## Categorías de Detección
 
@@ -73,7 +108,7 @@ Agrupamos el desperdicio en categorías principales de infraestructura:
     icon="archive"
     title="Almacenamiento y Logs"
     link="storage/"
-    subtitle="Buckets sin políticas de ciclo de vida, cargas multipartes incompletas y grupos de logs sin retención."
+    subtitle="Buckets sin políticas de ciclo de vida, cargas multipartes incompletas, grupos de logs sin retención y desperdicio en imágenes de contenedores ECR."
   >}}
   {{< hextra/feature-card
     icon="share"

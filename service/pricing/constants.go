@@ -29,6 +29,7 @@ const (
 	categoryRDSStorage       = "rds-storage"
 	categoryRDSSnapshot      = "rds-snapshot"
 	categorySageMakerHosting = "sagemaker-hosting"
+	categoryECR              = "ecr"
 )
 
 const (
@@ -67,6 +68,9 @@ const (
 
 	// EBSSnapshotCostPerGBMonth is the default cost of EBS snapshot storage per GB per month.
 	EBSSnapshotCostPerGBMonth = 0.05
+
+	// ECRStorageCostPerGBMonth is the default cost of ECR storage per GB per month.
+	ECRStorageCostPerGBMonth = 0.10
 )
 
 // ebsSpec maps each supported EBS volume type to its Pricing API variant name and default rate.

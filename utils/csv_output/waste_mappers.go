@@ -176,3 +176,30 @@ func mapIdleSageMakerEndpoints(endpoints []model.IdleSageMakerEndpointInfo) [][]
 
 	return result
 }
+
+func mapECRNoLifecyclePolicies(repos []model.ECRNoLifecyclePolicyInfo) [][]string {
+	result := make([][]string, 0, len(repos))
+	for _, r := range repos {
+		result = append(result, outputshared.PresentECRNoLifecyclePolicy(r).ToSlice())
+	}
+
+	return result
+}
+
+func mapECREmptyRepositories(repos []model.ECREmptyRepositoryInfo) [][]string {
+	result := make([][]string, 0, len(repos))
+	for _, r := range repos {
+		result = append(result, outputshared.PresentECREmptyRepository(r).ToSlice())
+	}
+
+	return result
+}
+
+func mapECRUntaggedImages(repos []model.ECRUntaggedImageInfo) [][]string {
+	result := make([][]string, 0, len(repos))
+	for _, r := range repos {
+		result = append(result, outputshared.PresentECRUntaggedImages(r).ToSlice())
+	}
+
+	return result
+}

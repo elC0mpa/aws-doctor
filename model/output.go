@@ -34,6 +34,9 @@ type RenderWasteInput struct {
 	IdleLoadBalancers      []ELBIdleInfo
 	OverProvisionedLambdas []LambdaOverProvisionedInfo
 	IdleSageMakerEndpoints []IdleSageMakerEndpointInfo
+	ECRNoLifecyclePolicies []ECRNoLifecyclePolicyInfo
+	ECREmptyRepositories   []ECREmptyRepositoryInfo
+	ECRUntaggedImages      []ECRUntaggedImageInfo
 }
 
 // RenderCostComparisonInput represents the input data for rendering the cost comparison report
