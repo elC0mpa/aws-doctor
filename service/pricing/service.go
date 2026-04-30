@@ -181,7 +181,7 @@ func (s *service) LoadRegionRates(ctx context.Context) error {
 
 	fetch(categoryECR, "AmazonECR", []pricingtypes.Filter{
 		regionFilter,
-		termMatch("productFamily", "Storage"),
+		termMatch("productFamily", "EC2 Container Registry"),
 	}, matchUsagetypeContains("TimedStorage-ByteHrs"))
 
 	_ = g.Wait()

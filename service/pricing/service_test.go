@@ -244,6 +244,32 @@ func TestLoadRegionRates(t *testing.T) {
 	assert.Equal(t, 0.08, price)
 }
 
+func TestLoadRegionRates_ECR(t *testing.T) {
+	ctx := context.Background()
+	mockClient := new(awsinterfaces.MockPricingClient)
+	s := &service{
+		client: mockClient,
+		prices: make(map[string]float64),
+		region: "us-east-1",
+	}
+
+	ecrJSON := `{
+		"product": { "attributes": { "productFamily": "EC2 Container Registry", "usagetype": "USE1-TimedStorage-ByteHrs" } },
+		"terms": { "OnDemand": { "SKU": { "priceDimensions": { "DIM": { "pricePerUnit": { "USD": "0.10" } } } } } }
+	}`
+
+	mockClient.On("GetProducts", mock.Anything, mock.Anything, mock.Anything).Return(&awspricing.GetProductsOutput{
+		PriceList: []string{ecrJSON},
+	}, nil)
+
+	err := s.LoadRegionRates(ctx)
+	assert.NoError(t, err)
+
+	price, ok := s.lookupMonthly(priceKey(categoryECR, ""), 0)
+	assert.True(t, ok)
+	assert.Equal(t, 0.10, price)
+}
+
 func TestLoadRegionRates_Error(t *testing.T) {
 	ctx := context.Background()
 	mockClient := new(awsinterfaces.MockPricingClient)
