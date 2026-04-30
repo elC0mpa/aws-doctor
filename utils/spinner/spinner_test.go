@@ -1,8 +1,11 @@
 package spinner
 
 import (
+	"os"
 	"testing"
 	"time"
+
+	"golang.org/x/term"
 )
 
 func TestStartAndStopSpinner(_ *testing.T) {
@@ -39,7 +42,10 @@ func TestSetMessage(t *testing.T) {
 }
 
 func TestStartSpinner_InitializesLoader(t *testing.T) {
-	// After calling StartSpinner, the global loader should be non-nil
+	if !term.IsTerminal(int(os.Stderr.Fd())) {
+		t.Skip("skipping: not a TTY, spinner is intentionally disabled in non-interactive mode")
+	}
+
 	StartSpinner()
 
 	defer StopSpinner()

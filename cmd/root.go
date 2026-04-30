@@ -3,6 +3,7 @@ package cmd
 import (
 	"context"
 	"fmt"
+	"os"
 
 	"github.com/elC0mpa/aws-doctor/model"
 	awsconfig "github.com/elC0mpa/aws-doctor/service/aws_config"
@@ -26,6 +27,7 @@ import (
 	"github.com/elC0mpa/aws-doctor/utils/banner"
 	"github.com/elC0mpa/aws-doctor/utils/spinner"
 	"github.com/spf13/cobra"
+	"golang.org/x/term"
 )
 
 var (
@@ -37,6 +39,10 @@ var (
 )
 
 func buildOrchestrator(needsAWS bool) (orchestrator.Service, error) {
+	if !term.IsTerminal(int(os.Stdout.Fd())) && !rootCmd.PersistentFlags().Changed("output") {
+		outputFormat = "json"
+	}
+
 	outputService := output.NewService(outputFormat)
 	updateService := update.NewService(versionInfo)
 
