@@ -2,12 +2,14 @@ package cmd
 
 import (
 	"errors"
+	"os"
 	"testing"
 
 	"github.com/elC0mpa/aws-doctor/model"
 	"github.com/elC0mpa/aws-doctor/service/orchestrator"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
+	"golang.org/x/term"
 )
 
 const (
@@ -38,11 +40,14 @@ func setupTest() (*MockOrchestrator, func()) {
 
 	return mockOrch, func() {
 		orchestratorBuilder = originalBuilder
-		// Reset persistent flags to default
+		// Reset persistent flags to default values and changed state
 		region = ""
 		profile = ""
 		outputFormat = "table"
-		lambdaMemoryThreshold = 10 // reset to default
+		lambdaMemoryThreshold = 10
+		rootCmd.PersistentFlags().Lookup("output").Changed = false
+		rootCmd.PersistentFlags().Lookup("region").Changed = false
+		rootCmd.PersistentFlags().Lookup("profile").Changed = false
 	}
 }
 
@@ -327,6 +332,36 @@ func TestExecuteWasteLambdaMemoryThresholdDefault(t *testing.T) {
 	})).Return(nil)
 
 	rootCmd.SetArgs([]string{"waste"})
+
+	err := Execute(dev, none, unknown)
+	assert.NoError(t, err)
+	mockOrch.AssertExpectations(t)
+}
+
+func TestBuildOrchestrator_NonTTY_DefaultsToJSON(t *testing.T) {
+	if term.IsTerminal(int(os.Stdout.Fd())) {
+		t.Skip("skipping: stdout is a TTY, auto-detect does not apply")
+	}
+
+	outputFormat = "table"
+
+	defer func() { outputFormat = "table" }()
+
+	_, err := buildOrchestrator(false)
+
+	assert.NoError(t, err)
+	assert.Equal(t, "json", outputFormat)
+}
+
+func TestExecuteWaste_ExplicitTableOutput_Respected(t *testing.T) {
+	mockOrch, teardown := setupTest()
+	defer teardown()
+
+	mockOrch.On("Orchestrate", mock.MatchedBy(func(f model.Flags) bool {
+		return f.Waste == true && f.Output == "table"
+	})).Return(nil)
+
+	rootCmd.SetArgs([]string{"waste", "--output", "table"})
 
 	err := Execute(dev, none, unknown)
 	assert.NoError(t, err)

@@ -54,3 +54,17 @@ func TestStartSpinner_InitializesLoader(t *testing.T) {
 		t.Error("StartSpinner() did not initialize loader")
 	}
 }
+
+func TestStartSpinner_NonTTY_LoaderNil(t *testing.T) {
+	if term.IsTerminal(int(os.Stderr.Fd())) {
+		t.Skip("skipping: stderr is a TTY, spinner will be initialized")
+	}
+
+	loader = nil
+
+	StartSpinner()
+
+	if loader != nil {
+		t.Error("StartSpinner() should not initialize loader in non-TTY mode")
+	}
+}

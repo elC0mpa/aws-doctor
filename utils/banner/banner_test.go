@@ -133,16 +133,13 @@ func TestDrawBannerTitle(t *testing.T) {
 }
 
 func TestDrawBannerTitle_NonTerminal(t *testing.T) {
-	// When stderr is a pipe, term.GetSize should fail
-	r, w, _ := os.Pipe()
-	oldStderr := os.Stderr
-	os.Stderr = w
+	// When stderr is a pipe (non-TTY), only the short label should be printed.
+	output := captureOutput(func() {
+		DrawBannerTitle()
+	})
 
-	// We don't use captureOutput here because we want to specifically
-	// have os.Stderr be a pipe during the term.GetSize call
-	DrawBannerTitle()
-
-	os.Stderr = oldStderr
-	_ = w.Close()
-	_ = r.Close()
+	const want = "aws-doctor\n"
+	if output != want {
+		t.Errorf("DrawBannerTitle() non-TTY output = %q, want %q", output, want)
+	}
 }
