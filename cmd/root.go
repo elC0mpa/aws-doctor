@@ -3,6 +3,7 @@ package cmd
 import (
 	"context"
 	"fmt"
+	"os"
 
 	"github.com/elC0mpa/aws-doctor/model"
 	awsconfig "github.com/elC0mpa/aws-doctor/service/aws_config"
@@ -26,6 +27,7 @@ import (
 	"github.com/elC0mpa/aws-doctor/utils/banner"
 	"github.com/elC0mpa/aws-doctor/utils/spinner"
 	"github.com/spf13/cobra"
+	"golang.org/x/term"
 )
 
 var (
@@ -50,8 +52,6 @@ func buildOrchestrator(needsAWS bool) (orchestrator.Service, error) {
 		return orchestrator.NewService(config), nil
 	}
 
-	banner.DrawBannerTitle()
-
 	cfgService := awsconfig.NewService()
 
 	awsCfg, err := cfgService.GetAWSCfg(context.Background(), region, profile)
@@ -59,6 +59,7 @@ func buildOrchestrator(needsAWS bool) (orchestrator.Service, error) {
 		return nil, fmt.Errorf("failed to load AWS config: %w", err)
 	}
 
+	banner.DrawBannerTitle()
 	spinner.StartSpinner()
 
 	cwMetricsService := cloudwatchmetrics.NewService(awsCfg)
@@ -99,6 +100,14 @@ func Execute(version, commit, date string) error {
 }
 
 func init() {
+	rootCmd.PersistentPreRunE = func(cmd *cobra.Command, _ []string) error {
+		if !term.IsTerminal(int(os.Stdout.Fd())) && !rootCmd.PersistentFlags().Changed("output") {
+			outputFormat = "json"
+		}
+
+		return nil
+	}
+
 	rootCmd.PersistentFlags().StringVar(&region, "region", "", "AWS region (defaults to AWS_REGION, AWS_DEFAULT_REGION, or ~/.aws/config)")
 	rootCmd.PersistentFlags().StringVar(&profile, "profile", "", "AWS profile configuration")
 	rootCmd.PersistentFlags().StringVar(&outputFormat, "output", "table", "Output format: table, json or csv")
