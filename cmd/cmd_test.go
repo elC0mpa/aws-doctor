@@ -2,20 +2,24 @@ package cmd
 
 import (
 	"errors"
+	"os"
 	"testing"
 
 	"github.com/elC0mpa/aws-doctor/model"
 	"github.com/elC0mpa/aws-doctor/service/orchestrator"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
+	"golang.org/x/term"
 )
 
 const (
-	ec2     = "ec2"
-	s3Const = "s3"
-	dev     = "dev"
-	none    = "none"
-	unknown = "unknown"
+	ec2        = "ec2"
+	s3Const    = "s3"
+	dev        = "dev"
+	none       = "none"
+	unknown    = "unknown"
+	table      = "table"
+	outputJSON = "json"
 )
 
 // MockOrchestrator is a mock implementation of the orchestrator service.
@@ -38,11 +42,14 @@ func setupTest() (*MockOrchestrator, func()) {
 
 	return mockOrch, func() {
 		orchestratorBuilder = originalBuilder
-		// Reset persistent flags to default
+		// Reset persistent flags to default values and changed state
 		region = ""
 		profile = ""
-		outputFormat = "table"
-		lambdaMemoryThreshold = 10 // reset to default
+		outputFormat = table
+		lambdaMemoryThreshold = 10
+		rootCmd.PersistentFlags().Lookup("output").Changed = false
+		rootCmd.PersistentFlags().Lookup("region").Changed = false
+		rootCmd.PersistentFlags().Lookup("profile").Changed = false
 	}
 }
 
@@ -141,10 +148,10 @@ func TestPersistentFlags(t *testing.T) {
 	defer teardown()
 
 	mockOrch.On("Orchestrate", mock.MatchedBy(func(f model.Flags) bool {
-		return f.Region == "us-west-2" && f.Profile == "test-profile" && f.Output == "json"
+		return f.Region == "us-west-2" && f.Profile == "test-profile" && f.Output == outputJSON
 	})).Return(nil)
 
-	rootCmd.SetArgs([]string{"cost", "--region", "us-west-2", "--profile", "test-profile", "--output", "json"})
+	rootCmd.SetArgs([]string{"cost", "--region", "us-west-2", "--profile", "test-profile", "--output", outputJSON})
 
 	err := Execute(dev, none, unknown)
 	assert.NoError(t, err)
@@ -327,6 +334,42 @@ func TestExecuteWasteLambdaMemoryThresholdDefault(t *testing.T) {
 	})).Return(nil)
 
 	rootCmd.SetArgs([]string{"waste"})
+
+	err := Execute(dev, none, unknown)
+	assert.NoError(t, err)
+	mockOrch.AssertExpectations(t)
+}
+
+// TestExecute_NonTTY_DefaultsToJSON verifies that PersistentPreRunE auto-selects JSON
+// when stdout is not a TTY and --output was not explicitly passed.
+func TestExecute_NonTTY_DefaultsToJSON(t *testing.T) {
+	if term.IsTerminal(int(os.Stdout.Fd())) {
+		t.Skip("skipping: stdout is a TTY, auto-detect does not apply")
+	}
+
+	mockOrch, teardown := setupTest()
+	defer teardown()
+
+	mockOrch.On("Orchestrate", mock.MatchedBy(func(f model.Flags) bool {
+		return f.Waste == true && f.Output == outputJSON
+	})).Return(nil)
+
+	rootCmd.SetArgs([]string{"waste"})
+
+	err := Execute(dev, none, unknown)
+	assert.NoError(t, err)
+	mockOrch.AssertExpectations(t)
+}
+
+func TestExecuteWaste_ExplicitTableOutput_Respected(t *testing.T) {
+	mockOrch, teardown := setupTest()
+	defer teardown()
+
+	mockOrch.On("Orchestrate", mock.MatchedBy(func(f model.Flags) bool {
+		return f.Waste == true && f.Output == table
+	})).Return(nil)
+
+	rootCmd.SetArgs([]string{"waste", "--output", table})
 
 	err := Execute(dev, none, unknown)
 	assert.NoError(t, err)

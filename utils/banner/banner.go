@@ -151,8 +151,14 @@ func bannerTitleColorName(color bannerColor) string {
 	return bannerTitleColorNames[int(color)]
 }
 
-// DrawBannerTitle prints the application title banner to stdout.
+// DrawBannerTitle prints the application title banner to stderr.
+// In non-TTY environments (pipes, AI tool calls) it prints a single short line instead.
 func DrawBannerTitle() {
+	if !term.IsTerminal(int(os.Stderr.Fd())) {
+		fmt.Fprintln(os.Stderr, "aws-doctor")
+		return
+	}
+
 	ansi.EnableANSI()
 
 	width := 80
