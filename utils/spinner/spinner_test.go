@@ -1,17 +1,16 @@
 package spinner
 
 import (
-	"os"
 	"testing"
 	"time"
-
-	"golang.org/x/term"
 )
 
 func TestStartAndStopSpinner(t *testing.T) {
-	if !term.IsTerminal(int(os.Stderr.Fd())) {
-		t.Skip("skipping: not a TTY, spinner is intentionally disabled in non-interactive mode")
-	}
+	// Mock terminal
+	orig := isTerminal
+	isTerminal = func(fd int) bool { return true }
+
+	defer func() { isTerminal = orig }()
 
 	StartSpinner()
 	time.Sleep(100 * time.Millisecond)
@@ -19,9 +18,11 @@ func TestStartAndStopSpinner(t *testing.T) {
 }
 
 func TestSpinnerSequence(t *testing.T) {
-	if !term.IsTerminal(int(os.Stderr.Fd())) {
-		t.Skip("skipping: not a TTY, spinner is intentionally disabled in non-interactive mode")
-	}
+	// Mock terminal
+	orig := isTerminal
+	isTerminal = func(fd int) bool { return true }
+
+	defer func() { isTerminal = orig }()
 
 	StartSpinner()
 	time.Sleep(50 * time.Millisecond)
@@ -35,6 +36,12 @@ func TestSpinnerSequence(t *testing.T) {
 }
 
 func TestSetMessage(t *testing.T) {
+	// Mock terminal
+	orig := isTerminal
+	isTerminal = func(fd int) bool { return true }
+
+	defer func() { isTerminal = orig }()
+
 	// Should not panic even if spinner is not started
 	SetMessage("Test message")
 
@@ -46,9 +53,11 @@ func TestSetMessage(t *testing.T) {
 }
 
 func TestStartSpinner_InitializesLoader(t *testing.T) {
-	if !term.IsTerminal(int(os.Stderr.Fd())) {
-		t.Skip("skipping: not a TTY, spinner is intentionally disabled in non-interactive mode")
-	}
+	// Mock terminal
+	orig := isTerminal
+	isTerminal = func(fd int) bool { return true }
+
+	defer func() { isTerminal = orig }()
 
 	StartSpinner()
 
@@ -60,9 +69,11 @@ func TestStartSpinner_InitializesLoader(t *testing.T) {
 }
 
 func TestStartSpinner_NonTTY_LoaderNil(t *testing.T) {
-	if term.IsTerminal(int(os.Stderr.Fd())) {
-		t.Skip("skipping: stderr is a TTY, spinner will be initialized")
-	}
+	// Mock non-terminal
+	orig := isTerminal
+	isTerminal = func(fd int) bool { return false }
+
+	defer func() { isTerminal = orig }()
 
 	prev := loader
 	loader = nil

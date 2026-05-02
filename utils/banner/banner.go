@@ -151,11 +151,11 @@ func bannerTitleColorName(color bannerColor) string {
 	return bannerTitleColorNames[int(color)]
 }
 
+var isTerminal = term.IsTerminal
+
 // DrawBannerTitle prints the application title banner to stderr.
-// In non-TTY environments (pipes, AI tool calls) it prints a single short line instead.
 func DrawBannerTitle() {
-	if !term.IsTerminal(int(os.Stderr.Fd())) {
-		fmt.Fprintln(os.Stderr, "aws-doctor")
+	if !isTerminal(int(os.Stderr.Fd())) {
 		return
 	}
 

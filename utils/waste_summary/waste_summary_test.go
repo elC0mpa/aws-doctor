@@ -269,3 +269,39 @@ func TestCompute_SageMaker(t *testing.T) {
 	assert.Equal(t, 125.0, categories[0].Cost)
 	assert.Equal(t, 125.0, total)
 }
+
+func TestCompute_NATGateways(t *testing.T) {
+	input := model.RenderWasteInput{
+		IdleNATGateways: []model.NATGatewayWasteInfo{
+			{NATGatewayID: "nat-1", EstimatedMonthlyCost: 32.85},
+		},
+	}
+
+	m := new(services.MockPricingService)
+	categories, total := Compute(input, m)
+
+	assert.Len(t, categories, 1)
+	assert.Equal(t, "Idle NAT Gateways", categories[0].Name)
+	assert.Equal(t, 1, categories[0].Count)
+	assert.Equal(t, 32.85, categories[0].Cost)
+	assert.Equal(t, 32.85, total)
+}
+
+func TestCompute_ECR(t *testing.T) {
+	input := model.RenderWasteInput{
+		ECRNoLifecyclePolicies: []model.ECRNoLifecyclePolicyInfo{{RepositoryName: "repo-1"}},
+		ECREmptyRepositories:   []model.ECREmptyRepositoryInfo{{RepositoryName: "repo-2"}},
+		ECRUntaggedImages: []model.ECRUntaggedImageInfo{
+			{RepositoryName: "repo-3", EstimatedMonthlyCost: 2.50},
+		},
+	}
+
+	m := new(services.MockPricingService)
+	categories, total := Compute(input, m)
+
+	assert.Len(t, categories, 3)
+	assert.Equal(t, "ECR (No Lifecycle Policy)", categories[0].Name)
+	assert.Equal(t, "ECR (Empty Repository)", categories[1].Name)
+	assert.Equal(t, "ECR (Untagged Images)", categories[2].Name)
+	assert.Equal(t, 2.50, total)
+}

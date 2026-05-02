@@ -123,13 +123,35 @@ func TestPrintCenteredLines(t *testing.T) {
 }
 
 func TestDrawBannerTitle_NonTerminal(t *testing.T) {
-	// When stderr is a pipe (non-TTY), only the short label should be printed.
+	// Mock non-terminal
+	orig := isTerminal
+	isTerminal = func(fd int) bool { return false }
+
+	defer func() { isTerminal = orig }()
+
+	// When stderr is a pipe (non-TTY), nothing should be printed.
 	output := captureOutput(func() {
 		DrawBannerTitle()
 	})
 
-	const want = "aws-doctor\n"
+	const want = ""
 	if output != want {
 		t.Errorf("DrawBannerTitle() non-TTY output = %q, want %q", output, want)
+	}
+}
+
+func TestDrawBannerTitle(t *testing.T) {
+	// Mock terminal
+	orig := isTerminal
+	isTerminal = func(fd int) bool { return true }
+
+	defer func() { isTerminal = orig }()
+
+	output := captureOutput(func() {
+		DrawBannerTitle()
+	})
+
+	if len(output) == 0 {
+		t.Error("DrawBannerTitle() produced no output in mock TTY mode")
 	}
 }
