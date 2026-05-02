@@ -109,6 +109,44 @@ func TestDrawWasteTable_WithStoppedInstances(t *testing.T) {
 	}
 }
 
+func TestDrawWasteTable_WithNATGateways(t *testing.T) {
+	natGateways := []model.NATGatewayWasteInfo{
+		{NATGatewayID: "nat-123", EstimatedMonthlyCost: 32.85},
+	}
+
+	output := captureWasteOutput(func() {
+		DrawWasteTable(model.RenderWasteInput{
+			AccountID:       "123456789012",
+			IdleNATGateways: natGateways,
+		}, services.NewMockPricingService())
+	})
+
+	if !strings.Contains(output, "NAT Gateway") {
+		t.Error("DrawWasteTable() with NAT Gateways missing section")
+	}
+}
+
+func TestDrawWasteTable_WithECR(t *testing.T) {
+	noPolicy := []model.ECRNoLifecyclePolicyInfo{{RepositoryName: "repo-1"}}
+	empty := []model.ECREmptyRepositoryInfo{{RepositoryName: "repo-2"}}
+	untagged := []model.ECRUntaggedImageInfo{
+		{RepositoryName: "repo-3", EstimatedMonthlyCost: 2.50},
+	}
+
+	output := captureWasteOutput(func() {
+		DrawWasteTable(model.RenderWasteInput{
+			AccountID:              "123456789012",
+			ECRNoLifecyclePolicies: noPolicy,
+			ECREmptyRepositories:   empty,
+			ECRUntaggedImages:      untagged,
+		}, services.NewMockPricingService())
+	})
+
+	if !strings.Contains(output, "ECR") {
+		t.Error("DrawWasteTable() with ECR missing section")
+	}
+}
+
 func TestDrawWasteTable_WithReservedInstances(t *testing.T) {
 	ris := []model.RiExpirationInfo{
 		{

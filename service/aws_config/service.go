@@ -13,7 +13,10 @@ import (
 )
 
 // loadSharedConfigProfile is a variable to allow mocking in tests.
-var loadSharedConfigProfile = config.LoadSharedConfigProfile
+var (
+	loadSharedConfigProfile = config.LoadSharedConfigProfile
+	loadDefaultConfig       = config.LoadDefaultConfig
+)
 
 // NewService creates a new AWS configuration service.
 func NewService() Service {
@@ -54,7 +57,7 @@ func (s *service) GetAWSCfg(ctx context.Context, region, profile string) (aws.Co
 		options.TokenProvider = s.mfaTokenProvider("")
 	}))
 
-	cfg, err := config.LoadDefaultConfig(ctx, opts...)
+	cfg, err := loadDefaultConfig(ctx, opts...)
 	if err != nil {
 		return aws.Config{}, fmt.Errorf("unable to load AWS config: %w", err)
 	}
@@ -123,7 +126,7 @@ func (s *service) loadConfigWithManualMFA(ctx context.Context, region, profile s
 
 	baseOpts = append(baseOpts, config.WithRegion(stsRegion))
 
-	baseCfg, err := config.LoadDefaultConfig(ctx, baseOpts...)
+	baseCfg, err := loadDefaultConfig(ctx, baseOpts...)
 	if err != nil {
 		return aws.Config{}, fmt.Errorf("failed to load source profile config: %w", err)
 	}
@@ -150,7 +153,7 @@ func (s *service) loadConfigWithManualMFA(ctx context.Context, region, profile s
 		finalOpts = append(finalOpts, config.WithRegion(sharedCfg.Region))
 	}
 
-	finalCfg, err := config.LoadDefaultConfig(ctx, finalOpts...)
+	finalCfg, err := loadDefaultConfig(ctx, finalOpts...)
 	if err != nil {
 		return aws.Config{}, fmt.Errorf("failed to load final config with mfa: %w", err)
 	}

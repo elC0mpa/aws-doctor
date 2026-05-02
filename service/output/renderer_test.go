@@ -6,6 +6,8 @@ import (
 	"os"
 	"testing"
 
+	"github.com/aws/aws-sdk-go-v2/aws"
+	cetypes "github.com/aws/aws-sdk-go-v2/service/costexplorer/types"
 	"github.com/elC0mpa/aws-doctor/model"
 	"github.com/stretchr/testify/assert"
 )
@@ -76,6 +78,53 @@ func TestRealRenderer_PrintMethods(t *testing.T) {
 			r.PrintNewVersionAvailable("v1.0.0", "v1.1.0")
 		})
 		assert.Contains(t, output, "v1.0.0 → v1.1.0")
+	})
+
+	t.Run("SpinnerMethods", func(t *testing.T) {
+		r.StopSpinner()
+		r.SetSpinnerMessage("test")
+	})
+
+	t.Run("DrawMethods_SmokeTest", func(t *testing.T) {
+		// Just ensure they don't panic with valid inputs
+		costInfo := &model.CostInfo{
+			DateInterval: cetypes.DateInterval{
+				Start: aws.String("2024-01-01"),
+				End:   aws.String("2024-01-31"),
+			},
+		}
+		input := model.RenderCostComparisonInput{
+			LastMonth:    costInfo,
+			CurrentMonth: costInfo,
+		}
+
+		captureStdout(func() {
+			r.DrawCostTable(input)
+			r.DrawTrendChart("123", []model.CostInfo{*costInfo})
+			r.DrawWasteTable(model.RenderWasteInput{}, nil)
+		})
+	})
+
+	t.Run("OutputMethods_SmokeTest", func(t *testing.T) {
+		costInfo := &model.CostInfo{
+			DateInterval: cetypes.DateInterval{
+				Start: aws.String("2024-01-01"),
+				End:   aws.String("2024-01-31"),
+			},
+		}
+		input := model.RenderCostComparisonInput{
+			LastMonth:    costInfo,
+			CurrentMonth: costInfo,
+		}
+
+		captureStdout(func() {
+			_ = r.OutputCostComparisonJSON(input)
+			_ = r.OutputCostComparisonCSV(input)
+			_ = r.OutputTrendJSON("123", []model.CostInfo{*costInfo}, []string{})
+			_ = r.OutputTrendCSV([]model.CostInfo{*costInfo}, []string{})
+			_ = r.OutputWasteJSON(model.RenderWasteInput{}, nil)
+			_ = r.OutputWasteCSV(model.RenderWasteInput{}, nil)
+		})
 	})
 }
 

@@ -8,12 +8,15 @@ import (
 	"golang.org/x/term"
 )
 
-var loader *spinner.Spinner
+var (
+	loader     *spinner.Spinner
+	isTerminal = term.IsTerminal
+)
 
 // StartSpinner starts the CLI loading spinner.
 // In non-TTY environments the spinner is skipped — ANSI codes are meaningless there.
 func StartSpinner() {
-	if !term.IsTerminal(int(os.Stderr.Fd())) {
+	if !isTerminal(int(os.Stderr.Fd())) {
 		return
 	}
 

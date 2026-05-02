@@ -67,6 +67,37 @@ func TestOutputCostComparisonCSV(t *testing.T) {
 	}
 }
 
+func TestOutputCostComparisonCSV_Errors(t *testing.T) {
+	tests := []struct {
+		name  string
+		input model.RenderCostComparisonInput
+	}{
+		{
+			name: "LastMonthNil",
+			input: model.RenderCostComparisonInput{
+				LastMonth:    nil,
+				CurrentMonth: &model.CostInfo{},
+			},
+		},
+		{
+			name: "CurrentMonthNil",
+			input: model.RenderCostComparisonInput{
+				LastMonth:    &model.CostInfo{},
+				CurrentMonth: nil,
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := OutputCostComparisonCSV(tt.input)
+			if err == nil {
+				t.Error("Expected error but got nil")
+			}
+		})
+	}
+}
+
 func TestOutputTrendCSV(t *testing.T) {
 	costs := []model.CostInfo{
 		{

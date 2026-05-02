@@ -129,6 +129,55 @@ func TestGetIdleEndpoints_ListError(t *testing.T) {
 	assert.Contains(t, err.Error(), "list fail")
 }
 
+func TestGetIdleEndpoints_CheckEndpointErrors(t *testing.T) {
+	ctx := context.Background()
+
+	t.Run("DescribeEndpoint_Error", func(t *testing.T) {
+		client := new(awsinterfaces.MockSageMakerClient)
+		client.On("ListEndpoints", mock.Anything, mock.Anything, mock.Anything).Return(&sm.ListEndpointsOutput{
+			Endpoints: []smtypes.EndpointSummary{{EndpointName: aws.String("ep")}},
+		}, nil)
+		client.On("DescribeEndpoint", mock.Anything, mock.Anything, mock.Anything).Return(nil, errors.New("describe fail"))
+
+		svc := &service{client: client}
+		_, err := svc.GetIdleEndpoints(ctx, 14)
+		assert.Error(t, err)
+	})
+
+	t.Run("DescribeEndpointConfig_Error", func(t *testing.T) {
+		client := new(awsinterfaces.MockSageMakerClient)
+		client.On("ListEndpoints", mock.Anything, mock.Anything, mock.Anything).Return(&sm.ListEndpointsOutput{
+			Endpoints: []smtypes.EndpointSummary{{EndpointName: aws.String("ep")}},
+		}, nil)
+		client.On("DescribeEndpoint", mock.Anything, mock.Anything, mock.Anything).Return(&sm.DescribeEndpointOutput{
+			EndpointConfigName: aws.String("cfg"),
+		}, nil)
+		client.On("DescribeEndpointConfig", mock.Anything, mock.Anything, mock.Anything).Return(nil, errors.New("cfg fail"))
+
+		svc := &service{client: client}
+		_, err := svc.GetIdleEndpoints(ctx, 14)
+		assert.Error(t, err)
+	})
+
+	t.Run("CloudWatch_Error_ReturnsFalse", func(t *testing.T) {
+		client := new(awsinterfaces.MockSageMakerClient)
+		cw := new(mockCWMetricsService)
+
+		wireEndpoint(client, "ep", "cfg", "ml.t2.medium")
+
+		client.On("ListEndpoints", mock.Anything, mock.Anything, mock.Anything).Return(&sm.ListEndpointsOutput{
+			Endpoints: []smtypes.EndpointSummary{{EndpointName: aws.String("ep")}},
+		}, nil)
+
+		cw.On("SageMakerVariantInvocations", mock.Anything, "ep", "AllTraffic", 14).Return(0.0, errors.New("cw fail"))
+
+		svc := &service{client: client, cwService: cw}
+		results, err := svc.GetIdleEndpoints(ctx, 14)
+		assert.NoError(t, err)
+		assert.Empty(t, results)
+	})
+}
+
 func TestNewService(t *testing.T) {
 	cfg := aws.Config{}
 	svc := NewService(cfg, nil, nil)

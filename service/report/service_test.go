@@ -231,6 +231,23 @@ func TestGenerateReports(t *testing.T) {
 			RDSIdleInstances: []model.RDSIdleInstanceInfo{
 				{DBInstanceID: "rds-idle-123", Engine: "aurora", EstimatedMonthlyCost: 30.0, DaysChecked: 7},
 			},
+			IdleNATGateways: []model.NATGatewayWasteInfo{
+				{NATGatewayID: "nat-123", EstimatedMonthlyCost: 32.85},
+			},
+			IdleLoadBalancers: []model.ELBIdleInfo{
+				{Name: "idle-lb-123", Type: "application", EstimatedMonthlyCost: 16.43},
+			},
+			OverProvisionedLambdas: []model.LambdaOverProvisionedInfo{
+				{FunctionName: "fn-123", Runtime: "nodejs18.x", ConfiguredMemoryMB: 1024, MaxMemoryUsedMB: 128, RecommendedMemoryMB: 256},
+			},
+			IdleSageMakerEndpoints: []model.IdleSageMakerEndpointInfo{
+				{EndpointName: "sm-123", DaysChecked: 14, EstimatedMonthlyCost: 50.0},
+			},
+			ECRNoLifecyclePolicies: []model.ECRNoLifecyclePolicyInfo{{RepositoryName: "ecr-no-policy"}},
+			ECREmptyRepositories:   []model.ECREmptyRepositoryInfo{{RepositoryName: "ecr-empty"}},
+			ECRUntaggedImages: []model.ECRUntaggedImageInfo{
+				{RepositoryName: "ecr-untagged", UntaggedImageCount: 10, EstimatedMonthlyCost: 2.50},
+			},
 		}
 
 		absPath, _ := filepath.Abs(path)

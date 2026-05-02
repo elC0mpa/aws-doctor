@@ -182,6 +182,26 @@ func TestStopSpinner(t *testing.T) {
 	mr.AssertExpectations(t)
 }
 
+func TestSetSpinnerMessage(t *testing.T) {
+	mr := new(renderers.MockRenderer)
+	s := &service{renderer: mr}
+
+	mr.On("SetSpinnerMessage", "Loading...").Return()
+
+	s.SetSpinnerMessage("Loading...")
+	mr.AssertExpectations(t)
+}
+
+func TestPrintFirstDayOfMonthError(t *testing.T) {
+	mr := new(renderers.MockRenderer)
+	s := &service{renderer: mr}
+
+	mr.On("PrintFirstDayOfMonthError").Return()
+
+	s.PrintFirstDayOfMonthError()
+	mr.AssertExpectations(t)
+}
+
 func TestPrintReportSuccess(t *testing.T) {
 	mr := new(renderers.MockRenderer)
 	s := &service{renderer: mr}
