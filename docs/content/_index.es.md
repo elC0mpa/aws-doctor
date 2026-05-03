@@ -101,7 +101,7 @@ layout: "hextra-home"
   {{< hextra/feature-card
     icon="server"
     title="Cómputo y EBS"
-    subtitle="Detecta instancias EC2 inactivas, volúmenes EBS sin usar y snapshots huérfanos."
+    subtitle="Detecta instancias EC2 detenidas, volúmenes EBS sin usar, snapshots huérfanos, AMIs no utilizadas, key pairs sin usar, Reserved Instances por vencer y memoria sobre-provisionada en Lambda."
   >}}
   {{< hextra/feature-card
     icon="database"
@@ -110,23 +110,23 @@ layout: "hextra-home"
   >}}
   {{< hextra/feature-card
     icon="archive"
-    title="Almacenamiento S3"
-    subtitle="Audita buckets sin políticas de ciclo de vida y limpia cargas multipartes abandonadas."
-  >}}
-  {{< hextra/feature-card
-    icon="terminal"
-    title="CloudWatch Logs"
-    subtitle="Detecta grupos de logs sin políticas de retención y calcula ahorros potenciales de almacenamiento."
+    title="Almacenamiento y Logs"
+    subtitle="Audita buckets S3 sin políticas de ciclo de vida, cargas multipartes abandonadas, grupos de logs de CloudWatch sin retención y repositorios ECR con imágenes sin etiqueta o sin políticas de ciclo de vida."
   >}}
   {{< hextra/feature-card
     icon="share"
     title="Redes"
-    subtitle="Identifica IPs Elásticas sin asociar y Load Balancers sin objetivos saludables."
+    subtitle="Identifica IPs Elásticas sin asociar, NAT Gateways inactivos y Load Balancers sin objetivos saludables."
   >}}
   {{< hextra/feature-card
     icon="chip"
     title="Machine Learning"
     subtitle="Detecta endpoints de SageMaker inactivos con cero invocaciones recientes."
+  >}}
+  {{< hextra/feature-card
+    icon="key"
+    title="Configuración y Secretos"
+    subtitle="Marca secretos de Secrets Manager no utilizados que no han sido accedidos dentro de un umbral configurable."
   >}}
 {{< /hextra/feature-grid >}}
 

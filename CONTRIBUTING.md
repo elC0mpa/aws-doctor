@@ -137,6 +137,24 @@ This approach lets you test multiple features together locally without affecting
 - **Update documentation** - update README.md if adding new flags or features. For developers and AI agents, also ensure `AGENTS.md` is updated if architectural patterns change.
 - **Follow existing patterns** - match the code style and architecture of existing code
 
+### Docs Site Card Grids
+
+The "Instant Infrastructure Audit" section on the home page (`docs/content/_index.md` / `_index.es.md`) and the "Categories of Detection" grid on the waste-detection index (`docs/content/docs/waste-detection/_index.md` / `_index.es.md`) must mirror each other: every waste-detection category card must appear in both grids, and vice versa. When adding or removing a waste-detection category, update both pages.
+
+Rules for these grids:
+- **No duplicate links**: Two cards in the same grid must never point to the same page or anchor. If a sub-feature (e.g., Lambda) lives on an existing category page (e.g., Compute), mention it in that category's subtitle instead of creating a separate card.
+- **One card per docs page**: Each waste-detection docs page (`compute.md`, `databases.md`, `storage.md`, `networking.md`, `machine-learning.md`, `configuration.md`, etc.) maps to exactly one card in each grid.
+
+### IAM Permissions Style
+
+On the docs site, IAM permissions must be expressed using inline callouts or plain text with backtick-formatted action names (e.g., `secretsmanager:ListSecrets`). Never use JSON policy blocks to show required permissions. Follow the pattern used in each waste-detection category page:
+
+```
+{{</* callout type="info" */>}}
+**Permissions Required**: `action:One`, `action:Two`.
+{{</* /callout */>}}
+```
+
 ### PR Title Format
 
 Use [Conventional Commits](https://www.conventionalcommits.org/) style:

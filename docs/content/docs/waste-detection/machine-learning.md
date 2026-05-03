@@ -4,10 +4,14 @@ description: "Detect idle AWS SageMaker endpoints that are billing but not being
 weight: 60
 type: docs
 prev: /docs/waste-detection/networking
-next: /docs/reporting
+next: /docs/waste-detection/configuration
 ---
 
 Machine Learning resources, particularly **Amazon SageMaker** endpoints, are often among the most expensive components of an AWS architecture. It is common for data scientists and developers to deploy endpoints for testing or validation and forget to decommission them once the work is complete.
+
+{{< callout type="info" >}}
+**Permissions Required**: `sagemaker:ListEndpoints`, `sagemaker:DescribeEndpoint`, `sagemaker:DescribeEndpointConfig`, `cloudwatch:GetMetricStatistics`.
+{{< /callout >}}
 
 **AWS Doctor** helps you identify these idle endpoints to prevent unnecessary costs.
 
