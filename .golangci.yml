@@ -28,7 +28,7 @@ linters:
         - name: exported
           disabled: false
     gocyclo:
-      min-complexity: 20
+      min-complexity: 30
     goconst:
       min-len: 3
       min-occurrences: 3

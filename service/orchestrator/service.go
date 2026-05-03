@@ -45,6 +45,7 @@ func NewService(cfg Config) Service {
 		rdsService:            cfg.RDSService,
 		lambdaService:         cfg.LambdaService,
 		sagemakerService:      cfg.SageMakerService,
+		secretsmanagerService: cfg.SecretsManagerService,
 		pricingService:        cfg.PricingService,
 		outputService:         cfg.OutputService,
 		updateService:         cfg.UpdateService,
@@ -80,7 +81,7 @@ func (s *service) Orchestrate(flags model.Flags) error {
 
 	switch {
 	case flags.Waste:
-		workflowErr = s.wasteWorkflow(flags.WasteChecks, flags.Report, flags.ReportPath, flags.LambdaMemoryThreshold)
+		workflowErr = s.wasteWorkflow(flags.WasteChecks, flags.Report, flags.ReportPath, flags.LambdaMemoryThreshold, flags.SecretsIdleDays)
 	case flags.Trend:
 		workflowErr = s.trendWorkflow(flags.TrendChecks, flags.Report, flags.ReportPath)
 	default:
@@ -231,7 +232,7 @@ func (s *service) trendWorkflow(trendChecks []string, generateReport bool, repor
 }
 
 // wasteWorkflow dispatches one check per AWS service concurrently.
-func (s *service) wasteWorkflow(wasteChecks []string, generateReport bool, reportPath string, lambdaMemoryThreshold int) error {
+func (s *service) wasteWorkflow(wasteChecks []string, generateReport bool, reportPath string, lambdaMemoryThreshold int, secretsIdleDays int) error {
 	ctx := context.Background()
 
 	s.loadPricing(ctx)
@@ -240,7 +241,7 @@ func (s *service) wasteWorkflow(wasteChecks []string, generateReport bool, repor
 
 	input := model.RenderWasteInput{}
 
-	s.dispatchWasteChecks(ctx, g, &input, wasteChecks, lambdaMemoryThreshold)
+	s.dispatchWasteChecks(ctx, g, &input, wasteChecks, lambdaMemoryThreshold, secretsIdleDays)
 
 	var stsResult *sts.GetCallerIdentityOutput
 
@@ -269,7 +270,7 @@ func (s *service) wasteWorkflow(wasteChecks []string, generateReport bool, repor
 	return s.outputService.RenderWaste(input, s.pricingService)
 }
 
-func (s *service) dispatchWasteChecks(ctx context.Context, g *errgroup.Group, input *model.RenderWasteInput, wasteChecks []string, lambdaMemoryThreshold int) {
+func (s *service) dispatchWasteChecks(ctx context.Context, g *errgroup.Group, input *model.RenderWasteInput, wasteChecks []string, lambdaMemoryThreshold int, secretsIdleDays int) {
 	// Determine which checks to run
 	runAll := len(wasteChecks) == 0
 
@@ -307,6 +308,10 @@ func (s *service) dispatchWasteChecks(ctx context.Context, g *errgroup.Group, in
 
 	if runAll || slice.ContainsIgnoreCase(wasteChecks, "ecr") {
 		s.queueECRChecks(ctx, g, input)
+	}
+
+	if runAll || slice.ContainsIgnoreCase(wasteChecks, "secrets-manager") {
+		s.queueSecretsManagerChecks(ctx, g, input, secretsIdleDays)
 	}
 }
 

@@ -41,7 +41,8 @@ func hasAnyWaste(input model.RenderWasteInput) bool {
 		hasNetworkWaste(input) ||
 		hasServerlessWaste(input) ||
 		hasECRWaste(input) ||
-		len(input.CloudWatchLogGroups) > 0
+		len(input.CloudWatchLogGroups) > 0 ||
+		len(input.UnusedSecrets) > 0
 }
 
 func hasEC2Waste(input model.RenderWasteInput) bool {
@@ -90,6 +91,7 @@ func drawWasteSections(input model.RenderWasteInput, pricingSvc pricing.Service)
 	drawDatabaseSections(input)
 	drawServerlessSections(input)
 	drawContainerSections(input)
+	drawSecretsManagerSections(input, pricingSvc)
 }
 
 func drawStorageSections(input model.RenderWasteInput, pricingSvc pricing.Service) {
@@ -157,6 +159,35 @@ func drawServerlessSections(input model.RenderWasteInput) {
 func drawContainerSections(input model.RenderWasteInput) {
 	if len(input.ECRNoLifecyclePolicies) > 0 || len(input.ECREmptyRepositories) > 0 || len(input.ECRUntaggedImages) > 0 {
 		drawECRTable(input.ECRNoLifecyclePolicies, input.ECREmptyRepositories, input.ECRUntaggedImages)
+	}
+}
+
+func drawSecretsManagerSections(input model.RenderWasteInput, pricingSvc pricing.Service) {
+	if len(input.UnusedSecrets) > 0 {
+		drawSecretsManagerTable(input.UnusedSecrets, pricingSvc)
+	}
+}
+
+func drawSecretsManagerTable(secrets []model.UnusedSecretInfo, pricingSvc pricing.Service) {
+	t := table.NewWriter()
+	t.SetOutputMirror(os.Stdout)
+	t.SetStyle(table.StyleRounded)
+	t.SetTitle("Secrets Manager Waste")
+
+	t.AppendHeader(table.Row{"Secret Name", "Last Accessed", "Est. Cost/Mo"})
+
+	t.SetColumnConfigs([]table.ColumnConfig{
+		{Number: 3, Align: text.AlignRight},
+	})
+
+	for _, s := range secrets {
+		row := outputshared.PresentUnusedSecret(s, pricingSvc)
+		t.AppendRow(table.Row{row.Identifier, row.Age + " days ago", row.EstimatedCost})
+	}
+
+	if t.Length() > 0 {
+		t.Render()
+		fmt.Println()
 	}
 }
 

@@ -285,3 +285,23 @@ func PresentECRUntaggedImages(repo model.ECRUntaggedImageInfo) ResourceRow {
 		Details:       fmt.Sprintf("Consuming %.2f GB of storage", sizeGB),
 	}
 }
+
+// PresentUnusedSecret returns a ResourceRow for an unused secret
+func PresentUnusedSecret(secret model.UnusedSecretInfo, pricingSvc pricing.Service) ResourceRow {
+	lastAccessed := NAValue
+	daysAgo := NAValue
+
+	if secret.LastAccessedDate != nil {
+		lastAccessed = secret.LastAccessedDate.Format(time.RFC3339)
+		daysAgo = fmt.Sprintf("%d", int(time.Since(*secret.LastAccessedDate).Hours()/24))
+	}
+
+	return ResourceRow{
+		Category:      "Unused Secret",
+		Identifier:    secret.Name,
+		EstimatedCost: fmt.Sprintf("$%.2f", pricingSvc.CalculateSecretsManagerMonthlyCost(1)),
+		Metric:        NAValue,
+		Age:           daysAgo,
+		Details:       fmt.Sprintf("Last accessed on %s", lastAccessed),
+	}
+}

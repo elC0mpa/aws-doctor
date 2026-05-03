@@ -37,6 +37,7 @@ type RenderWasteInput struct {
 	ECRNoLifecyclePolicies []ECRNoLifecyclePolicyInfo
 	ECREmptyRepositories   []ECREmptyRepositoryInfo
 	ECRUntaggedImages      []ECRUntaggedImageInfo
+	UnusedSecrets          []UnusedSecretInfo
 }
 
 // RenderCostComparisonInput represents the input data for rendering the cost comparison report

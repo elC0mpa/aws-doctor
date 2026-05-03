@@ -30,9 +30,13 @@ const (
 	categoryRDSSnapshot      = "rds-snapshot"
 	categorySageMakerHosting = "sagemaker-hosting"
 	categoryECR              = "ecr"
+	categorySecretsManager   = "secretsmanager"
 )
 
 const (
+	// SecretsManagerCostPerSecretMonth is the default cost of a secret per month in Secrets Manager.
+	SecretsManagerCostPerSecretMonth = 0.40
+
 	// EIPCostPerMonth is the default cost of an unassociated Elastic IP (~$0.005/hour * 730 hours).
 	EIPCostPerMonth = 3.65
 
