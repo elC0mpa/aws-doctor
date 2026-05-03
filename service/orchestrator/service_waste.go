@@ -144,3 +144,13 @@ func (s *service) queueECRChecks(ctx context.Context, g *errgroup.Group, input *
 		return err
 	})
 }
+
+func (s *service) queueSecretsManagerChecks(ctx context.Context, g *errgroup.Group, input *model.RenderWasteInput, secretsIdleDays int) {
+	g.Go(func() error {
+		var err error
+
+		input.UnusedSecrets, err = s.secretsmanagerService.GetUnusedSecrets(ctx, secretsIdleDays)
+
+		return err
+	})
+}

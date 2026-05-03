@@ -43,10 +43,12 @@ func TestOrchestrate_RouteToDefaultWorkflow(t *testing.T) {
 		RDSService:            mockRDS,
 		LambdaService:         mockLambda,
 		SageMakerService:      mockSageMaker,
+		SecretsManagerService: new(services.MockSecretsManagerService),
 		PricingService:        mockPricing,
 		OutputService:         mockOutput,
 		UpdateService:         mockUpdate,
 		ReportService:         mockReport,
+		VPCService:            new(services.MockVPCService),
 		VersionInfo:           model.VersionInfo{Version: "dev", Commit: "none", Date: "unknown"},
 	}
 	svc := NewService(config)
@@ -99,10 +101,12 @@ func TestOrchestrate_RouteToUpdateWorkflow(t *testing.T) {
 		RDSService:            mockRDS,
 		LambdaService:         mockLambda,
 		SageMakerService:      new(services.MockSageMakerService),
+		SecretsManagerService: new(services.MockSecretsManagerService),
 		PricingService:        new(services.MockPricingService),
 		OutputService:         mockOutput,
 		UpdateService:         mockUpdate,
 		ReportService:         mockReport,
+		VPCService:            new(services.MockVPCService),
 		VersionInfo:           model.VersionInfo{Version: "dev", Commit: "none", Date: "unknown"},
 	}
 	svc := NewService(config)
@@ -144,10 +148,12 @@ func TestOrchestrate_UpdateWorkflow_HomebrewInstall(t *testing.T) {
 		RDSService:            mockRDS,
 		LambdaService:         mockLambda,
 		SageMakerService:      new(services.MockSageMakerService),
+		SecretsManagerService: new(services.MockSecretsManagerService),
 		PricingService:        new(services.MockPricingService),
 		OutputService:         mockOutput,
 		UpdateService:         mockUpdate,
 		ReportService:         mockReport,
+		VPCService:            new(services.MockVPCService),
 		VersionInfo:           model.VersionInfo{Version: "v1.0.0", Commit: "abc", Date: "2024-01-01"},
 	}
 	svc := NewService(config)
@@ -205,10 +211,12 @@ func TestOrchestrate_RouteToVersionWorkflow(t *testing.T) {
 		RDSService:            mockRDS,
 		LambdaService:         mockLambda,
 		SageMakerService:      new(services.MockSageMakerService),
+		SecretsManagerService: new(services.MockSecretsManagerService),
 		PricingService:        new(services.MockPricingService),
 		OutputService:         mockOutput,
 		UpdateService:         mockUpdate,
 		ReportService:         mockReport,
+		VPCService:            new(services.MockVPCService),
 		VersionInfo:           versionInfo,
 	}
 	svc := NewService(config)
@@ -252,10 +260,12 @@ func TestOrchestrate_RouteToTrendWorkflow(t *testing.T) {
 		RDSService:            mockRDS,
 		LambdaService:         mockLambda,
 		SageMakerService:      new(services.MockSageMakerService),
+		SecretsManagerService: new(services.MockSecretsManagerService),
 		PricingService:        new(services.MockPricingService),
 		OutputService:         mockOutput,
 		UpdateService:         mockUpdate,
 		ReportService:         mockReport,
+		VPCService:            new(services.MockVPCService),
 		VersionInfo:           model.VersionInfo{Version: "dev", Commit: "none", Date: "unknown"},
 	}
 	svc := NewService(config)
@@ -299,6 +309,7 @@ func TestOrchestrate_RouteToWasteWorkflow(t *testing.T) {
 	mockRDS := new(services.MockRDSService)
 	mockVPC := new(services.MockVPCService)
 	mockECR := new(services.MockECRService)
+	mockSecretsManager := new(services.MockSecretsManagerService)
 	config := Config{
 		STSService:            mockSTS,
 		CostService:           mockCost,
@@ -310,6 +321,7 @@ func TestOrchestrate_RouteToWasteWorkflow(t *testing.T) {
 		VPCService:            mockVPC,
 		LambdaService:         mockLambda,
 		SageMakerService:      mockSageMaker,
+		SecretsManagerService: mockSecretsManager,
 		ECRService:            mockECR,
 		PricingService:        mockPricing,
 		OutputService:         mockOutput,
@@ -335,6 +347,7 @@ func TestOrchestrate_RouteToWasteWorkflow(t *testing.T) {
 	mockLambda.On("GetOverProvisionedFunctions", mock.Anything, mock.Anything, lambdaLookbackDays).Return([]model.LambdaOverProvisionedInfo{}, nil)
 	mockSageMaker.On("GetIdleEndpoints", mock.Anything, mock.Anything).Return([]model.IdleSageMakerEndpointInfo{}, nil)
 	mockECR.On("GetECRWaste", mock.Anything).Return([]model.ECRNoLifecyclePolicyInfo{}, []model.ECREmptyRepositoryInfo{}, []model.ECRUntaggedImageInfo{}, nil)
+	mockSecretsManager.On("GetUnusedSecrets", mock.Anything, mock.Anything).Return([]model.UnusedSecretInfo{}, nil)
 	mockSTS.On("GetCallerIdentity", mock.Anything).Return(&sts.GetCallerIdentityOutput{
 		Account: aws.String("123456789012"),
 	}, nil)
@@ -374,6 +387,7 @@ func TestOrchestrate_WasteTakesPrecedenceOverTrend(t *testing.T) {
 	mockRDS := new(services.MockRDSService)
 	mockVPC := new(services.MockVPCService)
 	mockECR := new(services.MockECRService)
+	mockSecretsManager := new(services.MockSecretsManagerService)
 	config := Config{
 		STSService:            mockSTS,
 		CostService:           mockCost,
@@ -385,6 +399,7 @@ func TestOrchestrate_WasteTakesPrecedenceOverTrend(t *testing.T) {
 		VPCService:            mockVPC,
 		LambdaService:         mockLambda,
 		SageMakerService:      mockSageMaker,
+		SecretsManagerService: mockSecretsManager,
 		ECRService:            mockECR,
 		PricingService:        mockPricing,
 		OutputService:         mockOutput,
@@ -410,6 +425,7 @@ func TestOrchestrate_WasteTakesPrecedenceOverTrend(t *testing.T) {
 	mockLambda.On("GetOverProvisionedFunctions", mock.Anything, mock.Anything, lambdaLookbackDays).Return([]model.LambdaOverProvisionedInfo{}, nil)
 	mockSageMaker.On("GetIdleEndpoints", mock.Anything, mock.Anything).Return([]model.IdleSageMakerEndpointInfo{}, nil)
 	mockECR.On("GetECRWaste", mock.Anything).Return([]model.ECRNoLifecyclePolicyInfo{}, []model.ECREmptyRepositoryInfo{}, []model.ECRUntaggedImageInfo{}, nil)
+	mockSecretsManager.On("GetUnusedSecrets", mock.Anything, mock.Anything).Return([]model.UnusedSecretInfo{}, nil)
 	mockSTS.On("GetCallerIdentity", mock.Anything).Return(&sts.GetCallerIdentityOutput{
 		Account: aws.String("123456789012"),
 	}, nil)
@@ -452,10 +468,12 @@ func TestOrchestrate_TrendWorkflow_Mapping(t *testing.T) {
 		RDSService:            mockRDS,
 		LambdaService:         mockLambda,
 		SageMakerService:      new(services.MockSageMakerService),
+		SecretsManagerService: new(services.MockSecretsManagerService),
 		PricingService:        new(services.MockPricingService),
 		OutputService:         mockOutput,
 		UpdateService:         mockUpdate,
 		ReportService:         mockReport,
+		VPCService:            new(services.MockVPCService),
 		VersionInfo:           model.VersionInfo{Version: "dev", Commit: "none", Date: "unknown"},
 	}
 	svc := NewService(config)
@@ -570,9 +588,11 @@ func TestDefaultWorkflow_CostServiceError(t *testing.T) {
 				RDSService:            mockRDS,
 				LambdaService:         mockLambda,
 				SageMakerService:      new(services.MockSageMakerService),
+				SecretsManagerService: new(services.MockSecretsManagerService),
 				OutputService:         mockOutput,
 				UpdateService:         mockUpdate,
 				ReportService:         mockReport,
+				VPCService:            new(services.MockVPCService),
 				VersionInfo:           model.VersionInfo{Version: "dev", Commit: "none", Date: "unknown"},
 			}
 			svc := NewService(config)
@@ -637,9 +657,11 @@ func TestTrendWorkflow_Error(t *testing.T) {
 				RDSService:            mockRDS,
 				LambdaService:         mockLambda,
 				SageMakerService:      new(services.MockSageMakerService),
+				SecretsManagerService: new(services.MockSecretsManagerService),
 				OutputService:         mockOutput,
 				UpdateService:         mockUpdate,
 				ReportService:         mockReport,
+				VPCService:            new(services.MockVPCService),
 				VersionInfo:           model.VersionInfo{Version: "dev", Commit: "none", Date: "unknown"},
 			}
 			svc := NewService(config)
@@ -654,12 +676,12 @@ func TestTrendWorkflow_Error(t *testing.T) {
 func TestWasteWorkflow_Error(t *testing.T) {
 	tests := []struct {
 		name        string
-		setupMocks  func(*services.MockEC2Service, *services.MockELBService, *services.MockS3Service, *services.MockCloudWatchLogsService, *services.MockRDSService, *services.MockSTSService, *services.MockVPCService, *services.MockLambdaService, *services.MockSageMakerService, *services.MockECRService)
+		setupMocks  func(*services.MockEC2Service, *services.MockELBService, *services.MockS3Service, *services.MockCloudWatchLogsService, *services.MockRDSService, *services.MockSTSService, *services.MockVPCService, *services.MockLambdaService, *services.MockSageMakerService, *services.MockECRService, *services.MockSecretsManagerService)
 		expectedErr string
 	}{
 		{
 			name: "GetUnusedElasticIpAddressesInfo_fails",
-			setupMocks: func(mockEC2 *services.MockEC2Service, mockELB *services.MockELBService, mockS3 *services.MockS3Service, mockCloudWatch *services.MockCloudWatchLogsService, mockRDS *services.MockRDSService, mockSTS *services.MockSTSService, mockVPC *services.MockVPCService, mockLambda *services.MockLambdaService, mockSageMaker *services.MockSageMakerService, mockECR *services.MockECRService) {
+			setupMocks: func(mockEC2 *services.MockEC2Service, mockELB *services.MockELBService, mockS3 *services.MockS3Service, mockCloudWatch *services.MockCloudWatchLogsService, mockRDS *services.MockRDSService, mockSTS *services.MockSTSService, mockVPC *services.MockVPCService, mockLambda *services.MockLambdaService, mockSageMaker *services.MockSageMakerService, mockECR *services.MockECRService, mockSecrets *services.MockSecretsManagerService) {
 				mockEC2.On("GetUnusedElasticIPAddressesInfo", mock.Anything).Return(([]types.Address)(nil), errors.New("EIP error"))
 				mockEC2.On("GetUnusedEBSVolumes", mock.Anything).Return([]types.Volume{}, nil)
 				mockEC2.On("GetStoppedInstancesInfo", mock.Anything, ec2StoppedDays).Return([]types.Instance{}, []types.Volume{}, nil)
@@ -674,6 +696,7 @@ func TestWasteWorkflow_Error(t *testing.T) {
 				mockLambda.On("GetOverProvisionedFunctions", mock.Anything, mock.Anything, lambdaLookbackDays).Return([]model.LambdaOverProvisionedInfo{}, nil)
 				mockSageMaker.On("GetIdleEndpoints", mock.Anything, mock.Anything).Return([]model.IdleSageMakerEndpointInfo{}, nil)
 				mockECR.On("GetECRWaste", mock.Anything).Return([]model.ECRNoLifecyclePolicyInfo{}, []model.ECREmptyRepositoryInfo{}, []model.ECRUntaggedImageInfo{}, nil)
+				mockSecrets.On("GetUnusedSecrets", mock.Anything, mock.Anything).Return([]model.UnusedSecretInfo{}, nil)
 
 				mockELB.On("GetLoadBalancerWaste", mock.Anything, elbIdleDays).Return([]elbtypes.LoadBalancer{}, []model.ELBIdleInfo{}, nil)
 				mockSTS.On("GetCallerIdentity", mock.Anything).Return(&sts.GetCallerIdentityOutput{
@@ -684,7 +707,7 @@ func TestWasteWorkflow_Error(t *testing.T) {
 		},
 		{
 			name: "GetUnusedEBSVolumes_fails",
-			setupMocks: func(mockEC2 *services.MockEC2Service, mockELB *services.MockELBService, mockS3 *services.MockS3Service, mockCloudWatch *services.MockCloudWatchLogsService, mockRDS *services.MockRDSService, mockSTS *services.MockSTSService, mockVPC *services.MockVPCService, mockLambda *services.MockLambdaService, mockSageMaker *services.MockSageMakerService, mockECR *services.MockECRService) {
+			setupMocks: func(mockEC2 *services.MockEC2Service, mockELB *services.MockELBService, mockS3 *services.MockS3Service, mockCloudWatch *services.MockCloudWatchLogsService, mockRDS *services.MockRDSService, mockSTS *services.MockSTSService, mockVPC *services.MockVPCService, mockLambda *services.MockLambdaService, mockSageMaker *services.MockSageMakerService, mockECR *services.MockECRService, mockSecrets *services.MockSecretsManagerService) {
 				mockEC2.On("GetUnusedElasticIPAddressesInfo", mock.Anything).Return([]types.Address{}, nil)
 				mockEC2.On("GetUnusedEBSVolumes", mock.Anything).Return(([]types.Volume)(nil), errors.New("EBS error"))
 				mockEC2.On("GetStoppedInstancesInfo", mock.Anything, ec2StoppedDays).Return([]types.Instance{}, []types.Volume{}, nil)
@@ -699,6 +722,7 @@ func TestWasteWorkflow_Error(t *testing.T) {
 				mockLambda.On("GetOverProvisionedFunctions", mock.Anything, mock.Anything, lambdaLookbackDays).Return([]model.LambdaOverProvisionedInfo{}, nil)
 				mockSageMaker.On("GetIdleEndpoints", mock.Anything, mock.Anything).Return([]model.IdleSageMakerEndpointInfo{}, nil)
 				mockECR.On("GetECRWaste", mock.Anything).Return([]model.ECRNoLifecyclePolicyInfo{}, []model.ECREmptyRepositoryInfo{}, []model.ECRUntaggedImageInfo{}, nil)
+				mockSecrets.On("GetUnusedSecrets", mock.Anything, mock.Anything).Return([]model.UnusedSecretInfo{}, nil)
 
 				mockELB.On("GetLoadBalancerWaste", mock.Anything, elbIdleDays).Return([]elbtypes.LoadBalancer{}, []model.ELBIdleInfo{}, nil)
 				mockSTS.On("GetCallerIdentity", mock.Anything).Return(&sts.GetCallerIdentityOutput{
@@ -709,7 +733,7 @@ func TestWasteWorkflow_Error(t *testing.T) {
 		},
 		{
 			name: "GetLoadBalancerWaste_fails",
-			setupMocks: func(mockEC2 *services.MockEC2Service, mockELB *services.MockELBService, mockS3 *services.MockS3Service, mockCloudWatch *services.MockCloudWatchLogsService, mockRDS *services.MockRDSService, mockSTS *services.MockSTSService, mockVPC *services.MockVPCService, mockLambda *services.MockLambdaService, mockSageMaker *services.MockSageMakerService, mockECR *services.MockECRService) {
+			setupMocks: func(mockEC2 *services.MockEC2Service, mockELB *services.MockELBService, mockS3 *services.MockS3Service, mockCloudWatch *services.MockCloudWatchLogsService, mockRDS *services.MockRDSService, mockSTS *services.MockSTSService, mockVPC *services.MockVPCService, mockLambda *services.MockLambdaService, mockSageMaker *services.MockSageMakerService, mockECR *services.MockECRService, mockSecrets *services.MockSecretsManagerService) {
 				mockEC2.On("GetUnusedElasticIPAddressesInfo", mock.Anything).Return([]types.Address{}, nil)
 				mockEC2.On("GetUnusedEBSVolumes", mock.Anything).Return([]types.Volume{}, nil)
 				mockEC2.On("GetStoppedInstancesInfo", mock.Anything, ec2StoppedDays).Return([]types.Instance{}, []types.Volume{}, nil)
@@ -724,6 +748,7 @@ func TestWasteWorkflow_Error(t *testing.T) {
 				mockLambda.On("GetOverProvisionedFunctions", mock.Anything, mock.Anything, lambdaLookbackDays).Return([]model.LambdaOverProvisionedInfo{}, nil)
 				mockSageMaker.On("GetIdleEndpoints", mock.Anything, mock.Anything).Return([]model.IdleSageMakerEndpointInfo{}, nil)
 				mockECR.On("GetECRWaste", mock.Anything).Return([]model.ECRNoLifecyclePolicyInfo{}, []model.ECREmptyRepositoryInfo{}, []model.ECRUntaggedImageInfo{}, nil)
+				mockSecrets.On("GetUnusedSecrets", mock.Anything, mock.Anything).Return([]model.UnusedSecretInfo{}, nil)
 
 				mockELB.On("GetLoadBalancerWaste", mock.Anything, elbIdleDays).Return(nil, nil, errors.New("ELB error"))
 				mockSTS.On("GetCallerIdentity", mock.Anything).Return(&sts.GetCallerIdentityOutput{
@@ -750,9 +775,10 @@ func TestWasteWorkflow_Error(t *testing.T) {
 			mockLambda := new(services.MockLambdaService)
 			mockSageMaker := new(services.MockSageMakerService)
 			mockECR := new(services.MockECRService)
+			mockSecretsManager := new(services.MockSecretsManagerService)
 			mockPricing := new(services.MockPricingService)
 
-			tt.setupMocks(mockEC2, mockELB, mockS3, mockCloudWatch, mockRDS, mockSTS, mockVPC, mockLambda, mockSageMaker, mockECR)
+			tt.setupMocks(mockEC2, mockELB, mockS3, mockCloudWatch, mockRDS, mockSTS, mockVPC, mockLambda, mockSageMaker, mockECR, mockSecretsManager)
 			mockPricing.On("LoadRegionRates", mock.Anything, mock.Anything).Return(nil).Maybe()
 			mockOutput.On("StopSpinner").Return().Maybe()
 			mockOutput.On("SetSpinnerMessage", mock.Anything).Return().Maybe()
@@ -770,6 +796,7 @@ func TestWasteWorkflow_Error(t *testing.T) {
 				VPCService:            mockVPC,
 				LambdaService:         mockLambda,
 				SageMakerService:      mockSageMaker,
+				SecretsManagerService: mockSecretsManager,
 				ECRService:            mockECR,
 				PricingService:        mockPricing,
 				OutputService:         mockOutput,
@@ -811,10 +838,12 @@ func TestOrchestrate_RouteToReportWorkflow(t *testing.T) {
 		RDSService:            mockRDS,
 		LambdaService:         mockLambda,
 		SageMakerService:      new(services.MockSageMakerService),
+		SecretsManagerService: new(services.MockSecretsManagerService),
 		PricingService:        new(services.MockPricingService),
 		OutputService:         mockOutput,
 		UpdateService:         mockUpdate,
 		ReportService:         mockReport,
+		VPCService:            new(services.MockVPCService),
 		VersionInfo:           model.VersionInfo{Version: "dev", Commit: "none", Date: "unknown"},
 	}
 	svc := NewService(config)
@@ -851,36 +880,40 @@ func TestOrchestrate_RouteToReportWorkflow(t *testing.T) {
 }
 
 type testMocks struct {
-	sts        *services.MockSTSService
-	cost       *services.MockCostService
-	ec2        *services.MockEC2Service
-	elb        *services.MockELBService
-	s3         *services.MockS3Service
-	cloudWatch *services.MockCloudWatchLogsService
-	output     *services.MockOutputService
-	update     *services.MockUpdateService
-	report     *services.MockReportService
-	rds        *services.MockRDSService
-	sagemaker  *services.MockSageMakerService
-	ecr        *services.MockECRService
-	pricing    *services.MockPricingService
+	sts            *services.MockSTSService
+	cost           *services.MockCostService
+	ec2            *services.MockEC2Service
+	elb            *services.MockELBService
+	s3             *services.MockS3Service
+	cloudWatch     *services.MockCloudWatchLogsService
+	output         *services.MockOutputService
+	update         *services.MockUpdateService
+	report         *services.MockReportService
+	rds            *services.MockRDSService
+	sagemaker      *services.MockSageMakerService
+	secretsmanager *services.MockSecretsManagerService
+	ecr            *services.MockECRService
+	pricing        *services.MockPricingService
+	vpc            *services.MockVPCService
 }
 
 func newTestServiceWithMocks(versionInfo model.VersionInfo) (Service, *testMocks) {
 	m := &testMocks{
-		sts:        new(services.MockSTSService),
-		cost:       new(services.MockCostService),
-		ec2:        new(services.MockEC2Service),
-		elb:        new(services.MockELBService),
-		s3:         new(services.MockS3Service),
-		cloudWatch: new(services.MockCloudWatchLogsService),
-		output:     new(services.MockOutputService),
-		update:     new(services.MockUpdateService),
-		report:     new(services.MockReportService),
-		rds:        new(services.MockRDSService),
-		sagemaker:  new(services.MockSageMakerService),
-		ecr:        new(services.MockECRService),
-		pricing:    new(services.MockPricingService),
+		sts:            new(services.MockSTSService),
+		cost:           new(services.MockCostService),
+		ec2:            new(services.MockEC2Service),
+		elb:            new(services.MockELBService),
+		s3:             new(services.MockS3Service),
+		cloudWatch:     new(services.MockCloudWatchLogsService),
+		output:         new(services.MockOutputService),
+		update:         new(services.MockUpdateService),
+		report:         new(services.MockReportService),
+		rds:            new(services.MockRDSService),
+		sagemaker:      new(services.MockSageMakerService),
+		secretsmanager: new(services.MockSecretsManagerService),
+		ecr:            new(services.MockECRService),
+		pricing:        new(services.MockPricingService),
+		vpc:            new(services.MockVPCService),
 	}
 
 	svc := NewService(Config{
@@ -892,8 +925,10 @@ func newTestServiceWithMocks(versionInfo model.VersionInfo) (Service, *testMocks
 		CloudWatchLogsService: m.cloudWatch,
 		RDSService:            m.rds,
 		SageMakerService:      m.sagemaker,
+		SecretsManagerService: m.secretsmanager,
 		ECRService:            m.ecr,
 		PricingService:        m.pricing,
+		VPCService:            m.vpc,
 		OutputService:         m.output,
 		UpdateService:         m.update,
 		ReportService:         m.report,
@@ -1029,4 +1064,31 @@ func TestOrchestrate_HandleCostError_FirstDayOfMonth(t *testing.T) {
 
 	assert.NoError(t, err)
 	m.output.AssertExpectations(t)
+}
+
+func TestShouldRunCheck(t *testing.T) {
+	tests := []struct {
+		name        string
+		wasteChecks []string
+		checkName   string
+		want        bool
+	}{
+		{"empty_checks_runs_all", []string{}, "ec2", true},
+		{"nil_checks_runs_all", nil, "ec2", true},
+		{"exact_match", []string{"ec2"}, "ec2", true},
+		{"case_insensitive_match", []string{"EC2"}, "ec2", true},
+		{"no_match", []string{"s3"}, "ec2", false},
+		{"multiple_checks_match", []string{"s3", "ec2", "rds"}, "ec2", true},
+		{"multiple_checks_no_match", []string{"s3", "rds"}, "ec2", false},
+		{"hyphenated_name", []string{"secrets-manager"}, "secrets-manager", true},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := shouldRunCheck(tt.wasteChecks, tt.checkName)
+			if got != tt.want {
+				t.Errorf("shouldRunCheck(%v, %q) = %v, want %v", tt.wasteChecks, tt.checkName, got, tt.want)
+			}
+		})
+	}
 }

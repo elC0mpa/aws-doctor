@@ -21,6 +21,7 @@ import (
 	"github.com/elC0mpa/aws-doctor/service/report"
 	"github.com/elC0mpa/aws-doctor/service/s3"
 	awssagemaker "github.com/elC0mpa/aws-doctor/service/sagemaker"
+	awssecretsmanager "github.com/elC0mpa/aws-doctor/service/secretsmanager"
 	awssts "github.com/elC0mpa/aws-doctor/service/sts"
 	"github.com/elC0mpa/aws-doctor/service/update"
 	awsvpc "github.com/elC0mpa/aws-doctor/service/vpc"
@@ -77,6 +78,7 @@ func buildOrchestrator(needsAWS bool) (orchestrator.Service, error) {
 	config.VPCService = awsvpc.NewService(awsCfg, cwMetricsService, pricingSvc)
 	config.LambdaService = awslambda.NewService(awsCfg, cwLogsService)
 	config.SageMakerService = awssagemaker.NewService(awsCfg, cwMetricsService, pricingSvc)
+	config.SecretsManagerService = awssecretsmanager.NewService(awsCfg, pricingSvc)
 	config.PricingService = pricingSvc
 	config.ReportService = report.NewService()
 

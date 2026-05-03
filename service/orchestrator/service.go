@@ -45,6 +45,7 @@ func NewService(cfg Config) Service {
 		rdsService:            cfg.RDSService,
 		lambdaService:         cfg.LambdaService,
 		sagemakerService:      cfg.SageMakerService,
+		secretsmanagerService: cfg.SecretsManagerService,
 		pricingService:        cfg.PricingService,
 		outputService:         cfg.OutputService,
 		updateService:         cfg.UpdateService,
@@ -80,7 +81,7 @@ func (s *service) Orchestrate(flags model.Flags) error {
 
 	switch {
 	case flags.Waste:
-		workflowErr = s.wasteWorkflow(flags.WasteChecks, flags.Report, flags.ReportPath, flags.LambdaMemoryThreshold)
+		workflowErr = s.wasteWorkflow(flags.WasteChecks, flags.Report, flags.ReportPath, flags.LambdaMemoryThreshold, flags.SecretsIdleDays)
 	case flags.Trend:
 		workflowErr = s.trendWorkflow(flags.TrendChecks, flags.Report, flags.ReportPath)
 	default:
@@ -231,7 +232,7 @@ func (s *service) trendWorkflow(trendChecks []string, generateReport bool, repor
 }
 
 // wasteWorkflow dispatches one check per AWS service concurrently.
-func (s *service) wasteWorkflow(wasteChecks []string, generateReport bool, reportPath string, lambdaMemoryThreshold int) error {
+func (s *service) wasteWorkflow(wasteChecks []string, generateReport bool, reportPath string, lambdaMemoryThreshold int, secretsIdleDays int) error {
 	ctx := context.Background()
 
 	s.loadPricing(ctx)
@@ -240,7 +241,7 @@ func (s *service) wasteWorkflow(wasteChecks []string, generateReport bool, repor
 
 	input := model.RenderWasteInput{}
 
-	s.dispatchWasteChecks(ctx, g, &input, wasteChecks, lambdaMemoryThreshold)
+	s.dispatchWasteChecks(ctx, g, &input, wasteChecks, lambdaMemoryThreshold, secretsIdleDays)
 
 	var stsResult *sts.GetCallerIdentityOutput
 
@@ -269,45 +270,50 @@ func (s *service) wasteWorkflow(wasteChecks []string, generateReport bool, repor
 	return s.outputService.RenderWaste(input, s.pricingService)
 }
 
-func (s *service) dispatchWasteChecks(ctx context.Context, g *errgroup.Group, input *model.RenderWasteInput, wasteChecks []string, lambdaMemoryThreshold int) {
-	// Determine which checks to run
-	runAll := len(wasteChecks) == 0
-
-	if runAll || slice.ContainsIgnoreCase(wasteChecks, "ec2") {
+func (s *service) dispatchWasteChecks(ctx context.Context, g *errgroup.Group, input *model.RenderWasteInput, wasteChecks []string, lambdaMemoryThreshold int, secretsIdleDays int) {
+	if shouldRunCheck(wasteChecks, "ec2") {
 		s.queueEC2Checks(ctx, g, input)
 	}
 
-	if runAll || slice.ContainsIgnoreCase(wasteChecks, "vpc") {
+	if shouldRunCheck(wasteChecks, "vpc") {
 		s.queueVPCChecks(ctx, g, input)
 	}
 
-	if runAll || slice.ContainsIgnoreCase(wasteChecks, "elb") {
+	if shouldRunCheck(wasteChecks, "elb") {
 		s.queueELBChecks(ctx, g, input)
 	}
 
-	if runAll || slice.ContainsIgnoreCase(wasteChecks, "s3") {
+	if shouldRunCheck(wasteChecks, "s3") {
 		s.queueS3Checks(ctx, g, input)
 	}
 
-	if runAll || slice.ContainsIgnoreCase(wasteChecks, "cloudwatch") {
+	if shouldRunCheck(wasteChecks, "cloudwatch") {
 		s.queueCloudWatchLogsChecks(ctx, g, input)
 	}
 
-	if runAll || slice.ContainsIgnoreCase(wasteChecks, "rds") {
+	if shouldRunCheck(wasteChecks, "rds") {
 		s.queueRDSChecks(ctx, g, input)
 	}
 
-	if runAll || slice.ContainsIgnoreCase(wasteChecks, "lambda") {
+	if shouldRunCheck(wasteChecks, "lambda") {
 		s.queueLambdaChecks(ctx, g, input, lambdaMemoryThreshold)
 	}
 
-	if runAll || slice.ContainsIgnoreCase(wasteChecks, "sagemaker") {
+	if shouldRunCheck(wasteChecks, "sagemaker") {
 		s.queueSagemakerChecks(ctx, g, input)
 	}
 
-	if runAll || slice.ContainsIgnoreCase(wasteChecks, "ecr") {
+	if shouldRunCheck(wasteChecks, "ecr") {
 		s.queueECRChecks(ctx, g, input)
 	}
+
+	if shouldRunCheck(wasteChecks, "secrets-manager") {
+		s.queueSecretsManagerChecks(ctx, g, input, secretsIdleDays)
+	}
+}
+
+func shouldRunCheck(wasteChecks []string, name string) bool {
+	return len(wasteChecks) == 0 || slice.ContainsIgnoreCase(wasteChecks, name)
 }
 
 func (s *service) handleWasteReport(input model.RenderWasteInput, reportPath string) error {
@@ -340,7 +346,7 @@ func (s *service) handleCostError(err error) error {
 func (s *service) loadPricing(ctx context.Context) {
 	s.outputService.SetSpinnerMessage("Gathering pricing data...")
 
-	pricingCtx, cancel := context.WithTimeout(ctx, 15*time.Second)
+	pricingCtx, cancel := context.WithTimeout(ctx, 60*time.Second)
 	defer cancel()
 
 	if err := s.pricingService.LoadRegionRates(pricingCtx); err != nil {

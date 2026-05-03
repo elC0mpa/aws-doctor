@@ -34,6 +34,7 @@ If you only want to scan specific AWS services, you can pass them as arguments t
 | `cloudwatch` | CloudWatch Log Groups without retention policies. |
 | `sagemaker` | SageMaker idle endpoint detection (zero invocations in 14 days). |
 | `ecr` | ECR repositories without lifecycle policies, empty repositories, and untagged images. |
+| `secrets-manager` | Secrets Manager secrets not accessed within the idle threshold. |
 
 ```bash
 # Example: Scan only EC2 and SageMaker resources
@@ -47,6 +48,7 @@ The `waste` and `report waste` subcommands support specific flags to tune the de
 | Flag | Default | Description |
 | :--- | :--- | :--- |
 | `--lambda-memory-threshold` | `10` | Memory utilization threshold (%) below which Lambda functions are flagged as over-provisioned. |
+| `--secrets-idle-days` | `90` | Idle days threshold for flagging unused Secrets Manager secrets. |
 
 ## Region-Aware Cost Estimation
 
@@ -66,19 +68,9 @@ If the API call fails for any reason (insufficient permissions, network error, u
 Estimates produced without live pricing data will be based on us-east-1 defaults and may not reflect your actual region's rates.
 {{< /callout >}}
 
-### Required IAM permission
-
-To enable live pricing, your IAM principal must have the following permission:
-
-```json
-{
-  "Effect": "Allow",
-  "Action": "pricing:GetProducts",
-  "Resource": "*"
-}
-```
-
-Without this permission, the tool still works and estimates still appear — they just use the built-in defaults.
+{{< callout type="info" >}}
+**Permissions Required**: `pricing:GetProducts`. Without it, the tool still works — estimates silently fall back to built-in defaults.
+{{< /callout >}}
 
 ---
 
@@ -89,15 +81,9 @@ We group waste into primary infrastructure categories:
 {{< hextra/feature-grid cols="2" >}}
   {{< hextra/feature-card
     icon="server"
-    title="Compute & EBS"
+    title="Compute and EBS"
     link="compute/"
-    subtitle="EC2 instances stopped for >30 days, orphaned volumes, stale snapshots, and expired RIs."
-  >}}
-  {{< hextra/feature-card
-    icon="code"
-    title="Lambda"
-    link="compute/#aws-lambda"
-    subtitle="Over-provisioned memory detection and right-sizing recommendations."
+    subtitle="EC2 instances stopped for >30 days, orphaned volumes, stale snapshots, expired RIs, and over-provisioned Lambda memory."
   >}}
   {{< hextra/feature-card
     icon="database"
@@ -122,6 +108,12 @@ We group waste into primary infrastructure categories:
     title="Machine Learning"
     link="machine-learning/"
     subtitle="Active SageMaker endpoints with zero invocations in the last 14 days."
+  >}}
+  {{< hextra/feature-card
+    icon="key"
+    title="Configuration and Secrets"
+    link="configuration/"
+    subtitle="Secrets Manager secrets not accessed within the configured idle threshold."
   >}}
 {{< /hextra/feature-grid >}}
 

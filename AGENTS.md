@@ -10,8 +10,8 @@ aws-doctor is a Go CLI tool that provides AWS cost analysis and waste detection.
 
 - Cost comparison between current and previous month
 - 6-month trend analysis
-- Waste detection (unused EIPs, EBS volumes, stopped instances, load balancers, idle NAT Gateways, idle SageMaker real-time inference endpoints, etc.)
-- Region-aware cost estimates: `service/pricing` fetches rates from the AWS Pricing API (always via the `us-east-1` endpoint, filtered by the caller's region) at startup and caches them in memory. The `Calculate*` helpers prefer the cached rate and fall back to the hardcoded us-east-1 defaults in `constants.go`. Categories currently fetched from the Pricing API: EBS volumes, EIP, NAT Gateway, ALB/NLB, CLB, CloudWatch Logs, RDS instances/storage/snapshots, and SageMaker hosting (real-time inference) instances. To add a new category, see the "Adding a Pricing Category" section in [CONTRIBUTING.md](CONTRIBUTING.md).
+- Waste detection (unused EIPs, EBS volumes, stopped instances, load balancers, idle NAT Gateways, idle SageMaker real-time inference endpoints, unused Secrets Manager secrets, etc.)
+- Region-aware cost estimates: `service/pricing` fetches rates from the AWS Pricing API (always via the `us-east-1` endpoint, filtered by the caller's region) at startup and caches them in memory. The `Calculate*` helpers prefer the cached rate and fall back to the hardcoded us-east-1 defaults in `constants.go`. Categories currently fetched from the Pricing API: EBS volumes, EIP, NAT Gateway, ALB/NLB, CLB, CloudWatch Logs, RDS instances/storage/snapshots, SageMaker hosting (real-time inference) instances, and Secrets Manager. To add a new category, see the "Adding a Pricing Category" section in [CONTRIBUTING.md](CONTRIBUTING.md).
 - Startup banner uses ANSI truecolor; title color switches to AmazonOrange when a blue background is detected (Windows console attributes or `COLORFGBG` on Unix-like terminals), otherwise SkypeBlue. Override with `AWS_DOCTOR_BANNER_COLOR` (color name or ANSI code).
 
 ## Quick Reference
@@ -228,6 +228,24 @@ Any change that affects behavior, flags, outputs, workflows, supported AWS resou
 - `CONTRIBUTING.md` and `TESTING.md` for contributor workflow and test guidance.
 
 If a change makes documentation inaccurate or incomplete, treat the documentation update as mandatory and do it in the same patch/PR.
+
+### Docs Site Card Grids
+
+The "Instant Infrastructure Audit" section on the home page (`docs/content/_index.md` / `_index.es.md`) and the "Categories of Detection" grid on the waste-detection index (`docs/content/docs/waste-detection/_index.md` / `_index.es.md`) must mirror each other: every waste-detection category card must appear in both grids, and vice versa. When adding or removing a waste-detection category, update both pages.
+
+Rules for these grids:
+- **No duplicate links**: Two cards in the same grid must never point to the same page or anchor. If a sub-feature (e.g., Lambda) lives on an existing category page (e.g., Compute), mention it in that category's subtitle instead of creating a separate card.
+- **One card per docs page**: Each waste-detection docs page (`compute.md`, `databases.md`, `storage.md`, `networking.md`, `machine-learning.md`, `configuration.md`, etc.) maps to exactly one card in each grid.
+
+### IAM Permissions Style
+
+On the docs site, IAM permissions must be expressed using inline callouts or plain text with backtick-formatted action names (e.g., `secretsmanager:ListSecrets`). Never use JSON policy blocks to show required permissions. Follow the pattern used in each waste-detection category page:
+
+```
+{{</* callout type="info" */>}}
+**Permissions Required**: `action:One`, `action:Two`.
+{{</* /callout */>}}
+```
 
 ### Adding a New Waste Detection Type
 

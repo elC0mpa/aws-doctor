@@ -79,6 +79,14 @@ type WasteReportJSON struct {
 	ECRNoLifecyclePolicies    []ECRNoLifecyclePolicyJSON  `json:"ecr_no_lifecycle_policies"`
 	ECREmptyRepositories      []ECREmptyRepositoryJSON    `json:"ecr_empty_repositories"`
 	ECRUntaggedImages         []ECRUntaggedImageJSON      `json:"ecr_untagged_images"`
+	UnusedSecrets             []UnusedSecretJSON          `json:"unused_secrets"`
+}
+
+// UnusedSecretJSON represents a secret that has not been accessed recently.
+type UnusedSecretJSON struct {
+	Name                 string  `json:"name"`
+	LastAccessedDate     string  `json:"last_accessed_date,omitempty"`
+	EstimatedMonthlyCost float64 `json:"estimated_monthly_cost"`
 }
 
 // ECRNoLifecyclePolicyJSON is the JSON-friendly representation of an ECR repository without a lifecycle policy.

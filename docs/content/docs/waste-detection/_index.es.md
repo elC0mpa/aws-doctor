@@ -33,6 +33,7 @@ Si sólo desea escanear servicios de AWS específicos, puede pasarlos como argum
 | `cloudwatch` | Grupos de logs de CloudWatch sin políticas de retención. |
 | `sagemaker` | Detección de endpoints de SageMaker inactivos (cero invocaciones en 14 días). |
 | `ecr` | Repositorios ECR sin políticas de ciclo de vida, repositorios vacíos e imágenes sin etiqueta. |
+| `secrets-manager` | Secretos de Secrets Manager no accedidos dentro del umbral de inactividad. |
 
 ```bash
 # Ejemplo: Escanear solo recursos de EC2 y SageMaker
@@ -46,6 +47,7 @@ Los subcomandos `waste` y `report waste` soportan flags específicos para ajusta
 | Flag | Por Defecto | Descripción |
 | :--- | :--- | :--- |
 | `--lambda-memory-threshold` | `10` | Umbral de utilización de memoria (%) por debajo del cual las funciones Lambda se marcan como sobre-provisionadas. |
+| `--secrets-idle-days` | `90` | Umbral de días de inactividad para marcar secretos de Secrets Manager no utilizados. |
 
 ## Estimación de Costos por Región
 
@@ -65,19 +67,9 @@ Si la llamada a la API falla por cualquier motivo (permisos insuficientes, error
 Las estimaciones producidas sin datos de precios en tiempo real se basarán en los valores predeterminados de us-east-1 y pueden no reflejar las tarifas reales de su región.
 {{< /callout >}}
 
-### Permiso IAM requerido
-
-Para habilitar los precios en tiempo real, su principal de IAM debe tener el siguiente permiso:
-
-```json
-{
-  "Effect": "Allow",
-  "Action": "pricing:GetProducts",
-  "Resource": "*"
-}
-```
-
-Sin este permiso, la herramienta sigue funcionando y las estimaciones siguen apareciendo — simplemente utilizan los valores predeterminados integrados.
+{{< callout type="info" >}}
+**Permisos Requeridos**: `pricing:GetProducts`. Sin este permiso, la herramienta sigue funcionando — las estimaciones recurren silenciosamente a los valores predeterminados integrados.
+{{< /callout >}}
 
 ---
 
@@ -90,13 +82,7 @@ Agrupamos el desperdicio en categorías principales de infraestructura:
     icon="server"
     title="Cómputo y EBS"
     link="compute/"
-    subtitle="Instancias EC2 detenidas por >30 días, volúmenes huérfanos, snapshots obsoletos y RIs vencidas."
-  >}}
-  {{< hextra/feature-card
-    icon="code"
-    title="Lambda"
-    link="compute/#aws-lambda"
-    subtitle="Detección de memoria sobre-provisionada y recomendaciones de ajuste de tamaño."
+    subtitle="Instancias EC2 detenidas por >30 días, volúmenes huérfanos, snapshots obsoletos, RIs vencidas y memoria sobre-provisionada en Lambda."
   >}}
   {{< hextra/feature-card
     icon="database"
@@ -121,6 +107,12 @@ Agrupamos el desperdicio en categorías principales de infraestructura:
     title="Machine Learning"
     link="machine-learning/"
     subtitle="Endpoints de SageMaker activos con cero invocaciones en los últimos 14 días."
+  >}}
+  {{< hextra/feature-card
+    icon="key"
+    title="Configuración y Secretos"
+    link="configuration/"
+    subtitle="Secretos de Secrets Manager no accedidos dentro del umbral de inactividad configurado."
   >}}
 {{< /hextra/feature-grid >}}
 

@@ -184,6 +184,11 @@ func (s *service) LoadRegionRates(ctx context.Context) error {
 		termMatch("productFamily", "EC2 Container Registry"),
 	}, matchUsagetypeContains("TimedStorage-ByteHrs"))
 
+	fetch(categorySecretsManager, "AWSSecretsManager", []pricingtypes.Filter{
+		regionFilter,
+		termMatch("productFamily", "Secret"),
+	}, matchUsagetypeContains("SecretsManager-Secrets"))
+
 	_ = g.Wait()
 
 	return errors.Join(fetchErr...)
@@ -291,6 +296,14 @@ func (s *service) CalculateSageMakerEndpointMonthlyCost(variants []model.SageMak
 	}
 
 	return total
+}
+
+func (s *service) CalculateSecretsManagerMonthlyCost(count int) float64 {
+	if v, ok := s.lookupMonthly(priceKey(categorySecretsManager, ""), 0); ok {
+		return float64(count) * v
+	}
+
+	return float64(count) * SecretsManagerCostPerSecretMonth
 }
 
 func (s *service) sagemakerInstanceCost(instanceType string) float64 {

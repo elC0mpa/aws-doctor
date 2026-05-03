@@ -102,6 +102,7 @@ func OutputWasteJSON(input model.RenderWasteInput, pricingSvc pricing.Service) e
 		ECRNoLifecyclePolicies: mapECRNoLifecyclePolicies(input.ECRNoLifecyclePolicies),
 		ECREmptyRepositories:   mapECREmptyRepositories(input.ECREmptyRepositories),
 		ECRUntaggedImages:      mapECRUntaggedImages(input.ECRUntaggedImages),
+		UnusedSecrets:          mapUnusedSecrets(input.UnusedSecrets, pricingSvc),
 	}
 
 	output.OrphanedSnapshots, output.StaleSnapshots = mapSnapshots(input.OrphanedSnapshots)
@@ -438,7 +439,8 @@ func hasAnyWasteJSON(o model.WasteReportJSON) bool {
 		hasDatabaseWasteJSON(o) ||
 		hasNetworkWasteJSON(o) ||
 		hasServerlessWasteJSON(o) ||
-		hasContainerWasteJSON(o)
+		hasContainerWasteJSON(o) ||
+		len(o.UnusedSecrets) > 0
 }
 
 func hasComputeWasteJSON(o model.WasteReportJSON) bool {
@@ -480,4 +482,23 @@ func hasContainerWasteJSON(o model.WasteReportJSON) bool {
 	return len(o.ECRNoLifecyclePolicies) > 0 ||
 		len(o.ECREmptyRepositories) > 0 ||
 		len(o.ECRUntaggedImages) > 0
+}
+
+func mapUnusedSecrets(secrets []model.UnusedSecretInfo, pricingSvc pricing.Service) []model.UnusedSecretJSON {
+	var result []model.UnusedSecretJSON
+
+	for _, s := range secrets {
+		json := model.UnusedSecretJSON{
+			Name:                 s.Name,
+			EstimatedMonthlyCost: pricingSvc.CalculateSecretsManagerMonthlyCost(1),
+		}
+
+		if s.LastAccessedDate != nil {
+			json.LastAccessedDate = s.LastAccessedDate.Format(time.RFC3339)
+		}
+
+		result = append(result, json)
+	}
+
+	return result
 }

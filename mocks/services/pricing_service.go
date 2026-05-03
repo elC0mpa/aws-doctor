@@ -28,6 +28,7 @@ type PricingService interface {
 	CalculateRDSIdleInstanceMonthlyCost(instanceClass string, allocatedGB int32, multiAZ bool) float64
 	CalculateSageMakerEndpointMonthlyCost(variants []model.SageMakerVariant) float64
 	CalculateECRStorageMonthlyCost(storedBytes int64) float64
+	CalculateSecretsManagerMonthlyCost(count int) float64
 }
 
 // LoadRegionRates mocks the LoadRegionRates method.
@@ -102,6 +103,12 @@ func (m *MockPricingService) CalculateSageMakerEndpointMonthlyCost(variants []mo
 	return args.Get(0).(float64)
 }
 
+// CalculateSecretsManagerMonthlyCost mocks the CalculateSecretsManagerMonthlyCost method.
+func (m *MockPricingService) CalculateSecretsManagerMonthlyCost(count int) float64 {
+	args := m.Called(count)
+	return args.Get(0).(float64)
+}
+
 // NewMockPricingService returns a MockPricingService with default expectations set for all methods.
 func NewMockPricingService() *MockPricingService {
 	m := new(MockPricingService)
@@ -117,6 +124,7 @@ func NewMockPricingService() *MockPricingService {
 	m.On("CalculateRDSSnapshotMonthlyCost", mock.Anything).Return(5.0).Maybe()
 	m.On("CalculateRDSIdleInstanceMonthlyCost", mock.Anything, mock.Anything, mock.Anything).Return(45.0).Maybe()
 	m.On("CalculateSageMakerEndpointMonthlyCost", mock.Anything).Return(50.0).Maybe()
+	m.On("CalculateSecretsManagerMonthlyCost", mock.Anything).Return(0.40).Maybe()
 
 	return m
 }

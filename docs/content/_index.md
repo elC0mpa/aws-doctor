@@ -100,8 +100,8 @@ layout: "hextra-home"
 {{< hextra/feature-grid cols="3" >}}
   {{< hextra/feature-card
     icon="server"
-    title="Compute & EBS"
-    subtitle="Detect idle EC2 instances, unattached EBS volumes, and orphaned snapshots."
+    title="Compute and EBS"
+    subtitle="Detect stopped EC2 instances, unattached EBS volumes, orphaned snapshots, unused AMIs, unused key pairs, expiring Reserved Instances, and over-provisioned Lambda memory."
   >}}
   {{< hextra/feature-card
     icon="database"
@@ -110,23 +110,23 @@ layout: "hextra-home"
   >}}
   {{< hextra/feature-card
     icon="archive"
-    title="S3 Storage"
-    subtitle="Audit buckets without lifecycle policies and cleanup abandoned multipart uploads."
-  >}}
-  {{< hextra/feature-card
-    icon="terminal"
-    title="CloudWatch Logs"
-    subtitle="Detect Log Groups without retention policies and calculate potential storage savings."
+    title="Storage and Logs"
+    subtitle="Audit S3 buckets without lifecycle policies, abandoned multipart uploads, CloudWatch Log Groups without retention, and ECR repositories with untagged images or missing lifecycle policies."
   >}}
   {{< hextra/feature-card
     icon="share"
     title="Networking"
-    subtitle="Identify unassociated Elastic IPs and Load Balancers without healthy targets."
+    subtitle="Identify unassociated Elastic IPs, idle NAT Gateways, and Load Balancers without healthy targets."
   >}}
   {{< hextra/feature-card
     icon="chip"
     title="Machine Learning"
     subtitle="Detect idle SageMaker endpoints with zero recent invocations."
+  >}}
+  {{< hextra/feature-card
+    icon="key"
+    title="Configuration and Secrets"
+    subtitle="Flag unused Secrets Manager secrets that have not been accessed within a configurable threshold."
   >}}
 {{< /hextra/feature-grid >}}
 
