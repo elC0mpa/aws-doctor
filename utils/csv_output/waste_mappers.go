@@ -203,3 +203,12 @@ func mapECRUntaggedImages(repos []model.ECRUntaggedImageInfo) [][]string {
 
 	return result
 }
+
+func mapUnusedSecrets(secrets []model.UnusedSecretInfo, pricingSvc pricing.Service) [][]string {
+	result := make([][]string, 0, len(secrets))
+	for _, s := range secrets {
+		result = append(result, outputshared.PresentUnusedSecret(s, pricingSvc).ToSlice())
+	}
+
+	return result
+}

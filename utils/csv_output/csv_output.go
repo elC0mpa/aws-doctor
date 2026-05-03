@@ -94,6 +94,7 @@ func OutputWasteCSV(input model.RenderWasteInput, pricingSvc pricing.Service) er
 	rows = append(rows, mapECRNoLifecyclePolicies(input.ECRNoLifecyclePolicies)...)
 	rows = append(rows, mapECREmptyRepositories(input.ECREmptyRepositories)...)
 	rows = append(rows, mapECRUntaggedImages(input.ECRUntaggedImages)...)
+	rows = append(rows, mapUnusedSecrets(input.UnusedSecrets, pricingSvc)...)
 
 	return w.WriteAll(rows)
 }

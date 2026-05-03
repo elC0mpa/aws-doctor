@@ -4,10 +4,14 @@ description: "Detecte endpoints de AWS SageMaker inactivos que están facturando
 weight: 60
 type: docs
 prev: /docs/waste-detection/networking
-next: /docs/reporting
+next: /docs/waste-detection/configuration
 ---
 
 Los recursos de Machine Learning, particularmente los endpoints de **Amazon SageMaker**, suelen estar entre los componentes más caros de una arquitectura de AWS. Es común que los científicos de datos y desarrolladores desplieguen endpoints para pruebas o validación y se olviden de darlos de baja una vez que el trabajo ha finalizado.
+
+{{< callout type="info" >}}
+**Permisos Requeridos**: `sagemaker:ListEndpoints`, `sagemaker:DescribeEndpoint`, `sagemaker:DescribeEndpointConfig`, `cloudwatch:GetMetricStatistics`.
+{{< /callout >}}
 
 **AWS Doctor** le ayuda a identificar estos endpoints inactivos para evitar costos innecesarios.
 

@@ -14,6 +14,7 @@ import (
 	"github.com/elC0mpa/aws-doctor/service/report"
 	"github.com/elC0mpa/aws-doctor/service/s3"
 	"github.com/elC0mpa/aws-doctor/service/sagemaker"
+	"github.com/elC0mpa/aws-doctor/service/secretsmanager"
 	awssts "github.com/elC0mpa/aws-doctor/service/sts"
 	"github.com/elC0mpa/aws-doctor/service/update"
 	awsvpc "github.com/elC0mpa/aws-doctor/service/vpc"
@@ -29,6 +30,7 @@ type service struct {
 	rdsService            rds.Service
 	lambdaService         lambda.Service
 	sagemakerService      sagemaker.Service
+	secretsmanagerService secretsmanager.Service
 	pricingService        pricing.Service
 	outputService         output.Service
 	updateService         update.Service
@@ -49,6 +51,7 @@ type Config struct {
 	RDSService            rds.Service
 	LambdaService         lambda.Service
 	SageMakerService      sagemaker.Service
+	SecretsManagerService secretsmanager.Service
 	PricingService        pricing.Service
 	OutputService         output.Service
 	UpdateService         update.Service

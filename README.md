@@ -34,7 +34,7 @@ A terminal-based tool that acts as a comprehensive health check for your AWS acc
 ### 🧟 Waste Detection
 ![Waste Detection](https://github.com/elC0mpa/aws-doctor/blob/main/docs/static/images/demo/waste.gif?raw=true)
 
-*Supports selective scanning: `aws-doctor waste ec2 s3 cloudwatch rds vpc lambda sagemaker elb ecr`*
+*Supports selective scanning: `aws-doctor waste ec2 s3 cloudwatch rds vpc lambda sagemaker elb ecr secrets-manager`*
 
 ## 📄 Professional Reporting
 
@@ -103,7 +103,7 @@ go install github.com/elC0mpa/aws-doctor@latest
 
 - **📄 Professional PDF Reports:** Generate branded, ready-to-share PDF documents for costs, trends, and waste analysis.
 - **📉 Fair Cost Comparison:** Compares identical time windows between months to spot real anomalies.
-- **🧟 Zombie Discovery:** Scans for idle EIPs, stopped instances, orphaned snapshots, idle RDS instances, idle NAT Gateways, idle Load Balancers, over-provisioned Lambda memory, idle SageMaker real-time inference endpoints, and ECR repositories with untagged images, missing lifecycle policies, or no images at all. Supports selective service filtering (`ec2`, `s3`, `elb`, `cloudwatch`, `rds`, `vpc`, `lambda`, `sagemaker`, `ecr`).
+- **🧟 Zombie Discovery:** Scans for idle EIPs, stopped instances, orphaned snapshots, idle RDS instances, idle NAT Gateways, idle Load Balancers, over-provisioned Lambda memory, idle SageMaker real-time inference endpoints, ECR repositories with untagged images, missing lifecycle policies, or no images at all, and unused Secrets Manager secrets. Supports selective service filtering (`ec2`, `s3`, `elb`, `cloudwatch`, `rds`, `vpc`, `lambda`, `sagemaker`, `ecr`, `secrets-manager`).
 - **📊 6-Month Trends:** High-fidelity ANSI visualization of your spending velocity.
 - **📤 Multiple Output Formats:** Export results in `table`, `json`, or `csv` for easy integration with other tools or reporting.
 - **🔔 Update Notifications:** Automatically checks for new versions in the background and notifies you after command output, so you never miss an update.

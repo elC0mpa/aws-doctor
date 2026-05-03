@@ -10,7 +10,7 @@ import (
 const pricingEndpointRegion = "us-east-1"
 
 // maxPricingConcurrency caps parallel GetProducts calls during Load.
-const maxPricingConcurrency = 8
+const maxPricingConcurrency = 20
 
 // hoursPerMonth converts Pricing API hourly rates into an approximate monthly cost. 730 is the
 // same figure AWS uses in Cost Explorer examples (365.25 * 24 / 12).
@@ -30,9 +30,13 @@ const (
 	categoryRDSSnapshot      = "rds-snapshot"
 	categorySageMakerHosting = "sagemaker-hosting"
 	categoryECR              = "ecr"
+	categorySecretsManager   = "secretsmanager"
 )
 
 const (
+	// SecretsManagerCostPerSecretMonth is the default cost of a secret per month in Secrets Manager.
+	SecretsManagerCostPerSecretMonth = 0.40
+
 	// EIPCostPerMonth is the default cost of an unassociated Elastic IP (~$0.005/hour * 730 hours).
 	EIPCostPerMonth = 3.65
 

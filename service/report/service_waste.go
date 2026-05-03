@@ -72,6 +72,10 @@ func (s *service) addWasteSections(m core.Maroto, input model.RenderWasteInput, 
 		hasWaste = true
 	}
 
+	if s.addSecretsManagerWaste(m, input, pricingSvc) {
+		hasWaste = true
+	}
+
 	return hasWaste
 }
 
@@ -443,6 +447,23 @@ func (s *service) addECRWaste(m core.Maroto, input model.RenderWasteInput) bool 
 	for _, repo := range input.ECRUntaggedImages {
 		p := outputshared.PresentECRUntaggedImages(repo)
 		s.addWasteRow(m, []string{"Untagged", p.Identifier, p.Details, p.EstimatedCost})
+	}
+
+	m.AddRow(5, col.New(12))
+
+	return true
+}
+
+func (s *service) addSecretsManagerWaste(m core.Maroto, input model.RenderWasteInput, pricingSvc pricing.Service) bool {
+	if len(input.UnusedSecrets) == 0 {
+		return false
+	}
+
+	s.addWasteSection(m, "Secrets Manager Waste", []string{"Secret Name", "Last Accessed", "Est. Cost"})
+
+	for _, secret := range input.UnusedSecrets {
+		p := outputshared.PresentUnusedSecret(secret, pricingSvc)
+		s.addWasteRow(m, []string{p.Identifier, p.Age + " days ago", p.EstimatedCost})
 	}
 
 	m.AddRow(5, col.New(12))

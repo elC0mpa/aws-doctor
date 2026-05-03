@@ -7,7 +7,10 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var lambdaMemoryThreshold int
+var (
+	lambdaMemoryThreshold int
+	secretsIdleDays       int
+)
 
 var wasteCmd = &cobra.Command{
 	Use:   "waste [checks...]",
@@ -31,6 +34,7 @@ var wasteCmd = &cobra.Command{
 			Waste:                 true,
 			WasteChecks:           parsedChecks,
 			LambdaMemoryThreshold: lambdaMemoryThreshold,
+			SecretsIdleDays:       secretsIdleDays,
 		}
 
 		return orch.Orchestrate(flags)
@@ -40,5 +44,7 @@ var wasteCmd = &cobra.Command{
 func init() {
 	wasteCmd.Flags().IntVar(&lambdaMemoryThreshold, "lambda-memory-threshold", 10,
 		"Memory utilization threshold (%) below which Lambda functions are flagged as over-provisioned")
+	wasteCmd.Flags().IntVar(&secretsIdleDays, "secrets-idle-days", 90,
+		"Idle days threshold for flagging unused Secrets Manager secrets")
 	rootCmd.AddCommand(wasteCmd)
 }
