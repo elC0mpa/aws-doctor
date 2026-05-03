@@ -1065,3 +1065,30 @@ func TestOrchestrate_HandleCostError_FirstDayOfMonth(t *testing.T) {
 	assert.NoError(t, err)
 	m.output.AssertExpectations(t)
 }
+
+func TestShouldRunCheck(t *testing.T) {
+	tests := []struct {
+		name        string
+		wasteChecks []string
+		checkName   string
+		want        bool
+	}{
+		{"empty_checks_runs_all", []string{}, "ec2", true},
+		{"nil_checks_runs_all", nil, "ec2", true},
+		{"exact_match", []string{"ec2"}, "ec2", true},
+		{"case_insensitive_match", []string{"EC2"}, "ec2", true},
+		{"no_match", []string{"s3"}, "ec2", false},
+		{"multiple_checks_match", []string{"s3", "ec2", "rds"}, "ec2", true},
+		{"multiple_checks_no_match", []string{"s3", "rds"}, "ec2", false},
+		{"hyphenated_name", []string{"secrets-manager"}, "secrets-manager", true},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := shouldRunCheck(tt.wasteChecks, tt.checkName)
+			if got != tt.want {
+				t.Errorf("shouldRunCheck(%v, %q) = %v, want %v", tt.wasteChecks, tt.checkName, got, tt.want)
+			}
+		})
+	}
+}

@@ -10,7 +10,7 @@ import (
 const pricingEndpointRegion = "us-east-1"
 
 // maxPricingConcurrency caps parallel GetProducts calls during Load.
-const maxPricingConcurrency = 8
+const maxPricingConcurrency = 20
 
 // hoursPerMonth converts Pricing API hourly rates into an approximate monthly cost. 730 is the
 // same figure AWS uses in Cost Explorer examples (365.25 * 24 / 12).

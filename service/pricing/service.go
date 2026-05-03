@@ -187,7 +187,7 @@ func (s *service) LoadRegionRates(ctx context.Context) error {
 	fetch(categorySecretsManager, "AWSSecretsManager", []pricingtypes.Filter{
 		regionFilter,
 		termMatch("productFamily", "Secret"),
-	}, matchUsagetypeContains("API-Secrets"))
+	}, matchUsagetypeContains("SecretsManager-Secrets"))
 
 	_ = g.Wait()
 

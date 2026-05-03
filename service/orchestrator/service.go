@@ -271,48 +271,49 @@ func (s *service) wasteWorkflow(wasteChecks []string, generateReport bool, repor
 }
 
 func (s *service) dispatchWasteChecks(ctx context.Context, g *errgroup.Group, input *model.RenderWasteInput, wasteChecks []string, lambdaMemoryThreshold int, secretsIdleDays int) {
-	// Determine which checks to run
-	runAll := len(wasteChecks) == 0
-
-	if runAll || slice.ContainsIgnoreCase(wasteChecks, "ec2") {
+	if shouldRunCheck(wasteChecks, "ec2") {
 		s.queueEC2Checks(ctx, g, input)
 	}
 
-	if runAll || slice.ContainsIgnoreCase(wasteChecks, "vpc") {
+	if shouldRunCheck(wasteChecks, "vpc") {
 		s.queueVPCChecks(ctx, g, input)
 	}
 
-	if runAll || slice.ContainsIgnoreCase(wasteChecks, "elb") {
+	if shouldRunCheck(wasteChecks, "elb") {
 		s.queueELBChecks(ctx, g, input)
 	}
 
-	if runAll || slice.ContainsIgnoreCase(wasteChecks, "s3") {
+	if shouldRunCheck(wasteChecks, "s3") {
 		s.queueS3Checks(ctx, g, input)
 	}
 
-	if runAll || slice.ContainsIgnoreCase(wasteChecks, "cloudwatch") {
+	if shouldRunCheck(wasteChecks, "cloudwatch") {
 		s.queueCloudWatchLogsChecks(ctx, g, input)
 	}
 
-	if runAll || slice.ContainsIgnoreCase(wasteChecks, "rds") {
+	if shouldRunCheck(wasteChecks, "rds") {
 		s.queueRDSChecks(ctx, g, input)
 	}
 
-	if runAll || slice.ContainsIgnoreCase(wasteChecks, "lambda") {
+	if shouldRunCheck(wasteChecks, "lambda") {
 		s.queueLambdaChecks(ctx, g, input, lambdaMemoryThreshold)
 	}
 
-	if runAll || slice.ContainsIgnoreCase(wasteChecks, "sagemaker") {
+	if shouldRunCheck(wasteChecks, "sagemaker") {
 		s.queueSagemakerChecks(ctx, g, input)
 	}
 
-	if runAll || slice.ContainsIgnoreCase(wasteChecks, "ecr") {
+	if shouldRunCheck(wasteChecks, "ecr") {
 		s.queueECRChecks(ctx, g, input)
 	}
 
-	if runAll || slice.ContainsIgnoreCase(wasteChecks, "secrets-manager") {
+	if shouldRunCheck(wasteChecks, "secrets-manager") {
 		s.queueSecretsManagerChecks(ctx, g, input, secretsIdleDays)
 	}
+}
+
+func shouldRunCheck(wasteChecks []string, name string) bool {
+	return len(wasteChecks) == 0 || slice.ContainsIgnoreCase(wasteChecks, name)
 }
 
 func (s *service) handleWasteReport(input model.RenderWasteInput, reportPath string) error {
@@ -345,7 +346,7 @@ func (s *service) handleCostError(err error) error {
 func (s *service) loadPricing(ctx context.Context) {
 	s.outputService.SetSpinnerMessage("Gathering pricing data...")
 
-	pricingCtx, cancel := context.WithTimeout(ctx, 15*time.Second)
+	pricingCtx, cancel := context.WithTimeout(ctx, 60*time.Second)
 	defer cancel()
 
 	if err := s.pricingService.LoadRegionRates(pricingCtx); err != nil {
