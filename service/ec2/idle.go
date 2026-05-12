@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"strings"
-	"sync"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/ec2"
@@ -52,16 +51,14 @@ func (s *service) GetIdleInstances(ctx context.Context, idleDays int, cpuThresho
 }
 
 func (s *service) evaluateIdleInstances(ctx context.Context, instances []types.Instance, idleDays int, cpuThresholdPercent float64, networkBytesPerDayThreshold float64) []model.EC2IdleInstanceInfo {
-	var (
-		mu   sync.Mutex
-		idle []model.EC2IdleInstanceInfo
-	)
+	// Each goroutine writes into its own slot so the result aggregation needs no mutex.
+	results := make([]*model.EC2IdleInstanceInfo, len(instances))
 
 	g, ctx := errgroup.WithContext(ctx)
 	g.SetLimit(idleScanConcurrency)
 
-	for _, instance := range instances {
-		instance := instance
+	for i, instance := range instances {
+		i, instance := i, instance
 
 		instanceID := aws.ToString(instance.InstanceId)
 		if instanceID == "" {
@@ -79,8 +76,7 @@ func (s *service) evaluateIdleInstances(ctx context.Context, instances []types.I
 			}
 
 			instanceType := string(instance.InstanceType)
-
-			entry := model.EC2IdleInstanceInfo{
+			results[i] = &model.EC2IdleInstanceInfo{
 				InstanceID:           instanceID,
 				InstanceType:         instanceType,
 				Name:                 nameTag(instance.Tags),
@@ -90,15 +86,18 @@ func (s *service) evaluateIdleInstances(ctx context.Context, instances []types.I
 				EstimatedMonthlyCost: s.pricingService.CalculateEC2InstanceMonthlyCost(instanceType),
 			}
 
-			mu.Lock()
-			idle = append(idle, entry)
-			mu.Unlock()
-
 			return nil
 		})
 	}
 
 	_ = g.Wait()
+
+	var idle []model.EC2IdleInstanceInfo
+	for _, r := range results {
+		if r != nil {
+			idle = append(idle, *r)
+		}
+	}
 
 	return idle
 }
