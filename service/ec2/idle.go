@@ -97,6 +97,7 @@ func (s *service) evaluateIdleInstances(ctx context.Context, instances []types.I
 
 func flattenIdleResults(results []*model.EC2IdleInstanceInfo) []model.EC2IdleInstanceInfo {
 	var idle []model.EC2IdleInstanceInfo
+
 	for _, r := range results {
 		if r != nil {
 			idle = append(idle, *r)
