@@ -102,3 +102,13 @@ func (m *MockEC2Service) GetUnusedKeyPairs(ctx context.Context) ([]model.KeyPair
 
 	return args.Get(0).([]model.KeyPairWasteInfo), args.Error(1)
 }
+
+// GetIdleInstances mocks the GetIdleInstances method.
+func (m *MockEC2Service) GetIdleInstances(ctx context.Context, idleDays int, cpuThresholdPercent float64, networkBytesPerDayThreshold float64) ([]model.EC2IdleInstanceInfo, error) {
+	args := m.Called(ctx, idleDays, cpuThresholdPercent, networkBytesPerDayThreshold)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+
+	return args.Get(0).([]model.EC2IdleInstanceInfo), args.Error(1)
+}

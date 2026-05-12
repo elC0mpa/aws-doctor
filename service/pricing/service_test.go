@@ -387,6 +387,52 @@ func TestParsePriceListDocument(t *testing.T) {
 	}
 }
 
+func TestCalculateEC2InstanceMonthlyCost(t *testing.T) {
+	s := &service{
+		prices: make(map[string]float64),
+	}
+
+	t.Run("fallback table", func(t *testing.T) {
+		// t3.medium fallback is 30.37
+		assert.Equal(t, 30.37, s.CalculateEC2InstanceMonthlyCost("t3.medium"))
+	})
+
+	t.Run("cached hourly converted to monthly", func(t *testing.T) {
+		s.setPrice(priceKey(categoryEC2Instance, "m5.large"), 0.10)
+		assert.Equal(t, 0.10*hoursPerMonth, s.CalculateEC2InstanceMonthlyCost("m5.large"))
+	})
+
+	t.Run("unknown instance type returns zero", func(t *testing.T) {
+		assert.Equal(t, 0.0, s.CalculateEC2InstanceMonthlyCost("foo.bar"))
+	})
+}
+
+func TestLoadRegionRates_EC2Instance(t *testing.T) {
+	ctx := context.Background()
+	mockClient := new(awsinterfaces.MockPricingClient)
+	s := &service{
+		client: mockClient,
+		prices: make(map[string]float64),
+		region: "us-east-1",
+	}
+
+	ec2JSON := `{
+		"product": { "attributes": { "instanceType": "m6i.large", "operatingSystem": "Linux", "tenancy": "Shared", "preInstalledSw": "NA", "capacitystatus": "Used" } },
+		"terms": { "OnDemand": { "SKU": { "priceDimensions": { "DIM": { "pricePerUnit": { "USD": "0.096" } } } } } }
+	}`
+
+	mockClient.On("GetProducts", mock.Anything, mock.Anything, mock.Anything).Return(&awspricing.GetProductsOutput{
+		PriceList: []string{ec2JSON},
+	}, nil)
+
+	err := s.LoadRegionRates(ctx)
+	assert.NoError(t, err)
+
+	price, ok := s.lookupMonthly(priceKey(categoryEC2Instance, "m6i.large"), 0)
+	assert.True(t, ok)
+	assert.Equal(t, 0.096, price)
+}
+
 func TestCalculateNATGatewayMonthlyCost(t *testing.T) {
 	s := &service{
 		prices: make(map[string]float64),

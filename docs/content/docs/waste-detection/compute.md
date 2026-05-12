@@ -7,7 +7,7 @@ weight: 10
 Audit your EC2 and EBS footprint to eliminate costs from abandoned instances and data.
 
 {{< callout type="info" >}}
-**Permissions Required**: `ec2:DescribeInstances`, `ec2:DescribeReservedInstances`, `ec2:DescribeVolumes`, `ec2:DescribeSnapshots`, `ec2:DescribeKeyPairs`, `ec2:DescribeImages`, `lambda:ListFunctions`, `logs:DescribeLogGroups`, `logs:StartQuery`, `logs:GetQueryResults`.
+**Permissions Required**: `ec2:DescribeInstances`, `ec2:DescribeReservedInstances`, `ec2:DescribeVolumes`, `ec2:DescribeSnapshots`, `ec2:DescribeKeyPairs`, `ec2:DescribeImages`, `cloudwatch:GetMetricStatistics`, `lambda:ListFunctions`, `logs:DescribeLogGroups`, `logs:StartQuery`, `logs:GetQueryResults`.
 {{< /callout >}}
 
 ## EC2 Instances
@@ -21,6 +21,11 @@ Audit your EC2 and EBS footprint to eliminate costs from abandoned instances and
 Scans for active RIs scheduled to expire in the **next 30 days** or that have expired in the **last 30 days**.
 - **Reason**: Expired RIs revert to expensive On-Demand pricing without warning.
 - **Action**: Review usage and renew or migrate to Savings Plans.
+
+### Idle Running Instances
+Finds `running` instances whose average CPU utilization stayed under **5%** and whose combined NetworkIn + NetworkOut averaged under **5 MB/day** over the last **14 days**.
+- **Reason**: Forgotten dev boxes, abandoned workers, and over-sized workloads keep billing for compute, storage, and any attached EIPs while delivering no value.
+- **Action**: Stop the instance for a few days to verify nothing notices, then resize to a smaller type or terminate it entirely.
 
 ---
 

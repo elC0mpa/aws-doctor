@@ -10,8 +10,8 @@ aws-doctor is a Go CLI tool that provides AWS cost analysis and waste detection.
 
 - Cost comparison between current and previous month
 - 6-month trend analysis
-- Waste detection (unused EIPs, EBS volumes, stopped instances, load balancers, idle NAT Gateways, idle SageMaker real-time inference endpoints, unused Secrets Manager secrets, etc.)
-- Region-aware cost estimates: `service/pricing` fetches rates from the AWS Pricing API (always via the `us-east-1` endpoint, filtered by the caller's region) at startup and caches them in memory. The `Calculate*` helpers prefer the cached rate and fall back to the hardcoded us-east-1 defaults in `constants.go`. Categories currently fetched from the Pricing API: EBS volumes, EIP, NAT Gateway, ALB/NLB, CLB, CloudWatch Logs, RDS instances/storage/snapshots, SageMaker hosting (real-time inference) instances, and Secrets Manager. To add a new category, see the "Adding a Pricing Category" section in [CONTRIBUTING.md](CONTRIBUTING.md).
+- Waste detection (unused EIPs, EBS volumes, stopped instances, idle running EC2 instances, load balancers, idle NAT Gateways, idle SageMaker real-time inference endpoints, unused Secrets Manager secrets, etc.)
+- Region-aware cost estimates: `service/pricing` fetches rates from the AWS Pricing API (always via the `us-east-1` endpoint, filtered by the caller's region) at startup and caches them in memory. The `Calculate*` helpers prefer the cached rate and fall back to the hardcoded us-east-1 defaults in `constants.go`. Categories currently fetched from the Pricing API: EBS volumes, EIP, NAT Gateway, ALB/NLB, CLB, CloudWatch Logs, EC2 instances, RDS instances/storage/snapshots, SageMaker hosting (real-time inference) instances, and Secrets Manager. To add a new category, see the "Adding a Pricing Category" section in [CONTRIBUTING.md](CONTRIBUTING.md).
 - Startup banner uses ANSI truecolor; title color switches to AmazonOrange when a blue background is detected (Windows console attributes or `COLORFGBG` on Unix-like terminals), otherwise SkypeBlue. Override with `AWS_DOCTOR_BANNER_COLOR` (color name or ANSI code).
 
 ## Quick Reference

@@ -25,6 +25,7 @@ const (
 	categoryLBApp            = "lb-app"
 	categoryLBClassic        = "lb-classic"
 	categoryCWLogs           = "cwlogs"
+	categoryEC2Instance      = "ec2-instance"
 	categoryRDSInstance      = "rds-instance"
 	categoryRDSStorage       = "rds-storage"
 	categoryRDSSnapshot      = "rds-snapshot"
@@ -76,6 +77,28 @@ const (
 	// ECRStorageCostPerGBMonth is the default cost of ECR storage per GB per month.
 	ECRStorageCostPerGBMonth = 0.10
 )
+
+// ec2InstancePricing maps common EC2 instance types to approximate monthly on-demand costs
+// (us-east-1, Linux, Shared tenancy). Used as a fallback when the Pricing API does not return
+// a rate for the instance type in the caller's region.
+var ec2InstancePricing = map[string]float64{
+	"t2.nano": 4.25, "t2.micro": 8.47, "t2.small": 16.94, "t2.medium": 33.87, "t2.large": 67.74, "t2.xlarge": 135.49, "t2.2xlarge": 270.98,
+	"t3.nano": 3.80, "t3.micro": 7.59, "t3.small": 15.18, "t3.medium": 30.37, "t3.large": 60.74, "t3.xlarge": 121.47, "t3.2xlarge": 242.94,
+	"t3a.nano": 3.43, "t3a.micro": 6.86, "t3a.small": 13.73, "t3a.medium": 27.45, "t3a.large": 54.90, "t3a.xlarge": 109.81, "t3a.2xlarge": 219.62,
+	"t4g.nano": 3.07, "t4g.micro": 6.13, "t4g.small": 12.26, "t4g.medium": 24.53, "t4g.large": 49.06, "t4g.xlarge": 98.11, "t4g.2xlarge": 196.22,
+	"m5.large": 70.08, "m5.xlarge": 140.16, "m5.2xlarge": 280.32, "m5.4xlarge": 560.64, "m5.8xlarge": 1121.28, "m5.12xlarge": 1681.92, "m5.16xlarge": 2242.56, "m5.24xlarge": 3363.84,
+	"m6i.large": 70.08, "m6i.xlarge": 140.16, "m6i.2xlarge": 280.32, "m6i.4xlarge": 560.64, "m6i.8xlarge": 1121.28,
+	"m6g.large": 56.06, "m6g.xlarge": 112.13, "m6g.2xlarge": 224.26, "m6g.4xlarge": 448.51, "m6g.8xlarge": 897.02,
+	"m7g.large": 59.57, "m7g.xlarge": 119.14, "m7g.2xlarge": 238.27, "m7g.4xlarge": 476.55, "m7g.8xlarge": 953.10,
+	"c5.large": 62.05, "c5.xlarge": 124.10, "c5.2xlarge": 248.20, "c5.4xlarge": 496.40, "c5.9xlarge": 1116.90, "c5.12xlarge": 1489.20, "c5.18xlarge": 2233.80, "c5.24xlarge": 2978.40,
+	"c6i.large": 62.05, "c6i.xlarge": 124.10, "c6i.2xlarge": 248.20, "c6i.4xlarge": 496.40,
+	"c6g.large": 49.64, "c6g.xlarge": 99.28, "c6g.2xlarge": 198.56, "c6g.4xlarge": 397.12,
+	"c7g.large": 52.71, "c7g.xlarge": 105.41, "c7g.2xlarge": 210.82, "c7g.4xlarge": 421.65,
+	"r5.large": 91.98, "r5.xlarge": 183.96, "r5.2xlarge": 367.92, "r5.4xlarge": 735.84, "r5.8xlarge": 1471.68, "r5.12xlarge": 2207.52,
+	"r6i.large": 91.98, "r6i.xlarge": 183.96, "r6i.2xlarge": 367.92, "r6i.4xlarge": 735.84,
+	"r6g.large": 73.58, "r6g.xlarge": 147.17, "r6g.2xlarge": 294.34, "r6g.4xlarge": 588.67,
+	"r7g.large": 78.18, "r7g.xlarge": 156.37, "r7g.2xlarge": 312.73, "r7g.4xlarge": 625.47,
+}
 
 // ebsSpec maps each supported EBS volume type to its Pricing API variant name and default rate.
 var ebsSpec = map[types.VolumeType]struct {

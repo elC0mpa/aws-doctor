@@ -28,6 +28,10 @@ func (s *service) addWasteSections(m core.Maroto, input model.RenderWasteInput, 
 		hasWaste = true
 	}
 
+	if s.addIdleEC2Waste(m, input) {
+		hasWaste = true
+	}
+
 	if s.addLBWaste(m, input, pricingSvc) {
 		hasWaste = true
 	}
@@ -147,6 +151,23 @@ func (s *service) addEC2Waste(m core.Maroto, input model.RenderWasteInput) bool 
 		}
 
 		s.addWasteRow(m, []string{fmt.Sprintf("RI (%s)", ri.Status), p.Identifier, timeInfo})
+	}
+
+	m.AddRow(5, col.New(12))
+
+	return true
+}
+
+func (s *service) addIdleEC2Waste(m core.Maroto, input model.RenderWasteInput) bool {
+	if len(input.IdleEC2Instances) == 0 {
+		return false
+	}
+
+	s.addWasteSection(m, "Idle EC2 Instance Waste", []string{"Status", "Identifier", "Utilization", "Est. Cost"})
+
+	for _, inst := range input.IdleEC2Instances {
+		p := outputshared.PresentIdleEC2Instance(inst)
+		s.addWasteRow(m, []string{"Idle", p.Identifier, p.Metric, p.EstimatedCost})
 	}
 
 	m.AddRow(5, col.New(12))

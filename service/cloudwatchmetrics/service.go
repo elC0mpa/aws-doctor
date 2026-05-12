@@ -154,6 +154,105 @@ func (s *service) ELBHasZeroRequestsInPeriod(ctx context.Context, loadBalancerAr
 	return true, nil
 }
 
+// EC2InstanceIdleStats returns the average CPU utilization (percent) and the average daily
+// network throughput (NetworkIn + NetworkOut bytes per day) for the given EC2 instance over
+// the lookback window. Callers compare these against their own thresholds to decide whether
+// the instance is idle.
+func (s *service) EC2InstanceIdleStats(ctx context.Context, instanceID string, days int) (float64, float64, error) {
+	now := time.Now()
+	startTime := now.AddDate(0, 0, -days)
+
+	cpuAvg, err := s.avgEC2CPUUtilization(ctx, instanceID, startTime, now)
+	if err != nil {
+		return 0, 0, err
+	}
+
+	networkBytes, err := s.sumEC2NetworkBytes(ctx, instanceID, startTime, now)
+	if err != nil {
+		return 0, 0, err
+	}
+
+	if days <= 0 {
+		return cpuAvg, networkBytes, nil
+	}
+
+	return cpuAvg, networkBytes / float64(days), nil
+}
+
+func (s *service) avgEC2CPUUtilization(ctx context.Context, instanceID string, startTime, endTime time.Time) (float64, error) {
+	output, err := s.client.GetMetricStatistics(ctx, &cloudwatch.GetMetricStatisticsInput{
+		Namespace:  aws.String("AWS/EC2"),
+		MetricName: aws.String("CPUUtilization"),
+		Dimensions: []cwtypes.Dimension{
+			{Name: aws.String("InstanceId"), Value: aws.String(instanceID)},
+		},
+		StartTime:  &startTime,
+		EndTime:    &endTime,
+		Period:     aws.Int32(metricPeriodSeconds),
+		Statistics: []cwtypes.Statistic{cwtypes.StatisticAverage},
+	})
+	if err != nil {
+		return 0, fmt.Errorf("failed to get CPUUtilization for %s: %w", instanceID, err)
+	}
+
+	return averageOfAverages(output.Datapoints), nil
+}
+
+func (s *service) sumEC2NetworkBytes(ctx context.Context, instanceID string, startTime, endTime time.Time) (float64, error) {
+	dims := []cwtypes.Dimension{
+		{Name: aws.String("InstanceId"), Value: aws.String(instanceID)},
+	}
+
+	var total float64
+
+	for _, metric := range []string{"NetworkIn", "NetworkOut"} {
+		output, err := s.client.GetMetricStatistics(ctx, &cloudwatch.GetMetricStatisticsInput{
+			Namespace:  aws.String("AWS/EC2"),
+			MetricName: aws.String(metric),
+			Dimensions: dims,
+			StartTime:  &startTime,
+			EndTime:    &endTime,
+			Period:     aws.Int32(metricPeriodSeconds),
+			Statistics: []cwtypes.Statistic{cwtypes.StatisticSum},
+		})
+		if err != nil {
+			return 0, fmt.Errorf("failed to get %s for %s: %w", metric, instanceID, err)
+		}
+
+		for _, dp := range output.Datapoints {
+			if dp.Sum != nil {
+				total += *dp.Sum
+			}
+		}
+	}
+
+	return total, nil
+}
+
+func averageOfAverages(datapoints []cwtypes.Datapoint) float64 {
+	if len(datapoints) == 0 {
+		return 0
+	}
+
+	var (
+		total float64
+		count int
+	)
+
+	for _, dp := range datapoints {
+		if dp.Average != nil {
+			total += *dp.Average
+			count++
+		}
+	}
+
+	if count == 0 {
+		return 0
+	}
+
+	return total / float64(count)
+}
+
 // SageMakerVariantInvocations returns the total Invocations for a SageMaker endpoint production
 // variant over the given number of days. The CloudWatch metric is published per (EndpointName,
 // VariantName) pair, so callers that need an endpoint-wide total must sum across variants.

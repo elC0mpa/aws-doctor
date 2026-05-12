@@ -184,6 +184,22 @@ func (s *service) LoadRegionRates(ctx context.Context) error {
 		termMatch("productFamily", "EC2 Container Registry"),
 	}, matchUsagetypeContains("TimedStorage-ByteHrs"))
 
+	// EC2 on-demand compute instances. The Pricing API exposes the instance type under the
+	// `instanceType` attribute. Filter to Linux/Shared tenancy with no preinstalled software so
+	// the cached rate represents a plain on-demand baseline. `capacitystatus=Used` is load
+	// bearing: without it the API returns extra SKUs for reserved capacity reservations and
+	// `parsePriceListDocument` would non-deterministically pick whichever comes first.
+	fetch(categoryEC2Instance, "AmazonEC2", []pricingtypes.Filter{
+		regionFilter,
+		termMatch("productFamily", "Compute Instance"),
+		termMatch("operatingSystem", "Linux"),
+		termMatch("tenancy", "Shared"),
+		termMatch("preInstalledSw", "NA"),
+		termMatch("capacitystatus", "Used"),
+	}, func(attrs map[string]string) (string, bool) {
+		return attrs["instanceType"], attrs["instanceType"] != ""
+	})
+
 	fetch(categorySecretsManager, "AWSSecretsManager", []pricingtypes.Filter{
 		regionFilter,
 		termMatch("productFamily", "Secret"),
@@ -296,6 +312,14 @@ func (s *service) CalculateSageMakerEndpointMonthlyCost(variants []model.SageMak
 	}
 
 	return total
+}
+
+func (s *service) CalculateEC2InstanceMonthlyCost(instanceType string) float64 {
+	if v, ok := s.lookupMonthly(priceKey(categoryEC2Instance, instanceType), hoursPerMonth); ok {
+		return v
+	}
+
+	return ec2InstancePricing[instanceType]
 }
 
 func (s *service) CalculateSecretsManagerMonthlyCost(count int) float64 {

@@ -85,6 +85,7 @@ func OutputWasteJSON(input model.RenderWasteInput, pricingSvc pricing.Service) e
 		UnusedEBSVolumes:       mapEBSVolumes(input.UnusedVolumes, "available", pricingSvc),
 		StoppedVolumes:         mapEBSVolumes(input.StoppedVolumes, "attached_to_stopped", pricingSvc),
 		StoppedInstances:       mapStoppedInstances(input.StoppedInstances),
+		IdleEC2Instances:       mapIdleEC2Instances(input.IdleEC2Instances),
 		ReservedInstances:      mapReservedInstances(input.Ris),
 		UnusedLoadBalancers:    mapLoadBalancers(input.LoadBalancers, pricingSvc),
 		UnusedAMIs:             mapAMIs(input.UnusedAMIs),
@@ -172,6 +173,16 @@ func mapEBSVolumes(volumes []ec2types.Volume, status string, pricingSvc pricing.
 			Status:               status,
 			EstimatedMonthlyCost: pricingSvc.CalculateEBSMonthlyCost(size, vol.VolumeType),
 		})
+	}
+
+	return result
+}
+
+func mapIdleEC2Instances(instances []model.EC2IdleInstanceInfo) []model.EC2IdleInstanceJSON {
+	var result []model.EC2IdleInstanceJSON
+
+	for _, inst := range instances {
+		result = append(result, model.EC2IdleInstanceJSON(inst))
 	}
 
 	return result
@@ -445,6 +456,7 @@ func hasAnyWasteJSON(o model.WasteReportJSON) bool {
 
 func hasComputeWasteJSON(o model.WasteReportJSON) bool {
 	return len(o.StoppedInstances) > 0 ||
+		len(o.IdleEC2Instances) > 0 ||
 		len(o.ReservedInstances) > 0 ||
 		len(o.UnusedAMIs) > 0 ||
 		len(o.UnusedKeyPairs) > 0 ||

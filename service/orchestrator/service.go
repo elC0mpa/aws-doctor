@@ -17,20 +17,28 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
-// sagemakerIdleDays is the lookback window for flagging SageMaker endpoints with zero
-// invocations as idle. Matches the hardcoded windows used by other waste checks
-// (unused AMIs, orphaned snapshots, idle NAT gateways).
+// EC2-related thresholds for the various waste checks. The idle thresholds flag an instance only
+// when the average CPU utilization AND the average daily network throughput (NetworkIn +
+// NetworkOut combined) across the lookback window are both below the configured values, matching
+// common Trusted-Advisor-style heuristics.
 const (
-	sagemakerIdleDays    = 14
-	ec2StoppedDays       = 30
-	ec2RiExpiringDays    = 30
-	ec2AmiStaleDays      = 90
-	ec2SnapshotStaleDays = 90
-	vpcNatIdleDays       = 7
-	elbIdleDays          = 7
-	rdsIdleDays          = 7
-	rdsSnapshotDays      = 30
-	lambdaLookbackDays   = 14
+	ec2StoppedDays            = 30
+	ec2RiExpiringDays         = 30
+	ec2AmiStaleDays           = 90
+	ec2SnapshotStaleDays      = 90
+	ec2IdleDays               = 14
+	ec2IdleCPUPercent         = 5.0
+	ec2IdleNetworkBytesPerDay = 5 * 1024 * 1024 // 5 MB/day, combined in+out
+)
+
+// Lookback windows and thresholds for the remaining waste checks.
+const (
+	sagemakerIdleDays  = 14
+	vpcNatIdleDays     = 7
+	elbIdleDays        = 7
+	rdsIdleDays        = 7
+	rdsSnapshotDays    = 30
+	lambdaLookbackDays = 14
 )
 
 // NewService creates a new orchestrator service.
