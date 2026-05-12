@@ -49,6 +49,7 @@ func hasEC2Waste(input model.RenderWasteInput) bool {
 	return len(input.UnusedVolumes) > 0 ||
 		len(input.StoppedVolumes) > 0 ||
 		len(input.StoppedInstances) > 0 ||
+		len(input.IdleEC2Instances) > 0 ||
 		len(input.Ris) > 0 ||
 		len(input.UnusedAMIs) > 0 ||
 		len(input.OrphanedSnapshots) > 0 ||
@@ -127,6 +128,10 @@ func drawComputeSections(input model.RenderWasteInput) {
 		drawEC2Table(input.StoppedInstances, input.Ris)
 	}
 
+	if len(input.IdleEC2Instances) > 0 {
+		drawIdleEC2Table(input.IdleEC2Instances)
+	}
+
 	if len(input.UnusedAMIs) > 0 {
 		drawAMITable(input.UnusedAMIs)
 	}
@@ -138,6 +143,47 @@ func drawComputeSections(input model.RenderWasteInput) {
 	if len(input.CloudWatchLogGroups) > 0 {
 		drawCloudWatchLogsTable(input.CloudWatchLogGroups)
 	}
+}
+
+func drawIdleEC2Table(instances []model.EC2IdleInstanceInfo) {
+	t := table.NewWriter()
+	t.SetOutputMirror(os.Stdout)
+	t.SetStyle(table.StyleRounded)
+	t.SetTitle("Idle EC2 Instance Waste")
+
+	t.AppendHeader(table.Row{"Status", "Identifier", "Type", "Utilization", "Est. Cost/Mo"})
+
+	t.SetColumnConfigs([]table.ColumnConfig{
+		{Number: 5, Align: text.AlignRight},
+	})
+
+	rows := populateIdleEC2Rows(instances)
+
+	if len(rows) > 0 {
+		halfRow := len(rows) / 2
+		rows[halfRow][0] = text.FgHiRed.Sprint("Idle (low CPU/network)")
+	}
+
+	t.AppendRows(rows)
+	t.Render()
+	fmt.Println()
+}
+
+func populateIdleEC2Rows(instances []model.EC2IdleInstanceInfo) []table.Row {
+	rows := make([]table.Row, 0, len(instances))
+
+	for _, inst := range instances {
+		p := outputshared.PresentIdleEC2Instance(inst)
+		rows = append(rows, table.Row{
+			"",
+			p.Identifier,
+			inst.InstanceType,
+			p.Metric,
+			p.EstimatedCost,
+		})
+	}
+
+	return rows
 }
 
 func drawDatabaseSections(input model.RenderWasteInput) {

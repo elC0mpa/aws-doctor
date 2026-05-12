@@ -71,6 +71,15 @@ func computeAndStorageCategories(input model.RenderWasteInput, pricingSvc pricin
 		categories = append(categories, model.CategorySummary{Name: "EBS Snapshots", Count: n, Cost: cost})
 	}
 
+	if n := len(input.IdleEC2Instances); n > 0 {
+		var cost float64
+		for _, inst := range input.IdleEC2Instances {
+			cost += inst.EstimatedMonthlyCost
+		}
+
+		categories = append(categories, model.CategorySummary{Name: "EC2 Instances (Idle)", Count: n, Cost: cost})
+	}
+
 	if n := len(input.RDSInstances); n > 0 {
 		var cost float64
 		for _, inst := range input.RDSInstances {

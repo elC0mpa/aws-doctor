@@ -63,6 +63,14 @@ func (s *service) queueEC2Checks(ctx context.Context, g *errgroup.Group, input *
 
 		return err
 	})
+
+	g.Go(func() error {
+		var err error
+
+		input.IdleEC2Instances, err = s.ec2Service.GetIdleInstances(ctx, ec2IdleDays, ec2IdleCPUPercent, ec2IdleNetworkBytesPerDay)
+
+		return err
+	})
 }
 
 func (s *service) queueVPCChecks(ctx context.Context, g *errgroup.Group, input *model.RenderWasteInput) {

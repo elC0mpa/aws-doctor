@@ -22,4 +22,5 @@ type Service interface {
 	NATGatewayBytesOut(ctx context.Context, natGatewayID string, days int) (float64, error)
 	ELBHasZeroRequestsInPeriod(ctx context.Context, loadBalancerArn string, lbType elbtypes.LoadBalancerTypeEnum, days int) (bool, error)
 	SageMakerVariantInvocations(ctx context.Context, endpointName, variantName string, days int) (float64, error)
+	EC2InstanceIdleStats(ctx context.Context, instanceID string, days int) (cpuAvgPercent, networkBytesPerDay float64, err error)
 }

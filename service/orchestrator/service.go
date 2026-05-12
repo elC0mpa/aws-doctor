@@ -26,11 +26,20 @@ const (
 	ec2RiExpiringDays    = 30
 	ec2AmiStaleDays      = 90
 	ec2SnapshotStaleDays = 90
+	ec2IdleDays          = 14
 	vpcNatIdleDays       = 7
 	elbIdleDays          = 7
 	rdsIdleDays          = 7
 	rdsSnapshotDays      = 30
 	lambdaLookbackDays   = 14
+)
+
+// EC2 idle activity thresholds. An instance is flagged only when the average CPU utilization AND
+// the average daily network throughput (NetworkIn + NetworkOut combined) across the lookback
+// window are both below these values. Defaults match common Trusted-Advisor-style heuristics.
+const (
+	ec2IdleCPUPercent         = 5.0
+	ec2IdleNetworkBytesPerDay = 5 * 1024 * 1024 // 5 MB/day, combined in+out
 )
 
 // NewService creates a new orchestrator service.

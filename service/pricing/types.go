@@ -30,6 +30,7 @@ type Service interface {
 	CalculateSageMakerEndpointMonthlyCost(variants []model.SageMakerVariant) float64
 	CalculateECRStorageMonthlyCost(sizeGB int64) float64
 	CalculateSecretsManagerMonthlyCost(count int) float64
+	CalculateEC2InstanceMonthlyCost(instanceType string) float64
 }
 
 type service struct {

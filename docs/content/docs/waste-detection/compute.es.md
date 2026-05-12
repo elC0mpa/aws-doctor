@@ -7,7 +7,7 @@ weight: 10
 Audite su huella de EC2 y EBS para eliminar los costos de instancias y datos abandonados.
 
 {{< callout type="info" >}}
-**Permisos Requeridos**: `ec2:DescribeInstances`, `ec2:DescribeReservedInstances`, `ec2:DescribeVolumes`, `ec2:DescribeSnapshots`, `ec2:DescribeKeyPairs`, `ec2:DescribeImages`, `lambda:ListFunctions`, `logs:DescribeLogGroups`, `logs:StartQuery`, `logs:GetQueryResults`.
+**Permisos Requeridos**: `ec2:DescribeInstances`, `ec2:DescribeReservedInstances`, `ec2:DescribeVolumes`, `ec2:DescribeSnapshots`, `ec2:DescribeKeyPairs`, `ec2:DescribeImages`, `cloudwatch:GetMetricStatistics`, `lambda:ListFunctions`, `logs:DescribeLogGroups`, `logs:StartQuery`, `logs:GetQueryResults`.
 {{< /callout >}}
 
 ## Instancias EC2
@@ -21,6 +21,11 @@ Audite su huella de EC2 y EBS para eliminar los costos de instancias y datos aba
 Escanea RIs activas programadas para vencer en los **próximos 30 días** o que han vencido en los **últimos 30 días**.
 - **Razón**: Las RIs vencidas vuelven a los costosos precios de On-Demand sin previo aviso.
 - **Acción**: Revisar el uso y renovar o migrar a Savings Plans.
+
+### Instancias en Ejecución Inactivas
+Encuentra instancias `running` cuya utilización promedio de CPU se mantuvo por debajo del **5%** y cuya suma NetworkIn + NetworkOut promedió menos de **5 MB/día** durante los últimos **14 días**.
+- **Razón**: Las máquinas de desarrollo olvidadas, los workers abandonados y las cargas de trabajo sobredimensionadas siguen facturando cómputo, almacenamiento y cualquier EIP asociado sin entregar valor.
+- **Acción**: Detenga la instancia unos días para verificar que nadie la note, luego redimensione a un tipo más pequeño o elimínela por completo.
 
 ---
 

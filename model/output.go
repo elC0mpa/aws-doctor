@@ -20,6 +20,7 @@ type RenderWasteInput struct {
 	StoppedVolumes         []types.Volume
 	Ris                    []RiExpirationInfo
 	StoppedInstances       []types.Instance
+	IdleEC2Instances       []EC2IdleInstanceInfo
 	LoadBalancers          []elbtypes.LoadBalancer
 	UnusedAMIs             []AMIWasteInfo
 	OrphanedSnapshots      []SnapshotWasteInfo

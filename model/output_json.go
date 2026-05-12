@@ -60,6 +60,7 @@ type WasteReportJSON struct {
 	UnusedEBSVolumes          []EBSVolumeJSON             `json:"unused_ebs_volumes"`
 	StoppedVolumes            []EBSVolumeJSON             `json:"stopped_instance_volumes"`
 	StoppedInstances          []StoppedInstanceJSON       `json:"stopped_instances"`
+	IdleEC2Instances          []EC2IdleInstanceJSON       `json:"idle_ec2_instances"`
 	ReservedInstances         []ReservedInstanceJSON      `json:"reserved_instances"`
 	UnusedLoadBalancers       []LoadBalancerJSON          `json:"unused_load_balancers"`
 	UnusedAMIs                []AMIJSON                   `json:"unused_amis"`
@@ -177,6 +178,17 @@ type StoppedInstanceJSON struct {
 	InstanceID string `json:"instance_id"`
 	StoppedAt  string `json:"stopped_at,omitempty"`
 	DaysAgo    int    `json:"days_ago,omitempty"`
+}
+
+// EC2IdleInstanceJSON represents an idle running EC2 instance.
+type EC2IdleInstanceJSON struct {
+	InstanceID           string  `json:"instance_id"`
+	InstanceType         string  `json:"instance_type"`
+	Name                 string  `json:"name,omitempty"`
+	CPUUtilizationAvg    float64 `json:"cpu_utilization_avg_percent"`
+	NetworkBytesPerDay   float64 `json:"network_bytes_per_day_avg"`
+	DaysChecked          int     `json:"days_checked"`
+	EstimatedMonthlyCost float64 `json:"estimated_monthly_cost"`
 }
 
 // ReservedInstanceJSON represents a reserved instance
