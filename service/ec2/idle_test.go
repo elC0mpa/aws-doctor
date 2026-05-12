@@ -134,11 +134,24 @@ func TestGetIdleInstances(t *testing.T) {
 }
 
 func TestNameTag(t *testing.T) {
-	tags := []types.Tag{
-		{Key: aws.String("env"), Value: aws.String("dev")},
-		{Key: aws.String("Name"), Value: aws.String("primary-web")},
-	}
+	t.Run("matches Name", func(t *testing.T) {
+		tags := []types.Tag{
+			{Key: aws.String("env"), Value: aws.String("dev")},
+			{Key: aws.String("Name"), Value: aws.String("primary-web")},
+		}
 
-	assert.Equal(t, "primary-web", nameTag(tags))
-	assert.Equal(t, "", nameTag([]types.Tag{}))
+		assert.Equal(t, "primary-web", nameTag(tags))
+	})
+
+	t.Run("matches lowercase name", func(t *testing.T) {
+		tags := []types.Tag{
+			{Key: aws.String("name"), Value: aws.String("worker-1")},
+		}
+
+		assert.Equal(t, "worker-1", nameTag(tags))
+	})
+
+	t.Run("empty tags returns empty", func(t *testing.T) {
+		assert.Equal(t, "", nameTag([]types.Tag{}))
+	})
 }

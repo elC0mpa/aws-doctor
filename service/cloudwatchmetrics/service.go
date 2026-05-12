@@ -162,24 +162,10 @@ func (s *service) EC2InstanceIdleStats(ctx context.Context, instanceID string, d
 	now := time.Now()
 	startTime := now.AddDate(0, 0, -days)
 
-	dims := []cwtypes.Dimension{
-		{Name: aws.String("InstanceId"), Value: aws.String(instanceID)},
-	}
-
-	cpuOutput, err := s.client.GetMetricStatistics(ctx, &cloudwatch.GetMetricStatisticsInput{
-		Namespace:  aws.String("AWS/EC2"),
-		MetricName: aws.String("CPUUtilization"),
-		Dimensions: dims,
-		StartTime:  &startTime,
-		EndTime:    &now,
-		Period:     aws.Int32(metricPeriodSeconds),
-		Statistics: []cwtypes.Statistic{cwtypes.StatisticAverage},
-	})
+	cpuAvg, err := s.avgEC2CPUUtilization(ctx, instanceID, startTime, now)
 	if err != nil {
-		return 0, 0, fmt.Errorf("failed to get CPUUtilization for %s: %w", instanceID, err)
+		return 0, 0, err
 	}
-
-	cpuAvg := averageOfAverages(cpuOutput.Datapoints)
 
 	networkBytes, err := s.sumEC2NetworkBytes(ctx, instanceID, startTime, now)
 	if err != nil {
@@ -191,6 +177,25 @@ func (s *service) EC2InstanceIdleStats(ctx context.Context, instanceID string, d
 	}
 
 	return cpuAvg, networkBytes / float64(days), nil
+}
+
+func (s *service) avgEC2CPUUtilization(ctx context.Context, instanceID string, startTime, endTime time.Time) (float64, error) {
+	output, err := s.client.GetMetricStatistics(ctx, &cloudwatch.GetMetricStatisticsInput{
+		Namespace:  aws.String("AWS/EC2"),
+		MetricName: aws.String("CPUUtilization"),
+		Dimensions: []cwtypes.Dimension{
+			{Name: aws.String("InstanceId"), Value: aws.String(instanceID)},
+		},
+		StartTime:  &startTime,
+		EndTime:    &endTime,
+		Period:     aws.Int32(metricPeriodSeconds),
+		Statistics: []cwtypes.Statistic{cwtypes.StatisticAverage},
+	})
+	if err != nil {
+		return 0, fmt.Errorf("failed to get CPUUtilization for %s: %w", instanceID, err)
+	}
+
+	return averageOfAverages(output.Datapoints), nil
 }
 
 func (s *service) sumEC2NetworkBytes(ctx context.Context, instanceID string, startTime, endTime time.Time) (float64, error) {

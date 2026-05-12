@@ -180,16 +180,8 @@ type StoppedInstanceJSON struct {
 	DaysAgo    int    `json:"days_ago,omitempty"`
 }
 
-// EC2IdleInstanceJSON represents an idle running EC2 instance.
-type EC2IdleInstanceJSON struct {
-	InstanceID           string  `json:"instance_id"`
-	InstanceType         string  `json:"instance_type"`
-	Name                 string  `json:"name,omitempty"`
-	CPUUtilizationAvg    float64 `json:"cpu_utilization_avg_percent"`
-	NetworkBytesPerDay   float64 `json:"network_bytes_per_day_avg"`
-	DaysChecked          int     `json:"days_checked"`
-	EstimatedMonthlyCost float64 `json:"estimated_monthly_cost"`
-}
+// EC2IdleInstanceJSON is the JSON-friendly representation of an idle EC2 instance.
+type EC2IdleInstanceJSON EC2IdleInstanceInfo
 
 // ReservedInstanceJSON represents a reserved instance
 type ReservedInstanceJSON struct {
