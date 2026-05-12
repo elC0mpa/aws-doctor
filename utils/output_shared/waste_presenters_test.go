@@ -419,3 +419,48 @@ func TestPresentIdleSageMakerEndpoint(t *testing.T) {
 		t.Errorf("EstimatedCost = %v, want '$46.72'", p.EstimatedCost)
 	}
 }
+
+func TestPresentIdleEC2Instance(t *testing.T) {
+	t.Run("with name tag", func(t *testing.T) {
+		inst := model.EC2IdleInstanceInfo{
+			InstanceID:           "i-1234",
+			InstanceType:         "t3.medium",
+			Name:                 "dev-box",
+			CPUUtilizationAvg:    1.25,
+			NetworkBytesPerDay:   1024 * 1024,
+			DaysChecked:          14,
+			EstimatedMonthlyCost: 30.37,
+		}
+
+		p := PresentIdleEC2Instance(inst)
+
+		if !strings.Contains(p.Identifier, "dev-box") || !strings.Contains(p.Identifier, "i-1234") {
+			t.Errorf("Identifier = %v, expected name+id", p.Identifier)
+		}
+
+		if p.EstimatedCost != "$30.37" {
+			t.Errorf("EstimatedCost = %v", p.EstimatedCost)
+		}
+
+		if !strings.Contains(p.Metric, "1.25") || !strings.Contains(p.Metric, "MB/day") {
+			t.Errorf("Metric = %v, expected CPU and network", p.Metric)
+		}
+
+		if !strings.Contains(p.Details, "t3.medium") || !strings.Contains(p.Details, "14") {
+			t.Errorf("Details = %v, missing type or days", p.Details)
+		}
+	})
+
+	t.Run("without name tag falls back to instance id", func(t *testing.T) {
+		inst := model.EC2IdleInstanceInfo{
+			InstanceID:   "i-5678",
+			InstanceType: "m5.large",
+		}
+
+		p := PresentIdleEC2Instance(inst)
+
+		if p.Identifier != "i-5678" {
+			t.Errorf("Identifier = %v, want bare instance id", p.Identifier)
+		}
+	})
+}

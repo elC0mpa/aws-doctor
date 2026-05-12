@@ -389,6 +389,87 @@ func TestSageMakerVariantInvocations(t *testing.T) {
 	}
 }
 
+func TestEC2InstanceIdleStats(t *testing.T) {
+	ctx := context.Background()
+
+	metricNamed := func(name string) func(in *cloudwatch.GetMetricStatisticsInput) bool {
+		return func(in *cloudwatch.GetMetricStatisticsInput) bool {
+			return aws.ToString(in.MetricName) == name
+		}
+	}
+
+	t.Run("returns averaged cpu and per-day network bytes", func(t *testing.T) {
+		cw := new(awsinterfaces.MockCloudWatchClient)
+		svc := &service{client: cw}
+
+		cw.On("GetMetricStatistics", mock.Anything, mock.MatchedBy(metricNamed("CPUUtilization")), mock.Anything).Return(&cloudwatch.GetMetricStatisticsOutput{
+			Datapoints: []cwtypes.Datapoint{
+				{Average: aws.Float64(2.0)},
+				{Average: aws.Float64(4.0)},
+			},
+		}, nil).Once()
+
+		cw.On("GetMetricStatistics", mock.Anything, mock.MatchedBy(metricNamed("NetworkIn")), mock.Anything).Return(&cloudwatch.GetMetricStatisticsOutput{
+			Datapoints: []cwtypes.Datapoint{
+				{Sum: aws.Float64(3 * 1024 * 1024)},
+				{Sum: aws.Float64(2 * 1024 * 1024)},
+			},
+		}, nil).Once()
+
+		cw.On("GetMetricStatistics", mock.Anything, mock.MatchedBy(metricNamed("NetworkOut")), mock.Anything).Return(&cloudwatch.GetMetricStatisticsOutput{
+			Datapoints: []cwtypes.Datapoint{
+				{Sum: aws.Float64(2 * 1024 * 1024)},
+				{Sum: aws.Float64(1 * 1024 * 1024)},
+			},
+		}, nil).Once()
+
+		cpu, network, err := svc.EC2InstanceIdleStats(ctx, "i-123", 2)
+		assert.NoError(t, err)
+		assert.InDelta(t, 3.0, cpu, 0.001)
+		// Total bytes = 8 MB, divided by 2 days = 4 MB/day.
+		assert.InDelta(t, 4*1024*1024, network, 0.001)
+	})
+
+	t.Run("cpu error is surfaced", func(t *testing.T) {
+		cw := new(awsinterfaces.MockCloudWatchClient)
+		svc := &service{client: cw}
+
+		cw.On("GetMetricStatistics", mock.Anything, mock.MatchedBy(metricNamed("CPUUtilization")), mock.Anything).Return((*cloudwatch.GetMetricStatisticsOutput)(nil), errors.New("boom")).Once()
+
+		_, _, err := svc.EC2InstanceIdleStats(ctx, "i-123", 7)
+		assert.Error(t, err)
+	})
+
+	t.Run("network error is surfaced", func(t *testing.T) {
+		cw := new(awsinterfaces.MockCloudWatchClient)
+		svc := &service{client: cw}
+
+		cw.On("GetMetricStatistics", mock.Anything, mock.MatchedBy(metricNamed("CPUUtilization")), mock.Anything).Return(&cloudwatch.GetMetricStatisticsOutput{}, nil).Once()
+		cw.On("GetMetricStatistics", mock.Anything, mock.MatchedBy(metricNamed("NetworkIn")), mock.Anything).Return((*cloudwatch.GetMetricStatisticsOutput)(nil), errors.New("net err")).Once()
+
+		_, _, err := svc.EC2InstanceIdleStats(ctx, "i-123", 7)
+		assert.Error(t, err)
+	})
+
+	t.Run("zero days does not divide", func(t *testing.T) {
+		cw := new(awsinterfaces.MockCloudWatchClient)
+		svc := &service{client: cw}
+
+		cw.On("GetMetricStatistics", mock.Anything, mock.MatchedBy(metricNamed("CPUUtilization")), mock.Anything).Return(&cloudwatch.GetMetricStatisticsOutput{}, nil).Once()
+		cw.On("GetMetricStatistics", mock.Anything, mock.MatchedBy(metricNamed("NetworkIn")), mock.Anything).Return(&cloudwatch.GetMetricStatisticsOutput{
+			Datapoints: []cwtypes.Datapoint{{Sum: aws.Float64(100)}},
+		}, nil).Once()
+		cw.On("GetMetricStatistics", mock.Anything, mock.MatchedBy(metricNamed("NetworkOut")), mock.Anything).Return(&cloudwatch.GetMetricStatisticsOutput{
+			Datapoints: []cwtypes.Datapoint{{Sum: aws.Float64(50)}},
+		}, nil).Once()
+
+		cpu, network, err := svc.EC2InstanceIdleStats(ctx, "i-123", 0)
+		assert.NoError(t, err)
+		assert.Equal(t, 0.0, cpu)
+		assert.Equal(t, 150.0, network)
+	})
+}
+
 func TestNewService(t *testing.T) {
 	cfg := aws.Config{}
 	svc := NewService(cfg)

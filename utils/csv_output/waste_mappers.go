@@ -53,6 +53,15 @@ func mapStoppedInstances(stoppedInstances []ec2types.Instance) [][]string {
 	return result
 }
 
+func mapIdleEC2Instances(instances []model.EC2IdleInstanceInfo) [][]string {
+	result := make([][]string, 0, len(instances))
+	for _, inst := range instances {
+		result = append(result, outputshared.PresentIdleEC2Instance(inst).ToSlice())
+	}
+
+	return result
+}
+
 func mapReservedInstances(ris []model.RiExpirationInfo) [][]string {
 	result := make([][]string, 0, len(ris))
 	for _, ri := range ris {

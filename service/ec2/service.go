@@ -15,11 +15,12 @@ import (
 )
 
 // NewService creates a new EC2 service.
-func NewService(awsconfig aws.Config, pricingSvc pricingService) Service {
+func NewService(awsconfig aws.Config, cwService cloudwatchMetricsService, pricingSvc pricingService) Service {
 	client := ec2.NewFromConfig(awsconfig)
 
 	return &service{
 		client:         client,
+		cwService:      cwService,
 		pricingService: pricingSvc,
 	}
 }

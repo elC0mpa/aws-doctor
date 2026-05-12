@@ -194,6 +194,25 @@ func PresentIdleLoadBalancer(lb model.ELBIdleInfo) ResourceRow {
 	}
 }
 
+// PresentIdleEC2Instance returns a ResourceRow for an idle running EC2 instance.
+func PresentIdleEC2Instance(inst model.EC2IdleInstanceInfo) ResourceRow {
+	identifier := inst.InstanceID
+	if inst.Name != "" {
+		identifier = fmt.Sprintf("%s (%s)", inst.Name, inst.InstanceID)
+	}
+
+	networkMBPerDay := inst.NetworkBytesPerDay / (1024 * 1024)
+
+	return ResourceRow{
+		Category:      "Idle EC2 Instance",
+		Identifier:    identifier,
+		EstimatedCost: fmt.Sprintf("$%.2f", inst.EstimatedMonthlyCost),
+		Metric:        fmt.Sprintf("CPU %.2f%%, %.2f MB/day", inst.CPUUtilizationAvg, networkMBPerDay),
+		Age:           NAValue,
+		Details:       fmt.Sprintf("Type: %s / Checked %d days", inst.InstanceType, inst.DaysChecked),
+	}
+}
+
 // PresentRDSIdleInstance returns a ResourceRow for an idle RDS instance
 func PresentRDSIdleInstance(inst model.RDSIdleInstanceInfo) ResourceRow {
 	return ResourceRow{

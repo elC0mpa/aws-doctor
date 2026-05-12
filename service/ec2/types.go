@@ -22,6 +22,7 @@ type ClientAPI interface {
 
 type service struct {
 	client         ClientAPI
+	cwService      cloudwatchMetricsService
 	pricingService pricingService
 }
 
@@ -29,6 +30,12 @@ type service struct {
 type pricingService interface {
 	CalculateEBSMonthlyCost(sizeGiB int32, volumeType types.VolumeType) float64
 	CalculateEBSSnapshotMonthlyCost(sizeGB int64) float64
+	CalculateEC2InstanceMonthlyCost(instanceType string) float64
+}
+
+// cloudwatchMetricsService is a local interface for the CloudWatch metrics dependency.
+type cloudwatchMetricsService interface {
+	EC2InstanceIdleStats(ctx context.Context, instanceID string, days int) (cpuAvgPercent, networkBytesPerDay float64, err error)
 }
 
 // Service is the interface for AWS EC2 service.
@@ -41,4 +48,5 @@ type Service interface {
 	GetUnusedAMIs(ctx context.Context, staleDays int) ([]model.AMIWasteInfo, error)
 	GetOrphanedSnapshots(ctx context.Context, staleDays int) ([]model.SnapshotWasteInfo, error)
 	GetUnusedKeyPairs(ctx context.Context) ([]model.KeyPairWasteInfo, error)
+	GetIdleInstances(ctx context.Context, idleDays int, cpuThresholdPercent float64, networkBytesPerDayThreshold float64) ([]model.EC2IdleInstanceInfo, error)
 }

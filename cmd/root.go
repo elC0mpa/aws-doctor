@@ -68,7 +68,7 @@ func buildOrchestrator(needsAWS bool) (orchestrator.Service, error) {
 
 	config.STSService = awssts.NewService(awsCfg)
 	config.CostService = awscostexplorer.NewService(awsCfg)
-	config.EC2Service = awsec2.NewService(awsCfg, pricingSvc)
+	config.EC2Service = awsec2.NewService(awsCfg, cwMetricsService, pricingSvc)
 	config.ELBService = elb.NewService(awsCfg, cwMetricsService, pricingSvc)
 	config.S3Service = s3.NewService(awsCfg)
 	config.ECRService = ecr.NewService(awsCfg, pricingSvc)

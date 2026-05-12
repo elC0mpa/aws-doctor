@@ -287,6 +287,24 @@ func TestCompute_NATGateways(t *testing.T) {
 	assert.Equal(t, 32.85, total)
 }
 
+func TestCompute_IdleEC2Instances(t *testing.T) {
+	input := model.RenderWasteInput{
+		IdleEC2Instances: []model.EC2IdleInstanceInfo{
+			{InstanceID: "i-1", EstimatedMonthlyCost: 30.37},
+			{InstanceID: "i-2", EstimatedMonthlyCost: 70.08},
+		},
+	}
+
+	m := new(services.MockPricingService)
+	categories, total := Compute(input, m)
+
+	assert.Len(t, categories, 1)
+	assert.Equal(t, "EC2 Instances (Idle)", categories[0].Name)
+	assert.Equal(t, 2, categories[0].Count)
+	assert.InDelta(t, 100.45, categories[0].Cost, 0.001)
+	assert.InDelta(t, 100.45, total, 0.001)
+}
+
 func TestCompute_ECR(t *testing.T) {
 	input := model.RenderWasteInput{
 		ECRNoLifecyclePolicies: []model.ECRNoLifecyclePolicyInfo{{RepositoryName: "repo-1"}},

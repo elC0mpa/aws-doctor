@@ -38,3 +38,10 @@ func (m *MockCloudWatchMetricsService) SageMakerVariantInvocations(ctx context.C
 
 	return args.Get(0).(float64), args.Error(1)
 }
+
+// EC2InstanceIdleStats mocks the EC2InstanceIdleStats method.
+func (m *MockCloudWatchMetricsService) EC2InstanceIdleStats(ctx context.Context, instanceID string, days int) (float64, float64, error) {
+	args := m.Called(ctx, instanceID, days)
+
+	return args.Get(0).(float64), args.Get(1).(float64), args.Error(2)
+}
