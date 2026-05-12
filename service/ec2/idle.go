@@ -92,6 +92,10 @@ func (s *service) evaluateIdleInstances(ctx context.Context, instances []types.I
 
 	_ = g.Wait()
 
+	return flattenIdleResults(results)
+}
+
+func flattenIdleResults(results []*model.EC2IdleInstanceInfo) []model.EC2IdleInstanceInfo {
 	var idle []model.EC2IdleInstanceInfo
 	for _, r := range results {
 		if r != nil {
