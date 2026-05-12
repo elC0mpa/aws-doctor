@@ -24,6 +24,7 @@ func Compute(input model.RenderWasteInput, pricingSvc pricing.Service) ([]model.
 
 func costCategories(input model.RenderWasteInput, pricingSvc pricing.Service) []model.CategorySummary {
 	categories := computeAndStorageCategories(input, pricingSvc)
+	categories = append(categories, databaseAndMLCategories(input)...)
 	categories = append(categories, networkingCategories(input, pricingSvc)...)
 
 	return categories
@@ -80,6 +81,16 @@ func computeAndStorageCategories(input model.RenderWasteInput, pricingSvc pricin
 		categories = append(categories, model.CategorySummary{Name: "EC2 Instances (Idle)", Count: n, Cost: cost})
 	}
 
+	if n := len(input.UnusedSecrets); n > 0 {
+		categories = append(categories, model.CategorySummary{Name: "Unused Secrets", Count: n, Cost: pricingSvc.CalculateSecretsManagerMonthlyCost(n)})
+	}
+
+	return categories
+}
+
+func databaseAndMLCategories(input model.RenderWasteInput) []model.CategorySummary {
+	var categories []model.CategorySummary
+
 	if n := len(input.RDSInstances); n > 0 {
 		var cost float64
 		for _, inst := range input.RDSInstances {
@@ -114,10 +125,6 @@ func computeAndStorageCategories(input model.RenderWasteInput, pricingSvc pricin
 		}
 
 		categories = append(categories, model.CategorySummary{Name: "SageMaker Endpoints (Idle)", Count: n, Cost: cost})
-	}
-
-	if n := len(input.UnusedSecrets); n > 0 {
-		categories = append(categories, model.CategorySummary{Name: "Unused Secrets", Count: n, Cost: pricingSvc.CalculateSecretsManagerMonthlyCost(n)})
 	}
 
 	return categories
