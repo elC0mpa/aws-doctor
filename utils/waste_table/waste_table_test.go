@@ -1123,8 +1123,61 @@ func TestHasAnyWaste(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			got := hasAnyWaste(tt.input)
 			if got != tt.want {
-				t.Errorf("hasAnyWaste() = %v, want %v", got, tt.want)
+			        t.Errorf("hasAnyWaste() = %v, want %v", got, tt.want)
 			}
-		})
-	}
-}
+			})
+			}
+			}
+
+			func TestDrawWasteTable_WithIdleEC2Instances(t *testing.T) {
+			idleInstances := []model.EC2IdleInstanceInfo{
+			{
+			InstanceID:           "i-1234",
+			InstanceType:         "t3.medium",
+			Name:                 "idle-box",
+			CPUUtilizationAvg:    1.2,
+			NetworkBytesPerDay:   1024 * 1024,
+			EstimatedMonthlyCost: 30.37,
+			},
+			}
+
+			output := captureWasteOutput(func() {
+			DrawWasteTable(model.RenderWasteInput{
+			AccountID:        "123456789012",
+			IdleEC2Instances: idleInstances,
+			}, services.NewMockPricingService())
+			})
+
+			if !strings.Contains(output, "Idle EC2 Instance") {
+			t.Error("DrawWasteTable() missing Idle EC2 Instance section")
+			}
+			if !strings.Contains(output, "idle-box") || !strings.Contains(output, "i-1234") {
+			t.Error("DrawWasteTable() missing instance identity")
+			}
+			}
+
+			func TestDrawWasteTable_WithUnusedSecrets(t *testing.T) {
+			unusedSecrets := []model.UnusedSecretInfo{
+			{
+			Name: "my/unused/secret",
+			},
+			}
+
+			mockPricing := new(services.MockPricingService)
+			mockPricing.On("CalculateSecretsManagerMonthlyCost", 1).Return(0.40)
+
+			output := captureWasteOutput(func() {
+			DrawWasteTable(model.RenderWasteInput{
+			AccountID:     "123456789012",
+			UnusedSecrets: unusedSecrets,
+			}, mockPricing)
+			})
+
+			if !strings.Contains(output, "Unused Secrets") {
+			t.Error("DrawWasteTable() missing Unused Secrets section")
+			}
+			if !strings.Contains(output, "my/unused/secret") {
+			t.Error("DrawWasteTable() missing secret name")
+			}
+			}
+

@@ -464,3 +464,46 @@ func TestPresentIdleEC2Instance(t *testing.T) {
 		}
 	})
 }
+
+func TestPresentUnusedSecret(t *testing.T) {
+	mockPricing := new(services.MockPricingService)
+	mockPricing.On("CalculateSecretsManagerMonthlyCost", 1).Return(0.40)
+
+	t.Run("with last accessed date", func(t *testing.T) {
+		lastAccessed := time.Now().AddDate(0, 0, -10)
+		secret := model.UnusedSecretInfo{
+			Name:             "prod/db/password",
+			LastAccessedDate: &lastAccessed,
+		}
+
+		p := PresentUnusedSecret(secret, mockPricing)
+
+		if p.Identifier != "prod/db/password" {
+			t.Errorf("Identifier = %v", p.Identifier)
+		}
+		if p.EstimatedCost != "$0.40" {
+			t.Errorf("EstimatedCost = %v", p.EstimatedCost)
+		}
+		if p.Age != "10" {
+			t.Errorf("Age = %v, want '10'", p.Age)
+		}
+		if !strings.Contains(p.Details, lastAccessed.Format(time.RFC3339)) {
+			t.Errorf("Details = %v, missing formatted date", p.Details)
+		}
+	})
+
+	t.Run("without last accessed date", func(t *testing.T) {
+		secret := model.UnusedSecretInfo{
+			Name: "test/key",
+		}
+
+		p := PresentUnusedSecret(secret, mockPricing)
+
+		if p.Age != NAValue {
+			t.Errorf("Age = %v, want N/A", p.Age)
+		}
+		if !strings.Contains(p.Details, NAValue) {
+			t.Errorf("Details = %v, want N/A in details", p.Details)
+		}
+	})
+}
