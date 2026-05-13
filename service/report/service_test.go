@@ -272,6 +272,36 @@ func TestGenerateReports(t *testing.T) {
 		assert.NoError(t, err)
 	})
 
+	t.Run("WasteReport_WithFindings", func(t *testing.T) {
+		path := filepath.Join(tempDir, "waste_findings.pdf")
+		input := model.RenderWasteInput{
+			AccountID: "123456789012",
+			IdleEC2Instances: []model.EC2IdleInstanceInfo{
+				{
+					InstanceID:           "i-123",
+					InstanceType:         "t3.medium",
+					CPUUtilizationAvg:    1.0,
+					EstimatedMonthlyCost: 30.0,
+				},
+			},
+			UnusedSecrets: []model.UnusedSecretInfo{
+				{
+					Name: "my-secret",
+				},
+			},
+		}
+
+		mockPricing := new(services.MockPricingService)
+		mockPricing.On("CalculateSecretsManagerMonthlyCost", 1).Return(0.40)
+
+		absPath, _ := filepath.Abs(path)
+		gotPath, err := s.GenerateWasteReport(input, mockPricing, path)
+		assert.NoError(t, err)
+		assert.Equal(t, absPath, *gotPath)
+		_, err = os.Stat(absPath)
+		assert.NoError(t, err)
+	})
+
 	t.Run("TrendReport_NoServices", func(t *testing.T) {
 		path := filepath.Join(tempDir, "trend_no_svc.pdf")
 		costInfo := []model.CostInfo{
