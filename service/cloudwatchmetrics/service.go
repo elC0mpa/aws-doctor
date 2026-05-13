@@ -162,71 +162,85 @@ func (s *service) EC2InstanceIdleStats(ctx context.Context, instanceID string, d
 	now := time.Now()
 	startTime := now.AddDate(0, 0, -days)
 
-	cpuAvg, err := s.avgEC2CPUUtilization(ctx, instanceID, startTime, now)
-	if err != nil {
-		return 0, 0, err
-	}
-
-	networkBytes, err := s.sumEC2NetworkBytes(ctx, instanceID, startTime, now)
-	if err != nil {
-		return 0, 0, err
-	}
-
-	if days <= 0 {
-		return cpuAvg, networkBytes, nil
-	}
-
-	return cpuAvg, networkBytes / float64(days), nil
-}
-
-func (s *service) avgEC2CPUUtilization(ctx context.Context, instanceID string, startTime, endTime time.Time) (float64, error) {
-	output, err := s.client.GetMetricStatistics(ctx, &cloudwatch.GetMetricStatisticsInput{
-		Namespace:  aws.String("AWS/EC2"),
-		MetricName: aws.String("CPUUtilization"),
-		Dimensions: []cwtypes.Dimension{
-			{Name: aws.String("InstanceId"), Value: aws.String(instanceID)},
+	output, err := s.client.GetMetricData(ctx, &cloudwatch.GetMetricDataInput{
+		MetricDataQueries: []cwtypes.MetricDataQuery{
+			{
+				Id: aws.String("cpu"),
+				MetricStat: &cwtypes.MetricStat{
+					Metric: &cwtypes.Metric{
+						Namespace:  aws.String("AWS/EC2"),
+						MetricName: aws.String("CPUUtilization"),
+						Dimensions: []cwtypes.Dimension{
+							{Name: aws.String("InstanceId"), Value: aws.String(instanceID)},
+						},
+					},
+					Period: aws.Int32(metricPeriodSeconds),
+					Stat:   aws.String("Average"),
+				},
+			},
+			{
+				Id: aws.String("net_in"),
+				MetricStat: &cwtypes.MetricStat{
+					Metric: &cwtypes.Metric{
+						Namespace:  aws.String("AWS/EC2"),
+						MetricName: aws.String("NetworkIn"),
+						Dimensions: []cwtypes.Dimension{
+							{Name: aws.String("InstanceId"), Value: aws.String(instanceID)},
+						},
+					},
+					Period: aws.Int32(metricPeriodSeconds),
+					Stat:   aws.String("Sum"),
+				},
+			},
+			{
+				Id: aws.String("net_out"),
+				MetricStat: &cwtypes.MetricStat{
+					Metric: &cwtypes.Metric{
+						Namespace:  aws.String("AWS/EC2"),
+						MetricName: aws.String("NetworkOut"),
+						Dimensions: []cwtypes.Dimension{
+							{Name: aws.String("InstanceId"), Value: aws.String(instanceID)},
+						},
+					},
+					Period: aws.Int32(metricPeriodSeconds),
+					Stat:   aws.String("Sum"),
+				},
+			},
 		},
-		StartTime:  &startTime,
-		EndTime:    &endTime,
-		Period:     aws.Int32(metricPeriodSeconds),
-		Statistics: []cwtypes.Statistic{cwtypes.StatisticAverage},
+		StartTime: &startTime,
+		EndTime:   &now,
 	})
 	if err != nil {
-		return 0, fmt.Errorf("failed to get CPUUtilization for %s: %w", instanceID, err)
+		return 0, 0, fmt.Errorf("failed to get CloudWatch metric data for %s: %w", instanceID, err)
 	}
 
-	return averageOfAverages(output.Datapoints), nil
-}
+	var (
+		cpuAvgPercent     float64
+		networkBytesTotal float64
+	)
 
-func (s *service) sumEC2NetworkBytes(ctx context.Context, instanceID string, startTime, endTime time.Time) (float64, error) {
-	dims := []cwtypes.Dimension{
-		{Name: aws.String("InstanceId"), Value: aws.String(instanceID)},
-	}
-
-	var total float64
-
-	for _, metric := range []string{"NetworkIn", "NetworkOut"} {
-		output, err := s.client.GetMetricStatistics(ctx, &cloudwatch.GetMetricStatisticsInput{
-			Namespace:  aws.String("AWS/EC2"),
-			MetricName: aws.String(metric),
-			Dimensions: dims,
-			StartTime:  &startTime,
-			EndTime:    &endTime,
-			Period:     aws.Int32(metricPeriodSeconds),
-			Statistics: []cwtypes.Statistic{cwtypes.StatisticSum},
-		})
-		if err != nil {
-			return 0, fmt.Errorf("failed to get %s for %s: %w", metric, instanceID, err)
-		}
-
-		for _, dp := range output.Datapoints {
-			if dp.Sum != nil {
-				total += *dp.Sum
+	for _, result := range output.MetricDataResults {
+		switch aws.ToString(result.Id) {
+		case "cpu":
+			var total float64
+			for _, val := range result.Values {
+				total += val
+			}
+			if n := len(result.Values); n > 0 {
+				cpuAvgPercent = total / float64(n)
+			}
+		case "net_in", "net_out":
+			for _, val := range result.Values {
+				networkBytesTotal += val
 			}
 		}
 	}
 
-	return total, nil
+	if days <= 0 {
+		return cpuAvgPercent, networkBytesTotal, nil
+	}
+
+	return cpuAvgPercent, networkBytesTotal / float64(days), nil
 }
 
 func averageOfAverages(datapoints []cwtypes.Datapoint) float64 {
