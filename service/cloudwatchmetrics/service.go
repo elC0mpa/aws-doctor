@@ -226,6 +226,7 @@ func (s *service) EC2InstanceIdleStats(ctx context.Context, instanceID string, d
 			for _, val := range result.Values {
 				total += val
 			}
+
 			if n := len(result.Values); n > 0 {
 				cpuAvgPercent = total / float64(n)
 			}
@@ -241,30 +242,6 @@ func (s *service) EC2InstanceIdleStats(ctx context.Context, instanceID string, d
 	}
 
 	return cpuAvgPercent, networkBytesTotal / float64(days), nil
-}
-
-func averageOfAverages(datapoints []cwtypes.Datapoint) float64 {
-	if len(datapoints) == 0 {
-		return 0
-	}
-
-	var (
-		total float64
-		count int
-	)
-
-	for _, dp := range datapoints {
-		if dp.Average != nil {
-			total += *dp.Average
-			count++
-		}
-	}
-
-	if count == 0 {
-		return 0
-	}
-
-	return total / float64(count)
 }
 
 // SageMakerVariantInvocations returns the total Invocations for a SageMaker endpoint production

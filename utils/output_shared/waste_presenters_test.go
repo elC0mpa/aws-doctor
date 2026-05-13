@@ -481,12 +481,15 @@ func TestPresentUnusedSecret(t *testing.T) {
 		if p.Identifier != "prod/db/password" {
 			t.Errorf("Identifier = %v", p.Identifier)
 		}
+
 		if p.EstimatedCost != "$0.40" {
 			t.Errorf("EstimatedCost = %v", p.EstimatedCost)
 		}
+
 		if p.Age != "10" {
 			t.Errorf("Age = %v, want '10'", p.Age)
 		}
+
 		if !strings.Contains(p.Details, lastAccessed.Format(time.RFC3339)) {
 			t.Errorf("Details = %v, missing formatted date", p.Details)
 		}
@@ -502,6 +505,7 @@ func TestPresentUnusedSecret(t *testing.T) {
 		if p.Age != NAValue {
 			t.Errorf("Age = %v, want N/A", p.Age)
 		}
+
 		if !strings.Contains(p.Details, NAValue) {
 			t.Errorf("Details = %v, want N/A in details", p.Details)
 		}
