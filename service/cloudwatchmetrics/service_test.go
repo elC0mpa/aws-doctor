@@ -229,10 +229,10 @@ func TestSageMakerVariantInvocations(t *testing.T) {
 	ctx := context.Background()
 
 	tests := []struct {
-		name        string
-		setupMocks  func(*awsinterfaces.MockCloudWatchClient)
-		want        float64
-		wantErr     bool
+		name       string
+		setupMocks func(*awsinterfaces.MockCloudWatchClient)
+		want       float64
+		wantErr    bool
 	}{
 		{
 			name: "returns total sum of invocations",
