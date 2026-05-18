@@ -51,7 +51,8 @@ Welcome to the **AWS Doctor** documentation. This guide will help you set up, co
 
 ## Quick Context
 
-- **Stateless**: The tool never stores your data or credentials.
+- **Fast & Efficient**: Implements local caching to minimize network calls.
+- **Stateless & Secure**: Never stores your AWS credentials or sensitive account data.
 - **Fair Assessment**: Cost comparisons use identical time windows for accuracy.
 - **Zero Config**: Works out-of-the-box with your existing `~/.aws/config`.
 
