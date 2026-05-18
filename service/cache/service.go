@@ -84,9 +84,11 @@ func (s *service) Set(key Key, value interface{}, contexts ...string) error {
 
 	filePath := s.getFilePath(key, contexts...)
 	tmpPath := filePath + ".tmp"
+
 	if err := os.WriteFile(tmpPath, data, 0o644); err != nil {
 		return fmt.Errorf("failed to write temp cache file: %w", err)
 	}
+
 	if err := os.Rename(tmpPath, filePath); err != nil {
 		return fmt.Errorf("failed to commit cache file: %w", err)
 	}
