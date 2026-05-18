@@ -83,7 +83,7 @@ To ensure a fast and responsive experience, **AWS Doctor** implements a local ca
 
 ### How it Works
 Caching is currently applied to:
-- **Version Checks**: The background check for new versions is cached for **4 hours**.
+- **Version Checks**: The background check for new versions is cached for **2 hours**.
 
 ### Future Expansion
 The caching mechanism is designed to be extensible and will soon support:

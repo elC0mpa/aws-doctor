@@ -82,7 +82,7 @@ Para garantizar una experiencia rápida y fluida, **AWS Doctor** implementa un s
 
 ### Cómo funciona
 La caché se aplica actualmente a:
-- **Verificaciones de versión**: La comprobación en segundo plano de nuevas versiones se guarda en caché durante **4 horas**.
+- **Verificaciones de versión**: La comprobación en segundo plano de nuevas versiones se guarda en caché durante **2 horas**.
 
 ### Expansión Futura
 El mecanismo de caché está diseñado para ser extensible y pronto soportará:

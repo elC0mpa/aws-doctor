@@ -107,7 +107,7 @@ go install github.com/elC0mpa/aws-doctor@latest
 - **📊 6-Month Trends:** High-fidelity ANSI visualization of your spending velocity.
 - **📤 Multiple Output Formats:** Export results in `table`, `json`, or `csv` for easy integration with other tools or reporting.
 - **🔔 Update Notifications:** Automatically checks for new versions in the background and notifies you after command output.
-- **🚀 Efficient Caching:** Uses a local cache service to minimize redundant network calls. Currently used for version check notifications (4-hour TTL) and slated for expansion to pricing data and other heavy flows.
+- **🚀 Efficient Caching:** Uses a local cache service to minimize redundant network calls. Currently used for version check notifications (2-hour TTL) and slated for expansion to pricing data and other heavy flows.
 - **🔐 MFA Ready:** Native support for profiles requiring Multi-Factor Authentication.
 - **🌍 Region-Aware Pricing:** Queries the AWS Pricing API at startup to use rates for the configured region, falling back to us-east-1 defaults if the API is unavailable. Requires `pricing:GetProducts` in the caller's IAM policy; without it, estimates silently fall back to defaults.
 

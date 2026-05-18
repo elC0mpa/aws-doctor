@@ -384,6 +384,26 @@ func TestCheckForUpdate_NilRelease(t *testing.T) {
 	assert.Contains(t, err.Error(), "latest release is nil")
 }
 
+func TestCheckForUpdate_FromCache(t *testing.T) {
+	mrepo := new(mockRepositories)
+	v := model.VersionInfo{Version: "v1.2.2"}
+	mc := new(services.MockCacheService)
+	s := &service{repositories: mrepo, versionInfo: v, cacheService: mc}
+
+	mc.On("Get", cache.LatestVersionKey, mock.Anything, mock.Anything).Return(true, nil).Run(func(args mock.Arguments) {
+		target := args.Get(1).(*string)
+		*target = tag
+	})
+
+	result, err := s.CheckForUpdate(context.Background())
+	assert.NoError(t, err)
+	assert.NotNil(t, result)
+	assert.Equal(t, tag, *result)
+
+	// Verify GitHub was NOT called
+	mrepo.AssertNotCalled(t, "GetLatestRelease", mock.Anything, mock.Anything, mock.Anything)
+}
+
 func TestCheckForUpdate_GitHubError(t *testing.T) {
 	mrepo := new(mockRepositories)
 	v := model.VersionInfo{Version: tag}
