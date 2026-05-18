@@ -74,3 +74,20 @@ Keep your diagnostic engine up to date with a single command:
 aws-doctor update
 ```
 This will check GitHub for the latest release, download the binary for your platform, and replace the existing one.
+
+---
+
+## Performance & Caching
+
+To ensure a fast and responsive experience, **AWS Doctor** implements a local caching service. This reduces redundant network calls to external APIs, improving performance and avoiding rate limits.
+
+### How it Works
+Caching is currently applied to:
+- **Version Checks**: The background check for new versions is cached for **2 hours**.
+
+### Future Expansion
+The caching mechanism is designed to be extensible and will soon support:
+- **Pricing Data**: Region-specific rates from the AWS Pricing API.
+- **Resource Metadata**: Temporary storage of heavy API responses.
+
+The cache is stored locally in your OS-specific user cache directory (e.g., `~/.cache/aws-doctor/` on Linux) and never contains sensitive AWS credentials or user data.

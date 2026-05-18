@@ -7,6 +7,7 @@ import (
 
 	"github.com/elC0mpa/aws-doctor/model"
 	awsconfig "github.com/elC0mpa/aws-doctor/service/aws_config"
+	"github.com/elC0mpa/aws-doctor/service/cache"
 	"github.com/elC0mpa/aws-doctor/service/cloudwatchlogs"
 	"github.com/elC0mpa/aws-doctor/service/cloudwatchmetrics"
 	awscostexplorer "github.com/elC0mpa/aws-doctor/service/costexplorer"
@@ -41,7 +42,8 @@ var (
 
 func buildOrchestrator(needsAWS bool) (orchestrator.Service, error) {
 	outputService := output.NewService(outputFormat)
-	updateService := update.NewService(versionInfo)
+	cacheService := cache.NewService()
+	updateService := update.NewService(versionInfo, cacheService)
 
 	config := orchestrator.Config{
 		OutputService: outputService,

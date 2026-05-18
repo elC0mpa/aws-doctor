@@ -50,9 +50,11 @@ Bienvenido a la documentación de **AWS Doctor**. Esta guía le ayudará a confi
 
 ## Contexto Rápido
 
-- **Sin Estado**: La herramienta nunca almacena sus datos ni credenciales.
+- **Rápido y Eficiente**: Implementa caché local para minimizar las llamadas de red.
+- **Sin Estado y Seguro**: La herramienta nunca almacena sus credenciales de AWS ni datos sensibles de la cuenta.
 - **Evaluación Justa**: Las comparaciones de costos utilizan ventanas de tiempo idénticas para mayor precisión.
-- **Configuración Cero**: Funciona directamente con su configuración existente en `~/.aws/config`.
+- **Cero Configuración**: Funciona directamente con su configuración existente en `~/.aws/config`.
+
 
 {{< callout type="info" >}}
 ¿Busca algo específico? Utilice la barra de búsqueda en la parte superior de la página para encontrar detalles sobre un servicio o subcomando en particular.

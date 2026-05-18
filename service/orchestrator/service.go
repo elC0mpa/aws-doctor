@@ -73,7 +73,6 @@ func (s *service) Orchestrate(flags model.Flags) error {
 		return s.versionWorkflow()
 	}
 
-	// TODO: cache the version check result locally to avoid hitting the GitHub API on every run.
 	// The notification prints to stderr, so running the check for every output format is safe for piping.
 	versionCh := make(chan model.VersionCheckResult, 1)
 

@@ -73,3 +73,20 @@ Mantenga su motor de diagnóstico actualizado con un solo comando:
 aws-doctor update
 ```
 Esto buscará el último lanzamiento en GitHub, descargará el binario para su plataforma y reemplazará el existente.
+
+---
+
+## Rendimiento y Caché
+
+Para garantizar una experiencia rápida y fluida, **AWS Doctor** implementa un servicio de caché local. Esto reduce las llamadas de red redundantes a las APIs externas, mejorando el rendimiento y evitando los límites de velocidad (rate limits).
+
+### Cómo funciona
+La caché se aplica actualmente a:
+- **Verificaciones de versión**: La comprobación en segundo plano de nuevas versiones se guarda en caché durante **2 horas**.
+
+### Expansión Futura
+El mecanismo de caché está diseñado para ser extensible y pronto soportará:
+- **Datos de Precios**: Tarifas específicas por región de la API de Precios de AWS.
+- **Metadatos de Recursos**: Almacenamiento temporal de respuestas pesadas de la API.
+
+La caché se almacena localmente en el directorio de caché de usuario específico de su SO (por ejemplo, `~/.cache/aws-doctor/` en Linux) y nunca contiene credenciales sensibles de AWS ni datos del usuario.
