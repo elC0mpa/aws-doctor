@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/elC0mpa/aws-doctor/model"
+	"github.com/elC0mpa/aws-doctor/service/cache"
 	"github.com/google/go-github/v62/github"
 )
 
@@ -24,6 +25,7 @@ type service struct {
 	versionInfo  model.VersionInfo
 	repositories repositoryService
 	pathResolver executablePathResolver
+	cacheService cache.Service
 }
 
 // Service is the interface for the update service.

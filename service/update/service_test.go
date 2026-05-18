@@ -5,7 +5,9 @@ import (
 	"errors"
 	"testing"
 
+	"github.com/elC0mpa/aws-doctor/mocks/services"
 	"github.com/elC0mpa/aws-doctor/model"
+	"github.com/elC0mpa/aws-doctor/service/cache"
 	"github.com/google/go-github/v62/github"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -56,7 +58,8 @@ func (m *mockPathResolver) ResolvedExecutablePath() (string, error) {
 
 func TestNewService(t *testing.T) {
 	v := model.VersionInfo{Version: "v1.0.0"}
-	svc := NewService(v)
+	mc := new(services.MockCacheService)
+	svc := NewService(v, mc)
 	assert.NotNil(t, svc)
 
 	s, ok := svc.(*service)
@@ -64,6 +67,7 @@ func TestNewService(t *testing.T) {
 	assert.NotNil(t, s.runner)
 	assert.Equal(t, v, s.versionInfo)
 	assert.NotNil(t, s.pathResolver)
+	assert.Equal(t, mc, s.cacheService)
 }
 
 func TestUpdate_AlreadyLatest(t *testing.T) {
@@ -71,12 +75,16 @@ func TestUpdate_AlreadyLatest(t *testing.T) {
 	mrepo := new(mockRepositories)
 	mp := new(mockPathResolver)
 	v := model.VersionInfo{Version: tag}
-	s := &service{runner: mr, repositories: mrepo, versionInfo: v, pathResolver: mp}
+	mc := new(services.MockCacheService)
+	s := &service{runner: mr, repositories: mrepo, versionInfo: v, pathResolver: mp, cacheService: mc}
 
 	mp.On("ResolvedExecutablePath").Return("/usr/local/bin/aws-doctor", nil)
 
 	tagName := tag
 	release := &github.RepositoryRelease{TagName: &tagName}
+
+	mc.On("Get", cache.LatestVersionKey, mock.Anything, mock.Anything).Return(false, nil)
+	mc.On("Set", cache.LatestVersionKey, mock.Anything, mock.Anything).Return(nil)
 	mrepo.On("GetLatestRelease", mock.Anything, model.GitHubOwner, model.GitHubRepo).Return(release, nil, nil)
 
 	err := s.Update()
@@ -89,12 +97,16 @@ func TestUpdate_AlreadyLatestVPrefix(t *testing.T) {
 	mrepo := new(mockRepositories)
 	mp := new(mockPathResolver)
 	v := model.VersionInfo{Version: "1.2.3"}
-	s := &service{runner: mr, repositories: mrepo, versionInfo: v, pathResolver: mp}
+	mc := new(services.MockCacheService)
+	s := &service{runner: mr, repositories: mrepo, versionInfo: v, pathResolver: mp, cacheService: mc}
 
 	mp.On("ResolvedExecutablePath").Return("/usr/local/bin/aws-doctor", nil)
 
 	tagName := tag
 	release := &github.RepositoryRelease{TagName: &tagName}
+
+	mc.On("Get", cache.LatestVersionKey, mock.Anything, mock.Anything).Return(false, nil)
+	mc.On("Set", cache.LatestVersionKey, mock.Anything, mock.Anything).Return(nil)
 	mrepo.On("GetLatestRelease", mock.Anything, model.GitHubOwner, model.GitHubRepo).Return(release, nil, nil)
 
 	err := s.Update()
@@ -107,7 +119,8 @@ func TestUpdate_DevVersion(t *testing.T) {
 	mrepo := new(mockRepositories)
 	mp := new(mockPathResolver)
 	v := model.VersionInfo{Version: "dev"}
-	s := &service{runner: mr, repositories: mrepo, versionInfo: v, pathResolver: mp}
+	mc := new(services.MockCacheService)
+	s := &service{runner: mr, repositories: mrepo, versionInfo: v, pathResolver: mp, cacheService: mc}
 
 	mp.On("ResolvedExecutablePath").Return("/usr/local/bin/aws-doctor", nil)
 
@@ -126,12 +139,16 @@ func TestUpdate_NeedsUpdate(t *testing.T) {
 	mrepo := new(mockRepositories)
 	mp := new(mockPathResolver)
 	v := model.VersionInfo{Version: "v1.2.2"}
-	s := &service{runner: mr, repositories: mrepo, versionInfo: v, pathResolver: mp}
+	mc := new(services.MockCacheService)
+	s := &service{runner: mr, repositories: mrepo, versionInfo: v, pathResolver: mp, cacheService: mc}
 
 	mp.On("ResolvedExecutablePath").Return("/usr/local/bin/aws-doctor", nil)
 
 	tagName := tag
 	release := &github.RepositoryRelease{TagName: &tagName}
+
+	mc.On("Get", cache.LatestVersionKey, mock.Anything, mock.Anything).Return(false, nil)
+	mc.On("Set", cache.LatestVersionKey, mock.Anything, mock.Anything).Return(nil)
 	mrepo.On("GetLatestRelease", mock.Anything, model.GitHubOwner, model.GitHubRepo).Return(release, nil, nil)
 
 	mr.On("Run", "sh", []string{"-c", "curl -sSL https://raw.githubusercontent.com/elC0mpa/aws-doctor/main/install.sh | sh"}).Return(nil)
@@ -206,13 +223,17 @@ func TestUpdate_InstallMethod(t *testing.T) {
 			}
 
 			v := model.VersionInfo{Version: version}
-			s := &service{runner: mr, repositories: mrepo, versionInfo: v, pathResolver: mp}
+			mc := new(services.MockCacheService)
+			s := &service{runner: mr, repositories: mrepo, versionInfo: v, pathResolver: mp, cacheService: mc}
 
 			mp.On("ResolvedExecutablePath").Return(tt.resolvedPath, tt.pathErr)
+			mc.On("Get", cache.LatestVersionKey, mock.Anything, mock.Anything).Return(false, nil)
 
 			if version != "dev" {
 				tagName := "v3.0.0"
 				release := &github.RepositoryRelease{TagName: &tagName}
+
+				mc.On("Set", cache.LatestVersionKey, mock.Anything, mock.Anything).Return(nil)
 				mrepo.On("GetLatestRelease", mock.Anything, model.GitHubOwner, model.GitHubRepo).Return(release, nil, nil)
 			}
 
@@ -242,16 +263,18 @@ func TestUpdate_RateLimitError(t *testing.T) {
 	mrepo := new(mockRepositories)
 	mp := new(mockPathResolver)
 	v := model.VersionInfo{Version: tag}
-	s := &service{runner: mr, repositories: mrepo, versionInfo: v, pathResolver: mp}
+	mc := new(services.MockCacheService)
+	s := &service{runner: mr, repositories: mrepo, versionInfo: v, pathResolver: mp, cacheService: mc}
 
 	mp.On("ResolvedExecutablePath").Return("/usr/local/bin/aws-doctor", nil)
-
+	mc.On("Get", cache.LatestVersionKey, mock.Anything, mock.Anything).Return(false, nil)
 	mrepo.On("GetLatestRelease", mock.Anything, model.GitHubOwner, model.GitHubRepo).Return(nil, nil, &github.RateLimitError{})
 
 	err := s.Update()
 	assert.Error(t, err)
 
 	var rateLimitErr *github.RateLimitError
+
 	assert.True(t, errors.As(err, &rateLimitErr))
 	mr.AssertNotCalled(t, "Run", mock.Anything, mock.Anything)
 }
@@ -261,10 +284,11 @@ func TestUpdate_FetchError(t *testing.T) {
 	mrepo := new(mockRepositories)
 	mp := new(mockPathResolver)
 	v := model.VersionInfo{Version: tag}
-	s := &service{runner: mr, repositories: mrepo, versionInfo: v, pathResolver: mp}
+	mc := new(services.MockCacheService)
+	s := &service{runner: mr, repositories: mrepo, versionInfo: v, pathResolver: mp, cacheService: mc}
 
 	mp.On("ResolvedExecutablePath").Return("/usr/local/bin/aws-doctor", nil)
-
+	mc.On("Get", cache.LatestVersionKey, mock.Anything, mock.Anything).Return(false, nil)
 	mrepo.On("GetLatestRelease", mock.Anything, model.GitHubOwner, model.GitHubRepo).Return(nil, nil, errors.New("github error"))
 
 	err := s.Update()
@@ -277,12 +301,16 @@ func TestUpdate_ExecutionError(t *testing.T) {
 	mrepo := new(mockRepositories)
 	mp := new(mockPathResolver)
 	v := model.VersionInfo{Version: "v1.2.2"}
-	s := &service{runner: mr, repositories: mrepo, versionInfo: v, pathResolver: mp}
+	mc := new(services.MockCacheService)
+	s := &service{runner: mr, repositories: mrepo, versionInfo: v, pathResolver: mp, cacheService: mc}
 
 	mp.On("ResolvedExecutablePath").Return("/usr/local/bin/aws-doctor", nil)
 
 	tagName := tag
 	release := &github.RepositoryRelease{TagName: &tagName}
+
+	mc.On("Get", cache.LatestVersionKey, mock.Anything, mock.Anything).Return(false, nil)
+	mc.On("Set", cache.LatestVersionKey, mock.Anything, mock.Anything).Return(nil)
 	mrepo.On("GetLatestRelease", mock.Anything, model.GitHubOwner, model.GitHubRepo).Return(release, nil, nil)
 
 	mr.On("Run", "sh", []string{"-c", "curl -sSL https://raw.githubusercontent.com/elC0mpa/aws-doctor/main/install.sh | sh"}).Return(errors.New("execution failed"))
@@ -295,7 +323,8 @@ func TestUpdate_ExecutionError(t *testing.T) {
 func TestCheckForUpdate_DevVersion(t *testing.T) {
 	mrepo := new(mockRepositories)
 	v := model.VersionInfo{Version: "dev"}
-	s := &service{repositories: mrepo, versionInfo: v}
+	mc := new(services.MockCacheService)
+	s := &service{repositories: mrepo, versionInfo: v, cacheService: mc}
 
 	result, err := s.CheckForUpdate(context.Background())
 	assert.NoError(t, err)
@@ -306,10 +335,14 @@ func TestCheckForUpdate_DevVersion(t *testing.T) {
 func TestCheckForUpdate_AlreadyLatest(t *testing.T) {
 	mrepo := new(mockRepositories)
 	v := model.VersionInfo{Version: tag}
-	s := &service{repositories: mrepo, versionInfo: v}
+	mc := new(services.MockCacheService)
+	s := &service{repositories: mrepo, versionInfo: v, cacheService: mc}
 
 	tagName := tag
 	release := &github.RepositoryRelease{TagName: &tagName}
+
+	mc.On("Get", cache.LatestVersionKey, mock.Anything, mock.Anything).Return(false, nil)
+	mc.On("Set", cache.LatestVersionKey, mock.Anything, mock.Anything).Return(nil)
 	mrepo.On("GetLatestRelease", mock.Anything, model.GitHubOwner, model.GitHubRepo).Return(release, nil, nil)
 
 	result, err := s.CheckForUpdate(context.Background())
@@ -320,10 +353,14 @@ func TestCheckForUpdate_AlreadyLatest(t *testing.T) {
 func TestCheckForUpdate_NewVersionAvailable(t *testing.T) {
 	mrepo := new(mockRepositories)
 	v := model.VersionInfo{Version: "v1.2.2"}
-	s := &service{repositories: mrepo, versionInfo: v}
+	mc := new(services.MockCacheService)
+	s := &service{repositories: mrepo, versionInfo: v, cacheService: mc}
 
 	tagName := tag
 	release := &github.RepositoryRelease{TagName: &tagName}
+
+	mc.On("Get", cache.LatestVersionKey, mock.Anything, mock.Anything).Return(false, nil)
+	mc.On("Set", cache.LatestVersionKey, mock.Anything, mock.Anything).Return(nil)
 	mrepo.On("GetLatestRelease", mock.Anything, model.GitHubOwner, model.GitHubRepo).Return(release, nil, nil)
 
 	result, err := s.CheckForUpdate(context.Background())
@@ -335,8 +372,10 @@ func TestCheckForUpdate_NewVersionAvailable(t *testing.T) {
 func TestCheckForUpdate_NilRelease(t *testing.T) {
 	mrepo := new(mockRepositories)
 	v := model.VersionInfo{Version: tag}
-	s := &service{repositories: mrepo, versionInfo: v}
+	mc := new(services.MockCacheService)
+	s := &service{repositories: mrepo, versionInfo: v, cacheService: mc}
 
+	mc.On("Get", cache.LatestVersionKey, mock.Anything, mock.Anything).Return(false, nil)
 	mrepo.On("GetLatestRelease", mock.Anything, model.GitHubOwner, model.GitHubRepo).Return(nil, nil, nil)
 
 	result, err := s.CheckForUpdate(context.Background())
@@ -348,8 +387,10 @@ func TestCheckForUpdate_NilRelease(t *testing.T) {
 func TestCheckForUpdate_GitHubError(t *testing.T) {
 	mrepo := new(mockRepositories)
 	v := model.VersionInfo{Version: tag}
-	s := &service{repositories: mrepo, versionInfo: v}
+	mc := new(services.MockCacheService)
+	s := &service{repositories: mrepo, versionInfo: v, cacheService: mc}
 
+	mc.On("Get", cache.LatestVersionKey, mock.Anything, mock.Anything).Return(false, nil)
 	mrepo.On("GetLatestRelease", mock.Anything, model.GitHubOwner, model.GitHubRepo).Return(nil, nil, errors.New("github error"))
 
 	result, err := s.CheckForUpdate(context.Background())
@@ -360,7 +401,7 @@ func TestCheckForUpdate_GitHubError(t *testing.T) {
 
 func TestRealRunner_Run(t *testing.T) {
 	// This actually tries to run a command.
-	// We'll run something harmless like 'true'.
+	// We'll run something harmless like 'go version'.
 	r := &realRunner{}
 	err := r.Run("go", "version")
 	assert.NoError(t, err)

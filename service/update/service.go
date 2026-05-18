@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"github.com/elC0mpa/aws-doctor/model"
+	"github.com/elC0mpa/aws-doctor/service/cache"
 	"github.com/elC0mpa/aws-doctor/utils/version"
 	"github.com/google/go-github/v62/github"
 )
@@ -43,7 +44,7 @@ func (r *realPathResolver) ResolvedExecutablePath() (string, error) {
 }
 
 // NewService creates a new update service.
-func NewService(versionInfo model.VersionInfo) Service {
+func NewService(versionInfo model.VersionInfo, cacheService cache.Service) Service {
 	client := github.NewClient(nil)
 
 	return &service{
@@ -51,6 +52,7 @@ func NewService(versionInfo model.VersionInfo) Service {
 		versionInfo:  versionInfo,
 		repositories: client.Repositories,
 		pathResolver: &realPathResolver{},
+		cacheService: cacheService,
 	}
 }
 
@@ -85,6 +87,17 @@ func (s *service) CheckForUpdate(ctx context.Context) (*string, error) {
 		return nil, nil
 	}
 
+	var cachedVersion string
+
+	found, err := s.cacheService.Get(cache.LatestVersionKey, &cachedVersion)
+	if err == nil && found {
+		if version.IsEqual(cachedVersion, s.versionInfo.Version) {
+			return nil, nil
+		}
+
+		return &cachedVersion, nil
+	}
+
 	release, _, err := s.repositories.GetLatestRelease(ctx, model.GitHubOwner, model.GitHubRepo)
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch latest release: %w", err)
@@ -95,6 +108,10 @@ func (s *service) CheckForUpdate(ctx context.Context) (*string, error) {
 	}
 
 	latestVersion := *release.TagName
+
+	// Update cache
+	_ = s.cacheService.Set(cache.LatestVersionKey, latestVersion)
+
 	if version.IsEqual(latestVersion, s.versionInfo.Version) {
 		return nil, nil
 	}
