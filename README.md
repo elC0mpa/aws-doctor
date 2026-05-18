@@ -106,7 +106,8 @@ go install github.com/elC0mpa/aws-doctor@latest
 - **🧟 Zombie Discovery:** Scans for idle EIPs, stopped instances, idle running EC2 instances, orphaned snapshots, idle RDS instances, idle NAT Gateways, idle Load Balancers, over-provisioned Lambda memory, idle SageMaker real-time inference endpoints, ECR repositories with untagged images, missing lifecycle policies, or no images at all, and unused Secrets Manager secrets. Supports selective service filtering (`ec2`, `s3`, `elb`, `cloudwatch`, `rds`, `vpc`, `lambda`, `sagemaker`, `ecr`, `secrets-manager`).
 - **📊 6-Month Trends:** High-fidelity ANSI visualization of your spending velocity.
 - **📤 Multiple Output Formats:** Export results in `table`, `json`, or `csv` for easy integration with other tools or reporting.
-- **🔔 Update Notifications:** Automatically checks for new versions in the background and notifies you after command output, so you never miss an update.
+- **🔔 Update Notifications:** Automatically checks for new versions in the background and notifies you after command output.
+- **🚀 Efficient Caching:** Uses a local cache service to minimize redundant network calls. Currently used for version check notifications (2-hour TTL) and slated for expansion to pricing data and other heavy flows.
 - **🔐 MFA Ready:** Native support for profiles requiring Multi-Factor Authentication.
 - **🌍 Region-Aware Pricing:** Queries the AWS Pricing API at startup to use rates for the configured region, falling back to us-east-1 defaults if the API is unavailable. Requires `pricing:GetProducts` in the caller's IAM policy; without it, estimates silently fall back to defaults.
 
