@@ -5,16 +5,16 @@ import (
 	"testing"
 
 	"github.com/aws/aws-sdk-go-v2/service/sts"
-	"github.com/stretchr/testify/mock"
 	"github.com/elC0mpa/aws-doctor/mocks/services"
 	"github.com/elC0mpa/aws-doctor/model"
+	"github.com/stretchr/testify/mock"
 )
 
 func TestHandleWasteReport(t *testing.T) {
 	mockReportSvc := &services.MockReportService{}
 	mockOutputSvc := &services.MockOutputService{}
 	mockPricingSvc := &services.MockPricingService{}
-	
+
 	s := &service{
 		reportService:  mockReportSvc,
 		outputService:  mockOutputSvc,
@@ -32,7 +32,7 @@ func TestHandleWasteReport(t *testing.T) {
 
 	errPath := "error.html"
 	mockReportSvc.On("GenerateWasteReport", mock.Anything, mockPricingSvc, errPath).Return((*string)(nil), errors.New("report error"))
-	
+
 	err = s.handleWasteReport(model.RenderWasteInput{}, errPath)
 	if err == nil {
 		t.Error("Expected error but got nil")
@@ -44,7 +44,7 @@ func TestWasteWorkflow_NonInteractive(t *testing.T) {
 	mockOutputSvc := &services.MockOutputService{}
 	mockPricingSvc := &services.MockPricingService{}
 	mockVPCSvc := &services.MockVPCService{}
-	
+
 	s := &service{
 		stsService:     mockSTSSvc,
 		outputService:  mockOutputSvc,
@@ -72,7 +72,7 @@ func TestTrendWorkflow(t *testing.T) {
 	mockSTSSvc := &services.MockSTSService{}
 	mockOutputSvc := &services.MockOutputService{}
 	mockCostSvc := &services.MockCostService{}
-	
+
 	s := &service{
 		stsService:    mockSTSSvc,
 		outputService: mockOutputSvc,
@@ -95,7 +95,7 @@ func TestWasteWorkflow_STSError(t *testing.T) {
 	mockSTSSvc := &services.MockSTSService{}
 	mockPricingSvc := &services.MockPricingService{}
 	mockOutputSvc := &services.MockOutputService{}
-	
+
 	s := &service{
 		stsService:     mockSTSSvc,
 		pricingService: mockPricingSvc,
@@ -105,7 +105,7 @@ func TestWasteWorkflow_STSError(t *testing.T) {
 	mockPricingSvc.On("LoadRegionRates", mock.Anything).Return(nil)
 	mockOutputSvc.On("SetSpinnerMessage", mock.Anything).Return()
 	mockSTSSvc.On("GetCallerIdentity", mock.Anything).Return((*sts.GetCallerIdentityOutput)(nil), errors.New("sts error")).Once()
-	
+
 	err := s.wasteWorkflow([]string{"ec2"}, false, "", 0, 0)
 	if err == nil {
 		t.Error("Expected error for STS failure")
@@ -117,7 +117,7 @@ func TestWasteWorkflow_LoadRegionRatesError_Ignored(t *testing.T) {
 	mockPricingSvc := &services.MockPricingService{}
 	mockOutputSvc := &services.MockOutputService{}
 	mockVPCSvc := &services.MockVPCService{}
-	
+
 	s := &service{
 		stsService:     mockSTSSvc,
 		pricingService: mockPricingSvc,
@@ -146,7 +146,7 @@ func TestWasteWorkflow_RenderWaste_Error(t *testing.T) {
 	mockPricingSvc := &services.MockPricingService{}
 	mockOutputSvc := &services.MockOutputService{}
 	mockVPCSvc := &services.MockVPCService{}
-	
+
 	s := &service{
 		stsService:     mockSTSSvc,
 		pricingService: mockPricingSvc,
@@ -174,7 +174,7 @@ func TestWasteWorkflow_Interactive_EOF(t *testing.T) {
 	mockPricingSvc := &services.MockPricingService{}
 	mockOutputSvc := &services.MockOutputService{}
 	mockVPCSvc := &services.MockVPCService{}
-	
+
 	s := &service{
 		stsService:     mockSTSSvc,
 		pricingService: mockPricingSvc,
@@ -188,7 +188,7 @@ func TestWasteWorkflow_Interactive_EOF(t *testing.T) {
 	mockOutputSvc.On("SetSpinnerMessage", mock.Anything).Return()
 	mockOutputSvc.On("StopSpinner").Return()
 	mockOutputSvc.On("IsInteractive").Return(true)
-	
+
 	mockVPCSvc.On("GetIdleNATGateways", mock.Anything, mock.Anything).Return(nil, nil)
 	mockOutputSvc.On("RenderWasteInteractive", acc, mock.Anything, mock.Anything, mock.Anything).Return(nil).Once()
 

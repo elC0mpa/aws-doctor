@@ -98,8 +98,13 @@ func (m *MockRenderer) PrintRateLimitError() {
 	m.Called()
 }
 
-// PrintUpdateError mocks PrintUpdateError
+// PrintUpdateError mocks the PrintUpdateError method
 func (m *MockRenderer) PrintUpdateError(err error) {
+	m.Called(err)
+}
+
+// PrintWasteError mocks the PrintWasteError method
+func (m *MockRenderer) PrintWasteError(err error) {
 	m.Called(err)
 }
 

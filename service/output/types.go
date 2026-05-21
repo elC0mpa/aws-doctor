@@ -49,6 +49,7 @@ type Renderer interface {
 	PrintReportSuccess(path string)
 	PrintFirstDayOfMonthError()
 	PrintNewVersionAvailable(currentVersion, latestVersion string)
+	PrintWasteError(err error)
 }
 
 type realRenderer struct{}
@@ -135,6 +136,11 @@ func (r *realRenderer) PrintUpdateError(err error) {
 	fmt.Println(text.FgRed.Sprintf("❌ Error: failed to check for updates: %v", err))
 }
 
+func (r *realRenderer) PrintWasteError(err error) {
+	fmt.Println()
+	fmt.Println(text.FgRed.Sprintf("❌ Error: failed to run interactive waste rendering: %v", err))
+}
+
 func (r *realRenderer) RenderVersion(versionInfo model.VersionInfo) {
 	fmt.Printf("aws-doctor version %s\n", versionInfo.Version)
 	fmt.Printf("commit: %s\n", versionInfo.Commit)
@@ -206,6 +212,9 @@ type Service interface {
 
 	// PrintUpdateError outputs a message when an update check fails
 	PrintUpdateError(err error)
+
+	// PrintWasteError outputs a message when an interactive waste rendering fails
+	PrintWasteError(err error)
 
 	// RenderVersion outputs the version information
 	RenderVersion(versionInfo model.VersionInfo)

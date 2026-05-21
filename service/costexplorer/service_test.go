@@ -405,7 +405,8 @@ func TestGetMonthCostsByService(t *testing.T) {
 	expectedEnd := "2024-02-15"
 
 	// Mock successful response
-	mockClient.On("GetCostAndUsage",
+	mockClient.On(
+		"GetCostAndUsage",
 		mock.Anything,
 		mock.MatchedBy(func(input *costexplorer.GetCostAndUsageInput) bool {
 			return *input.TimePeriod.Start == expectedStart &&

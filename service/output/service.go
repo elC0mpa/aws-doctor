@@ -99,6 +99,10 @@ func (s *service) PrintUpdateError(err error) {
 	s.renderer.PrintUpdateError(err)
 }
 
+func (s *service) PrintWasteError(err error) {
+	s.renderer.PrintWasteError(err)
+}
+
 func (s *service) RenderVersion(versionInfo model.VersionInfo) {
 	s.renderer.RenderVersion(versionInfo)
 }

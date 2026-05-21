@@ -53,7 +53,8 @@ func DrawTrendChart(accountID string, monthlyCosts []model.CostInfo) {
 	fmt.Println()
 
 	bc.Draw()
-	s := lipgloss.JoinHorizontal(lipgloss.Top,
+	s := lipgloss.JoinHorizontal(
+		lipgloss.Top,
 		defaultStyle.Render(bc.View()),
 	)
 

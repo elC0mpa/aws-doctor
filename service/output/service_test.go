@@ -18,11 +18,14 @@ func runSilent(f func()) {
 	_, w, _ := os.Pipe()
 	os.Stdout = w
 	os.Stderr = w
+
 	defer func() {
-		w.Close()
+		_ = w.Close()
+
 		os.Stdout = oldOut
 		os.Stderr = oldErr
 	}()
+
 	f()
 }
 
@@ -31,6 +34,7 @@ func TestIsInteractive(t *testing.T) {
 	if !s1.IsInteractive() {
 		t.Error("Expected IsInteractive to be true for table format")
 	}
+
 	s2 := NewService("json")
 	if s2.IsInteractive() {
 		t.Error("Expected IsInteractive to be false for json format")
@@ -39,6 +43,7 @@ func TestIsInteractive(t *testing.T) {
 
 func TestRenderWasteInteractive_Smoke(t *testing.T) {
 	oldFn := renderWasteInteractiveFn
+
 	defer func() { renderWasteInteractiveFn = oldFn }()
 
 	called := false
@@ -49,13 +54,16 @@ func TestRenderWasteInteractive_Smoke(t *testing.T) {
 
 	s := NewService("table")
 	resultCh := make(chan model.ScopeResult)
+
 	go func() {
 		close(resultCh)
 	}()
+
 	err := s.RenderWasteInteractive("123456789012", resultCh, []string{"EC2"}, nil)
 	if err != nil {
 		t.Errorf("Unexpected error: %v", err)
 	}
+
 	if !called {
 		t.Error("Expected renderWasteInteractiveFn to be called")
 	}
@@ -72,6 +80,7 @@ func TestService_WrapperMethods(t *testing.T) {
 		sTable.PrintGoInstallUpdate()
 		sTable.PrintRateLimitError()
 		sTable.PrintUpdateError(errors.New("test"))
+		sTable.PrintWasteError(errors.New("test"))
 		sTable.PrintFirstDayOfMonthError()
 		sTable.PrintNewVersionAvailable("v1.0.0", "v1.1.0")
 		sTable.SetSpinnerMessage("loading")

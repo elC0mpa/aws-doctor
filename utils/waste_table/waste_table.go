@@ -2,9 +2,9 @@ package wastetable
 
 import (
 	"fmt"
-	"strings"
 	"io"
 	"os"
+	"strings"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	ec2types "github.com/aws/aws-sdk-go-v2/service/ec2/types"
@@ -23,7 +23,7 @@ func DrawWasteTable(input model.RenderWasteInput, pricingSvc pricing.Service) {
 	drawHeader(out, input.AccountID)
 
 	if !hasAnyWaste(input) {
-		fmt.Fprintln(out, "\n" + text.FgHiGreen.Sprint(" ✅  Your account is healthy! No waste found."))
+		_, _ = fmt.Fprintln(out, "\n"+text.FgHiGreen.Sprint(" ✅  Your account is healthy! No waste found."))
 		return
 	}
 
@@ -32,9 +32,9 @@ func DrawWasteTable(input model.RenderWasteInput, pricingSvc pricing.Service) {
 }
 
 func drawHeader(out io.Writer, accountID string) {
-	fmt.Fprintf(out, "\n%s\n", text.FgHiWhite.Sprint(" 🏥 AWS DOCTOR CHECKUP"))
-	fmt.Fprintf(out, " Account ID: %s\n", text.FgBlue.Sprint(accountID))
-	fmt.Fprintln(out, text.FgHiBlue.Sprint(" ------------------------------------------------"))
+	_, _ = fmt.Fprintf(out, "\n%s\n", text.FgHiWhite.Sprint(" 🏥 AWS DOCTOR CHECKUP"))
+	_, _ = fmt.Fprintf(out, " Account ID: %s\n", text.FgBlue.Sprint(accountID))
+	_, _ = fmt.Fprintln(out, text.FgHiBlue.Sprint(" ------------------------------------------------"))
 }
 
 func hasAnyWaste(input model.RenderWasteInput) bool {
@@ -146,9 +146,11 @@ func drawIdleEC2Table(out io.Writer, instances []model.EC2IdleInstanceInfo) {
 	}
 
 	t.AppendRows(rows)
+
 	if t.Length() > 0 {
 		t.Render()
-		fmt.Fprintln(out)
+
+		_, _ = fmt.Fprintln(out)
 	}
 }
 
@@ -206,7 +208,8 @@ func drawSecretsManagerTable(out io.Writer, secrets []model.UnusedSecretInfo, pr
 
 	if t.Length() > 0 {
 		t.Render()
-		fmt.Fprintln(out)
+
+		_, _ = fmt.Fprintln(out)
 	}
 }
 
@@ -249,7 +252,8 @@ func drawEBSTable(out io.Writer, unusedEBSVolumeInfo []ec2types.Volume, attached
 
 	if t.Length() > 0 {
 		t.Render()
-		fmt.Fprintln(out)
+
+		_, _ = fmt.Fprintln(out)
 	}
 }
 
@@ -323,7 +327,8 @@ func drawEC2Table(out io.Writer, instances []ec2types.Instance, ris []model.RiEx
 
 	if t.Length() > 0 {
 		t.Render()
-		fmt.Fprintln(out)
+
+		_, _ = fmt.Fprintln(out)
 	}
 }
 
@@ -344,9 +349,11 @@ func drawElasticIPTable(out io.Writer, elasticIPInfo []ec2types.Address, pricing
 	}
 
 	t.AppendRows(rows)
+
 	if t.Length() > 0 {
 		t.Render()
-		fmt.Fprintln(out)
+
+		_, _ = fmt.Fprintln(out)
 	}
 }
 
@@ -455,7 +462,8 @@ func drawLoadBalancerTable(out io.Writer, loadBalancers []elbtypes.LoadBalancer,
 
 	if t.Length() > 0 {
 		t.Render()
-		fmt.Fprintln(out)
+
+		_, _ = fmt.Fprintln(out)
 	}
 }
 
@@ -506,8 +514,9 @@ func drawAMITable(out io.Writer, amis []model.AMIWasteInfo) {
 
 	t.AppendRows(rows)
 	t.Render()
-	fmt.Fprintln(out, text.FgHiYellow.Sprint(" * Warning: AMIs may be referenced by Auto Scaling Groups or Launch Templates"))
-	fmt.Fprintln(out)
+
+	_, _ = fmt.Fprintln(out, text.FgHiYellow.Sprint(" * Warning: AMIs may be referenced by Auto Scaling Groups or Launch Templates"))
+	_, _ = fmt.Fprintln(out)
 }
 
 func populateAMIRows(amis []model.AMIWasteInfo) []table.Row {
@@ -587,7 +596,8 @@ func drawSnapshotTable(out io.Writer, snapshots []model.SnapshotWasteInfo) {
 
 	if t.Length() > 0 {
 		t.Render()
-		fmt.Fprintln(out)
+
+		_, _ = fmt.Fprintln(out)
 	}
 }
 
@@ -629,9 +639,11 @@ func drawKeyPairTable(out io.Writer, keyPairs []model.KeyPairWasteInfo) {
 	}
 
 	t.AppendRows(rows)
+
 	if t.Length() > 0 {
 		t.Render()
-		fmt.Fprintln(out)
+
+		_, _ = fmt.Fprintln(out)
 	}
 }
 
@@ -653,7 +665,8 @@ func drawNatGatewayTable(out io.Writer, natGateways []model.NATGatewayWasteInfo)
 
 	if t.Length() > 0 {
 		t.Render()
-		fmt.Fprintln(out)
+
+		_, _ = fmt.Fprintln(out)
 	}
 }
 
@@ -727,7 +740,8 @@ func drawS3Table(out io.Writer, buckets []model.S3BucketWasteInfo, multipartBuck
 
 	if t.Length() > 0 {
 		t.Render()
-		fmt.Fprintln(out)
+
+		_, _ = fmt.Fprintln(out)
 	}
 }
 
@@ -783,9 +797,11 @@ func drawCloudWatchLogsTable(out io.Writer, logGroups []model.CloudWatchLogsWast
 	}
 
 	t.AppendRows(rows)
+
 	if t.Length() > 0 {
 		t.Render()
-		fmt.Fprintln(out)
+
+		_, _ = fmt.Fprintln(out)
 	}
 }
 
@@ -841,8 +857,9 @@ func drawSummaryTable(out io.Writer, input model.RenderWasteInput, pricingSvc pr
 	})
 
 	t.Render()
-	fmt.Fprintln(out, text.FgHiYellow.Sprint(" * Estimates use AWS Pricing API rates for the configured region, falling back to us-east-1 defaults when unavailable."))
-	fmt.Fprintln(out)
+
+	_, _ = fmt.Fprintln(out, text.FgHiYellow.Sprint(" * Estimates use AWS Pricing API rates for the configured region, falling back to us-east-1 defaults when unavailable."))
+	_, _ = fmt.Fprintln(out)
 }
 
 func drawRDSTable(out io.Writer, instances []model.RDSInstanceWasteInfo, snapshots []model.RDSSnapshotWasteInfo, idleInstances []model.RDSIdleInstanceInfo) {
@@ -903,7 +920,8 @@ func drawRDSTable(out io.Writer, instances []model.RDSInstanceWasteInfo, snapsho
 
 	if t.Length() > 0 {
 		t.Render()
-		fmt.Fprintln(out)
+
+		_, _ = fmt.Fprintln(out)
 	}
 }
 
@@ -982,9 +1000,11 @@ func drawLambdaTable(out io.Writer, lambdas []model.LambdaOverProvisionedInfo) {
 	}
 
 	t.AppendRows(rows)
+
 	if t.Length() > 0 {
 		t.Render()
-		fmt.Fprintln(out)
+
+		_, _ = fmt.Fprintln(out)
 	}
 }
 
@@ -1029,9 +1049,11 @@ func drawSageMakerTable(out io.Writer, endpoints []model.IdleSageMakerEndpointIn
 	}
 
 	t.AppendRows(rows)
+
 	if t.Length() > 0 {
 		t.Render()
-		fmt.Fprintln(out)
+
+		_, _ = fmt.Fprintln(out)
 	}
 }
 
@@ -1104,7 +1126,8 @@ func drawECRTable(out io.Writer, noPolicy []model.ECRNoLifecyclePolicyInfo, empt
 
 	if t.Length() > 0 {
 		t.Render()
-		fmt.Fprintln(out)
+
+		_, _ = fmt.Fprintln(out)
 	}
 }
 
@@ -1159,10 +1182,12 @@ func populateECRUntaggedRows(repos []model.ECRUntaggedImageInfo) []table.Row {
 	return rows
 }
 
+// RenderScopeTable renders the waste table for a specific scope.
 func RenderScopeTable(scope string, input model.RenderWasteInput, pricingSvc pricing.Service) string {
 	var buf strings.Builder
+
 	out := &buf
-	
+
 	switch scope {
 	case "EC2":
 		drawEC2Table(out, input.StoppedInstances, input.Ris)
@@ -1193,6 +1218,6 @@ func RenderScopeTable(scope string, input model.RenderWasteInput, pricingSvc pri
 	case "Summary":
 		drawSummaryTable(out, input, pricingSvc)
 	}
-	
+
 	return buf.String()
 }

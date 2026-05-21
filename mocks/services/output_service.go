@@ -76,8 +76,13 @@ func (m *MockOutputService) PrintRateLimitError() {
 	m.Called()
 }
 
-// PrintUpdateError mocks the PrintUpdateError method.
+// PrintUpdateError mocks PrintUpdateError
 func (m *MockOutputService) PrintUpdateError(err error) {
+	m.Called(err)
+}
+
+// PrintWasteError mocks PrintWasteError
+func (m *MockOutputService) PrintWasteError(err error) {
 	m.Called(err)
 }
 
