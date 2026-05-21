@@ -30,7 +30,7 @@ Estos flags se pueden usar con cualquier subcomando (incluyendo el análisis de 
 | :--- | :--- | :--- |
 | `--region` | `~/.aws/config` | Sobrescribir la región de AWS de destino. |
 | `--profile` | `default` | Especificar qué perfil de AWS utilizar. |
-| `--output` | `table` | Formato de salida: `table`, `json` o `csv`. |
+| `--output` | `table` | Formato de salida: `table`, `json` o `csv`. (El formato `table` renderiza una interfaz interactiva cuando se ejecuta en una terminal). |
 
 ---
 

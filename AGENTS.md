@@ -47,6 +47,7 @@ aws-doctor/
 |   |-- sts/              # AWS STS service
 |   |-- update/           # Self-update workflow
 |-- utils/                # Utility functions, table rendering
+|   |-- tui/              # Bubble Tea interactive UI components
 |-- mocks/                # Test doubles
 |   |-- services/         # Internal service mocks (for orchestrator tests)
 |   |-- awsinterfaces/    # AWS SDK client mocks (for service tests)
@@ -58,8 +59,8 @@ aws-doctor/
 
 - `app.go` delegates execution to `cmd.Execute()`.
 - `cmd/` package defines Cobra commands (e.g., `cmd/waste.go`), initializes AWS services, and invokes `service/orchestrator`.
-- `service/orchestrator` executes the workflow logic by calling service methods based on the configured model.Flags.
-- `service/output` chooses between table and JSON rendering and owns spinner stop.
+- `service/orchestrator` executes the workflow logic by calling service methods based on the configured model.Flags. It streams background results via `<-chan model.ScopeResult`.
+- `service/output` chooses between interactive TUI (using `utils/tui` if a real terminal is detected), static table, JSON, or CSV rendering.
 - `service/update` handles updates (invoked by `cmd/update.go`).
 
 ### Service Pattern
