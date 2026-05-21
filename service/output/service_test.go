@@ -30,6 +30,11 @@ func runSilent(f func()) {
 }
 
 func TestIsInteractive(t *testing.T) {
+	oldIsTerminalFn := isTerminalFn
+	isTerminalFn = func(fd int) bool { return true }
+
+	defer func() { isTerminalFn = oldIsTerminalFn }()
+
 	s1 := NewService("table")
 	if !s1.IsInteractive() {
 		t.Error("Expected IsInteractive to be true for table format")

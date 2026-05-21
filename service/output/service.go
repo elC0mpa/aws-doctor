@@ -2,8 +2,11 @@
 package output
 
 import (
+	"os"
+
 	"github.com/elC0mpa/aws-doctor/model"
 	"github.com/elC0mpa/aws-doctor/service/pricing"
+	"golang.org/x/term"
 )
 
 // NewService creates a new output service with the specified format
@@ -59,8 +62,10 @@ func (s *service) RenderWaste(input model.RenderWasteInput, pricingSvc pricing.S
 	}
 }
 
+var isTerminalFn = term.IsTerminal
+
 func (s *service) IsInteractive() bool {
-	return s.format == FormatTable
+	return s.format == FormatTable && isTerminalFn(int(os.Stdout.Fd()))
 }
 
 func (s *service) RenderWasteInteractive(accountID string, resultCh <-chan model.ScopeResult, scopes []string, pricingSvc pricing.Service) error {
