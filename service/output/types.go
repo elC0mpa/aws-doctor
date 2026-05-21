@@ -89,8 +89,10 @@ func (r *realRenderer) OutputWasteCSV(input model.RenderWasteInput, pricingSvc p
 	return csvoutput.OutputWasteCSV(input, pricingSvc)
 }
 
+var renderWasteInteractiveFn = tui.RenderWasteInteractive
+
 func (r *realRenderer) RenderWasteInteractive(accountID string, resultCh <-chan model.ScopeResult, scopes []string, pricingSvc pricing.Service) error {
-	return tui.RenderWasteInteractive(accountID, resultCh, scopes, pricingSvc)
+	return renderWasteInteractiveFn(accountID, resultCh, scopes, pricingSvc)
 }
 
 func (r *realRenderer) StopSpinner() {

@@ -54,7 +54,6 @@ func TestWasteWorkflow_NonInteractive(t *testing.T) {
 
 	acc := "123456789012"
 	mockSTSSvc.On("GetCallerIdentity", mock.Anything).Return(&sts.GetCallerIdentityOutput{Account: &acc}, nil)
-	mockPricingSvc.On("LoadPricing", mock.Anything).Return(nil)
 	mockPricingSvc.On("LoadRegionRates", mock.Anything).Return(nil)
 	mockOutputSvc.On("SetSpinnerMessage", mock.Anything).Return()
 	mockOutputSvc.On("StopSpinner").Return()
@@ -92,7 +91,7 @@ func TestTrendWorkflow(t *testing.T) {
 	}
 }
 
-func TestWasteWorkflow_Errors_Extra(t *testing.T) {
+func TestWasteWorkflow_STSError(t *testing.T) {
 	mockSTSSvc := &services.MockSTSService{}
 	mockPricingSvc := &services.MockPricingService{}
 	mockOutputSvc := &services.MockOutputService{}
@@ -103,89 +102,17 @@ func TestWasteWorkflow_Errors_Extra(t *testing.T) {
 		outputService:  mockOutputSvc,
 	}
 
-	mockOutputSvc.On("SetSpinnerMessage", mock.Anything).Return()
-	
-	// LoadPricing error
-	mockPricingSvc.On("LoadPricing", mock.Anything).Return(errors.New("pricing error")).Once()
-	err := s.wasteWorkflow([]string{"ec2"}, false, "", 0, 0)
-	if err == nil {
-		t.Error("Expected error for LoadPricing failure")
-	}
-	
-	// GetCallerIdentity error
-	mockPricingSvc.On("LoadPricing", mock.Anything).Return(nil)
 	mockPricingSvc.On("LoadRegionRates", mock.Anything).Return(nil)
-	mockSTSSvc.On("GetCallerIdentity", mock.Anything).Return((*sts.GetCallerIdentityOutput)(nil), errors.New("sts error")).Once()
-	err = s.wasteWorkflow([]string{"ec2"}, false, "", 0, 0)
-	if err == nil {
-		t.Error("Expected error for STS failure")
-	}
-}
-
-func TestWasteWorkflow_STS_Error_Safe(t *testing.T) {
-	mockSTSSvc := &services.MockSTSService{}
-	mockPricingSvc := &services.MockPricingService{}
-	mockOutputSvc := &services.MockOutputService{}
-	
-	s := &service{
-		stsService:     mockSTSSvc,
-		pricingService: mockPricingSvc,
-		outputService:  mockOutputSvc,
-	}
-
 	mockOutputSvc.On("SetSpinnerMessage", mock.Anything).Return()
-	mockPricingSvc.On("LoadPricing", mock.Anything).Return(nil)
-	mockPricingSvc.On("LoadRegionRates", mock.Anything).Return(nil)
-	
 	mockSTSSvc.On("GetCallerIdentity", mock.Anything).Return((*sts.GetCallerIdentityOutput)(nil), errors.New("sts error")).Once()
+	
 	err := s.wasteWorkflow([]string{"ec2"}, false, "", 0, 0)
 	if err == nil {
 		t.Error("Expected error for STS failure")
 	}
 }
 
-func TestWasteWorkflow_LoadPricing_Error_Safe(t *testing.T) {
-	mockSTSSvc := &services.MockSTSService{}
-	mockPricingSvc := &services.MockPricingService{}
-	mockOutputSvc := &services.MockOutputService{}
-	
-	s := &service{
-		stsService:     mockSTSSvc,
-		pricingService: mockPricingSvc,
-		outputService:  mockOutputSvc,
-	}
-
-	mockOutputSvc.On("SetSpinnerMessage", mock.Anything).Return()
-	mockPricingSvc.On("LoadPricing", mock.Anything).Return(errors.New("load error")).Once()
-	
-	err := s.wasteWorkflow([]string{"ec2"}, false, "", 0, 0)
-	if err == nil {
-		t.Error("Expected error for LoadPricing failure")
-	}
-}
-
-func TestWasteWorkflow_LoadRegionRates_Error_Safe(t *testing.T) {
-	mockSTSSvc := &services.MockSTSService{}
-	mockPricingSvc := &services.MockPricingService{}
-	mockOutputSvc := &services.MockOutputService{}
-	
-	s := &service{
-		stsService:     mockSTSSvc,
-		pricingService: mockPricingSvc,
-		outputService:  mockOutputSvc,
-	}
-
-	mockOutputSvc.On("SetSpinnerMessage", mock.Anything).Return()
-	mockPricingSvc.On("LoadPricing", mock.Anything).Return(nil)
-	mockPricingSvc.On("LoadRegionRates", mock.Anything).Return(errors.New("region error")).Once()
-	
-	err := s.wasteWorkflow([]string{"ec2"}, false, "", 0, 0)
-	if err == nil {
-		t.Error("Expected error for LoadRegionRates failure")
-	}
-}
-
-func TestWasteWorkflow_RenderWaste_Error_Safe(t *testing.T) {
+func TestWasteWorkflow_LoadRegionRatesError_Ignored(t *testing.T) {
 	mockSTSSvc := &services.MockSTSService{}
 	mockPricingSvc := &services.MockPricingService{}
 	mockOutputSvc := &services.MockOutputService{}
@@ -200,14 +127,40 @@ func TestWasteWorkflow_RenderWaste_Error_Safe(t *testing.T) {
 
 	acc := "123456789012"
 	mockSTSSvc.On("GetCallerIdentity", mock.Anything).Return(&sts.GetCallerIdentityOutput{Account: &acc}, nil)
-	mockPricingSvc.On("LoadPricing", mock.Anything).Return(nil)
+	// Pricing fails, but workflow continues
+	mockPricingSvc.On("LoadRegionRates", mock.Anything).Return(errors.New("pricing api failure")).Once()
+	mockOutputSvc.On("SetSpinnerMessage", mock.Anything).Return()
+	mockOutputSvc.On("StopSpinner").Return()
+	mockOutputSvc.On("IsInteractive").Return(false)
+	mockVPCSvc.On("GetIdleNATGateways", mock.Anything, mock.Anything).Return(nil, nil)
+	mockOutputSvc.On("RenderWaste", mock.Anything, mockPricingSvc).Return(nil)
+
+	err := s.wasteWorkflow([]string{"vpc"}, false, "", 0, 0)
+	if err != nil {
+		t.Errorf("Expected wasteWorkflow to succeed despite pricing error, got: %v", err)
+	}
+}
+
+func TestWasteWorkflow_RenderWaste_Error(t *testing.T) {
+	mockSTSSvc := &services.MockSTSService{}
+	mockPricingSvc := &services.MockPricingService{}
+	mockOutputSvc := &services.MockOutputService{}
+	mockVPCSvc := &services.MockVPCService{}
+	
+	s := &service{
+		stsService:     mockSTSSvc,
+		pricingService: mockPricingSvc,
+		outputService:  mockOutputSvc,
+		vpcService:     mockVPCSvc,
+	}
+
+	acc := "123456789012"
+	mockSTSSvc.On("GetCallerIdentity", mock.Anything).Return(&sts.GetCallerIdentityOutput{Account: &acc}, nil)
 	mockPricingSvc.On("LoadRegionRates", mock.Anything).Return(nil)
 	mockOutputSvc.On("SetSpinnerMessage", mock.Anything).Return()
 	mockOutputSvc.On("StopSpinner").Return()
 	mockOutputSvc.On("IsInteractive").Return(false)
-	
 	mockVPCSvc.On("GetIdleNATGateways", mock.Anything, mock.Anything).Return(nil, nil)
-	
 	mockOutputSvc.On("RenderWaste", mock.Anything, mockPricingSvc).Return(errors.New("render error")).Once()
 
 	err := s.wasteWorkflow([]string{"vpc"}, false, "", 0, 0)
@@ -216,7 +169,7 @@ func TestWasteWorkflow_RenderWaste_Error_Safe(t *testing.T) {
 	}
 }
 
-func TestWasteWorkflow_Interactive_EOF_Safe(t *testing.T) {
+func TestWasteWorkflow_Interactive_EOF(t *testing.T) {
 	mockSTSSvc := &services.MockSTSService{}
 	mockPricingSvc := &services.MockPricingService{}
 	mockOutputSvc := &services.MockOutputService{}
@@ -231,15 +184,13 @@ func TestWasteWorkflow_Interactive_EOF_Safe(t *testing.T) {
 
 	acc := "123456789012"
 	mockSTSSvc.On("GetCallerIdentity", mock.Anything).Return(&sts.GetCallerIdentityOutput{Account: &acc}, nil)
-	mockPricingSvc.On("LoadPricing", mock.Anything).Return(nil)
 	mockPricingSvc.On("LoadRegionRates", mock.Anything).Return(nil)
 	mockOutputSvc.On("SetSpinnerMessage", mock.Anything).Return()
 	mockOutputSvc.On("StopSpinner").Return()
 	mockOutputSvc.On("IsInteractive").Return(true)
 	
 	mockVPCSvc.On("GetIdleNATGateways", mock.Anything, mock.Anything).Return(nil, nil)
-	
-	mockOutputSvc.On("RenderWasteInteractive", mock.Anything, acc, mock.Anything, mockPricingSvc).Return(nil).Once()
+	mockOutputSvc.On("RenderWasteInteractive", acc, mock.Anything, mock.Anything, mock.Anything).Return(nil).Once()
 
 	err := s.wasteWorkflow([]string{"vpc"}, false, "", 0, 0)
 	if err != nil {

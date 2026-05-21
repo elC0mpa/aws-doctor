@@ -128,65 +128,29 @@ func TestWasteModel_ScrollUpAndDown(t *testing.T) {
 func TestWasteModel_HandleResize(t *testing.T) {
 	resultCh := make(chan model.ScopeResult)
 	mockPricing := pricing.NewService(aws.Config{})
-	wmObj := NewWasteModel("123456789012", resultCh, []string{"EC2"}, mockPricing)
-	wm := wmObj.(wasteModel)
+	wm := NewWasteModel("123456789012", resultCh, []string{"EC2"}, mockPricing)
 	
 	// Large resize
-	wm.Update(tea.WindowSizeMsg{Width: 200, Height: 100})
+	wm2, _ := wm.Update(tea.WindowSizeMsg{Width: 200, Height: 100})
 	
 	// Small resize
-	wm.Update(tea.WindowSizeMsg{Width: 20, Height: 10})
+	_, _ = wm2.Update(tea.WindowSizeMsg{Width: 20, Height: 10})
 }
 
-func TestWasteModel_RenderSummary_Safe(t *testing.T) {
+func TestWasteModel_RenderScopes_ThroughView(t *testing.T) {
 	resultCh := make(chan model.ScopeResult)
 	mockPricing := pricing.NewService(aws.Config{})
-	wmObj := NewWasteModel("123456789012", resultCh, []string{"EC2"}, mockPricing)
-	wm := wmObj.(wasteModel)
+	scopes := []string{"EC2", "VPC", "ELB", "S3", "CloudWatch", "RDS", "Lambda", "SageMaker", "ECR", "SecretsManager", "Summary"}
+	wm := NewWasteModel("123456789012", resultCh, scopes, mockPricing)
 	wm.ready = true
-	wm.done = true
-	wm.scopes = append(wm.scopes, "Summary")
-	wm.activeTab = 1
 	
-	wm.scopeResults["EC2"] = model.WasteReport{
-		EC2: &model.EC2Waste{
-			UnusedEIPs: []model.EIPWasteInfo{{PublicIP: "1.2.3.4"}},
-		},
-	}
-	
-	view := wm.View()
-	if view == "" {
-		t.Error("Summary view returned empty string")
+	for i := range scopes {
+		wm.activeTab = i
+		wm.syncViewportContent()
+		view := wm.View()
+		if view == "" {
+			t.Errorf("Empty view for tab %d (%s)", i, scopes[i])
+		}
 	}
 }
 
-func TestWasteModel_RenderScopeTable_Safe(t *testing.T) {
-	resultCh := make(chan model.ScopeResult)
-	mockPricing := pricing.NewService(aws.Config{})
-	wmObj := NewWasteModel("123456789012", resultCh, []string{"EC2"}, mockPricing)
-	wm := wmObj.(wasteModel)
-	wm.ready = true
-	
-	// EC2 with data
-	wm.scopeResults["EC2"] = model.WasteReport{
-		EC2: &model.EC2Waste{
-			UnusedEIPs: []model.EIPWasteInfo{{PublicIP: "1.2.3.4"}},
-		},
-	}
-	table := wm.RenderScopeTable("EC2")
-	if table == "" {
-		t.Error("RenderScopeTable returned empty string for EC2")
-	}
-	
-	// Non-EC2 scope coverage
-	wm.scopeResults["RDS"] = model.WasteReport{RDS: &model.RDSWaste{}}
-	_ = wm.RenderScopeTable("RDS")
-	_ = wm.RenderScopeTable("S3")
-	_ = wm.RenderScopeTable("VPC")
-	_ = wm.RenderScopeTable("Serverless")
-	_ = wm.RenderScopeTable("ECR")
-	_ = wm.RenderScopeTable("Machine Learning")
-	_ = wm.RenderScopeTable("Configuration")
-	_ = wm.RenderScopeTable("Summary")
-	_ = wm.RenderScopeTable("Invalid")
-}
