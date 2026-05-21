@@ -273,19 +273,19 @@ func TestDrawEBSTable(t *testing.T) {
 	}
 
 	output := captureWasteOutput(func() {
-		drawEBSTable(unusedVolumes, stoppedVolumes, services.NewMockPricingService())
+		drawEBSTable(os.Stdout, unusedVolumes, stoppedVolumes, services.NewMockPricingService())
 	})
 
 	if !strings.Contains(output, "EBS Volume Waste") {
-		t.Error("drawEBSTable() missing title")
+		t.Error("drawEBSTable(os.Stdout) missing title")
 	}
 
 	if !strings.Contains(output, "vol-111") {
-		t.Error("drawEBSTable() missing unused volume ID")
+		t.Error("drawEBSTable(os.Stdout) missing unused volume ID")
 	}
 
 	if !strings.Contains(output, "vol-333") {
-		t.Error("drawEBSTable() missing stopped volume ID")
+		t.Error("drawEBSTable(os.Stdout) missing stopped volume ID")
 	}
 }
 
@@ -299,11 +299,11 @@ func TestDrawEBSTable_OnlyUnused(t *testing.T) {
 	}
 
 	output := captureWasteOutput(func() {
-		drawEBSTable(unusedVolumes, nil, services.NewMockPricingService())
+		drawEBSTable(os.Stdout, unusedVolumes, nil, services.NewMockPricingService())
 	})
 
 	if !strings.Contains(output, "Available") {
-		t.Error("drawEBSTable() with only unused volumes missing Available status")
+		t.Error("drawEBSTable(os.Stdout) with only unused volumes missing Available status")
 	}
 }
 
@@ -317,11 +317,11 @@ func TestDrawEBSTable_OnlyStopped(t *testing.T) {
 	}
 
 	output := captureWasteOutput(func() {
-		drawEBSTable(nil, stoppedVolumes, services.NewMockPricingService())
+		drawEBSTable(os.Stdout, nil, stoppedVolumes, services.NewMockPricingService())
 	})
 
 	if !strings.Contains(output, "Stopped Instance") {
-		t.Error("drawEBSTable() with only stopped volumes missing Stopped Instance status")
+		t.Error("drawEBSTable(os.Stdout) with only stopped volumes missing Stopped Instance status")
 	}
 }
 
@@ -338,19 +338,19 @@ func TestDrawEC2Table(t *testing.T) {
 	}
 
 	output := captureWasteOutput(func() {
-		drawEC2Table(instances, ris)
+		drawEC2Table(os.Stdout, instances, ris)
 	})
 
 	if !strings.Contains(output, "EC2 & Reserved Instance Waste") {
-		t.Error("drawEC2Table() missing title")
+		t.Error("drawEC2Table(os.Stdout) missing title")
 	}
 
 	if !strings.Contains(output, "i-123") {
-		t.Error("drawEC2Table() missing instance ID")
+		t.Error("drawEC2Table(os.Stdout) missing instance ID")
 	}
 
 	if !strings.Contains(output, "ri-123") {
-		t.Error("drawEC2Table() missing RI ID")
+		t.Error("drawEC2Table(os.Stdout) missing RI ID")
 	}
 }
 
@@ -360,11 +360,11 @@ func TestDrawEC2Table_OnlyInstances(t *testing.T) {
 	}
 
 	output := captureWasteOutput(func() {
-		drawEC2Table(instances, nil)
+		drawEC2Table(os.Stdout, instances, nil)
 	})
 
 	if !strings.Contains(output, "Stopped Instance") {
-		t.Error("drawEC2Table() with only instances missing Stopped Instance status")
+		t.Error("drawEC2Table(os.Stdout) with only instances missing Stopped Instance status")
 	}
 }
 
@@ -374,11 +374,11 @@ func TestDrawEC2Table_OnlyRIs(t *testing.T) {
 	}
 
 	output := captureWasteOutput(func() {
-		drawEC2Table(nil, ris)
+		drawEC2Table(os.Stdout, nil, ris)
 	})
 
 	if !strings.Contains(output, "Expiring Soon") {
-		t.Error("drawEC2Table() with only expiring RIs missing Expiring Soon status")
+		t.Error("drawEC2Table(os.Stdout) with only expiring RIs missing Expiring Soon status")
 	}
 }
 
@@ -389,19 +389,19 @@ func TestDrawElasticIPTable(t *testing.T) {
 	}
 
 	output := captureWasteOutput(func() {
-		drawElasticIPTable(elasticIPs, services.NewMockPricingService())
+		drawElasticIPTable(os.Stdout, elasticIPs, services.NewMockPricingService())
 	})
 
 	if !strings.Contains(output, "Elastic IP Waste") {
-		t.Error("drawElasticIPTable() missing title")
+		t.Error("drawElasticIPTable(os.Stdout) missing title")
 	}
 
 	if !strings.Contains(output, "1.2.3.4") {
-		t.Error("drawElasticIPTable() missing IP address")
+		t.Error("drawElasticIPTable(os.Stdout) missing IP address")
 	}
 
 	if !strings.Contains(output, "eipalloc-123") {
-		t.Error("drawElasticIPTable() missing allocation ID")
+		t.Error("drawElasticIPTable(os.Stdout) missing allocation ID")
 	}
 }
 
@@ -420,19 +420,19 @@ func TestDrawLoadBalancerTable(t *testing.T) {
 	}
 
 	output := captureWasteOutput(func() {
-		drawLoadBalancerTable(loadBalancers, nil, services.NewMockPricingService())
+		drawLoadBalancerTable(os.Stdout, loadBalancers, nil, services.NewMockPricingService())
 	})
 
 	if !strings.Contains(output, "Load Balancer Waste") {
-		t.Error("drawLoadBalancerTable() missing title")
+		t.Error("drawLoadBalancerTable(os.Stdout) missing title")
 	}
 
 	if !strings.Contains(output, "my-alb") {
-		t.Error("drawLoadBalancerTable() missing ALB name")
+		t.Error("drawLoadBalancerTable(os.Stdout) missing ALB name")
 	}
 
 	if !strings.Contains(output, "application") {
-		t.Error("drawLoadBalancerTable() missing ALB type")
+		t.Error("drawLoadBalancerTable(os.Stdout) missing ALB type")
 	}
 }
 
@@ -455,19 +455,19 @@ func TestDrawSnapshotTable(t *testing.T) {
 	}
 
 	output := captureWasteOutput(func() {
-		drawSnapshotTable(snapshots)
+		drawSnapshotTable(os.Stdout, snapshots)
 	})
 
 	if !strings.Contains(output, "EBS Snapshot Waste") {
-		t.Error("drawSnapshotTable() missing title")
+		t.Error("drawSnapshotTable(os.Stdout) missing title")
 	}
 
 	if !strings.Contains(output, "snap-123") {
-		t.Error("drawSnapshotTable() missing orphaned snapshot ID")
+		t.Error("drawSnapshotTable(os.Stdout) missing orphaned snapshot ID")
 	}
 
 	if !strings.Contains(output, "snap-456") {
-		t.Error("drawSnapshotTable() missing stale snapshot ID")
+		t.Error("drawSnapshotTable(os.Stdout) missing stale snapshot ID")
 	}
 }
 
@@ -564,26 +564,26 @@ func TestDrawAMITable(t *testing.T) {
 	}
 
 	output := captureWasteOutput(func() {
-		drawAMITable(amis)
+		drawAMITable(os.Stdout, amis)
 	})
 
 	// Check for table title
 	if !strings.Contains(output, "Unused AMI Waste") {
-		t.Error("drawAMITable() missing title")
+		t.Error("drawAMITable(os.Stdout) missing title")
 	}
 
 	// Check for AMI IDs
 	if !strings.Contains(output, "ami-12345") {
-		t.Error("drawAMITable() missing first AMI ID")
+		t.Error("drawAMITable(os.Stdout) missing first AMI ID")
 	}
 
 	if !strings.Contains(output, "ami-67890") {
-		t.Error("drawAMITable() missing second AMI ID")
+		t.Error("drawAMITable(os.Stdout) missing second AMI ID")
 	}
 
 	// Check for warning message
 	if !strings.Contains(output, "Warning") || !strings.Contains(output, "Auto Scaling") {
-		t.Error("drawAMITable() missing safety warning footer")
+		t.Error("drawAMITable(os.Stdout) missing safety warning footer")
 	}
 }
 
@@ -626,19 +626,19 @@ func TestDrawKeyPairTable(t *testing.T) {
 	}
 
 	output := captureWasteOutput(func() {
-		drawKeyPairTable(keyPairs)
+		drawKeyPairTable(os.Stdout, keyPairs)
 	})
 
 	if !strings.Contains(output, "Unused EC2 Key Pair Waste") {
-		t.Error("drawKeyPairTable() missing title")
+		t.Error("drawKeyPairTable(os.Stdout) missing title")
 	}
 
 	if !strings.Contains(output, "unused-key") {
-		t.Error("drawKeyPairTable() missing key name")
+		t.Error("drawKeyPairTable(os.Stdout) missing key name")
 	}
 
 	if !strings.Contains(output, "key-abcde") {
-		t.Error("drawKeyPairTable() missing key ID")
+		t.Error("drawKeyPairTable(os.Stdout) missing key ID")
 	}
 }
 
@@ -685,27 +685,27 @@ func TestDrawS3Table(t *testing.T) {
 	}
 
 	output := captureWasteOutput(func() {
-		drawS3Table(buckets, multipart)
+		drawS3Table(os.Stdout, buckets, multipart)
 	})
 
 	if !strings.Contains(output, "S3 Bucket Waste") {
-		t.Error("drawS3Table() missing title")
+		t.Error("drawS3Table(os.Stdout) missing title")
 	}
 
 	if !strings.Contains(output, "No Lifecycle Policy") {
-		t.Error("drawS3Table() missing lifecycle status")
+		t.Error("drawS3Table(os.Stdout) missing lifecycle status")
 	}
 
 	if !strings.Contains(output, "Incomplete Multipart") {
-		t.Error("drawS3Table() missing multipart status")
+		t.Error("drawS3Table(os.Stdout) missing multipart status")
 	}
 
 	if !strings.Contains(output, "waste-bucket") {
-		t.Error("drawS3Table() missing bucket name")
+		t.Error("drawS3Table(os.Stdout) missing bucket name")
 	}
 
 	if !strings.Contains(output, "multipart-bucket") {
-		t.Error("drawS3Table() missing multipart bucket name")
+		t.Error("drawS3Table(os.Stdout) missing multipart bucket name")
 	}
 }
 
@@ -772,19 +772,19 @@ func TestDrawCloudWatchLogsTable(t *testing.T) {
 	}
 
 	output := captureWasteOutput(func() {
-		drawCloudWatchLogsTable(logGroups)
+		drawCloudWatchLogsTable(os.Stdout, logGroups)
 	})
 
 	if !strings.Contains(output, "CloudWatch Log Group Waste") {
-		t.Error("drawCloudWatchLogsTable() missing title")
+		t.Error("drawCloudWatchLogsTable(os.Stdout) missing title")
 	}
 
 	if !strings.Contains(output, "No Retention Policy") {
-		t.Error("drawCloudWatchLogsTable() missing retention status")
+		t.Error("drawCloudWatchLogsTable(os.Stdout) missing retention status")
 	}
 
 	if !strings.Contains(output, "waste-loggroup") {
-		t.Error("drawCloudWatchLogsTable() missing log group name")
+		t.Error("drawCloudWatchLogsTable(os.Stdout) missing log group name")
 	}
 }
 
@@ -825,23 +825,23 @@ func TestDrawRDSTable(t *testing.T) {
 	}
 
 	output := captureWasteOutput(func() {
-		drawRDSTable(instances, snapshots, idleInstances)
+		drawRDSTable(os.Stdout, instances, snapshots, idleInstances)
 	})
 
 	if !strings.Contains(output, "RDS Waste") {
-		t.Error("drawRDSTable() missing title")
+		t.Error("drawRDSTable(os.Stdout) missing title")
 	}
 
 	if !strings.Contains(output, "stopped-rds") {
-		t.Error("drawRDSTable() missing stopped instance ID")
+		t.Error("drawRDSTable(os.Stdout) missing stopped instance ID")
 	}
 
 	if !strings.Contains(output, "old-snap") {
-		t.Error("drawRDSTable() missing snapshot ID")
+		t.Error("drawRDSTable(os.Stdout) missing snapshot ID")
 	}
 
 	if !strings.Contains(output, "idle-rds") {
-		t.Error("drawRDSTable() missing idle instance ID")
+		t.Error("drawRDSTable(os.Stdout) missing idle instance ID")
 	}
 }
 
@@ -851,15 +851,15 @@ func TestDrawNatGatewayTable(t *testing.T) {
 	}
 
 	output := captureWasteOutput(func() {
-		drawNatGatewayTable(gateways)
+		drawNatGatewayTable(os.Stdout, gateways)
 	})
 
 	if !strings.Contains(output, "NAT Gateway Waste") {
-		t.Error("drawNatGatewayTable() missing title")
+		t.Error("drawNatGatewayTable(os.Stdout) missing title")
 	}
 
 	if !strings.Contains(output, "nat-123") {
-		t.Error("drawNatGatewayTable() missing gateway ID")
+		t.Error("drawNatGatewayTable(os.Stdout) missing gateway ID")
 	}
 }
 
@@ -869,15 +869,15 @@ func TestDrawLambdaTable(t *testing.T) {
 	}
 
 	output := captureWasteOutput(func() {
-		drawLambdaTable(functions)
+		drawLambdaTable(os.Stdout, functions)
 	})
 
 	if !strings.Contains(output, "Lambda Over-Provisioned Memory") {
-		t.Error("drawLambdaTable() missing title")
+		t.Error("drawLambdaTable(os.Stdout) missing title")
 	}
 
 	if !strings.Contains(output, "test-fn") {
-		t.Error("drawLambdaTable() missing function name")
+		t.Error("drawLambdaTable(os.Stdout) missing function name")
 	}
 }
 
@@ -887,15 +887,15 @@ func TestDrawSageMakerTable(t *testing.T) {
 	}
 
 	output := captureWasteOutput(func() {
-		drawSageMakerTable(endpoints)
+		drawSageMakerTable(os.Stdout, endpoints)
 	})
 
 	if !strings.Contains(output, "SageMaker Endpoints (Idle)") {
-		t.Error("drawSageMakerTable() missing title")
+		t.Error("drawSageMakerTable(os.Stdout) missing title")
 	}
 
 	if !strings.Contains(output, "test-ep") {
-		t.Error("drawSageMakerTable() missing endpoint name")
+		t.Error("drawSageMakerTable(os.Stdout) missing endpoint name")
 	}
 }
 
@@ -905,11 +905,11 @@ func TestDrawLoadBalancerTable_Idle(t *testing.T) {
 	}
 
 	output := captureWasteOutput(func() {
-		drawLoadBalancerTable(nil, idle, services.NewMockPricingService())
+		drawLoadBalancerTable(os.Stdout, nil, idle, services.NewMockPricingService())
 	})
 
 	if !strings.Contains(output, "idle-lb") {
-		t.Error("drawLoadBalancerTable() with idle LBs missing LB name")
+		t.Error("drawLoadBalancerTable(os.Stdout) with idle LBs missing LB name")
 	}
 }
 

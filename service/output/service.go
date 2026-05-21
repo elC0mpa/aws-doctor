@@ -59,6 +59,14 @@ func (s *service) RenderWaste(input model.RenderWasteInput, pricingSvc pricing.S
 	}
 }
 
+func (s *service) IsInteractive() bool {
+	return s.format == FormatTable
+}
+
+func (s *service) RenderWasteInteractive(accountID string, resultCh <-chan model.ScopeResult, scopes []string, pricingSvc pricing.Service) error {
+	return s.renderer.RenderWasteInteractive(accountID, resultCh, scopes, pricingSvc)
+}
+
 func (s *service) StopSpinner() {
 	s.renderer.StopSpinner()
 }

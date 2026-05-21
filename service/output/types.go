@@ -11,6 +11,7 @@ import (
 	csvoutput "github.com/elC0mpa/aws-doctor/utils/csv_output"
 	jsonoutput "github.com/elC0mpa/aws-doctor/utils/json_output"
 	"github.com/elC0mpa/aws-doctor/utils/spinner"
+	"github.com/elC0mpa/aws-doctor/utils/tui"
 	wastetable "github.com/elC0mpa/aws-doctor/utils/waste_table"
 	"github.com/jedib0t/go-pretty/v6/text"
 )
@@ -36,6 +37,7 @@ type Renderer interface {
 	DrawWasteTable(input model.RenderWasteInput, pricingSvc pricing.Service)
 	OutputWasteJSON(input model.RenderWasteInput, pricingSvc pricing.Service) error
 	OutputWasteCSV(input model.RenderWasteInput, pricingSvc pricing.Service) error
+	RenderWasteInteractive(accountID string, resultCh <-chan model.ScopeResult, scopes []string, pricingSvc pricing.Service) error
 	StopSpinner()
 	SetSpinnerMessage(message string)
 	PrintAlreadyLatest(version string)
@@ -85,6 +87,10 @@ func (r *realRenderer) OutputWasteJSON(input model.RenderWasteInput, pricingSvc 
 
 func (r *realRenderer) OutputWasteCSV(input model.RenderWasteInput, pricingSvc pricing.Service) error {
 	return csvoutput.OutputWasteCSV(input, pricingSvc)
+}
+
+func (r *realRenderer) RenderWasteInteractive(accountID string, resultCh <-chan model.ScopeResult, scopes []string, pricingSvc pricing.Service) error {
+	return tui.RenderWasteInteractive(accountID, resultCh, scopes, pricingSvc)
 }
 
 func (r *realRenderer) StopSpinner() {
@@ -168,6 +174,12 @@ type Service interface {
 
 	// RenderWaste outputs waste report data in the configured format
 	RenderWaste(input model.RenderWasteInput, pricingSvc pricing.Service) error
+
+	// RenderWasteInteractive launches the Bubble Tea TUI for waste output
+	RenderWasteInteractive(accountID string, resultCh <-chan model.ScopeResult, scopes []string, pricingSvc pricing.Service) error
+
+	// IsInteractive returns true if the current format should use the TUI
+	IsInteractive() bool
 
 	// StopSpinner stops the loading spinner before rendering output
 	StopSpinner()

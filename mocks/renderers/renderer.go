@@ -62,6 +62,12 @@ func (m *MockRenderer) OutputWasteCSV(input model.RenderWasteInput, pricingSvc p
 	return args.Error(0)
 }
 
+// RenderWasteInteractive mocks the RenderWasteInteractive method
+func (m *MockRenderer) RenderWasteInteractive(accountID string, resultCh <-chan model.ScopeResult, scopes []string, pricingSvc pricing.Service) error {
+	args := m.Called(accountID, resultCh, scopes, pricingSvc)
+	return args.Error(0)
+}
+
 // StopSpinner mocks StopSpinner
 func (m *MockRenderer) StopSpinner() {
 	m.Called()

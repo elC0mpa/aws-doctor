@@ -1,6 +1,8 @@
 package model
 
 import (
+	"time"
+
 	"github.com/aws/aws-sdk-go-v2/service/ec2/types"
 	elbtypes "github.com/aws/aws-sdk-go-v2/service/elasticloadbalancingv2/types"
 )
@@ -10,6 +12,14 @@ type CategorySummary struct {
 	Name  string
 	Count int
 	Cost  float64
+}
+
+// ScopeResult holds the result of a waste detection scope, for partial stream updates.
+type ScopeResult struct {
+	Scope    string
+	Input    RenderWasteInput // Populated only with the fields related to this scope
+	Duration time.Duration    // Time taken to retrieve the data for this scope
+	Err      error
 }
 
 // RenderWasteInput represents the input data for rendering the waste report
