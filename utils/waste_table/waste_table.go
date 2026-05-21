@@ -3,7 +3,6 @@ package wastetable
 import (
 	"fmt"
 	"io"
-	"os"
 	"strings"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -18,8 +17,7 @@ import (
 )
 
 // DrawWasteTable renders a table containing detected AWS waste.
-func DrawWasteTable(input model.RenderWasteInput, pricingSvc pricing.Service) {
-	out := os.Stdout
+func DrawWasteTable(out io.Writer, input model.RenderWasteInput, pricingSvc pricing.Service) {
 	drawHeader(out, input.AccountID)
 
 	if !hasAnyWaste(input) {

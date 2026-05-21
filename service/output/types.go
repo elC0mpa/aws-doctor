@@ -79,7 +79,7 @@ func (r *realRenderer) OutputTrendCSV(monthlyCosts []model.CostInfo, services []
 }
 
 func (r *realRenderer) DrawWasteTable(input model.RenderWasteInput, pricingSvc pricing.Service) {
-	wastetable.DrawWasteTable(input, pricingSvc)
+	wastetable.DrawWasteTable(os.Stdout, input, pricingSvc)
 }
 
 func (r *realRenderer) OutputWasteJSON(input model.RenderWasteInput, pricingSvc pricing.Service) error {
