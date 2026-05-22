@@ -354,6 +354,7 @@ func TestOrchestrate_RouteToWasteWorkflow(t *testing.T) {
 	}, nil)
 	mockOutput.On("StopSpinner").Return()
 	mockOutput.On("SetSpinnerMessage", mock.Anything).Return().Maybe()
+	mockOutput.On("IsInteractive").Return(false).Maybe()
 	mockOutput.On("RenderWaste", mock.Anything, mockPricing).Return(nil)
 	mockUpdate.On("CheckForUpdate", mock.Anything).Return(nil, nil)
 
@@ -433,6 +434,7 @@ func TestOrchestrate_WasteTakesPrecedenceOverTrend(t *testing.T) {
 	}, nil)
 	mockOutput.On("StopSpinner").Return()
 	mockOutput.On("SetSpinnerMessage", mock.Anything).Return().Maybe()
+	mockOutput.On("IsInteractive").Return(false).Maybe()
 	mockOutput.On("RenderWaste", mock.Anything, mockPricing).Return(nil)
 	mockUpdate.On("CheckForUpdate", mock.Anything).Return(nil, nil)
 
@@ -787,6 +789,7 @@ func TestWasteWorkflow_Error(t *testing.T) {
 			mockPricing.On("LoadRegionRates", mock.Anything, mock.Anything).Return(nil).Maybe()
 			mockOutput.On("StopSpinner").Return().Maybe()
 			mockOutput.On("SetSpinnerMessage", mock.Anything).Return().Maybe()
+			mockOutput.On("IsInteractive").Return(false).Maybe()
 			mockOutput.On("RenderWaste", mock.Anything, mock.Anything).Return(nil).Maybe()
 			mockUpdate.On("CheckForUpdate", mock.Anything).Return(nil, nil).Maybe()
 

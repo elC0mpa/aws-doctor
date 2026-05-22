@@ -9,7 +9,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/aws/aws-sdk-go-v2/service/sts"
 	"github.com/elC0mpa/aws-doctor/model"
 	awscostexplorer "github.com/elC0mpa/aws-doctor/service/costexplorer"
 	"github.com/elC0mpa/aws-doctor/utils/slice"
@@ -238,84 +237,118 @@ func (s *service) trendWorkflow(trendChecks []string, generateReport bool, repor
 	return s.outputService.RenderTrend(*stsResult.Account, costInfo, trendChecks)
 }
 
-// wasteWorkflow dispatches one check per AWS service concurrently.
 func (s *service) wasteWorkflow(wasteChecks []string, generateReport bool, reportPath string, lambdaMemoryThreshold int, secretsIdleDays int) error {
 	ctx := context.Background()
 
 	s.loadPricing(ctx)
 
+	stsResult, err := s.stsService.GetCallerIdentity(ctx)
+	if err != nil {
+		return err
+	}
+
+	resultCh := make(chan model.ScopeResult, 20)
 	g, ctx := errgroup.WithContext(ctx)
 
-	input := model.RenderWasteInput{}
+	s.dispatchWasteChecks(ctx, g, resultCh, wasteChecks, lambdaMemoryThreshold, secretsIdleDays)
 
-	s.dispatchWasteChecks(ctx, g, &input, wasteChecks, lambdaMemoryThreshold, secretsIdleDays)
+	// Wait and close channel in background
+	go func() {
+		_ = g.Wait()
 
-	var stsResult *sts.GetCallerIdentityOutput
+		close(resultCh)
+	}()
 
-	// Fetch caller identity concurrently (always required for output)
-	g.Go(func() error {
-		var err error
+	s.outputService.StopSpinner()
 
-		stsResult, err = s.stsService.GetCallerIdentity(ctx)
+	isInteractive := s.outputService.IsInteractive() && !generateReport
+	if isInteractive {
+		var scopes []string
 
-		return err
-	})
+		allScopes := []struct{ name, tab string }{
+			{"ec2", "EC2"},
+			{"vpc", "VPC"},
+			{"elb", "ELB"},
+			{"s3", "S3"},
+			{"cloudwatch", "CloudWatch"},
+			{"rds", "RDS"},
+			{"lambda", "Lambda"},
+			{"sagemaker", "SageMaker"},
+			{"ecr", "ECR"},
+			{"secrets-manager", "SecretsManager"},
+		}
+		for _, s := range allScopes {
+			if shouldRunCheck(wasteChecks, s.name) {
+				scopes = append(scopes, s.tab)
+			}
+		}
 
-	// Wait for all goroutines to complete
+		err := s.outputService.RenderWasteInteractive(*stsResult.Account, resultCh, scopes, s.pricingService)
+		workflowErr := g.Wait()
+
+		if err != nil {
+			s.outputService.PrintWasteError(err)
+			return err
+		}
+
+		return workflowErr
+	}
+
+	finalInput := model.RenderWasteInput{AccountID: *stsResult.Account}
+	for res := range resultCh {
+		finalInput.Merge(res.Input)
+	}
+
 	if err := g.Wait(); err != nil {
 		return err
 	}
 
-	s.outputService.StopSpinner()
-
-	input.AccountID = *stsResult.Account
-
 	if generateReport {
-		return s.handleWasteReport(input, reportPath)
+		return s.handleWasteReport(finalInput, reportPath)
 	}
 
-	return s.outputService.RenderWaste(input, s.pricingService)
+	return s.outputService.RenderWaste(finalInput, s.pricingService)
 }
 
-func (s *service) dispatchWasteChecks(ctx context.Context, g *errgroup.Group, input *model.RenderWasteInput, wasteChecks []string, lambdaMemoryThreshold int, secretsIdleDays int) {
+func (s *service) dispatchWasteChecks(ctx context.Context, g *errgroup.Group, resultCh chan<- model.ScopeResult, wasteChecks []string, lambdaMemoryThreshold int, secretsIdleDays int) {
 	if shouldRunCheck(wasteChecks, "ec2") {
-		s.queueEC2Checks(ctx, g, input)
+		s.queueEC2Checks(ctx, g, resultCh)
 	}
 
 	if shouldRunCheck(wasteChecks, "vpc") {
-		s.queueVPCChecks(ctx, g, input)
+		s.queueVPCChecks(ctx, g, resultCh)
 	}
 
 	if shouldRunCheck(wasteChecks, "elb") {
-		s.queueELBChecks(ctx, g, input)
+		s.queueELBChecks(ctx, g, resultCh)
 	}
 
 	if shouldRunCheck(wasteChecks, "s3") {
-		s.queueS3Checks(ctx, g, input)
+		s.queueS3Checks(ctx, g, resultCh)
 	}
 
 	if shouldRunCheck(wasteChecks, "cloudwatch") {
-		s.queueCloudWatchLogsChecks(ctx, g, input)
+		s.queueCloudWatchLogsChecks(ctx, g, resultCh)
 	}
 
 	if shouldRunCheck(wasteChecks, "rds") {
-		s.queueRDSChecks(ctx, g, input)
+		s.queueRDSChecks(ctx, g, resultCh)
 	}
 
 	if shouldRunCheck(wasteChecks, "lambda") {
-		s.queueLambdaChecks(ctx, g, input, lambdaMemoryThreshold)
+		s.queueLambdaChecks(ctx, g, resultCh, lambdaMemoryThreshold)
 	}
 
 	if shouldRunCheck(wasteChecks, "sagemaker") {
-		s.queueSagemakerChecks(ctx, g, input)
+		s.queueSagemakerChecks(ctx, g, resultCh)
 	}
 
 	if shouldRunCheck(wasteChecks, "ecr") {
-		s.queueECRChecks(ctx, g, input)
+		s.queueECRChecks(ctx, g, resultCh)
 	}
 
 	if shouldRunCheck(wasteChecks, "secrets-manager") {
-		s.queueSecretsManagerChecks(ctx, g, input, secretsIdleDays)
+		s.queueSecretsManagerChecks(ctx, g, resultCh, secretsIdleDays)
 	}
 }
 

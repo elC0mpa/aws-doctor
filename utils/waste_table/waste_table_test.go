@@ -2,8 +2,6 @@ package wastetable
 
 import (
 	"bytes"
-	"io"
-	"os"
 	"strings"
 	"testing"
 	"time"
@@ -15,28 +13,10 @@ import (
 	"github.com/elC0mpa/aws-doctor/model"
 )
 
-// captureWasteOutput captures stdout during function execution
-func captureWasteOutput(f func()) string {
-	old := os.Stdout
-	r, w, _ := os.Pipe()
-	os.Stdout = w
-
-	f()
-
-	_ = w.Close()
-	os.Stdout = old
-
-	var buf bytes.Buffer
-
-	_, _ = io.Copy(&buf, r)
-
-	return buf.String()
-}
-
 func TestDrawWasteTable_NoWaste(t *testing.T) {
-	output := captureWasteOutput(func() {
-		DrawWasteTable(model.RenderWasteInput{AccountID: "123456789012"}, services.NewMockPricingService())
-	})
+	var buf1 bytes.Buffer
+	DrawWasteTable(&buf1, model.RenderWasteInput{AccountID: "123456789012"}, services.NewMockPricingService())
+	output := buf1.String()
 
 	if !strings.Contains(output, "AWS DOCTOR CHECKUP") {
 		t.Error("DrawWasteTable() missing header")
@@ -56,12 +36,12 @@ func TestDrawWasteTable_WithElasticIPs(t *testing.T) {
 		{PublicIp: aws.String("1.2.3.4"), AllocationId: aws.String("eipalloc-123")},
 	}
 
-	output := captureWasteOutput(func() {
-		DrawWasteTable(model.RenderWasteInput{
-			AccountID:  "123456789012",
-			ElasticIPs: elasticIPs,
-		}, services.NewMockPricingService())
-	})
+	var buf2 bytes.Buffer
+	DrawWasteTable(&buf2, model.RenderWasteInput{
+		AccountID:  "123456789012",
+		ElasticIPs: elasticIPs,
+	}, services.NewMockPricingService())
+	output := buf2.String()
 
 	if !strings.Contains(output, "Elastic IP") {
 		t.Error("DrawWasteTable() with elastic IPs missing Elastic IP section")
@@ -77,12 +57,12 @@ func TestDrawWasteTable_WithEBSVolumes(t *testing.T) {
 		},
 	}
 
-	output := captureWasteOutput(func() {
-		DrawWasteTable(model.RenderWasteInput{
-			AccountID:     "123456789012",
-			UnusedVolumes: unusedVolumes,
-		}, services.NewMockPricingService())
-	})
+	var buf3 bytes.Buffer
+	DrawWasteTable(&buf3, model.RenderWasteInput{
+		AccountID:     "123456789012",
+		UnusedVolumes: unusedVolumes,
+	}, services.NewMockPricingService())
+	output := buf3.String()
 
 	if !strings.Contains(output, "EBS") {
 		t.Error("DrawWasteTable() with EBS volumes missing EBS section")
@@ -97,12 +77,12 @@ func TestDrawWasteTable_WithStoppedInstances(t *testing.T) {
 		},
 	}
 
-	output := captureWasteOutput(func() {
-		DrawWasteTable(model.RenderWasteInput{
-			AccountID:        "123456789012",
-			StoppedInstances: stoppedInstances,
-		}, services.NewMockPricingService())
-	})
+	var buf4 bytes.Buffer
+	DrawWasteTable(&buf4, model.RenderWasteInput{
+		AccountID:        "123456789012",
+		StoppedInstances: stoppedInstances,
+	}, services.NewMockPricingService())
+	output := buf4.String()
 
 	if !strings.Contains(output, "EC2") || !strings.Contains(output, "Reserved Instance") {
 		t.Error("DrawWasteTable() with stopped instances missing EC2 section")
@@ -114,12 +94,12 @@ func TestDrawWasteTable_WithNATGateways(t *testing.T) {
 		{NATGatewayID: "nat-123", EstimatedMonthlyCost: 32.85},
 	}
 
-	output := captureWasteOutput(func() {
-		DrawWasteTable(model.RenderWasteInput{
-			AccountID:       "123456789012",
-			IdleNATGateways: natGateways,
-		}, services.NewMockPricingService())
-	})
+	var buf5 bytes.Buffer
+	DrawWasteTable(&buf5, model.RenderWasteInput{
+		AccountID:       "123456789012",
+		IdleNATGateways: natGateways,
+	}, services.NewMockPricingService())
+	output := buf5.String()
 
 	if !strings.Contains(output, "NAT Gateway") {
 		t.Error("DrawWasteTable() with NAT Gateways missing section")
@@ -133,14 +113,14 @@ func TestDrawWasteTable_WithECR(t *testing.T) {
 		{RepositoryName: "repo-3", EstimatedMonthlyCost: 2.50},
 	}
 
-	output := captureWasteOutput(func() {
-		DrawWasteTable(model.RenderWasteInput{
-			AccountID:              "123456789012",
-			ECRNoLifecyclePolicies: noPolicy,
-			ECREmptyRepositories:   empty,
-			ECRUntaggedImages:      untagged,
-		}, services.NewMockPricingService())
-	})
+	var buf6 bytes.Buffer
+	DrawWasteTable(&buf6, model.RenderWasteInput{
+		AccountID:              "123456789012",
+		ECRNoLifecyclePolicies: noPolicy,
+		ECREmptyRepositories:   empty,
+		ECRUntaggedImages:      untagged,
+	}, services.NewMockPricingService())
+	output := buf6.String()
 
 	if !strings.Contains(output, "ECR") {
 		t.Error("DrawWasteTable() with ECR missing section")
@@ -156,12 +136,12 @@ func TestDrawWasteTable_WithReservedInstances(t *testing.T) {
 		},
 	}
 
-	output := captureWasteOutput(func() {
-		DrawWasteTable(model.RenderWasteInput{
-			AccountID: "123456789012",
-			Ris:       ris,
-		}, services.NewMockPricingService())
-	})
+	var buf7 bytes.Buffer
+	DrawWasteTable(&buf7, model.RenderWasteInput{
+		AccountID: "123456789012",
+		Ris:       ris,
+	}, services.NewMockPricingService())
+	output := buf7.String()
 
 	if !strings.Contains(output, "Reserved Instance") {
 		t.Error("DrawWasteTable() with reserved instances missing RI section")
@@ -177,12 +157,12 @@ func TestDrawWasteTable_WithLoadBalancers(t *testing.T) {
 		},
 	}
 
-	output := captureWasteOutput(func() {
-		DrawWasteTable(model.RenderWasteInput{
-			AccountID:     "123456789012",
-			LoadBalancers: loadBalancers,
-		}, services.NewMockPricingService())
-	})
+	var buf8 bytes.Buffer
+	DrawWasteTable(&buf8, model.RenderWasteInput{
+		AccountID:     "123456789012",
+		LoadBalancers: loadBalancers,
+	}, services.NewMockPricingService())
+	output := buf8.String()
 
 	if !strings.Contains(output, "Load Balancer") {
 		t.Error("DrawWasteTable() with load balancers missing LB section")
@@ -221,17 +201,17 @@ func TestDrawWasteTable_AllWasteTypes(t *testing.T) {
 		},
 	}
 
-	output := captureWasteOutput(func() {
-		DrawWasteTable(model.RenderWasteInput{
-			AccountID:        "123456789012",
-			ElasticIPs:       elasticIPs,
-			UnusedVolumes:    unusedVolumes,
-			StoppedVolumes:   stoppedVolumes,
-			Ris:              ris,
-			StoppedInstances: stoppedInstances,
-			LoadBalancers:    loadBalancers,
-		}, services.NewMockPricingService())
-	})
+	var buf9 bytes.Buffer
+	DrawWasteTable(&buf9, model.RenderWasteInput{
+		AccountID:        "123456789012",
+		ElasticIPs:       elasticIPs,
+		UnusedVolumes:    unusedVolumes,
+		StoppedVolumes:   stoppedVolumes,
+		Ris:              ris,
+		StoppedInstances: stoppedInstances,
+		LoadBalancers:    loadBalancers,
+	}, services.NewMockPricingService())
+	output := buf9.String()
 
 	// Should have all sections
 	if !strings.Contains(output, "EBS") {
@@ -272,20 +252,20 @@ func TestDrawEBSTable(t *testing.T) {
 		},
 	}
 
-	output := captureWasteOutput(func() {
-		drawEBSTable(unusedVolumes, stoppedVolumes, services.NewMockPricingService())
-	})
+	var buf10 bytes.Buffer
+	drawEBSTable(&buf10, unusedVolumes, stoppedVolumes, services.NewMockPricingService())
+	output := buf10.String()
 
 	if !strings.Contains(output, "EBS Volume Waste") {
-		t.Error("drawEBSTable() missing title")
+		t.Error("drawEBSTable(os.Stdout) missing title")
 	}
 
 	if !strings.Contains(output, "vol-111") {
-		t.Error("drawEBSTable() missing unused volume ID")
+		t.Error("drawEBSTable(os.Stdout) missing unused volume ID")
 	}
 
 	if !strings.Contains(output, "vol-333") {
-		t.Error("drawEBSTable() missing stopped volume ID")
+		t.Error("drawEBSTable(os.Stdout) missing stopped volume ID")
 	}
 }
 
@@ -298,12 +278,12 @@ func TestDrawEBSTable_OnlyUnused(t *testing.T) {
 		},
 	}
 
-	output := captureWasteOutput(func() {
-		drawEBSTable(unusedVolumes, nil, services.NewMockPricingService())
-	})
+	var buf11 bytes.Buffer
+	drawEBSTable(&buf11, unusedVolumes, nil, services.NewMockPricingService())
+	output := buf11.String()
 
 	if !strings.Contains(output, "Available") {
-		t.Error("drawEBSTable() with only unused volumes missing Available status")
+		t.Error("drawEBSTable(os.Stdout) with only unused volumes missing Available status")
 	}
 }
 
@@ -316,12 +296,12 @@ func TestDrawEBSTable_OnlyStopped(t *testing.T) {
 		},
 	}
 
-	output := captureWasteOutput(func() {
-		drawEBSTable(nil, stoppedVolumes, services.NewMockPricingService())
-	})
+	var buf12 bytes.Buffer
+	drawEBSTable(&buf12, nil, stoppedVolumes, services.NewMockPricingService())
+	output := buf12.String()
 
 	if !strings.Contains(output, "Stopped Instance") {
-		t.Error("drawEBSTable() with only stopped volumes missing Stopped Instance status")
+		t.Error("drawEBSTable(os.Stdout) with only stopped volumes missing Stopped Instance status")
 	}
 }
 
@@ -337,20 +317,20 @@ func TestDrawEC2Table(t *testing.T) {
 		{ReservedInstanceID: "ri-456", DaysUntilExpiry: -5, Status: "EXPIRED"},
 	}
 
-	output := captureWasteOutput(func() {
-		drawEC2Table(instances, ris)
-	})
+	var buf13 bytes.Buffer
+	drawEC2Table(&buf13, instances, ris)
+	output := buf13.String()
 
 	if !strings.Contains(output, "EC2 & Reserved Instance Waste") {
-		t.Error("drawEC2Table() missing title")
+		t.Error("drawEC2Table(os.Stdout) missing title")
 	}
 
 	if !strings.Contains(output, "i-123") {
-		t.Error("drawEC2Table() missing instance ID")
+		t.Error("drawEC2Table(os.Stdout) missing instance ID")
 	}
 
 	if !strings.Contains(output, "ri-123") {
-		t.Error("drawEC2Table() missing RI ID")
+		t.Error("drawEC2Table(os.Stdout) missing RI ID")
 	}
 }
 
@@ -359,12 +339,12 @@ func TestDrawEC2Table_OnlyInstances(t *testing.T) {
 		{InstanceId: aws.String("i-123"), StateTransitionReason: aws.String("User initiated (2024-01-01 00:00:00 UTC)")},
 	}
 
-	output := captureWasteOutput(func() {
-		drawEC2Table(instances, nil)
-	})
+	var buf14 bytes.Buffer
+	drawEC2Table(&buf14, instances, nil)
+	output := buf14.String()
 
 	if !strings.Contains(output, "Stopped Instance") {
-		t.Error("drawEC2Table() with only instances missing Stopped Instance status")
+		t.Error("drawEC2Table(os.Stdout) with only instances missing Stopped Instance status")
 	}
 }
 
@@ -373,12 +353,12 @@ func TestDrawEC2Table_OnlyRIs(t *testing.T) {
 		{ReservedInstanceID: "ri-123", DaysUntilExpiry: 15, Status: "EXPIRING SOON"},
 	}
 
-	output := captureWasteOutput(func() {
-		drawEC2Table(nil, ris)
-	})
+	var buf15 bytes.Buffer
+	drawEC2Table(&buf15, nil, ris)
+	output := buf15.String()
 
 	if !strings.Contains(output, "Expiring Soon") {
-		t.Error("drawEC2Table() with only expiring RIs missing Expiring Soon status")
+		t.Error("drawEC2Table(os.Stdout) with only expiring RIs missing Expiring Soon status")
 	}
 }
 
@@ -388,20 +368,20 @@ func TestDrawElasticIPTable(t *testing.T) {
 		{PublicIp: aws.String("5.6.7.8"), AllocationId: aws.String("eipalloc-456")},
 	}
 
-	output := captureWasteOutput(func() {
-		drawElasticIPTable(elasticIPs, services.NewMockPricingService())
-	})
+	var buf16 bytes.Buffer
+	drawElasticIPTable(&buf16, elasticIPs, services.NewMockPricingService())
+	output := buf16.String()
 
 	if !strings.Contains(output, "Elastic IP Waste") {
-		t.Error("drawElasticIPTable() missing title")
+		t.Error("drawElasticIPTable(os.Stdout) missing title")
 	}
 
 	if !strings.Contains(output, "1.2.3.4") {
-		t.Error("drawElasticIPTable() missing IP address")
+		t.Error("drawElasticIPTable(os.Stdout) missing IP address")
 	}
 
 	if !strings.Contains(output, "eipalloc-123") {
-		t.Error("drawElasticIPTable() missing allocation ID")
+		t.Error("drawElasticIPTable(os.Stdout) missing allocation ID")
 	}
 }
 
@@ -419,20 +399,20 @@ func TestDrawLoadBalancerTable(t *testing.T) {
 		},
 	}
 
-	output := captureWasteOutput(func() {
-		drawLoadBalancerTable(loadBalancers, nil, services.NewMockPricingService())
-	})
+	var buf17 bytes.Buffer
+	drawLoadBalancerTable(&buf17, loadBalancers, nil, services.NewMockPricingService())
+	output := buf17.String()
 
 	if !strings.Contains(output, "Load Balancer Waste") {
-		t.Error("drawLoadBalancerTable() missing title")
+		t.Error("drawLoadBalancerTable(os.Stdout) missing title")
 	}
 
 	if !strings.Contains(output, "my-alb") {
-		t.Error("drawLoadBalancerTable() missing ALB name")
+		t.Error("drawLoadBalancerTable(os.Stdout) missing ALB name")
 	}
 
 	if !strings.Contains(output, "application") {
-		t.Error("drawLoadBalancerTable() missing ALB type")
+		t.Error("drawLoadBalancerTable(os.Stdout) missing ALB type")
 	}
 }
 
@@ -454,20 +434,20 @@ func TestDrawSnapshotTable(t *testing.T) {
 		},
 	}
 
-	output := captureWasteOutput(func() {
-		drawSnapshotTable(snapshots)
-	})
+	var buf18 bytes.Buffer
+	drawSnapshotTable(&buf18, snapshots)
+	output := buf18.String()
 
 	if !strings.Contains(output, "EBS Snapshot Waste") {
-		t.Error("drawSnapshotTable() missing title")
+		t.Error("drawSnapshotTable(os.Stdout) missing title")
 	}
 
 	if !strings.Contains(output, "snap-123") {
-		t.Error("drawSnapshotTable() missing orphaned snapshot ID")
+		t.Error("drawSnapshotTable(os.Stdout) missing orphaned snapshot ID")
 	}
 
 	if !strings.Contains(output, "snap-456") {
-		t.Error("drawSnapshotTable() missing stale snapshot ID")
+		t.Error("drawSnapshotTable(os.Stdout) missing stale snapshot ID")
 	}
 }
 
@@ -483,12 +463,12 @@ func TestDrawWasteTable_IndividualResources(t *testing.T) {
 		},
 	}
 
-	output := captureWasteOutput(func() {
-		DrawWasteTable(model.RenderWasteInput{
-			AccountID:     accountID,
-			UnusedVolumes: unusedVolumes,
-		}, services.NewMockPricingService())
-	})
+	var buf19 bytes.Buffer
+	DrawWasteTable(&buf19, model.RenderWasteInput{
+		AccountID:     accountID,
+		UnusedVolumes: unusedVolumes,
+	}, services.NewMockPricingService())
+	output := buf19.String()
 
 	if !strings.Contains(output, "EBS Volume Waste") {
 		t.Error("DrawWasteTable with EBS only missing title")
@@ -503,12 +483,12 @@ func TestDrawWasteTable_IndividualResources(t *testing.T) {
 		},
 	}
 
-	output = captureWasteOutput(func() {
-		DrawWasteTable(model.RenderWasteInput{
-			AccountID:     accountID,
-			LoadBalancers: lbs,
-		}, services.NewMockPricingService())
-	})
+	var buf20 bytes.Buffer
+	DrawWasteTable(&buf20, model.RenderWasteInput{
+		AccountID:     accountID,
+		LoadBalancers: lbs,
+	}, services.NewMockPricingService())
+	output = buf20.String()
 
 	if !strings.Contains(output, "Load Balancer Waste") {
 		t.Error("DrawWasteTable with LB only missing title")
@@ -517,12 +497,12 @@ func TestDrawWasteTable_IndividualResources(t *testing.T) {
 	// Test AMIs only
 	amis := []model.AMIWasteInfo{{ImageID: "ami-1", Name: "ami-1", DaysSinceCreate: 10, CreationDate: time.Now()}}
 
-	output = captureWasteOutput(func() {
-		DrawWasteTable(model.RenderWasteInput{
-			AccountID:  accountID,
-			UnusedAMIs: amis,
-		}, services.NewMockPricingService())
-	})
+	var buf21 bytes.Buffer
+	DrawWasteTable(&buf21, model.RenderWasteInput{
+		AccountID:  accountID,
+		UnusedAMIs: amis,
+	}, services.NewMockPricingService())
+	output = buf21.String()
 
 	if !strings.Contains(output, "Unused AMI Waste") {
 		t.Error("DrawWasteTable with AMIs only missing title")
@@ -531,12 +511,12 @@ func TestDrawWasteTable_IndividualResources(t *testing.T) {
 	// Test Snapshots only
 	snaps := []model.SnapshotWasteInfo{{SnapshotID: "snap-1", Category: model.SnapshotCategoryOrphaned, StartTime: time.Now()}}
 
-	output = captureWasteOutput(func() {
-		DrawWasteTable(model.RenderWasteInput{
-			AccountID:         accountID,
-			OrphanedSnapshots: snaps,
-		}, services.NewMockPricingService())
-	})
+	var buf22 bytes.Buffer
+	DrawWasteTable(&buf22, model.RenderWasteInput{
+		AccountID:         accountID,
+		OrphanedSnapshots: snaps,
+	}, services.NewMockPricingService())
+	output = buf22.String()
 
 	if !strings.Contains(output, "EBS Snapshot Waste") {
 		t.Error("DrawWasteTable with Snapshots only missing title")
@@ -563,27 +543,27 @@ func TestDrawAMITable(t *testing.T) {
 		},
 	}
 
-	output := captureWasteOutput(func() {
-		drawAMITable(amis)
-	})
+	var buf23 bytes.Buffer
+	drawAMITable(&buf23, amis)
+	output := buf23.String()
 
 	// Check for table title
 	if !strings.Contains(output, "Unused AMI Waste") {
-		t.Error("drawAMITable() missing title")
+		t.Error("drawAMITable(os.Stdout) missing title")
 	}
 
 	// Check for AMI IDs
 	if !strings.Contains(output, "ami-12345") {
-		t.Error("drawAMITable() missing first AMI ID")
+		t.Error("drawAMITable(os.Stdout) missing first AMI ID")
 	}
 
 	if !strings.Contains(output, "ami-67890") {
-		t.Error("drawAMITable() missing second AMI ID")
+		t.Error("drawAMITable(os.Stdout) missing second AMI ID")
 	}
 
 	// Check for warning message
 	if !strings.Contains(output, "Warning") || !strings.Contains(output, "Auto Scaling") {
-		t.Error("drawAMITable() missing safety warning footer")
+		t.Error("drawAMITable(os.Stdout) missing safety warning footer")
 	}
 }
 
@@ -599,12 +579,12 @@ func TestDrawWasteTable_WithUnusedAMIs(t *testing.T) {
 		},
 	}
 
-	output := captureWasteOutput(func() {
-		DrawWasteTable(model.RenderWasteInput{
-			AccountID:  "123456789012",
-			UnusedAMIs: unusedAMIs,
-		}, services.NewMockPricingService())
-	})
+	var buf24 bytes.Buffer
+	DrawWasteTable(&buf24, model.RenderWasteInput{
+		AccountID:  "123456789012",
+		UnusedAMIs: unusedAMIs,
+	}, services.NewMockPricingService())
+	output := buf24.String()
 
 	if !strings.Contains(output, "Unused AMI") {
 		t.Error("DrawWasteTable() with unused AMIs missing AMI section")
@@ -625,20 +605,20 @@ func TestDrawKeyPairTable(t *testing.T) {
 		},
 	}
 
-	output := captureWasteOutput(func() {
-		drawKeyPairTable(keyPairs)
-	})
+	var buf25 bytes.Buffer
+	drawKeyPairTable(&buf25, keyPairs)
+	output := buf25.String()
 
 	if !strings.Contains(output, "Unused EC2 Key Pair Waste") {
-		t.Error("drawKeyPairTable() missing title")
+		t.Error("drawKeyPairTable(os.Stdout) missing title")
 	}
 
 	if !strings.Contains(output, "unused-key") {
-		t.Error("drawKeyPairTable() missing key name")
+		t.Error("drawKeyPairTable(os.Stdout) missing key name")
 	}
 
 	if !strings.Contains(output, "key-abcde") {
-		t.Error("drawKeyPairTable() missing key ID")
+		t.Error("drawKeyPairTable(os.Stdout) missing key ID")
 	}
 }
 
@@ -652,12 +632,12 @@ func TestDrawWasteTable_WithKeyPairs(t *testing.T) {
 		},
 	}
 
-	output := captureWasteOutput(func() {
-		DrawWasteTable(model.RenderWasteInput{
-			AccountID:      "123456789012",
-			UnusedKeyPairs: keyPairs,
-		}, services.NewMockPricingService())
-	})
+	var buf26 bytes.Buffer
+	DrawWasteTable(&buf26, model.RenderWasteInput{
+		AccountID:      "123456789012",
+		UnusedKeyPairs: keyPairs,
+	}, services.NewMockPricingService())
+	output := buf26.String()
 
 	if !strings.Contains(output, "Key Pair Waste") {
 		t.Error("DrawWasteTable() with key pairs missing Key Pair section")
@@ -684,28 +664,28 @@ func TestDrawS3Table(t *testing.T) {
 		},
 	}
 
-	output := captureWasteOutput(func() {
-		drawS3Table(buckets, multipart)
-	})
+	var buf27 bytes.Buffer
+	drawS3Table(&buf27, buckets, multipart)
+	output := buf27.String()
 
 	if !strings.Contains(output, "S3 Bucket Waste") {
-		t.Error("drawS3Table() missing title")
+		t.Error("drawS3Table(os.Stdout) missing title")
 	}
 
 	if !strings.Contains(output, "No Lifecycle Policy") {
-		t.Error("drawS3Table() missing lifecycle status")
+		t.Error("drawS3Table(os.Stdout) missing lifecycle status")
 	}
 
 	if !strings.Contains(output, "Incomplete Multipart") {
-		t.Error("drawS3Table() missing multipart status")
+		t.Error("drawS3Table(os.Stdout) missing multipart status")
 	}
 
 	if !strings.Contains(output, "waste-bucket") {
-		t.Error("drawS3Table() missing bucket name")
+		t.Error("drawS3Table(os.Stdout) missing bucket name")
 	}
 
 	if !strings.Contains(output, "multipart-bucket") {
-		t.Error("drawS3Table() missing multipart bucket name")
+		t.Error("drawS3Table(os.Stdout) missing multipart bucket name")
 	}
 }
 
@@ -718,12 +698,12 @@ func TestDrawWasteTable_WithS3Buckets(t *testing.T) {
 		},
 	}
 
-	output := captureWasteOutput(func() {
-		DrawWasteTable(model.RenderWasteInput{
-			AccountID: "123456789012",
-			S3Buckets: buckets,
-		}, services.NewMockPricingService())
-	})
+	var buf28 bytes.Buffer
+	DrawWasteTable(&buf28, model.RenderWasteInput{
+		AccountID: "123456789012",
+		S3Buckets: buckets,
+	}, services.NewMockPricingService())
+	output := buf28.String()
 
 	if !strings.Contains(output, "S3 Bucket Waste") {
 		t.Error("DrawWasteTable() with S3 buckets missing S3 section")
@@ -742,12 +722,12 @@ func TestDrawWasteTable_WithS3Multipart(t *testing.T) {
 		},
 	}
 
-	output := captureWasteOutput(func() {
-		DrawWasteTable(model.RenderWasteInput{
-			AccountID:          "123456789012",
-			S3MultipartUploads: buckets,
-		}, services.NewMockPricingService())
-	})
+	var buf29 bytes.Buffer
+	DrawWasteTable(&buf29, model.RenderWasteInput{
+		AccountID:          "123456789012",
+		S3MultipartUploads: buckets,
+	}, services.NewMockPricingService())
+	output := buf29.String()
 
 	if !strings.Contains(output, "S3 Bucket Waste") {
 		t.Error("DrawWasteTable() with S3 multipart missing S3 section")
@@ -771,20 +751,20 @@ func TestDrawCloudWatchLogsTable(t *testing.T) {
 		},
 	}
 
-	output := captureWasteOutput(func() {
-		drawCloudWatchLogsTable(logGroups)
-	})
+	var buf30 bytes.Buffer
+	drawCloudWatchLogsTable(&buf30, logGroups)
+	output := buf30.String()
 
 	if !strings.Contains(output, "CloudWatch Log Group Waste") {
-		t.Error("drawCloudWatchLogsTable() missing title")
+		t.Error("drawCloudWatchLogsTable(os.Stdout) missing title")
 	}
 
 	if !strings.Contains(output, "No Retention Policy") {
-		t.Error("drawCloudWatchLogsTable() missing retention status")
+		t.Error("drawCloudWatchLogsTable(os.Stdout) missing retention status")
 	}
 
 	if !strings.Contains(output, "waste-loggroup") {
-		t.Error("drawCloudWatchLogsTable() missing log group name")
+		t.Error("drawCloudWatchLogsTable(os.Stdout) missing log group name")
 	}
 }
 
@@ -797,12 +777,12 @@ func TestDrawWasteTable_WithCloudWatchLogs(t *testing.T) {
 		},
 	}
 
-	output := captureWasteOutput(func() {
-		DrawWasteTable(model.RenderWasteInput{
-			AccountID:           "123456789012",
-			CloudWatchLogGroups: logGroups,
-		}, services.NewMockPricingService())
-	})
+	var buf31 bytes.Buffer
+	DrawWasteTable(&buf31, model.RenderWasteInput{
+		AccountID:           "123456789012",
+		CloudWatchLogGroups: logGroups,
+	}, services.NewMockPricingService())
+	output := buf31.String()
 
 	if !strings.Contains(output, "CloudWatch Log Group Waste") {
 		t.Error("DrawWasteTable() with CloudWatch logs missing CloudWatch section")
@@ -824,24 +804,24 @@ func TestDrawRDSTable(t *testing.T) {
 		{DBInstanceID: "idle-rds", Engine: "aurora", DaysChecked: 7, EstimatedMonthlyCost: 50.0},
 	}
 
-	output := captureWasteOutput(func() {
-		drawRDSTable(instances, snapshots, idleInstances)
-	})
+	var buf32 bytes.Buffer
+	drawRDSTable(&buf32, instances, snapshots, idleInstances)
+	output := buf32.String()
 
 	if !strings.Contains(output, "RDS Waste") {
-		t.Error("drawRDSTable() missing title")
+		t.Error("drawRDSTable(os.Stdout) missing title")
 	}
 
 	if !strings.Contains(output, "stopped-rds") {
-		t.Error("drawRDSTable() missing stopped instance ID")
+		t.Error("drawRDSTable(os.Stdout) missing stopped instance ID")
 	}
 
 	if !strings.Contains(output, "old-snap") {
-		t.Error("drawRDSTable() missing snapshot ID")
+		t.Error("drawRDSTable(os.Stdout) missing snapshot ID")
 	}
 
 	if !strings.Contains(output, "idle-rds") {
-		t.Error("drawRDSTable() missing idle instance ID")
+		t.Error("drawRDSTable(os.Stdout) missing idle instance ID")
 	}
 }
 
@@ -850,16 +830,16 @@ func TestDrawNatGatewayTable(t *testing.T) {
 		{NATGatewayID: "nat-123", EstimatedMonthlyCost: 32.85},
 	}
 
-	output := captureWasteOutput(func() {
-		drawNatGatewayTable(gateways)
-	})
+	var buf33 bytes.Buffer
+	drawNatGatewayTable(&buf33, gateways)
+	output := buf33.String()
 
 	if !strings.Contains(output, "NAT Gateway Waste") {
-		t.Error("drawNatGatewayTable() missing title")
+		t.Error("drawNatGatewayTable(os.Stdout) missing title")
 	}
 
 	if !strings.Contains(output, "nat-123") {
-		t.Error("drawNatGatewayTable() missing gateway ID")
+		t.Error("drawNatGatewayTable(os.Stdout) missing gateway ID")
 	}
 }
 
@@ -868,16 +848,16 @@ func TestDrawLambdaTable(t *testing.T) {
 		{FunctionName: "test-fn"},
 	}
 
-	output := captureWasteOutput(func() {
-		drawLambdaTable(functions)
-	})
+	var buf34 bytes.Buffer
+	drawLambdaTable(&buf34, functions)
+	output := buf34.String()
 
 	if !strings.Contains(output, "Lambda Over-Provisioned Memory") {
-		t.Error("drawLambdaTable() missing title")
+		t.Error("drawLambdaTable(os.Stdout) missing title")
 	}
 
 	if !strings.Contains(output, "test-fn") {
-		t.Error("drawLambdaTable() missing function name")
+		t.Error("drawLambdaTable(os.Stdout) missing function name")
 	}
 }
 
@@ -886,16 +866,16 @@ func TestDrawSageMakerTable(t *testing.T) {
 		{EndpointName: "test-ep", EstimatedMonthlyCost: 46.72},
 	}
 
-	output := captureWasteOutput(func() {
-		drawSageMakerTable(endpoints)
-	})
+	var buf35 bytes.Buffer
+	drawSageMakerTable(&buf35, endpoints)
+	output := buf35.String()
 
 	if !strings.Contains(output, "SageMaker Endpoints (Idle)") {
-		t.Error("drawSageMakerTable() missing title")
+		t.Error("drawSageMakerTable(os.Stdout) missing title")
 	}
 
 	if !strings.Contains(output, "test-ep") {
-		t.Error("drawSageMakerTable() missing endpoint name")
+		t.Error("drawSageMakerTable(os.Stdout) missing endpoint name")
 	}
 }
 
@@ -904,12 +884,12 @@ func TestDrawLoadBalancerTable_Idle(t *testing.T) {
 		{ARN: "arn:123", Name: "idle-lb", EstimatedMonthlyCost: 16.43},
 	}
 
-	output := captureWasteOutput(func() {
-		drawLoadBalancerTable(nil, idle, services.NewMockPricingService())
-	})
+	var buf36 bytes.Buffer
+	drawLoadBalancerTable(&buf36, nil, idle, services.NewMockPricingService())
+	output := buf36.String()
 
 	if !strings.Contains(output, "idle-lb") {
-		t.Error("drawLoadBalancerTable() with idle LBs missing LB name")
+		t.Error("drawLoadBalancerTable(os.Stdout) with idle LBs missing LB name")
 	}
 }
 
@@ -1141,12 +1121,12 @@ func TestDrawWasteTable_WithIdleEC2Instances(t *testing.T) {
 		},
 	}
 
-	output := captureWasteOutput(func() {
-		DrawWasteTable(model.RenderWasteInput{
-			AccountID:        "123456789012",
-			IdleEC2Instances: idleInstances,
-		}, services.NewMockPricingService())
-	})
+	var buf37 bytes.Buffer
+	DrawWasteTable(&buf37, model.RenderWasteInput{
+		AccountID:        "123456789012",
+		IdleEC2Instances: idleInstances,
+	}, services.NewMockPricingService())
+	output := buf37.String()
 
 	if !strings.Contains(output, "Idle EC2 Instance") {
 		t.Error("DrawWasteTable() missing Idle EC2 Instance section")
@@ -1167,12 +1147,12 @@ func TestDrawWasteTable_WithUnusedSecrets(t *testing.T) {
 	mockPricing := new(services.MockPricingService)
 	mockPricing.On("CalculateSecretsManagerMonthlyCost", 1).Return(0.40)
 
-	output := captureWasteOutput(func() {
-		DrawWasteTable(model.RenderWasteInput{
-			AccountID:     "123456789012",
-			UnusedSecrets: unusedSecrets,
-		}, mockPricing)
-	})
+	var buf38 bytes.Buffer
+	DrawWasteTable(&buf38, model.RenderWasteInput{
+		AccountID:     "123456789012",
+		UnusedSecrets: unusedSecrets,
+	}, mockPricing)
+	output := buf38.String()
 
 	if !strings.Contains(output, "Unused Secrets") {
 		t.Error("DrawWasteTable() missing Unused Secrets section")

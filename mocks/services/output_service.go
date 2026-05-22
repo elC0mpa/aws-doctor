@@ -29,6 +29,18 @@ func (m *MockOutputService) RenderWaste(input model.RenderWasteInput, pricingSvc
 	return args.Error(0)
 }
 
+// IsInteractive mocks the IsInteractive method.
+func (m *MockOutputService) IsInteractive() bool {
+	args := m.Called()
+	return args.Bool(0)
+}
+
+// RenderWasteInteractive mocks the RenderWasteInteractive method.
+func (m *MockOutputService) RenderWasteInteractive(accountID string, resultCh <-chan model.ScopeResult, scopes []string, pricingSvc pricing.Service) error {
+	args := m.Called(accountID, resultCh, scopes, pricingSvc)
+	return args.Error(0)
+}
+
 // StopSpinner mocks the StopSpinner method.
 func (m *MockOutputService) StopSpinner() {
 	m.Called()
@@ -64,8 +76,13 @@ func (m *MockOutputService) PrintRateLimitError() {
 	m.Called()
 }
 
-// PrintUpdateError mocks the PrintUpdateError method.
+// PrintUpdateError mocks PrintUpdateError
 func (m *MockOutputService) PrintUpdateError(err error) {
+	m.Called(err)
+}
+
+// PrintWasteError mocks PrintWasteError
+func (m *MockOutputService) PrintWasteError(err error) {
 	m.Called(err)
 }
 

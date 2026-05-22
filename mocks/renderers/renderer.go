@@ -62,6 +62,12 @@ func (m *MockRenderer) OutputWasteCSV(input model.RenderWasteInput, pricingSvc p
 	return args.Error(0)
 }
 
+// RenderWasteInteractive mocks the RenderWasteInteractive method
+func (m *MockRenderer) RenderWasteInteractive(accountID string, resultCh <-chan model.ScopeResult, scopes []string, pricingSvc pricing.Service) error {
+	args := m.Called(accountID, resultCh, scopes, pricingSvc)
+	return args.Error(0)
+}
+
 // StopSpinner mocks StopSpinner
 func (m *MockRenderer) StopSpinner() {
 	m.Called()
@@ -92,8 +98,13 @@ func (m *MockRenderer) PrintRateLimitError() {
 	m.Called()
 }
 
-// PrintUpdateError mocks PrintUpdateError
+// PrintUpdateError mocks the PrintUpdateError method
 func (m *MockRenderer) PrintUpdateError(err error) {
+	m.Called(err)
+}
+
+// PrintWasteError mocks the PrintWasteError method
+func (m *MockRenderer) PrintWasteError(err error) {
 	m.Called(err)
 }
 

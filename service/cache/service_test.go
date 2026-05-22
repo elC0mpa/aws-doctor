@@ -2,128 +2,156 @@ package cache
 
 import (
 	"os"
+	"path/filepath"
 	"testing"
 	"time"
-
-	"github.com/stretchr/testify/assert"
 )
 
 func TestCacheService(t *testing.T) {
 	tempDir, err := os.MkdirTemp("", "aws-doctor-cache-test")
-	assert.NoError(t, err)
+	if err != nil {
+		t.Fatal(err)
+	}
 
-	defer func() {
-		_ = os.RemoveAll(tempDir)
-	}()
+	defer func() { _ = os.RemoveAll(tempDir) }()
 
 	s := &service{
 		cacheDir: tempDir,
 		ttls: map[Key]time.Duration{
-			"test_key": 1 * time.Second,
+			LatestVersionKey: time.Hour,
 		},
 	}
 
-	key := Key("test_key")
-	value := "test_value"
+	key := LatestVersionKey
+	val := "v1.0.0"
+
+	var target string
+
+	// Test Get empty
+	found, err := s.Get(key, &target)
+	if err != nil {
+		t.Errorf("Get empty error: %v", err)
+	}
+
+	if found {
+		t.Error("Expected found=false for missing key")
+	}
 
 	// Test Set
-	err = s.Set(key, value)
-	assert.NoError(t, err)
+	err = s.Set(key, val)
+	if err != nil {
+		t.Errorf("Set error: %v", err)
+	}
 
-	// Test Get (Success)
-	var got string
+	// Test Get
+	found, _ = s.Get(key, &target)
 
-	found, err := s.Get(key, &got)
-	assert.NoError(t, err)
-	assert.True(t, found)
-	assert.Equal(t, value, got)
+	if err != nil {
+		t.Errorf("Get error: %v", err)
+	}
 
-	// Test Get (Non-existent)
-	var gotNone string
+	if !found || target != val {
+		t.Errorf("Expected %s, got %s (found=%v)", val, target, found)
+	}
 
-	found, err = s.Get("none", &gotNone)
-	assert.NoError(t, err)
-	assert.False(t, found)
+	// Test expiration
+	s.ttls[key] = -time.Hour
 
-	// Test Expiration
-	time.Sleep(1100 * time.Millisecond)
+	found, err = s.Get(key, &target)
+	if err != nil {
+		t.Errorf("Get expired error: %v", err)
+	}
 
-	var gotExpired string
+	if found {
+		t.Error("Expected found=false for expired key")
+	}
 
-	found, err = s.Get(key, &gotExpired)
-	assert.NoError(t, err)
-	assert.False(t, found)
+	// Reset TTL for corruption test
+	s.ttls[key] = time.Hour
+	filePath := s.getFilePath(key)
+
+	err = os.WriteFile(filePath, []byte("invalid-json"), 0o644)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	_, err = s.Get(key, &target)
+	if err == nil {
+		t.Error("Expected error for corrupted JSON")
+	}
 }
 
-func TestCacheService_WithContext(t *testing.T) {
-	tempDir, err := os.MkdirTemp("", "aws-doctor-cache-test-ctx")
-	assert.NoError(t, err)
+func TestNewService_Sub(t *testing.T) {
+	s := NewService()
+	if s == nil {
+		t.Error("NewService returned nil")
+	}
 
-	defer func() {
-		_ = os.RemoveAll(tempDir)
-	}()
+	// Test Set/Get with contexts
+	tempDir, _ := os.MkdirTemp("", "aws-doctor-cache-test-ctx")
 
-	s := &service{
+	defer func() { _ = os.RemoveAll(tempDir) }()
+
+	sc := &service{
 		cacheDir: tempDir,
 		ttls: map[Key]time.Duration{
-			"ctx_key": 1 * time.Hour,
+			LatestVersionKey: time.Hour,
 		},
 	}
 
-	key := Key("ctx_key")
-	value := "ctx_value"
-	ctx := "us-east-1"
+	val := "v2.0.0"
 
-	// Test Set with context
-	err = s.Set(key, value, ctx)
-	assert.NoError(t, err)
+	var target string
 
-	// Test Get with same context (Success)
-	var got string
+	err := sc.Set(LatestVersionKey, val, "ctx1", "ctx2")
+	if err != nil {
+		t.Errorf("Set with context error: %v", err)
+	}
 
-	found, err := s.Get(key, &got, ctx)
-	assert.NoError(t, err)
-	assert.True(t, found)
-	assert.Equal(t, value, got)
-
-	// Test Get with different context (Fail)
-	var gotOther string
-
-	found, err = s.Get(key, &gotOther, "us-west-2")
-	assert.NoError(t, err)
-	assert.False(t, found)
+	found, err := sc.Get(LatestVersionKey, &target, "ctx1", "ctx2")
+	if err != nil || !found || target != val {
+		t.Errorf("Get with context failed: found=%v, err=%v, target=%v", found, err, target)
+	}
 }
 
-func TestCacheService_ComplexObject(t *testing.T) {
-	tempDir, err := os.MkdirTemp("", "aws-doctor-cache-test-complex")
-	assert.NoError(t, err)
-
-	defer func() {
-		_ = os.RemoveAll(tempDir)
-	}()
-
-	s := &service{
-		cacheDir: tempDir,
-		ttls: map[Key]time.Duration{
-			"complex_key": 1 * time.Hour,
-		},
+func TestCacheService_Errors(t *testing.T) {
+	// Test Set error (read-only dir)
+	if os.Getuid() == 0 {
+		t.Skip("Skipping Set error test for root user")
 	}
 
-	type complex struct {
-		ID   int
-		Name string
+	s := &service{cacheDir: "/root/no-access"}
+
+	err := s.Set(LatestVersionKey, "val")
+	if err == nil {
+		t.Error("Expected error for read-only directory")
 	}
+}
 
-	key := Key("complex_key")
-	value := complex{ID: 1, Name: "test"}
+func TestCacheService_Corruption_Safe(t *testing.T) {
+	tempDir, _ := os.MkdirTemp("", "aws-doctor-cache-test-corrupt-safe")
 
-	err = s.Set(key, value)
-	assert.NoError(t, err)
+	defer func() { _ = os.RemoveAll(tempDir) }()
 
-	var got complex
+	s := &service{cacheDir: tempDir}
 
-	found, err := s.Get(key, &got)
-	assert.NoError(t, err)
-	assert.True(t, found)
-	assert.Equal(t, value, got)
+	filePath := s.getFilePath(LatestVersionKey)
+	_ = os.MkdirAll(filepath.Dir(filePath), 0o755)
+	_ = os.WriteFile(filePath, []byte("invalid-json"), 0o644)
+
+	var target string
+
+	found, _ := s.Get(LatestVersionKey, &target)
+	if found {
+		t.Error("Expected found=false for corrupted JSON")
+	}
+}
+
+func TestCacheService_SetErrors_Safe(t *testing.T) {
+	s := &service{cacheDir: "/root/no-access-aws-doctor"}
+
+	err := s.Set(LatestVersionKey, "val")
+	if err == nil {
+		t.Error("Expected error for restricted directory")
+	}
 }

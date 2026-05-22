@@ -272,3 +272,10 @@ func TestSageMakerVariantInvocations(t *testing.T) {
 		})
 	}
 }
+
+func TestNewService(t *testing.T) {
+	s := NewService(aws.Config{})
+	if s == nil {
+		t.Error("NewService returned nil")
+	}
+}

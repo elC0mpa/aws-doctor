@@ -76,7 +76,7 @@ layout: "hextra-home"
   {{< hextra/feature-card
     icon="terminal"
     title="Output Formats"
-    subtitle="Choose the format that fits your workflow. Use rich terminal tables for quick manual audits, or generate structured JSON output to feed data into your CI/CD pipelines, custom dashboards, and automation scripts."
+    subtitle="Choose the format that fits your workflow. Experience a rich, interactive terminal UI for manual audits, or generate structured JSON output to feed data into your CI/CD pipelines and automation scripts."
     link="docs/usage/"
   >}}
 

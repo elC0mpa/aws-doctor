@@ -11,6 +11,7 @@ import (
 	csvoutput "github.com/elC0mpa/aws-doctor/utils/csv_output"
 	jsonoutput "github.com/elC0mpa/aws-doctor/utils/json_output"
 	"github.com/elC0mpa/aws-doctor/utils/spinner"
+	"github.com/elC0mpa/aws-doctor/utils/tui"
 	wastetable "github.com/elC0mpa/aws-doctor/utils/waste_table"
 	"github.com/jedib0t/go-pretty/v6/text"
 )
@@ -36,6 +37,7 @@ type Renderer interface {
 	DrawWasteTable(input model.RenderWasteInput, pricingSvc pricing.Service)
 	OutputWasteJSON(input model.RenderWasteInput, pricingSvc pricing.Service) error
 	OutputWasteCSV(input model.RenderWasteInput, pricingSvc pricing.Service) error
+	RenderWasteInteractive(accountID string, resultCh <-chan model.ScopeResult, scopes []string, pricingSvc pricing.Service) error
 	StopSpinner()
 	SetSpinnerMessage(message string)
 	PrintAlreadyLatest(version string)
@@ -47,6 +49,7 @@ type Renderer interface {
 	PrintReportSuccess(path string)
 	PrintFirstDayOfMonthError()
 	PrintNewVersionAvailable(currentVersion, latestVersion string)
+	PrintWasteError(err error)
 }
 
 type realRenderer struct{}
@@ -76,7 +79,7 @@ func (r *realRenderer) OutputTrendCSV(monthlyCosts []model.CostInfo, services []
 }
 
 func (r *realRenderer) DrawWasteTable(input model.RenderWasteInput, pricingSvc pricing.Service) {
-	wastetable.DrawWasteTable(input, pricingSvc)
+	wastetable.DrawWasteTable(os.Stdout, input, pricingSvc)
 }
 
 func (r *realRenderer) OutputWasteJSON(input model.RenderWasteInput, pricingSvc pricing.Service) error {
@@ -85,6 +88,12 @@ func (r *realRenderer) OutputWasteJSON(input model.RenderWasteInput, pricingSvc 
 
 func (r *realRenderer) OutputWasteCSV(input model.RenderWasteInput, pricingSvc pricing.Service) error {
 	return csvoutput.OutputWasteCSV(input, pricingSvc)
+}
+
+var renderWasteInteractiveFn = tui.RenderWasteInteractive
+
+func (r *realRenderer) RenderWasteInteractive(accountID string, resultCh <-chan model.ScopeResult, scopes []string, pricingSvc pricing.Service) error {
+	return renderWasteInteractiveFn(accountID, resultCh, scopes, pricingSvc)
 }
 
 func (r *realRenderer) StopSpinner() {
@@ -125,6 +134,11 @@ func (r *realRenderer) PrintRateLimitError() {
 func (r *realRenderer) PrintUpdateError(err error) {
 	fmt.Println()
 	fmt.Println(text.FgRed.Sprintf("❌ Error: failed to check for updates: %v", err))
+}
+
+func (r *realRenderer) PrintWasteError(err error) {
+	fmt.Println()
+	fmt.Println(text.FgRed.Sprintf("❌ Error: failed to run interactive waste rendering: %v", err))
 }
 
 func (r *realRenderer) RenderVersion(versionInfo model.VersionInfo) {
@@ -169,6 +183,12 @@ type Service interface {
 	// RenderWaste outputs waste report data in the configured format
 	RenderWaste(input model.RenderWasteInput, pricingSvc pricing.Service) error
 
+	// RenderWasteInteractive launches the Bubble Tea TUI for waste output
+	RenderWasteInteractive(accountID string, resultCh <-chan model.ScopeResult, scopes []string, pricingSvc pricing.Service) error
+
+	// IsInteractive returns true if the current format should use the TUI
+	IsInteractive() bool
+
 	// StopSpinner stops the loading spinner before rendering output
 	StopSpinner()
 
@@ -192,6 +212,9 @@ type Service interface {
 
 	// PrintUpdateError outputs a message when an update check fails
 	PrintUpdateError(err error)
+
+	// PrintWasteError outputs a message when an interactive waste rendering fails
+	PrintWasteError(err error)
 
 	// RenderVersion outputs the version information
 	RenderVersion(versionInfo model.VersionInfo)

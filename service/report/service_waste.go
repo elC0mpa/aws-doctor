@@ -336,11 +336,13 @@ func (s *service) addLambdaWaste(m core.Maroto, input model.RenderWasteInput) bo
 		return false
 	}
 
-	m.AddRow(10,
+	m.AddRow(
+		10,
 		text.NewCol(12, "Lambda Over-Provisioned Memory", props.Text{Style: fontstyle.Bold, Size: 11}),
 	)
 
-	m.AddRow(10,
+	m.AddRow(
+		10,
 		text.NewCol(5, "Function", props.Text{Style: fontstyle.Bold, Size: 9}),
 		text.NewCol(3, "Used/Configured", props.Text{Style: fontstyle.Bold, Size: 9}),
 		text.NewCol(2, "Utilization", props.Text{Style: fontstyle.Bold, Size: 9, Align: align.Right}),
@@ -350,7 +352,8 @@ func (s *service) addLambdaWaste(m core.Maroto, input model.RenderWasteInput) bo
 	m.AddRow(2, line.NewCol(12))
 
 	for _, fn := range input.OverProvisionedLambdas {
-		m.AddRow(8,
+		m.AddRow(
+			8,
 			text.NewCol(5, fn.FunctionName, props.Text{Size: 7}),
 			text.NewCol(3, fmt.Sprintf("%d / %d MB", fn.MaxMemoryUsedMB, fn.ConfiguredMemoryMB), props.Text{Size: 8}),
 			text.NewCol(2, fmt.Sprintf("%.1f%%", fn.MemoryUtilization), props.Text{Size: 8, Align: align.Right}),
@@ -401,7 +404,8 @@ func (s *service) addWasteSummary(m core.Maroto, input model.RenderWasteInput, p
 
 	m.AddRow(2, line.NewCol(12))
 
-	m.AddRow(10,
+	m.AddRow(
+		10,
 		text.NewCol(4, "Total Estimated Monthly Waste", props.Text{Style: fontstyle.Bold, Size: 10}),
 		text.NewCol(4, "", props.Text{}),
 		text.NewCol(4, fmt.Sprintf("$%.2f", totalCost), props.Text{Style: fontstyle.Bold, Size: 10, Align: align.Right, Color: &props.Color{Red: 200, Green: 0, Blue: 0}}),
@@ -409,18 +413,21 @@ func (s *service) addWasteSummary(m core.Maroto, input model.RenderWasteInput, p
 }
 
 func (s *service) addWasteSection(m core.Maroto, title string, headers []string) {
-	m.AddRow(10,
+	m.AddRow(
+		10,
 		text.NewCol(12, title, props.Text{Style: fontstyle.Bold, Size: 11}),
 	)
 
 	if len(headers) == 3 {
-		m.AddRow(10,
+		m.AddRow(
+			10,
 			text.NewCol(4, headers[0], props.Text{Style: fontstyle.Bold, Size: 9}),
 			text.NewCol(4, headers[1], props.Text{Style: fontstyle.Bold, Size: 9}),
 			text.NewCol(4, headers[2], props.Text{Style: fontstyle.Bold, Size: 9, Align: align.Right}),
 		)
 	} else {
-		m.AddRow(10,
+		m.AddRow(
+			10,
 			text.NewCol(3, headers[0], props.Text{Style: fontstyle.Bold, Size: 9}),
 			text.NewCol(4, headers[1], props.Text{Style: fontstyle.Bold, Size: 9}),
 			text.NewCol(3, headers[2], props.Text{Style: fontstyle.Bold, Size: 9, Align: align.Right}),
@@ -433,13 +440,15 @@ func (s *service) addWasteSection(m core.Maroto, title string, headers []string)
 
 func (s *service) addWasteRow(m core.Maroto, values []string) {
 	if len(values) == 3 {
-		m.AddRow(8,
+		m.AddRow(
+			8,
 			text.NewCol(4, values[0], props.Text{Size: 8}),
 			text.NewCol(4, values[1], props.Text{Size: 8}),
 			text.NewCol(4, values[2], props.Text{Size: 8, Align: align.Right}),
 		)
 	} else {
-		m.AddRow(8,
+		m.AddRow(
+			8,
 			text.NewCol(3, values[0], props.Text{Size: 8}),
 			text.NewCol(4, values[1], props.Text{Size: 8}),
 			text.NewCol(3, values[2], props.Text{Size: 8, Align: align.Right}),

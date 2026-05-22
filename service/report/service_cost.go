@@ -26,7 +26,8 @@ func (s *service) addCostTableHeader(m core.Maroto, input model.RenderCostCompar
 	lastMonthLabel := s.formatDateToMonthYear(input.LastMonth.Start)
 	currentMonthLabel := s.formatDateToMonthYear(input.CurrentMonth.Start)
 
-	m.AddRow(12,
+	m.AddRow(
+		12,
 		text.NewCol(4, "Service", props.Text{Style: fontstyle.Bold, Size: 10}),
 		col.New(3).Add(
 			text.New(fmt.Sprintf("%s (%s)", lastMonthLabel, unit), props.Text{Style: fontstyle.Bold, Size: 10, Align: align.Right}),
@@ -51,7 +52,8 @@ func (s *service) addCostTotalRow(m core.Maroto, input model.RenderCostCompariso
 		totalColor = &props.Color{Red: 200, Green: 0, Blue: 0} // Red
 	}
 
-	m.AddRow(8,
+	m.AddRow(
+		8,
 		text.NewCol(4, "Total Costs", props.Text{Style: fontstyle.Bold, Size: 10, Color: totalColor}),
 		text.NewCol(3, fmt.Sprintf("%.2f", lastTotalAmount), props.Text{Size: 10, Align: align.Right}),
 		text.NewCol(3, fmt.Sprintf("%.2f", currentTotalAmount), props.Text{Size: 10, Align: align.Right, Color: totalColor}),
@@ -71,7 +73,8 @@ func (s *service) addCostServiceBreakdown(m core.Maroto, input model.RenderCostC
 			rowColor = &props.Color{Red: 200, Green: 0, Blue: 0} // Red
 		}
 
-		m.AddRow(8,
+		m.AddRow(
+			8,
 			text.NewCol(4, currentSvc.Name, props.Text{Size: 9, Color: rowColor}),
 			text.NewCol(3, fmt.Sprintf("%.2f", lastMonthGroup.Amount), props.Text{Size: 9, Align: align.Right}),
 			text.NewCol(3, fmt.Sprintf("%.2f", currentSvc.Amount), props.Text{Size: 9, Align: align.Right, Color: rowColor}),
