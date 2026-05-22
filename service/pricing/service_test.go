@@ -486,3 +486,21 @@ func TestPriceKey(t *testing.T) {
 	assert.Equal(t, "ebs:gp3", priceKey("ebs", "gp3"))
 	assert.Equal(t, "nat", priceKey("nat", ""))
 }
+
+func TestCalculateECRStorageMonthlyCost(t *testing.T) {
+	s := &service{}
+
+	cost := s.CalculateECRStorageMonthlyCost(100.0) // 100 GB
+	if cost <= 0 {
+		t.Errorf("Expected positive cost for ECR storage, got %f", cost)
+	}
+}
+
+func TestCalculateSecretsManagerMonthlyCost(t *testing.T) {
+	s := &service{}
+
+	cost := s.CalculateSecretsManagerMonthlyCost(10) // 10 secrets
+	if cost <= 0 {
+		t.Errorf("Expected positive cost for Secrets Manager, got %f", cost)
+	}
+}

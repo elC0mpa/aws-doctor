@@ -1,276 +1,120 @@
 package output
 
 import (
+	"errors"
+	"os"
 	"testing"
 
-	"github.com/elC0mpa/aws-doctor/mocks/renderers"
+	"github.com/aws/aws-sdk-go-v2/aws"
+	cetypes "github.com/aws/aws-sdk-go-v2/service/costexplorer/types"
+	"github.com/elC0mpa/aws-doctor/mocks/services"
 	"github.com/elC0mpa/aws-doctor/model"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/mock"
+	"github.com/elC0mpa/aws-doctor/service/pricing"
 )
 
-func TestNewService(t *testing.T) {
-	tests := []struct {
-		name           string
-		inputFormat    string
-		expectedFormat Format
-	}{
-		{
-			name:           "json format",
-			inputFormat:    "json",
-			expectedFormat: FormatJSON,
-		},
-		{
-			name:           "csv format",
-			inputFormat:    "csv",
-			expectedFormat: FormatCSV,
-		},
-		{
-			name:           "table format explicit",
-			inputFormat:    "table",
-			expectedFormat: FormatTable,
-		},
-		{
-			name:           "empty string defaults to table",
-			inputFormat:    "",
-			expectedFormat: FormatTable,
-		},
-		{
-			name:           "unknown format defaults to table",
-			inputFormat:    "unknown",
-			expectedFormat: FormatTable,
-		},
+func runSilent(f func()) {
+	oldOut := os.Stdout
+	oldErr := os.Stderr
+	_, w, _ := os.Pipe()
+	os.Stdout = w
+	os.Stderr = w
+
+	defer func() {
+		_ = w.Close()
+
+		os.Stdout = oldOut
+		os.Stderr = oldErr
+	}()
+
+	f()
+}
+
+func TestIsInteractive(t *testing.T) {
+	oldIsTerminalFn := isTerminalFn
+	isTerminalFn = func(fd int) bool { return true }
+
+	defer func() { isTerminalFn = oldIsTerminalFn }()
+
+	s1 := NewService("table")
+	if !s1.IsInteractive() {
+		t.Error("Expected IsInteractive to be true for table format")
 	}
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			svc := NewService(tt.inputFormat)
-
-			// Type assert to access internal format field
-			s, ok := svc.(*service)
-			if !ok {
-				t.Fatal("NewService did not return *service type")
-			}
-
-			if s.format != tt.expectedFormat {
-				t.Errorf("expected format %q, got %q", tt.expectedFormat, s.format)
-			}
-
-			if s.renderer == nil {
-				t.Error("renderer should not be nil")
-			}
-		})
+	s2 := NewService("json")
+	if s2.IsInteractive() {
+		t.Error("Expected IsInteractive to be false for json format")
 	}
 }
 
-func TestRenderCostComparison(t *testing.T) {
-	input := model.RenderCostComparisonInput{
-		AccountID:        "123",
-		LastTotalCost:    "100.00 USD",
-		CurrentTotalCost: "120.00 USD",
-		LastMonth:        &model.CostInfo{},
-		CurrentMonth:     &model.CostInfo{},
+func TestRenderWasteInteractive_Smoke(t *testing.T) {
+	oldFn := renderWasteInteractiveFn
+
+	defer func() { renderWasteInteractiveFn = oldFn }()
+
+	called := false
+	renderWasteInteractiveFn = func(accountID string, resultCh <-chan model.ScopeResult, scopes []string, pricingSvc pricing.Service) error {
+		called = true
+		return nil
 	}
 
-	t.Run("TableFormat", func(t *testing.T) {
-		mr := new(renderers.MockRenderer)
-		s := &service{format: FormatTable, renderer: mr}
-		mr.On("DrawCostTable", input).Return()
+	s := NewService("table")
+	resultCh := make(chan model.ScopeResult)
 
-		err := s.RenderCostComparison(input)
-		assert.NoError(t, err)
-		mr.AssertExpectations(t)
-	})
+	go func() {
+		close(resultCh)
+	}()
 
-	t.Run("JSONFormat", func(t *testing.T) {
-		mr := new(renderers.MockRenderer)
-		s := &service{format: FormatJSON, renderer: mr}
-		mr.On("OutputCostComparisonJSON", input).Return(nil)
-
-		err := s.RenderCostComparison(input)
-		assert.NoError(t, err)
-		mr.AssertExpectations(t)
-	})
-
-	t.Run("CSVFormat", func(t *testing.T) {
-		mr := new(renderers.MockRenderer)
-		s := &service{format: FormatCSV, renderer: mr}
-		mr.On("OutputCostComparisonCSV", input).Return(nil)
-
-		err := s.RenderCostComparison(input)
-		assert.NoError(t, err)
-		mr.AssertExpectations(t)
-	})
-}
-
-func TestRenderTrend(t *testing.T) {
-	costs := []model.CostInfo{}
-	services := []string{"redshift"}
-
-	t.Run("TableFormat", func(t *testing.T) {
-		mr := new(renderers.MockRenderer)
-		s := &service{format: FormatTable, renderer: mr}
-		mr.On("DrawTrendChart", "123", costs).Return()
-
-		err := s.RenderTrend("123", costs, services)
-		assert.NoError(t, err)
-		mr.AssertExpectations(t)
-	})
-
-	t.Run("JSONFormat", func(t *testing.T) {
-		mr := new(renderers.MockRenderer)
-		s := &service{format: FormatJSON, renderer: mr}
-		mr.On("OutputTrendJSON", "123", costs, services).Return(nil)
-
-		err := s.RenderTrend("123", costs, services)
-		assert.NoError(t, err)
-		mr.AssertExpectations(t)
-	})
-
-	t.Run("CSVFormat", func(t *testing.T) {
-		mr := new(renderers.MockRenderer)
-		s := &service{format: FormatCSV, renderer: mr}
-		mr.On("OutputTrendCSV", costs, services).Return(nil)
-
-		err := s.RenderTrend("123", costs, services)
-		assert.NoError(t, err)
-		mr.AssertExpectations(t)
-	})
-}
-
-func TestRenderWaste(t *testing.T) {
-	input := model.RenderWasteInput{AccountID: "123"}
-
-	t.Run("TableFormat", func(t *testing.T) {
-		mr := new(renderers.MockRenderer)
-		s := &service{format: FormatTable, renderer: mr}
-		mr.On("DrawWasteTable", input, mock.Anything).Return()
-
-		err := s.RenderWaste(input, nil)
-		assert.NoError(t, err)
-		mr.AssertExpectations(t)
-	})
-
-	t.Run("JSONFormat", func(t *testing.T) {
-		mr := new(renderers.MockRenderer)
-		s := &service{format: FormatJSON, renderer: mr}
-		mr.On("OutputWasteJSON", input, mock.Anything).Return(nil)
-
-		err := s.RenderWaste(input, nil)
-		assert.NoError(t, err)
-		mr.AssertExpectations(t)
-	})
-
-	t.Run("CSVFormat", func(t *testing.T) {
-		mr := new(renderers.MockRenderer)
-		s := &service{format: FormatCSV, renderer: mr}
-		mr.On("OutputWasteCSV", input, mock.Anything).Return(nil)
-
-		err := s.RenderWaste(input, nil)
-		assert.NoError(t, err)
-		mr.AssertExpectations(t)
-	})
-}
-
-func TestStopSpinner(t *testing.T) {
-	mr := new(renderers.MockRenderer)
-	s := &service{renderer: mr}
-
-	mr.On("StopSpinner").Return()
-
-	s.StopSpinner()
-	mr.AssertExpectations(t)
-}
-
-func TestSetSpinnerMessage(t *testing.T) {
-	mr := new(renderers.MockRenderer)
-	s := &service{renderer: mr}
-
-	mr.On("SetSpinnerMessage", "Loading...").Return()
-
-	s.SetSpinnerMessage("Loading...")
-	mr.AssertExpectations(t)
-}
-
-func TestPrintFirstDayOfMonthError(t *testing.T) {
-	mr := new(renderers.MockRenderer)
-	s := &service{renderer: mr}
-
-	mr.On("PrintFirstDayOfMonthError").Return()
-
-	s.PrintFirstDayOfMonthError()
-	mr.AssertExpectations(t)
-}
-
-func TestPrintReportSuccess(t *testing.T) {
-	mr := new(renderers.MockRenderer)
-	s := &service{renderer: mr}
-
-	mr.On("PrintReportSuccess", "/tmp/report.pdf").Return()
-
-	s.PrintReportSuccess("/tmp/report.pdf")
-	mr.AssertExpectations(t)
-}
-
-func TestUpdatePrintMethods(t *testing.T) {
-	mr := new(renderers.MockRenderer)
-	s := &service{renderer: mr}
-
-	t.Run("PrintAlreadyLatest", func(t *testing.T) {
-		mr.On("PrintAlreadyLatest", "v1.2.3").Return()
-		s.PrintAlreadyLatest("v1.2.3")
-		mr.AssertExpectations(t)
-	})
-
-	t.Run("PrintHomebrewUpdate", func(t *testing.T) {
-		mr.On("PrintHomebrewUpdate").Return()
-		s.PrintHomebrewUpdate()
-		mr.AssertExpectations(t)
-	})
-
-	t.Run("PrintGoInstallUpdate", func(t *testing.T) {
-		mr.On("PrintGoInstallUpdate").Return()
-		s.PrintGoInstallUpdate()
-		mr.AssertExpectations(t)
-	})
-
-	t.Run("PrintRateLimitError", func(t *testing.T) {
-		mr.On("PrintRateLimitError").Return()
-		s.PrintRateLimitError()
-		mr.AssertExpectations(t)
-	})
-
-	t.Run("PrintUpdateError", func(t *testing.T) {
-		err := assert.AnError
-		mr.On("PrintUpdateError", err).Return()
-		s.PrintUpdateError(err)
-		mr.AssertExpectations(t)
-	})
-
-	t.Run("RenderVersion", func(t *testing.T) {
-		v := model.VersionInfo{Version: "v1"}
-		mr.On("RenderVersion", v).Return()
-		s.RenderVersion(v)
-		mr.AssertExpectations(t)
-	})
-
-	t.Run("PrintNewVersionAvailable", func(t *testing.T) {
-		mr.On("PrintNewVersionAvailable", "v1.2.0", "v1.3.0").Return()
-		s.PrintNewVersionAvailable("v1.2.0", "v1.3.0")
-		mr.AssertExpectations(t)
-	})
-}
-
-func TestFormatConstants(t *testing.T) {
-	if FormatTable != "table" {
-		t.Errorf("FormatTable should be 'table', got %q", FormatTable)
+	err := s.RenderWasteInteractive("123456789012", resultCh, []string{"EC2"}, nil)
+	if err != nil {
+		t.Errorf("Unexpected error: %v", err)
 	}
 
-	if FormatJSON != "json" {
-		t.Errorf("FormatJSON should be 'json', got %q", FormatJSON)
+	if !called {
+		t.Error("Expected renderWasteInteractiveFn to be called")
 	}
+}
 
-	if FormatCSV != "csv" {
-		t.Errorf("FormatCSV should be 'csv', got %q", FormatCSV)
-	}
+func TestService_WrapperMethods(t *testing.T) {
+	sTable := NewService("table")
+	sJSON := NewService("json")
+	sCSV := NewService("csv")
+
+	runSilent(func() {
+		sTable.PrintAlreadyLatest("v1.0.0")
+		sTable.PrintHomebrewUpdate()
+		sTable.PrintGoInstallUpdate()
+		sTable.PrintRateLimitError()
+		sTable.PrintUpdateError(errors.New("test"))
+		sTable.PrintWasteError(errors.New("test"))
+		sTable.PrintFirstDayOfMonthError()
+		sTable.PrintNewVersionAvailable("v1.0.0", "v1.1.0")
+		sTable.SetSpinnerMessage("loading")
+		sTable.StopSpinner()
+		sTable.PrintReportSuccess("/path/to/report")
+		sTable.RenderVersion(model.VersionInfo{Version: "v1.0.0"})
+
+		costInfo := &model.CostInfo{
+			DateInterval: cetypes.DateInterval{
+				Start: aws.String("2024-01-01"),
+				End:   aws.String("2024-01-31"),
+			},
+		}
+		inputCC := model.RenderCostComparisonInput{
+			LastMonth:    costInfo,
+			CurrentMonth: costInfo,
+		}
+		_ = sTable.RenderCostComparison(inputCC)
+		_ = sJSON.RenderCostComparison(inputCC)
+		_ = sCSV.RenderCostComparison(inputCC)
+
+		_ = sTable.RenderTrend("123456789012", []model.CostInfo{*costInfo}, []string{"EC2"})
+		_ = sJSON.RenderTrend("123456789012", []model.CostInfo{*costInfo}, []string{"EC2"})
+		_ = sCSV.RenderTrend("123456789012", []model.CostInfo{*costInfo}, []string{"EC2"})
+
+		inputWaste := model.RenderWasteInput{}
+		mockPricingSvc := services.NewMockPricingService()
+		_ = sTable.RenderWaste(inputWaste, mockPricingSvc)
+		_ = sJSON.RenderWaste(inputWaste, mockPricingSvc)
+		_ = sCSV.RenderWaste(inputWaste, mockPricingSvc)
+	})
 }

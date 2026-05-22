@@ -50,6 +50,13 @@ func TestRealRenderer_PrintMethods(t *testing.T) {
 		assert.Contains(t, output, "failed to check for updates")
 	})
 
+	t.Run("PrintWasteError", func(t *testing.T) {
+		output := captureStdout(func() {
+			r.PrintWasteError(assert.AnError)
+		})
+		assert.Contains(t, output, "failed to run interactive waste rendering")
+	})
+
 	t.Run("RenderVersion", func(t *testing.T) {
 		v := model.VersionInfo{Version: "v1.2.3", Commit: "abc", Date: "today"}
 		output := captureStdout(func() {

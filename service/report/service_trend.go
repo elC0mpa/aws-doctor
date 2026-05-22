@@ -36,7 +36,8 @@ func (s *service) addTrendContent(m core.Maroto, costInfo []model.CostInfo, serv
 
 		// Calculate dynamic height (approx 100 chars per line at size 9)
 		numLines := (len(servicesLabel) / 100) + 1
-		m.AddRow(float64(numLines*7),
+		m.AddRow(
+			float64(numLines*7),
 			text.NewCol(12, servicesLabel, props.Text{
 				Size:  9,
 				Style: fontstyle.Italic,
@@ -52,7 +53,8 @@ func (s *service) addTrendContent(m core.Maroto, costInfo []model.CostInfo, serv
 		return fmt.Errorf("failed to generate trend chart: %w", err)
 	}
 
-	m.AddRow(80,
+	m.AddRow(
+		80,
 		image.NewFromBytesCol(12, chartBytes, extension.Png),
 	)
 
@@ -149,7 +151,8 @@ func (s *service) generateTrendChartImage(costInfo []model.CostInfo) ([]byte, er
 }
 
 func (s *service) addTrendBreakdownTable(m core.Maroto, costInfo []model.CostInfo) {
-	m.AddRow(10,
+	m.AddRow(
+		10,
 		text.NewCol(12, "Monthly Total Costs Breakdown", props.Text{Style: fontstyle.Bold, Size: 11}),
 	)
 

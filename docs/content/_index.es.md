@@ -76,7 +76,7 @@ layout: "hextra-home"
   {{< hextra/feature-card
     icon="terminal"
     title="Formatos de Salida"
-    subtitle="Elija el formato que mejor se adapte a su flujo de trabajo. Use tablas enriquecidas en la terminal para auditorías manuales rápidas, o genere una salida JSON estructurada para integrarla en sus pipelines de CI/CD."
+    subtitle="Elija el formato que mejor se adapte a su flujo de trabajo. Experimente una interfaz interactiva de terminal para auditorías manuales, o genere salida JSON estructurada para integrarla en sus pipelines de CI/CD."
     link="docs/usage/"
   >}}
 

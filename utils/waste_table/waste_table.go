@@ -2,7 +2,8 @@ package wastetable
 
 import (
 	"fmt"
-	"os"
+	"io"
+	"strings"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	ec2types "github.com/aws/aws-sdk-go-v2/service/ec2/types"
@@ -16,22 +17,22 @@ import (
 )
 
 // DrawWasteTable renders a table containing detected AWS waste.
-func DrawWasteTable(input model.RenderWasteInput, pricingSvc pricing.Service) {
-	drawHeader(input.AccountID)
+func DrawWasteTable(out io.Writer, input model.RenderWasteInput, pricingSvc pricing.Service) {
+	drawHeader(out, input.AccountID)
 
 	if !hasAnyWaste(input) {
-		fmt.Println("\n" + text.FgHiGreen.Sprint(" ✅  Your account is healthy! No waste found."))
+		_, _ = fmt.Fprintln(out, "\n"+text.FgHiGreen.Sprint(" ✅  Your account is healthy! No waste found."))
 		return
 	}
 
-	drawWasteSections(input, pricingSvc)
-	drawSummaryTable(input, pricingSvc)
+	drawWasteSections(out, input, pricingSvc)
+	drawSummaryTable(out, input, pricingSvc)
 }
 
-func drawHeader(accountID string) {
-	fmt.Printf("\n%s\n", text.FgHiWhite.Sprint(" 🏥 AWS DOCTOR CHECKUP"))
-	fmt.Printf(" Account ID: %s\n", text.FgBlue.Sprint(accountID))
-	fmt.Println(text.FgHiBlue.Sprint(" ------------------------------------------------"))
+func drawHeader(out io.Writer, accountID string) {
+	_, _ = fmt.Fprintf(out, "\n%s\n", text.FgHiWhite.Sprint(" 🏥 AWS DOCTOR CHECKUP"))
+	_, _ = fmt.Fprintf(out, " Account ID: %s\n", text.FgBlue.Sprint(accountID))
+	_, _ = fmt.Fprintln(out, text.FgHiBlue.Sprint(" ------------------------------------------------"))
 }
 
 func hasAnyWaste(input model.RenderWasteInput) bool {
@@ -85,69 +86,47 @@ func hasECRWaste(input model.RenderWasteInput) bool {
 		len(input.ECRUntaggedImages) > 0
 }
 
-func drawWasteSections(input model.RenderWasteInput, pricingSvc pricing.Service) {
-	drawStorageSections(input, pricingSvc)
-	drawNetworkSections(input, pricingSvc)
-	drawComputeSections(input)
-	drawDatabaseSections(input)
-	drawServerlessSections(input)
-	drawContainerSections(input)
-	drawSecretsManagerSections(input, pricingSvc)
+func drawWasteSections(out io.Writer, input model.RenderWasteInput, pricingSvc pricing.Service) {
+	drawStorageSections(out, input, pricingSvc)
+	drawNetworkSections(out, input, pricingSvc)
+	drawComputeSections(out, input)
+	drawDatabaseSections(out, input)
+	drawServerlessSections(out, input)
+	drawContainerSections(out, input)
+	drawSecretsManagerSections(out, input, pricingSvc)
 }
 
-func drawStorageSections(input model.RenderWasteInput, pricingSvc pricing.Service) {
-	if len(input.UnusedVolumes) > 0 || len(input.StoppedVolumes) > 0 {
-		drawEBSTable(input.UnusedVolumes, input.StoppedVolumes, pricingSvc)
-	}
+func drawStorageSections(out io.Writer, input model.RenderWasteInput, pricingSvc pricing.Service) {
+	drawEBSTable(out, input.UnusedVolumes, input.StoppedVolumes, pricingSvc)
 
-	if len(input.S3Buckets) > 0 || len(input.S3MultipartUploads) > 0 {
-		drawS3Table(input.S3Buckets, input.S3MultipartUploads)
-	}
+	drawS3Table(out, input.S3Buckets, input.S3MultipartUploads)
 
-	if len(input.OrphanedSnapshots) > 0 {
-		drawSnapshotTable(input.OrphanedSnapshots)
-	}
+	drawSnapshotTable(out, input.OrphanedSnapshots)
 }
 
-func drawNetworkSections(input model.RenderWasteInput, pricingSvc pricing.Service) {
-	if len(input.ElasticIPs) > 0 {
-		drawElasticIPTable(input.ElasticIPs, pricingSvc)
-	}
+func drawNetworkSections(out io.Writer, input model.RenderWasteInput, pricingSvc pricing.Service) {
+	drawElasticIPTable(out, input.ElasticIPs, pricingSvc)
 
-	if len(input.LoadBalancers) > 0 || len(input.IdleLoadBalancers) > 0 {
-		drawLoadBalancerTable(input.LoadBalancers, input.IdleLoadBalancers, pricingSvc)
-	}
+	drawLoadBalancerTable(out, input.LoadBalancers, input.IdleLoadBalancers, pricingSvc)
 
-	if len(input.IdleNATGateways) > 0 {
-		drawNatGatewayTable(input.IdleNATGateways)
-	}
+	drawNatGatewayTable(out, input.IdleNATGateways)
 }
 
-func drawComputeSections(input model.RenderWasteInput) {
-	if len(input.StoppedInstances) > 0 || len(input.Ris) > 0 {
-		drawEC2Table(input.StoppedInstances, input.Ris)
-	}
+func drawComputeSections(out io.Writer, input model.RenderWasteInput) {
+	drawEC2Table(out, input.StoppedInstances, input.Ris)
 
-	if len(input.IdleEC2Instances) > 0 {
-		drawIdleEC2Table(input.IdleEC2Instances)
-	}
+	drawIdleEC2Table(out, input.IdleEC2Instances)
 
-	if len(input.UnusedAMIs) > 0 {
-		drawAMITable(input.UnusedAMIs)
-	}
+	drawAMITable(out, input.UnusedAMIs)
 
-	if len(input.UnusedKeyPairs) > 0 {
-		drawKeyPairTable(input.UnusedKeyPairs)
-	}
+	drawKeyPairTable(out, input.UnusedKeyPairs)
 
-	if len(input.CloudWatchLogGroups) > 0 {
-		drawCloudWatchLogsTable(input.CloudWatchLogGroups)
-	}
+	drawCloudWatchLogsTable(out, input.CloudWatchLogGroups)
 }
 
-func drawIdleEC2Table(instances []model.EC2IdleInstanceInfo) {
+func drawIdleEC2Table(out io.Writer, instances []model.EC2IdleInstanceInfo) {
 	t := table.NewWriter()
-	t.SetOutputMirror(os.Stdout)
+	t.SetOutputMirror(out)
 	t.SetStyle(table.StyleRounded)
 	t.SetTitle("Idle EC2 Instance Waste")
 
@@ -165,8 +144,12 @@ func drawIdleEC2Table(instances []model.EC2IdleInstanceInfo) {
 	}
 
 	t.AppendRows(rows)
-	t.Render()
-	fmt.Println()
+
+	if t.Length() > 0 {
+		t.Render()
+
+		_, _ = fmt.Fprintln(out)
+	}
 }
 
 func populateIdleEC2Rows(instances []model.EC2IdleInstanceInfo) []table.Row {
@@ -186,37 +169,27 @@ func populateIdleEC2Rows(instances []model.EC2IdleInstanceInfo) []table.Row {
 	return rows
 }
 
-func drawDatabaseSections(input model.RenderWasteInput) {
-	if len(input.RDSInstances) > 0 || len(input.RDSSnapshots) > 0 || len(input.RDSIdleInstances) > 0 {
-		drawRDSTable(input.RDSInstances, input.RDSSnapshots, input.RDSIdleInstances)
-	}
+func drawDatabaseSections(out io.Writer, input model.RenderWasteInput) {
+	drawRDSTable(out, input.RDSInstances, input.RDSSnapshots, input.RDSIdleInstances)
 }
 
-func drawServerlessSections(input model.RenderWasteInput) {
-	if len(input.OverProvisionedLambdas) > 0 {
-		drawLambdaTable(input.OverProvisionedLambdas)
-	}
+func drawServerlessSections(out io.Writer, input model.RenderWasteInput) {
+	drawLambdaTable(out, input.OverProvisionedLambdas)
 
-	if len(input.IdleSageMakerEndpoints) > 0 {
-		drawSageMakerTable(input.IdleSageMakerEndpoints)
-	}
+	drawSageMakerTable(out, input.IdleSageMakerEndpoints)
 }
 
-func drawContainerSections(input model.RenderWasteInput) {
-	if len(input.ECRNoLifecyclePolicies) > 0 || len(input.ECREmptyRepositories) > 0 || len(input.ECRUntaggedImages) > 0 {
-		drawECRTable(input.ECRNoLifecyclePolicies, input.ECREmptyRepositories, input.ECRUntaggedImages)
-	}
+func drawContainerSections(out io.Writer, input model.RenderWasteInput) {
+	drawECRTable(out, input.ECRNoLifecyclePolicies, input.ECREmptyRepositories, input.ECRUntaggedImages)
 }
 
-func drawSecretsManagerSections(input model.RenderWasteInput, pricingSvc pricing.Service) {
-	if len(input.UnusedSecrets) > 0 {
-		drawSecretsManagerTable(input.UnusedSecrets, pricingSvc)
-	}
+func drawSecretsManagerSections(out io.Writer, input model.RenderWasteInput, pricingSvc pricing.Service) {
+	drawSecretsManagerTable(out, input.UnusedSecrets, pricingSvc)
 }
 
-func drawSecretsManagerTable(secrets []model.UnusedSecretInfo, pricingSvc pricing.Service) {
+func drawSecretsManagerTable(out io.Writer, secrets []model.UnusedSecretInfo, pricingSvc pricing.Service) {
 	t := table.NewWriter()
-	t.SetOutputMirror(os.Stdout)
+	t.SetOutputMirror(out)
 	t.SetStyle(table.StyleRounded)
 	t.SetTitle("Secrets Manager Waste")
 
@@ -233,13 +206,14 @@ func drawSecretsManagerTable(secrets []model.UnusedSecretInfo, pricingSvc pricin
 
 	if t.Length() > 0 {
 		t.Render()
-		fmt.Println()
+
+		_, _ = fmt.Fprintln(out)
 	}
 }
 
-func drawEBSTable(unusedEBSVolumeInfo []ec2types.Volume, attachedToStoppedInstancesEBSVolumeInfo []ec2types.Volume, pricingSvc pricing.Service) {
+func drawEBSTable(out io.Writer, unusedEBSVolumeInfo []ec2types.Volume, attachedToStoppedInstancesEBSVolumeInfo []ec2types.Volume, pricingSvc pricing.Service) {
 	t := table.NewWriter()
-	t.SetOutputMirror(os.Stdout)
+	t.SetOutputMirror(out)
 	t.SetStyle(table.StyleRounded)
 	t.SetTitle("EBS Volume Waste")
 
@@ -276,13 +250,14 @@ func drawEBSTable(unusedEBSVolumeInfo []ec2types.Volume, attachedToStoppedInstan
 
 	if t.Length() > 0 {
 		t.Render()
-		fmt.Println()
+
+		_, _ = fmt.Fprintln(out)
 	}
 }
 
-func drawEC2Table(instances []ec2types.Instance, ris []model.RiExpirationInfo) {
+func drawEC2Table(out io.Writer, instances []ec2types.Instance, ris []model.RiExpirationInfo) {
 	t := table.NewWriter()
-	t.SetOutputMirror(os.Stdout)
+	t.SetOutputMirror(out)
 	t.SetStyle(table.StyleRounded)
 	t.SetTitle("EC2 & Reserved Instance Waste")
 
@@ -348,13 +323,16 @@ func drawEC2Table(instances []ec2types.Instance, ris []model.RiExpirationInfo) {
 		}
 	}
 
-	t.Render()
-	fmt.Println()
+	if t.Length() > 0 {
+		t.Render()
+
+		_, _ = fmt.Fprintln(out)
+	}
 }
 
-func drawElasticIPTable(elasticIPInfo []ec2types.Address, pricingSvc pricing.Service) {
+func drawElasticIPTable(out io.Writer, elasticIPInfo []ec2types.Address, pricingSvc pricing.Service) {
 	t := table.NewWriter()
-	t.SetOutputMirror(os.Stdout)
+	t.SetOutputMirror(out)
 	t.SetStyle(table.StyleRounded)
 	t.SetTitle("Elastic IP Waste")
 
@@ -369,8 +347,12 @@ func drawElasticIPTable(elasticIPInfo []ec2types.Address, pricingSvc pricing.Ser
 	}
 
 	t.AppendRows(rows)
-	t.Render()
-	fmt.Println()
+
+	if t.Length() > 0 {
+		t.Render()
+
+		_, _ = fmt.Fprintln(out)
+	}
 }
 
 func populateEBSRows(volumes []ec2types.Volume, status string, pricingSvc pricing.Service) []table.Row {
@@ -432,9 +414,9 @@ func populateRiRows(ris []model.RiExpirationInfo) []table.Row {
 	return rows
 }
 
-func drawLoadBalancerTable(loadBalancers []elbtypes.LoadBalancer, idleLoadBalancers []model.ELBIdleInfo, pricingSvc pricing.Service) {
+func drawLoadBalancerTable(out io.Writer, loadBalancers []elbtypes.LoadBalancer, idleLoadBalancers []model.ELBIdleInfo, pricingSvc pricing.Service) {
 	t := table.NewWriter()
-	t.SetOutputMirror(os.Stdout)
+	t.SetOutputMirror(out)
 	t.SetStyle(table.StyleRounded)
 	t.SetTitle("Load Balancer Waste")
 
@@ -476,8 +458,11 @@ func drawLoadBalancerTable(loadBalancers []elbtypes.LoadBalancer, idleLoadBalanc
 		t.AppendRows(rows)
 	}
 
-	t.Render()
-	fmt.Println()
+	if t.Length() > 0 {
+		t.Render()
+
+		_, _ = fmt.Fprintln(out)
+	}
 }
 
 func populateIdleLoadBalancerRows(idleLBs []model.ELBIdleInfo) []table.Row {
@@ -505,9 +490,9 @@ func populateLoadBalancerRows(loadBalancers []elbtypes.LoadBalancer, pricingSvc 
 	return rows
 }
 
-func drawAMITable(amis []model.AMIWasteInfo) {
+func drawAMITable(out io.Writer, amis []model.AMIWasteInfo) {
 	t := table.NewWriter()
-	t.SetOutputMirror(os.Stdout)
+	t.SetOutputMirror(out)
 	t.SetStyle(table.StyleRounded)
 	t.SetTitle("Unused AMI Waste (Verify before delete - may be used by ASGs/Launch Templates)")
 
@@ -527,8 +512,9 @@ func drawAMITable(amis []model.AMIWasteInfo) {
 
 	t.AppendRows(rows)
 	t.Render()
-	fmt.Println(text.FgHiYellow.Sprint(" * Warning: AMIs may be referenced by Auto Scaling Groups or Launch Templates"))
-	fmt.Println()
+
+	_, _ = fmt.Fprintln(out, text.FgHiYellow.Sprint(" * Warning: AMIs may be referenced by Auto Scaling Groups or Launch Templates"))
+	_, _ = fmt.Fprintln(out)
 }
 
 func populateAMIRows(amis []model.AMIWasteInfo) []table.Row {
@@ -554,9 +540,9 @@ func populateAMIRows(amis []model.AMIWasteInfo) []table.Row {
 	return rows
 }
 
-func drawSnapshotTable(snapshots []model.SnapshotWasteInfo) {
+func drawSnapshotTable(out io.Writer, snapshots []model.SnapshotWasteInfo) {
 	t := table.NewWriter()
-	t.SetOutputMirror(os.Stdout)
+	t.SetOutputMirror(out)
 	t.SetStyle(table.StyleRounded)
 	t.SetTitle("EBS Snapshot Waste")
 
@@ -606,8 +592,11 @@ func drawSnapshotTable(snapshots []model.SnapshotWasteInfo) {
 		t.AppendRows(rows)
 	}
 
-	t.Render()
-	fmt.Println()
+	if t.Length() > 0 {
+		t.Render()
+
+		_, _ = fmt.Fprintln(out)
+	}
 }
 
 func populateSnapshotRows(snapshots []model.SnapshotWasteInfo) []table.Row {
@@ -627,9 +616,9 @@ func populateSnapshotRows(snapshots []model.SnapshotWasteInfo) []table.Row {
 	return rows
 }
 
-func drawKeyPairTable(keyPairs []model.KeyPairWasteInfo) {
+func drawKeyPairTable(out io.Writer, keyPairs []model.KeyPairWasteInfo) {
 	t := table.NewWriter()
-	t.SetOutputMirror(os.Stdout)
+	t.SetOutputMirror(out)
 	t.SetStyle(table.StyleRounded)
 	t.SetTitle("Unused EC2 Key Pair Waste")
 
@@ -648,13 +637,17 @@ func drawKeyPairTable(keyPairs []model.KeyPairWasteInfo) {
 	}
 
 	t.AppendRows(rows)
-	t.Render()
-	fmt.Println()
+
+	if t.Length() > 0 {
+		t.Render()
+
+		_, _ = fmt.Fprintln(out)
+	}
 }
 
-func drawNatGatewayTable(natGateways []model.NATGatewayWasteInfo) {
+func drawNatGatewayTable(out io.Writer, natGateways []model.NATGatewayWasteInfo) {
 	t := table.NewWriter()
-	t.SetOutputMirror(os.Stdout)
+	t.SetOutputMirror(out)
 	t.SetStyle(table.StyleRounded)
 	t.SetTitle(" %s ", text.FgHiYellow.Sprint("NAT Gateway Waste"))
 
@@ -668,8 +661,11 @@ func drawNatGatewayTable(natGateways []model.NATGatewayWasteInfo) {
 
 	t.AppendRows(rows)
 
-	t.Render()
-	fmt.Println()
+	if t.Length() > 0 {
+		t.Render()
+
+		_, _ = fmt.Fprintln(out)
+	}
 }
 
 func populateNatGatewayRows(natGateways []model.NATGatewayWasteInfo) []table.Row {
@@ -704,9 +700,9 @@ func populateKeyPairRows(keyPairs []model.KeyPairWasteInfo) []table.Row {
 	return rows
 }
 
-func drawS3Table(buckets []model.S3BucketWasteInfo, multipartBuckets []model.S3MultipartUploadWasteInfo) {
+func drawS3Table(out io.Writer, buckets []model.S3BucketWasteInfo, multipartBuckets []model.S3MultipartUploadWasteInfo) {
 	t := table.NewWriter()
-	t.SetOutputMirror(os.Stdout)
+	t.SetOutputMirror(out)
 	t.SetStyle(table.StyleRounded)
 	t.SetTitle("S3 Bucket Waste")
 
@@ -740,8 +736,11 @@ func drawS3Table(buckets []model.S3BucketWasteInfo, multipartBuckets []model.S3M
 		t.AppendRows(rows)
 	}
 
-	t.Render()
-	fmt.Println()
+	if t.Length() > 0 {
+		t.Render()
+
+		_, _ = fmt.Fprintln(out)
+	}
 }
 
 func populateS3Rows(buckets []model.S3BucketWasteInfo) []table.Row {
@@ -774,9 +773,9 @@ func populateS3MultipartRows(buckets []model.S3MultipartUploadWasteInfo) []table
 	return rows
 }
 
-func drawCloudWatchLogsTable(logGroups []model.CloudWatchLogsWasteInfo) {
+func drawCloudWatchLogsTable(out io.Writer, logGroups []model.CloudWatchLogsWasteInfo) {
 	t := table.NewWriter()
-	t.SetOutputMirror(os.Stdout)
+	t.SetOutputMirror(out)
 	t.SetStyle(table.StyleRounded)
 	t.SetTitle("CloudWatch Log Group Waste")
 
@@ -796,8 +795,12 @@ func drawCloudWatchLogsTable(logGroups []model.CloudWatchLogsWasteInfo) {
 	}
 
 	t.AppendRows(rows)
-	t.Render()
-	fmt.Println()
+
+	if t.Length() > 0 {
+		t.Render()
+
+		_, _ = fmt.Fprintln(out)
+	}
 }
 
 func populateCloudWatchLogsRows(logGroups []model.CloudWatchLogsWasteInfo) []table.Row {
@@ -817,7 +820,7 @@ func populateCloudWatchLogsRows(logGroups []model.CloudWatchLogsWasteInfo) []tab
 	return rows
 }
 
-func drawSummaryTable(input model.RenderWasteInput, pricingSvc pricing.Service) {
+func drawSummaryTable(out io.Writer, input model.RenderWasteInput, pricingSvc pricing.Service) {
 	categories, totalCost := wastesummary.Compute(input, pricingSvc)
 
 	if len(categories) == 0 {
@@ -825,7 +828,7 @@ func drawSummaryTable(input model.RenderWasteInput, pricingSvc pricing.Service) 
 	}
 
 	t := table.NewWriter()
-	t.SetOutputMirror(os.Stdout)
+	t.SetOutputMirror(out)
 	t.SetStyle(table.StyleRounded)
 	t.SetTitle("Waste Summary")
 
@@ -852,13 +855,14 @@ func drawSummaryTable(input model.RenderWasteInput, pricingSvc pricing.Service) 
 	})
 
 	t.Render()
-	fmt.Println(text.FgHiYellow.Sprint(" * Estimates use AWS Pricing API rates for the configured region, falling back to us-east-1 defaults when unavailable."))
-	fmt.Println()
+
+	_, _ = fmt.Fprintln(out, text.FgHiYellow.Sprint(" * Estimates use AWS Pricing API rates for the configured region, falling back to us-east-1 defaults when unavailable."))
+	_, _ = fmt.Fprintln(out)
 }
 
-func drawRDSTable(instances []model.RDSInstanceWasteInfo, snapshots []model.RDSSnapshotWasteInfo, idleInstances []model.RDSIdleInstanceInfo) {
+func drawRDSTable(out io.Writer, instances []model.RDSInstanceWasteInfo, snapshots []model.RDSSnapshotWasteInfo, idleInstances []model.RDSIdleInstanceInfo) {
 	t := table.NewWriter()
-	t.SetOutputMirror(os.Stdout)
+	t.SetOutputMirror(out)
 	t.SetStyle(table.StyleRounded)
 	t.SetTitle("RDS Waste")
 
@@ -912,8 +916,11 @@ func drawRDSTable(instances []model.RDSInstanceWasteInfo, snapshots []model.RDSS
 		t.AppendRows(rows)
 	}
 
-	t.Render()
-	fmt.Println()
+	if t.Length() > 0 {
+		t.Render()
+
+		_, _ = fmt.Fprintln(out)
+	}
 }
 
 func populateRDSIdleRows(instances []model.RDSIdleInstanceInfo) []table.Row {
@@ -967,9 +974,9 @@ func populateRDSSnapshotRows(snapshots []model.RDSSnapshotWasteInfo) []table.Row
 	return rows
 }
 
-func drawLambdaTable(lambdas []model.LambdaOverProvisionedInfo) {
+func drawLambdaTable(out io.Writer, lambdas []model.LambdaOverProvisionedInfo) {
 	t := table.NewWriter()
-	t.SetOutputMirror(os.Stdout)
+	t.SetOutputMirror(out)
 	t.SetStyle(table.StyleRounded)
 	t.SetTitle("Lambda Over-Provisioned Memory")
 
@@ -991,8 +998,12 @@ func drawLambdaTable(lambdas []model.LambdaOverProvisionedInfo) {
 	}
 
 	t.AppendRows(rows)
-	t.Render()
-	fmt.Println()
+
+	if t.Length() > 0 {
+		t.Render()
+
+		_, _ = fmt.Fprintln(out)
+	}
 }
 
 func populateLambdaRows(lambdas []model.LambdaOverProvisionedInfo) []table.Row {
@@ -1014,9 +1025,9 @@ func populateLambdaRows(lambdas []model.LambdaOverProvisionedInfo) []table.Row {
 	return rows
 }
 
-func drawSageMakerTable(endpoints []model.IdleSageMakerEndpointInfo) {
+func drawSageMakerTable(out io.Writer, endpoints []model.IdleSageMakerEndpointInfo) {
 	t := table.NewWriter()
-	t.SetOutputMirror(os.Stdout)
+	t.SetOutputMirror(out)
 	t.SetStyle(table.StyleRounded)
 	t.SetTitle("SageMaker Endpoints (Idle)")
 
@@ -1036,8 +1047,12 @@ func drawSageMakerTable(endpoints []model.IdleSageMakerEndpointInfo) {
 	}
 
 	t.AppendRows(rows)
-	t.Render()
-	fmt.Println()
+
+	if t.Length() > 0 {
+		t.Render()
+
+		_, _ = fmt.Fprintln(out)
+	}
 }
 
 func populateSageMakerRows(endpoints []model.IdleSageMakerEndpointInfo) []table.Row {
@@ -1057,9 +1072,9 @@ func populateSageMakerRows(endpoints []model.IdleSageMakerEndpointInfo) []table.
 	return rows
 }
 
-func drawECRTable(noPolicy []model.ECRNoLifecyclePolicyInfo, empty []model.ECREmptyRepositoryInfo, untagged []model.ECRUntaggedImageInfo) {
+func drawECRTable(out io.Writer, noPolicy []model.ECRNoLifecyclePolicyInfo, empty []model.ECREmptyRepositoryInfo, untagged []model.ECRUntaggedImageInfo) {
 	t := table.NewWriter()
-	t.SetOutputMirror(os.Stdout)
+	t.SetOutputMirror(out)
 	t.SetStyle(table.StyleRounded)
 	t.SetTitle("ECR Repository Waste")
 
@@ -1107,8 +1122,11 @@ func drawECRTable(noPolicy []model.ECRNoLifecyclePolicyInfo, empty []model.ECREm
 		t.AppendRows(rows)
 	}
 
-	t.Render()
-	fmt.Println()
+	if t.Length() > 0 {
+		t.Render()
+
+		_, _ = fmt.Fprintln(out)
+	}
 }
 
 func populateECRNoPolicyRows(repos []model.ECRNoLifecyclePolicyInfo) []table.Row {
@@ -1160,4 +1178,44 @@ func populateECRUntaggedRows(repos []model.ECRUntaggedImageInfo) []table.Row {
 	}
 
 	return rows
+}
+
+// RenderScopeTable renders the waste table for a specific scope.
+func RenderScopeTable(scope string, input model.RenderWasteInput, pricingSvc pricing.Service) string {
+	var buf strings.Builder
+
+	out := &buf
+
+	switch scope {
+	case "EC2":
+		drawEC2Table(out, input.StoppedInstances, input.Ris)
+		drawIdleEC2Table(out, input.IdleEC2Instances)
+		drawAMITable(out, input.UnusedAMIs)
+		drawKeyPairTable(out, input.UnusedKeyPairs)
+		drawEBSTable(out, input.UnusedVolumes, input.StoppedVolumes, pricingSvc)
+		drawSnapshotTable(out, input.OrphanedSnapshots)
+		drawElasticIPTable(out, input.ElasticIPs, pricingSvc)
+	case "VPC":
+		drawNatGatewayTable(out, input.IdleNATGateways)
+	case "ELB":
+		drawLoadBalancerTable(out, input.LoadBalancers, input.IdleLoadBalancers, pricingSvc)
+	case "S3":
+		drawS3Table(out, input.S3Buckets, input.S3MultipartUploads)
+	case "CloudWatch":
+		drawCloudWatchLogsTable(out, input.CloudWatchLogGroups)
+	case "RDS":
+		drawRDSTable(out, input.RDSInstances, input.RDSSnapshots, input.RDSIdleInstances)
+	case "Lambda":
+		drawLambdaTable(out, input.OverProvisionedLambdas)
+	case "SageMaker":
+		drawSageMakerTable(out, input.IdleSageMakerEndpoints)
+	case "ECR":
+		drawECRTable(out, input.ECRNoLifecyclePolicies, input.ECREmptyRepositories, input.ECRUntaggedImages)
+	case "SecretsManager":
+		drawSecretsManagerTable(out, input.UnusedSecrets, pricingSvc)
+	case "Summary":
+		drawSummaryTable(out, input, pricingSvc)
+	}
+
+	return buf.String()
 }

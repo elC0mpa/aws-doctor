@@ -36,6 +36,8 @@ A terminal-based tool that acts as a comprehensive health check for your AWS acc
 
 *Supports selective scanning: `aws-doctor waste ec2 s3 cloudwatch rds vpc lambda sagemaker elb ecr secrets-manager`*
 
+- **Interactive Terminal UI**: Navigate seamlessly through detected waste categories using your keyboard arrows or tabs, complete with an aggregated Summary view.
+- **Graceful Degradation**: Running in CI/CD? `aws-doctor` automatically detects if it's being piped or redirected and gracefully falls back to static tables.
 ## 📄 Professional Reporting
 
 `aws-doctor` can now generate detailed, professional PDF reports ready for stakeholders. Reports include branded headers, styled tables, and comprehensive cost/waste analyses.
