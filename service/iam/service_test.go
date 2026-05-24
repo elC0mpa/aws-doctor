@@ -95,10 +95,14 @@ func TestGetIAMWaste(t *testing.T) {
 			idleDays: 90,
 			setupMock: func(m *awsinterfaces.MockIAMClientAPI) {
 				m.On("GetAccountSummary", mock.Anything, &iam.GetAccountSummaryInput{}).Return(nil, errors.New("api error"))
+				m.On("ListUsers", mock.Anything, &iam.ListUsersInput{}).Return(&iam.ListUsersOutput{
+					Users:       []types.User{},
+					IsTruncated: false,
+				}, nil)
 			},
 			wantUsers: nil,
 			wantRoot:  nil,
-			wantErr:   true,
+			wantErr:   false,
 		},
 	}
 

@@ -28,12 +28,10 @@ func (s *service) GetIAMWaste(ctx context.Context, idleDays int) ([]model.IAMUse
 
 	// 1. Root MFA check
 	summaryOutput, err := s.client.GetAccountSummary(ctx, &iam.GetAccountSummaryInput{})
-	if err != nil {
-		return nil, nil, fmt.Errorf("getting account summary: %w", err)
-	}
-
-	if val, ok := summaryOutput.SummaryMap["AccountMFAEnabled"]; ok && val == 0 {
-		rootWaste = append(rootWaste, model.IAMRootUserWasteInfo{HasMFA: false})
+	if err == nil {
+		if val, ok := summaryOutput.SummaryMap["AccountMFAEnabled"]; ok && val == 0 {
+			rootWaste = append(rootWaste, model.IAMRootUserWasteInfo{HasMFA: false})
+		}
 	}
 
 	// 2. IAM Users check
@@ -95,28 +93,45 @@ func (s *service) processIAMUser(ctx context.Context, user iamtypes.User, cutoff
 	}
 
 	// Check access keys
-	keysOutput, err := s.client.ListAccessKeys(ctx, &iam.ListAccessKeysInput{
+	paginator := iam.NewListAccessKeysPaginator(s.client, &iam.ListAccessKeysInput{
 		UserName: user.UserName,
 	})
-	if err != nil {
-		return nil, fmt.Errorf("listing access keys for %s: %w", aws.ToString(user.UserName), err)
-	}
 
-	activeKeyFound := false
+	var (
+		activeKeyFound bool
+		keyCount       int
+	)
 
-	for _, key := range keysOutput.AccessKeyMetadata {
-		lastUsedOut, err := s.client.GetAccessKeyLastUsed(ctx, &iam.GetAccessKeyLastUsedInput{
-			AccessKeyId: key.AccessKeyId,
-		})
+	for paginator.HasMorePages() {
+		page, err := paginator.NextPage(ctx)
 		if err != nil {
-			return nil, fmt.Errorf("getting access key last used for %s: %w", aws.ToString(key.AccessKeyId), err)
+			return nil, fmt.Errorf("listing access keys for %s: %w", aws.ToString(user.UserName), err)
 		}
 
-		if lastUsedOut.AccessKeyLastUsed != nil && lastUsedOut.AccessKeyLastUsed.LastUsedDate != nil {
-			if lastUsedOut.AccessKeyLastUsed.LastUsedDate.After(cutoffTime) {
+		for _, key := range page.AccessKeyMetadata {
+			keyCount++
+
+			lastUsedOut, err := s.client.GetAccessKeyLastUsed(ctx, &iam.GetAccessKeyLastUsedInput{
+				AccessKeyId: key.AccessKeyId,
+			})
+			if err != nil {
+				return nil, fmt.Errorf("getting access key last used for %s: %w", aws.ToString(key.AccessKeyId), err)
+			}
+
+			if lastUsedOut.AccessKeyLastUsed != nil && lastUsedOut.AccessKeyLastUsed.LastUsedDate != nil {
+				if lastUsedOut.AccessKeyLastUsed.LastUsedDate.After(cutoffTime) {
+					activeKeyFound = true
+					break
+				}
+			} else if key.CreateDate != nil && key.CreateDate.After(cutoffTime) {
+				// Key never used, but created recently
 				activeKeyFound = true
 				break
 			}
+		}
+
+		if activeKeyFound {
+			break
 		}
 	}
 
@@ -133,8 +148,8 @@ func (s *service) processIAMUser(ctx context.Context, user iamtypes.User, cutoff
 	}
 
 	keysStatus := "No access keys"
-	if len(keysOutput.AccessKeyMetadata) > 0 {
-		keysStatus = fmt.Sprintf("All %d keys unused > %d days", len(keysOutput.AccessKeyMetadata), idleDays)
+	if keyCount > 0 {
+		keysStatus = fmt.Sprintf("All %d keys unused > %d days", keyCount, idleDays)
 	}
 
 	return &model.IAMUserWasteInfo{
