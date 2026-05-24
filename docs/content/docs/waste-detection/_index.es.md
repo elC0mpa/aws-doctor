@@ -114,6 +114,12 @@ Agrupamos el desperdicio en categorías principales de infraestructura:
     link="configuration/"
     subtitle="Secretos de Secrets Manager no accedidos dentro del umbral de inactividad configurado."
   >}}
+  {{< hextra/feature-card
+    icon="shield"
+    title="Identidad y Seguridad"
+    link="security/"
+    subtitle="Usuarios IAM sin uso y cuentas Root sin MFA."
+  >}}
 {{< /hextra/feature-grid >}}
 
 ---

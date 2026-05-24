@@ -34,7 +34,7 @@ A terminal-based tool that acts as a comprehensive health check for your AWS acc
 ### 🧟 Waste Detection
 ![Waste Detection](https://github.com/elC0mpa/aws-doctor/blob/main/docs/static/images/demo/waste.gif?raw=true)
 
-*Supports selective scanning: `aws-doctor waste ec2 s3 cloudwatch rds vpc lambda sagemaker elb ecr secrets-manager`*
+*Supports selective scanning: `aws-doctor waste ec2 s3 cloudwatch rds vpc lambda sagemaker elb ecr secrets-manager iam`*
 
 - **Interactive Terminal UI**: Navigate seamlessly through detected waste categories using your keyboard arrows or tabs, complete with an aggregated Summary view.
 - **Graceful Degradation**: Running in CI/CD? `aws-doctor` automatically detects if it's being piped or redirected and gracefully falls back to static tables.
@@ -105,7 +105,7 @@ go install github.com/elC0mpa/aws-doctor@latest
 
 - **📄 Professional PDF Reports:** Generate branded, ready-to-share PDF documents for costs, trends, and waste analysis.
 - **📉 Fair Cost Comparison:** Compares identical time windows between months to spot real anomalies.
-- **🧟 Zombie Discovery:** Scans for idle EIPs, stopped instances, idle running EC2 instances, orphaned snapshots, idle RDS instances, idle NAT Gateways, idle Load Balancers, over-provisioned Lambda memory, idle SageMaker real-time inference endpoints, ECR repositories with untagged images, missing lifecycle policies, or no images at all, and unused Secrets Manager secrets. Supports selective service filtering (`ec2`, `s3`, `elb`, `cloudwatch`, `rds`, `vpc`, `lambda`, `sagemaker`, `ecr`, `secrets-manager`).
+- **🧟 Zombie Discovery:** Scans for idle EIPs, stopped instances, idle running EC2 instances, orphaned snapshots, idle RDS instances, idle NAT Gateways, idle Load Balancers, over-provisioned Lambda memory, idle SageMaker real-time inference endpoints, ECR repositories with untagged images, missing lifecycle policies, or no images at all, unused Secrets Manager secrets, and unused IAM users or Root accounts without MFA. Supports selective service filtering (`ec2`, `s3`, `elb`, `cloudwatch`, `rds`, `vpc`, `lambda`, `sagemaker`, `ecr`, `secrets-manager`, `iam`).
 - **📊 6-Month Trends:** High-fidelity ANSI visualization of your spending velocity.
 - **📤 Multiple Output Formats:** Export results in `table`, `json`, or `csv` for easy integration with other tools or reporting.
 - **🔔 Update Notifications:** Automatically checks for new versions in the background and notifies you after command output.

@@ -115,6 +115,12 @@ We group waste into primary infrastructure categories:
     link="configuration/"
     subtitle="Secrets Manager secrets not accessed within the configured idle threshold."
   >}}
+  {{< hextra/feature-card
+    icon="shield"
+    title="Identity & Security"
+    link="security/"
+    subtitle="Unused IAM users and Root accounts without MFA."
+  >}}
 {{< /hextra/feature-grid >}}
 
 ---
