@@ -81,7 +81,15 @@ type WasteReportJSON struct {
 	ECREmptyRepositories      []ECREmptyRepositoryJSON    `json:"ecr_empty_repositories"`
 	ECRUntaggedImages         []ECRUntaggedImageJSON      `json:"ecr_untagged_images"`
 	UnusedSecrets             []UnusedSecretJSON          `json:"unused_secrets"`
+	UnusedIAMUsers            []IAMUserWasteJSON          `json:"unused_iam_users"`
+	RootUserWaste             []IAMRootUserWasteJSON      `json:"root_user_waste"`
 }
+
+// IAMUserWasteJSON represents an unused IAM user.
+type IAMUserWasteJSON IAMUserWasteInfo
+
+// IAMRootUserWasteJSON represents the root user missing MFA.
+type IAMRootUserWasteJSON IAMRootUserWasteInfo
 
 // UnusedSecretJSON represents a secret that has not been accessed recently.
 type UnusedSecretJSON struct {

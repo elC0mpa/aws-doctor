@@ -49,6 +49,7 @@ func TestOrchestrate_RouteToDefaultWorkflow(t *testing.T) {
 		UpdateService:         mockUpdate,
 		ReportService:         mockReport,
 		VPCService:            new(services.MockVPCService),
+		IAMService:            new(services.MockIAMService),
 		VersionInfo:           model.VersionInfo{Version: "dev", Commit: "none", Date: "unknown"},
 	}
 	svc := NewService(config)
@@ -107,6 +108,7 @@ func TestOrchestrate_RouteToUpdateWorkflow(t *testing.T) {
 		UpdateService:         mockUpdate,
 		ReportService:         mockReport,
 		VPCService:            new(services.MockVPCService),
+		IAMService:            new(services.MockIAMService),
 		VersionInfo:           model.VersionInfo{Version: "dev", Commit: "none", Date: "unknown"},
 	}
 	svc := NewService(config)
@@ -154,6 +156,7 @@ func TestOrchestrate_UpdateWorkflow_HomebrewInstall(t *testing.T) {
 		UpdateService:         mockUpdate,
 		ReportService:         mockReport,
 		VPCService:            new(services.MockVPCService),
+		IAMService:            new(services.MockIAMService),
 		VersionInfo:           model.VersionInfo{Version: "v1.0.0", Commit: "abc", Date: "2024-01-01"},
 	}
 	svc := NewService(config)
@@ -217,6 +220,7 @@ func TestOrchestrate_RouteToVersionWorkflow(t *testing.T) {
 		UpdateService:         mockUpdate,
 		ReportService:         mockReport,
 		VPCService:            new(services.MockVPCService),
+		IAMService:            new(services.MockIAMService),
 		VersionInfo:           versionInfo,
 	}
 	svc := NewService(config)
@@ -266,6 +270,7 @@ func TestOrchestrate_RouteToTrendWorkflow(t *testing.T) {
 		UpdateService:         mockUpdate,
 		ReportService:         mockReport,
 		VPCService:            new(services.MockVPCService),
+		IAMService:            new(services.MockIAMService),
 		VersionInfo:           model.VersionInfo{Version: "dev", Commit: "none", Date: "unknown"},
 	}
 	svc := NewService(config)
@@ -310,6 +315,7 @@ func TestOrchestrate_RouteToWasteWorkflow(t *testing.T) {
 	mockVPC := new(services.MockVPCService)
 	mockECR := new(services.MockECRService)
 	mockSecretsManager := new(services.MockSecretsManagerService)
+	mockIAM := new(services.MockIAMService)
 	config := Config{
 		STSService:            mockSTS,
 		CostService:           mockCost,
@@ -322,6 +328,7 @@ func TestOrchestrate_RouteToWasteWorkflow(t *testing.T) {
 		LambdaService:         mockLambda,
 		SageMakerService:      mockSageMaker,
 		SecretsManagerService: mockSecretsManager,
+		IAMService:            mockIAM,
 		ECRService:            mockECR,
 		PricingService:        mockPricing,
 		OutputService:         mockOutput,
@@ -349,6 +356,7 @@ func TestOrchestrate_RouteToWasteWorkflow(t *testing.T) {
 	mockSageMaker.On("GetIdleEndpoints", mock.Anything, mock.Anything).Return([]model.IdleSageMakerEndpointInfo{}, nil)
 	mockECR.On("GetECRWaste", mock.Anything).Return([]model.ECRNoLifecyclePolicyInfo{}, []model.ECREmptyRepositoryInfo{}, []model.ECRUntaggedImageInfo{}, nil)
 	mockSecretsManager.On("GetUnusedSecrets", mock.Anything, mock.Anything).Return([]model.UnusedSecretInfo{}, nil)
+	mockIAM.On("GetIAMWaste", mock.Anything, mock.Anything).Return([]model.IAMUserWasteInfo{}, []model.IAMRootUserWasteInfo{}, nil)
 	mockSTS.On("GetCallerIdentity", mock.Anything).Return(&sts.GetCallerIdentityOutput{
 		Account: aws.String("123456789012"),
 	}, nil)
@@ -390,6 +398,7 @@ func TestOrchestrate_WasteTakesPrecedenceOverTrend(t *testing.T) {
 	mockVPC := new(services.MockVPCService)
 	mockECR := new(services.MockECRService)
 	mockSecretsManager := new(services.MockSecretsManagerService)
+	mockIAM := new(services.MockIAMService)
 	config := Config{
 		STSService:            mockSTS,
 		CostService:           mockCost,
@@ -402,6 +411,7 @@ func TestOrchestrate_WasteTakesPrecedenceOverTrend(t *testing.T) {
 		LambdaService:         mockLambda,
 		SageMakerService:      mockSageMaker,
 		SecretsManagerService: mockSecretsManager,
+		IAMService:            mockIAM,
 		ECRService:            mockECR,
 		PricingService:        mockPricing,
 		OutputService:         mockOutput,
@@ -429,6 +439,7 @@ func TestOrchestrate_WasteTakesPrecedenceOverTrend(t *testing.T) {
 	mockSageMaker.On("GetIdleEndpoints", mock.Anything, mock.Anything).Return([]model.IdleSageMakerEndpointInfo{}, nil)
 	mockECR.On("GetECRWaste", mock.Anything).Return([]model.ECRNoLifecyclePolicyInfo{}, []model.ECREmptyRepositoryInfo{}, []model.ECRUntaggedImageInfo{}, nil)
 	mockSecretsManager.On("GetUnusedSecrets", mock.Anything, mock.Anything).Return([]model.UnusedSecretInfo{}, nil)
+	mockIAM.On("GetIAMWaste", mock.Anything, mock.Anything).Return([]model.IAMUserWasteInfo{}, []model.IAMRootUserWasteInfo{}, nil)
 	mockSTS.On("GetCallerIdentity", mock.Anything).Return(&sts.GetCallerIdentityOutput{
 		Account: aws.String("123456789012"),
 	}, nil)
@@ -478,6 +489,7 @@ func TestOrchestrate_TrendWorkflow_Mapping(t *testing.T) {
 		UpdateService:         mockUpdate,
 		ReportService:         mockReport,
 		VPCService:            new(services.MockVPCService),
+		IAMService:            new(services.MockIAMService),
 		VersionInfo:           model.VersionInfo{Version: "dev", Commit: "none", Date: "unknown"},
 	}
 	svc := NewService(config)
@@ -597,6 +609,7 @@ func TestDefaultWorkflow_CostServiceError(t *testing.T) {
 				UpdateService:         mockUpdate,
 				ReportService:         mockReport,
 				VPCService:            new(services.MockVPCService),
+				IAMService:            new(services.MockIAMService),
 				VersionInfo:           model.VersionInfo{Version: "dev", Commit: "none", Date: "unknown"},
 			}
 			svc := NewService(config)
@@ -666,6 +679,7 @@ func TestTrendWorkflow_Error(t *testing.T) {
 				UpdateService:         mockUpdate,
 				ReportService:         mockReport,
 				VPCService:            new(services.MockVPCService),
+				IAMService:            new(services.MockIAMService),
 				VersionInfo:           model.VersionInfo{Version: "dev", Commit: "none", Date: "unknown"},
 			}
 			svc := NewService(config)
@@ -783,6 +797,7 @@ func TestWasteWorkflow_Error(t *testing.T) {
 			mockSageMaker := new(services.MockSageMakerService)
 			mockECR := new(services.MockECRService)
 			mockSecretsManager := new(services.MockSecretsManagerService)
+			mockIAM := new(services.MockIAMService)
 			mockPricing := new(services.MockPricingService)
 
 			tt.setupMocks(mockEC2, mockELB, mockS3, mockCloudWatch, mockRDS, mockSTS, mockVPC, mockLambda, mockSageMaker, mockECR, mockSecretsManager)
@@ -792,6 +807,7 @@ func TestWasteWorkflow_Error(t *testing.T) {
 			mockOutput.On("IsInteractive").Return(false).Maybe()
 			mockOutput.On("RenderWaste", mock.Anything, mock.Anything).Return(nil).Maybe()
 			mockUpdate.On("CheckForUpdate", mock.Anything).Return(nil, nil).Maybe()
+			mockIAM.On("GetIAMWaste", mock.Anything, mock.Anything).Return([]model.IAMUserWasteInfo{}, []model.IAMRootUserWasteInfo{}, nil).Maybe()
 
 			config := Config{
 				STSService:            mockSTS,
@@ -805,6 +821,7 @@ func TestWasteWorkflow_Error(t *testing.T) {
 				LambdaService:         mockLambda,
 				SageMakerService:      mockSageMaker,
 				SecretsManagerService: mockSecretsManager,
+				IAMService:            mockIAM,
 				ECRService:            mockECR,
 				PricingService:        mockPricing,
 				OutputService:         mockOutput,
@@ -852,6 +869,7 @@ func TestOrchestrate_RouteToReportWorkflow(t *testing.T) {
 		UpdateService:         mockUpdate,
 		ReportService:         mockReport,
 		VPCService:            new(services.MockVPCService),
+		IAMService:            new(services.MockIAMService),
 		VersionInfo:           model.VersionInfo{Version: "dev", Commit: "none", Date: "unknown"},
 	}
 	svc := NewService(config)

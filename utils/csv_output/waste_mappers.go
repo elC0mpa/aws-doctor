@@ -1,6 +1,8 @@
 package csvoutput
 
 import (
+	"fmt"
+
 	ec2types "github.com/aws/aws-sdk-go-v2/service/ec2/types"
 	elbtypes "github.com/aws/aws-sdk-go-v2/service/elasticloadbalancingv2/types"
 	"github.com/elC0mpa/aws-doctor/model"
@@ -217,6 +219,25 @@ func mapUnusedSecrets(secrets []model.UnusedSecretInfo, pricingSvc pricing.Servi
 	result := make([][]string, 0, len(secrets))
 	for _, s := range secrets {
 		result = append(result, outputshared.PresentUnusedSecret(s, pricingSvc).ToSlice())
+	}
+
+	return result
+}
+
+func mapIAMRootUserWaste(root []model.IAMRootUserWasteInfo) [][]string {
+	result := make([][]string, 0, len(root))
+	for range root {
+		result = append(result, []string{"IAM", "Root Account", "-", "-", "-", "MFA is NOT enabled for the root account"})
+	}
+
+	return result
+}
+
+func mapIAMUserWaste(users []model.IAMUserWasteInfo) [][]string {
+	result := make([][]string, 0, len(users))
+	for _, u := range users {
+		issue := fmt.Sprintf("Pwd: %s | Keys: %s", u.PasswordLastUsed, u.AccessKeysStatus)
+		result = append(result, []string{"IAM", fmt.Sprintf("User: %s", u.UserName), "-", "-", "-", issue})
 	}
 
 	return result

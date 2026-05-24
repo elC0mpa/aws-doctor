@@ -43,7 +43,8 @@ func hasAnyWaste(input model.RenderWasteInput) bool {
 		hasServerlessWaste(input) ||
 		hasECRWaste(input) ||
 		len(input.CloudWatchLogGroups) > 0 ||
-		len(input.UnusedSecrets) > 0
+		len(input.UnusedSecrets) > 0 ||
+		hasIAMWaste(input)
 }
 
 func hasEC2Waste(input model.RenderWasteInput) bool {
@@ -94,6 +95,15 @@ func drawWasteSections(out io.Writer, input model.RenderWasteInput, pricingSvc p
 	drawServerlessSections(out, input)
 	drawContainerSections(out, input)
 	drawSecretsManagerSections(out, input, pricingSvc)
+	drawIAMSections(out, input)
+}
+
+func hasIAMWaste(input model.RenderWasteInput) bool {
+	return len(input.UnusedIAMUsers) > 0 || len(input.RootUserWaste) > 0
+}
+
+func drawIAMSections(out io.Writer, input model.RenderWasteInput) {
+	drawIAMTable(out, input.UnusedIAMUsers, input.RootUserWaste)
 }
 
 func drawStorageSections(out io.Writer, input model.RenderWasteInput, pricingSvc pricing.Service) {
@@ -1213,9 +1223,43 @@ func RenderScopeTable(scope string, input model.RenderWasteInput, pricingSvc pri
 		drawECRTable(out, input.ECRNoLifecyclePolicies, input.ECREmptyRepositories, input.ECRUntaggedImages)
 	case "SecretsManager":
 		drawSecretsManagerTable(out, input.UnusedSecrets, pricingSvc)
+	case "IAM":
+		drawIAMTable(out, input.UnusedIAMUsers, input.RootUserWaste)
 	case "Summary":
 		drawSummaryTable(out, input, pricingSvc)
 	}
 
 	return buf.String()
+}
+
+func drawIAMTable(out io.Writer, users []model.IAMUserWasteInfo, root []model.IAMRootUserWasteInfo) {
+	if len(users) == 0 && len(root) == 0 {
+		return
+	}
+
+	t := table.NewWriter()
+	t.SetOutputMirror(out)
+	t.SetStyle(table.StyleRounded)
+	t.SetTitle("IAM Waste & Security")
+
+	t.AppendHeader(table.Row{"Resource", "Issue", "Action Required"})
+
+	if len(root) > 0 {
+		t.AppendRow(table.Row{
+			text.FgHiYellow.Sprint("Root Account"),
+			"MFA is NOT enabled for the root account",
+			"Enable Virtual MFA immediately",
+		})
+	}
+
+	for _, u := range users {
+		issue := fmt.Sprintf("Pwd: %s | Keys: %s", u.PasswordLastUsed, u.AccessKeysStatus)
+		t.AppendRow(table.Row{
+			fmt.Sprintf("User: %s", u.UserName),
+			issue,
+			"Delete or disable user",
+		})
+	}
+
+	t.Render()
 }

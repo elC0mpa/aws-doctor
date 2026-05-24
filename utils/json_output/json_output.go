@@ -2,7 +2,7 @@ package jsonoutput
 
 import (
 	"encoding/json"
-	"fmt"
+	"os"
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -104,6 +104,8 @@ func OutputWasteJSON(input model.RenderWasteInput, pricingSvc pricing.Service) e
 		ECREmptyRepositories:   mapECREmptyRepositories(input.ECREmptyRepositories),
 		ECRUntaggedImages:      mapECRUntaggedImages(input.ECRUntaggedImages),
 		UnusedSecrets:          mapUnusedSecrets(input.UnusedSecrets, pricingSvc),
+		UnusedIAMUsers:         mapUnusedIAMUsers(input.UnusedIAMUsers),
+		RootUserWaste:          mapRootUserWaste(input.RootUserWaste),
 	}
 
 	output.OrphanedSnapshots, output.StaleSnapshots = mapSnapshots(input.OrphanedSnapshots)
@@ -432,14 +434,11 @@ func mapIdleSageMakerEndpoints(eps []model.IdleSageMakerEndpointInfo) []model.Id
 }
 
 func printJSON(v interface{}) error {
-	data, err := json.MarshalIndent(v, "", "  ")
-	if err != nil {
-		return err
-	}
+	encoder := json.NewEncoder(os.Stdout)
+	encoder.SetIndent("", "  ")
+	encoder.SetEscapeHTML(false)
 
-	fmt.Println(string(data))
-
-	return nil
+	return encoder.Encode(v)
 }
 
 // hasAnyWasteJSON returns true when any category in the JSON report contains entries.
@@ -451,7 +450,32 @@ func hasAnyWasteJSON(o model.WasteReportJSON) bool {
 		hasNetworkWasteJSON(o) ||
 		hasServerlessWasteJSON(o) ||
 		hasContainerWasteJSON(o) ||
-		len(o.UnusedSecrets) > 0
+		len(o.UnusedSecrets) > 0 ||
+		len(o.UnusedIAMUsers) > 0 ||
+		len(o.RootUserWaste) > 0
+}
+
+func mapUnusedIAMUsers(users []model.IAMUserWasteInfo) []model.IAMUserWasteJSON {
+	var result []model.IAMUserWasteJSON
+	for _, u := range users {
+		result = append(result, model.IAMUserWasteJSON(u))
+	}
+
+	return result
+}
+
+func mapRootUserWaste(root []model.IAMRootUserWasteInfo) []model.IAMRootUserWasteJSON {
+	var result []model.IAMRootUserWasteJSON
+	for _, r := range root {
+		result = append(result, model.IAMRootUserWasteJSON(r))
+	}
+
+	return result
+}
+
+func hasServerlessWasteJSON(o model.WasteReportJSON) bool {
+	return len(o.OverProvisionedLambdas) > 0 ||
+		len(o.IdleSageMakerEndpoints) > 0
 }
 
 func hasComputeWasteJSON(o model.WasteReportJSON) bool {
@@ -483,11 +507,6 @@ func hasNetworkWasteJSON(o model.WasteReportJSON) bool {
 		len(o.UnusedLoadBalancers) > 0 ||
 		len(o.IdleNATGateways) > 0 ||
 		len(o.IdleLoadBalancers) > 0
-}
-
-func hasServerlessWasteJSON(o model.WasteReportJSON) bool {
-	return len(o.OverProvisionedLambdas) > 0 ||
-		len(o.IdleSageMakerEndpoints) > 0
 }
 
 func hasContainerWasteJSON(o model.WasteReportJSON) bool {

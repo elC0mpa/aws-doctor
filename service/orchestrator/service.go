@@ -60,6 +60,7 @@ func NewService(cfg Config) Service {
 		ecrService:            cfg.ECRService,
 		versionInfo:           cfg.VersionInfo,
 		vpcService:            cfg.VPCService,
+		iamService:            cfg.IAMService,
 	}
 }
 
@@ -87,7 +88,7 @@ func (s *service) Orchestrate(flags model.Flags) error {
 
 	switch {
 	case flags.Waste:
-		workflowErr = s.wasteWorkflow(flags.WasteChecks, flags.Report, flags.ReportPath, flags.LambdaMemoryThreshold, flags.SecretsIdleDays)
+		workflowErr = s.wasteWorkflow(flags.WasteChecks, flags.Report, flags.ReportPath, flags.LambdaMemoryThreshold, flags.SecretsIdleDays, flags.IAMIdleDays)
 	case flags.Trend:
 		workflowErr = s.trendWorkflow(flags.TrendChecks, flags.Report, flags.ReportPath)
 	default:
@@ -237,7 +238,7 @@ func (s *service) trendWorkflow(trendChecks []string, generateReport bool, repor
 	return s.outputService.RenderTrend(*stsResult.Account, costInfo, trendChecks)
 }
 
-func (s *service) wasteWorkflow(wasteChecks []string, generateReport bool, reportPath string, lambdaMemoryThreshold int, secretsIdleDays int) error {
+func (s *service) wasteWorkflow(wasteChecks []string, generateReport bool, reportPath string, lambdaMemoryThreshold int, secretsIdleDays int, iamIdleDays int) error {
 	ctx := context.Background()
 
 	s.loadPricing(ctx)
@@ -250,7 +251,7 @@ func (s *service) wasteWorkflow(wasteChecks []string, generateReport bool, repor
 	resultCh := make(chan model.ScopeResult, 20)
 	g, ctx := errgroup.WithContext(ctx)
 
-	s.dispatchWasteChecks(ctx, g, resultCh, wasteChecks, lambdaMemoryThreshold, secretsIdleDays)
+	s.dispatchWasteChecks(ctx, g, resultCh, wasteChecks, lambdaMemoryThreshold, secretsIdleDays, iamIdleDays)
 
 	// Wait and close channel in background
 	go func() {
@@ -276,6 +277,7 @@ func (s *service) wasteWorkflow(wasteChecks []string, generateReport bool, repor
 			{"sagemaker", "SageMaker"},
 			{"ecr", "ECR"},
 			{"secrets-manager", "SecretsManager"},
+			{"iam", "IAM"},
 		}
 		for _, s := range allScopes {
 			if shouldRunCheck(wasteChecks, s.name) {
@@ -310,7 +312,7 @@ func (s *service) wasteWorkflow(wasteChecks []string, generateReport bool, repor
 	return s.outputService.RenderWaste(finalInput, s.pricingService)
 }
 
-func (s *service) dispatchWasteChecks(ctx context.Context, g *errgroup.Group, resultCh chan<- model.ScopeResult, wasteChecks []string, lambdaMemoryThreshold int, secretsIdleDays int) {
+func (s *service) dispatchWasteChecks(ctx context.Context, g *errgroup.Group, resultCh chan<- model.ScopeResult, wasteChecks []string, lambdaMemoryThreshold int, secretsIdleDays int, iamIdleDays int) {
 	if shouldRunCheck(wasteChecks, "ec2") {
 		s.queueEC2Checks(ctx, g, resultCh)
 	}
@@ -349,6 +351,10 @@ func (s *service) dispatchWasteChecks(ctx context.Context, g *errgroup.Group, re
 
 	if shouldRunCheck(wasteChecks, "secrets-manager") {
 		s.queueSecretsManagerChecks(ctx, g, resultCh, secretsIdleDays)
+	}
+
+	if shouldRunCheck(wasteChecks, "iam") {
+		s.queueIAMChecks(ctx, g, resultCh, iamIdleDays)
 	}
 }
 

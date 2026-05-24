@@ -219,13 +219,29 @@ func (s *service) queueSecretsManagerChecks(ctx context.Context, g *errgroup.Gro
 	g.Go(func() error {
 		start := time.Now()
 
-		var (
-			input model.RenderWasteInput
-			err   error
-		)
+		input := model.RenderWasteInput{}
+
+		var err error
 
 		input.UnusedSecrets, err = s.secretsmanagerService.GetUnusedSecrets(ctx, secretsIdleDays)
+
 		resultCh <- model.ScopeResult{Scope: "SecretsManager", Input: input, Duration: time.Since(start), Err: err}
+
+		return err
+	})
+}
+
+func (s *service) queueIAMChecks(ctx context.Context, g *errgroup.Group, resultCh chan<- model.ScopeResult, iamIdleDays int) {
+	g.Go(func() error {
+		start := time.Now()
+
+		input := model.RenderWasteInput{}
+
+		var err error
+
+		input.UnusedIAMUsers, input.RootUserWaste, err = s.iamService.GetIAMWaste(ctx, iamIdleDays)
+
+		resultCh <- model.ScopeResult{Scope: "IAM", Input: input, Duration: time.Since(start), Err: err}
 
 		return err
 	})

@@ -56,6 +56,8 @@ var reportWasteCmd = &cobra.Command{
 			Waste:                 true,
 			WasteChecks:           parsedChecks,
 			LambdaMemoryThreshold: lambdaMemoryThreshold,
+			SecretsIdleDays:       secretsIdleDays,
+			IAMIdleDays:           iamIdleDays,
 		}
 
 		return orch.Orchestrate(flags)
@@ -93,8 +95,7 @@ func init() {
 	reportCmd.PersistentFlags().StringVar(&reportOutPath, "path", "", "Output path for the PDF report")
 	reportCmd.PersistentFlags().Lookup("path").NoOptDefVal = "DEFAULT"
 
-	reportWasteCmd.Flags().IntVar(&lambdaMemoryThreshold, "lambda-memory-threshold", 10,
-		"Memory utilization threshold (%) below which Lambda functions are flagged as over-provisioned")
+	addWasteFlags(reportWasteCmd)
 
 	reportCmd.AddCommand(reportCostCmd)
 	reportCmd.AddCommand(reportWasteCmd)
