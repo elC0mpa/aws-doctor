@@ -115,7 +115,9 @@ func (s *service) processIAMUser(ctx context.Context, user iamtypes.User, cutoff
 				AccessKeyId: key.AccessKeyId,
 			})
 			if err != nil {
-				continue
+				// On error, assume active to avoid false positives in cleanup reports
+				activeKeyFound = true
+				break
 			}
 
 			if lastUsedOut.AccessKeyLastUsed != nil && lastUsedOut.AccessKeyLastUsed.LastUsedDate != nil {
