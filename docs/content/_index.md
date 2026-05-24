@@ -128,6 +128,11 @@ layout: "hextra-home"
     title="Configuration and Secrets"
     subtitle="Flag unused Secrets Manager secrets that have not been accessed within a configurable threshold."
   >}}
+  {{< hextra/feature-card
+    icon="shield-check"
+    title="Identity & Security"
+    subtitle="Unused IAM users and Root accounts without MFA."
+  >}}
 {{< /hextra/feature-grid >}}
 
 <div class="hx:mt-16"></div>

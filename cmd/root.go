@@ -14,6 +14,7 @@ import (
 	awsec2 "github.com/elC0mpa/aws-doctor/service/ec2"
 	"github.com/elC0mpa/aws-doctor/service/ecr"
 	"github.com/elC0mpa/aws-doctor/service/elb"
+	"github.com/elC0mpa/aws-doctor/service/iam"
 	awslambda "github.com/elC0mpa/aws-doctor/service/lambda"
 	"github.com/elC0mpa/aws-doctor/service/orchestrator"
 	"github.com/elC0mpa/aws-doctor/service/output"
@@ -83,6 +84,7 @@ func buildOrchestrator(needsAWS bool) (orchestrator.Service, error) {
 	config.SecretsManagerService = awssecretsmanager.NewService(awsCfg, pricingSvc)
 	config.PricingService = pricingSvc
 	config.ReportService = report.NewService()
+	config.IAMService = iam.NewService(awsCfg)
 
 	return orchestrator.NewService(config), nil
 }

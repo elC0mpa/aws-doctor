@@ -10,6 +10,7 @@ import (
 var (
 	lambdaMemoryThreshold int
 	secretsIdleDays       int
+	iamIdleDays           int
 )
 
 var wasteCmd = &cobra.Command{
@@ -35,16 +36,23 @@ var wasteCmd = &cobra.Command{
 			WasteChecks:           parsedChecks,
 			LambdaMemoryThreshold: lambdaMemoryThreshold,
 			SecretsIdleDays:       secretsIdleDays,
+			IAMIdleDays:           iamIdleDays,
 		}
 
 		return orch.Orchestrate(flags)
 	},
 }
 
-func init() {
-	wasteCmd.Flags().IntVar(&lambdaMemoryThreshold, "lambda-memory-threshold", 10,
+func addWasteFlags(cmd *cobra.Command) {
+	cmd.Flags().IntVar(&lambdaMemoryThreshold, "lambda-memory-threshold", 10,
 		"Memory utilization threshold (%) below which Lambda functions are flagged as over-provisioned")
-	wasteCmd.Flags().IntVar(&secretsIdleDays, "secrets-idle-days", 90,
+	cmd.Flags().IntVar(&secretsIdleDays, "secrets-idle-days", 90,
 		"Idle days threshold for flagging unused Secrets Manager secrets")
+	cmd.Flags().IntVar(&iamIdleDays, "iam-idle-days", 90,
+		"Idle days threshold for flagging unused IAM Users")
+}
+
+func init() {
+	addWasteFlags(wasteCmd)
 	rootCmd.AddCommand(wasteCmd)
 }

@@ -62,7 +62,7 @@ func TestWasteWorkflow_NonInteractive(t *testing.T) {
 
 	mockVPCSvc.On("GetIdleNATGateways", mock.Anything, mock.Anything).Return(nil, nil)
 
-	err := s.wasteWorkflow([]string{"vpc"}, false, "", 0, 0)
+	err := s.wasteWorkflow([]string{"vpc"}, false, "", 0, 0, 0)
 	if err != nil {
 		t.Errorf("Unexpected error: %v", err)
 	}
@@ -106,7 +106,7 @@ func TestWasteWorkflow_STSError(t *testing.T) {
 	mockOutputSvc.On("SetSpinnerMessage", mock.Anything).Return()
 	mockSTSSvc.On("GetCallerIdentity", mock.Anything).Return((*sts.GetCallerIdentityOutput)(nil), errors.New("sts error")).Once()
 
-	err := s.wasteWorkflow([]string{"ec2"}, false, "", 0, 0)
+	err := s.wasteWorkflow([]string{"ec2"}, false, "", 0, 0, 0)
 	if err == nil {
 		t.Error("Expected error for STS failure")
 	}
@@ -135,7 +135,7 @@ func TestWasteWorkflow_LoadRegionRatesError_Ignored(t *testing.T) {
 	mockVPCSvc.On("GetIdleNATGateways", mock.Anything, mock.Anything).Return(nil, nil)
 	mockOutputSvc.On("RenderWaste", mock.Anything, mockPricingSvc).Return(nil)
 
-	err := s.wasteWorkflow([]string{"vpc"}, false, "", 0, 0)
+	err := s.wasteWorkflow([]string{"vpc"}, false, "", 0, 0, 0)
 	if err != nil {
 		t.Errorf("Expected wasteWorkflow to succeed despite pricing error, got: %v", err)
 	}
@@ -163,7 +163,7 @@ func TestWasteWorkflow_RenderWaste_Error(t *testing.T) {
 	mockVPCSvc.On("GetIdleNATGateways", mock.Anything, mock.Anything).Return(nil, nil)
 	mockOutputSvc.On("RenderWaste", mock.Anything, mockPricingSvc).Return(errors.New("render error")).Once()
 
-	err := s.wasteWorkflow([]string{"vpc"}, false, "", 0, 0)
+	err := s.wasteWorkflow([]string{"vpc"}, false, "", 0, 0, 0)
 	if err == nil {
 		t.Error("Expected error for RenderWaste failure")
 	}
@@ -192,7 +192,7 @@ func TestWasteWorkflow_Interactive_EOF(t *testing.T) {
 	mockVPCSvc.On("GetIdleNATGateways", mock.Anything, mock.Anything).Return(nil, nil)
 	mockOutputSvc.On("RenderWasteInteractive", acc, mock.Anything, mock.Anything, mock.Anything).Return(nil).Once()
 
-	err := s.wasteWorkflow([]string{"vpc"}, false, "", 0, 0)
+	err := s.wasteWorkflow([]string{"vpc"}, false, "", 0, 0, 0)
 	if err != nil {
 		t.Errorf("Unexpected error: %v", err)
 	}

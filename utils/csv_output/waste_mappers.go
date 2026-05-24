@@ -221,3 +221,21 @@ func mapUnusedSecrets(secrets []model.UnusedSecretInfo, pricingSvc pricing.Servi
 
 	return result
 }
+
+func mapIAMRootUserWaste(root []model.IAMRootUserWasteInfo) [][]string {
+	result := make([][]string, 0, len(root))
+	for _, r := range root {
+		result = append(result, outputshared.PresentIAMRootWaste(r).ToSlice())
+	}
+
+	return result
+}
+
+func mapIAMUserWaste(users []model.IAMUserWasteInfo) [][]string {
+	result := make([][]string, 0, len(users))
+	for _, u := range users {
+		result = append(result, outputshared.PresentIAMUser(u).ToSlice())
+	}
+
+	return result
+}
