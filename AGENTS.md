@@ -227,6 +227,7 @@ Any change that affects behavior, flags, outputs, workflows, supported AWS resou
 - `AGENTS.md` for agent guidance, architecture, workflows, and contribution rules.
 - `README.md` for user-facing behavior, flags, features, and roadmap/checklists.
 - `CONTRIBUTING.md` and `TESTING.md` for contributor workflow and test guidance.
+- `docs/content/` (Docs Site): For user-facing feature pages, configuration flags tables, and selective scanning arguments.
 
 If a change makes documentation inaccurate or incomplete, treat the documentation update as mandatory and do it in the same patch/PR.
 
@@ -268,7 +269,11 @@ On the docs site, IAM permissions must be expressed using inline callouts or pla
    - Add a display function in `utils/waste_table/waste_table.go` and update `DrawWasteTable` signature.
    - Add a JSON output type in `model/output.go` and update `utils/json_output/json_output.go`.
 10. **Test Compliance**: **Update all existing test calls** in `service/orchestrator`, `service/output`, and `utils` when function signatures change. Run `go test ./...` frequently.
-11. **Documentation**: Update the feature checklist in `README.md`.
+11. **Documentation**:
+    - Update the feature checklist and 'Selective scanning' command list in `README.md`.
+    - Add the new check to the 'Selective Scanning' table in `docs/content/docs/waste-detection/_index.md` and `_index.es.md`.
+    - Create the dedicated documentation page for the category (e.g., `security.md` and `security.es.md`), **but only if the category doesn't exist already**.
+    - Add the feature card to the Docs Site grids following the "Docs Site Card Grids" rules.
 12. **Validation**: Run `go vet ./...` and `golangci-lint run` to ensure no regressions or interface mismatches were introduced.
 
 ### Adding a New Command or Flag
@@ -279,6 +284,7 @@ The CLI uses the Cobra framework.
 3. Handle execution logic in the command's `RunE` method (often by instantiating the orchestrator and calling `orch.Orchestrate(flags)`).
 4. Update `model.Flags` struct if you need to pass new flag states into the orchestrator.
 5. Update `README.md` documentation.
+6. If a flag is added for waste detection, add it to the "Configuration Flags" table in `docs/content/docs/waste-detection/_index.md` and `_index.es.md`.
 
 ## PR Checklist
 

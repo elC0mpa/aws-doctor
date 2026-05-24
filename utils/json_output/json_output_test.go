@@ -227,6 +227,7 @@ func TestOutputTrendJSON_SkipsNonTotal(t *testing.T) {
 	}
 }
 
+//nolint:gocyclo
 func TestOutputWasteJSON(t *testing.T) {
 	elasticIPs := []ec2types.Address{
 		{PublicIp: aws.String("1.2.3.4"), AllocationId: aws.String("eipalloc-123")},
@@ -290,6 +291,20 @@ func TestOutputWasteJSON(t *testing.T) {
 		},
 	}
 
+	iamUsers := []model.IAMUserWasteInfo{
+		{
+			UserName:         "test-user",
+			PasswordLastUsed: "Never",
+			AccessKeysStatus: "Inactive",
+		},
+	}
+
+	iamRoot := []model.IAMRootUserWasteInfo{
+		{
+			HasMFA: false,
+		},
+	}
+
 	var err error
 
 	output := captureStdout(func() {
@@ -304,6 +319,8 @@ func TestOutputWasteJSON(t *testing.T) {
 			UnusedKeyPairs:     unusedKeyPairs,
 			S3Buckets:          s3Buckets,
 			S3MultipartUploads: s3Multipart,
+			UnusedIAMUsers:     iamUsers,
+			RootUserWaste:      iamRoot,
 		}, services.NewMockPricingService())
 	})
 
@@ -367,6 +384,14 @@ func TestOutputWasteJSON(t *testing.T) {
 
 	if len(result.S3MultipartUploads) != 1 {
 		t.Errorf("S3MultipartUploads has %d items, want 1", len(result.S3MultipartUploads))
+	}
+
+	if len(result.UnusedIAMUsers) != 1 {
+		t.Errorf("UnusedIAMUsers has %d items, want 1", len(result.UnusedIAMUsers))
+	}
+
+	if len(result.RootUserWaste) != 1 {
+		t.Errorf("RootUserWaste has %d items, want 1", len(result.RootUserWaste))
 	}
 
 	if result.UnusedKeyPairs[0].KeyName != "test-key" {

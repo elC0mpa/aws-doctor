@@ -35,6 +35,7 @@ If you only want to scan specific AWS services, you can pass them as arguments t
 | `sagemaker` | SageMaker idle endpoint detection (zero invocations in 14 days). |
 | `ecr` | ECR repositories without lifecycle policies, empty repositories, and untagged images. |
 | `secrets-manager` | Secrets Manager secrets not accessed within the idle threshold. |
+| `iam` | Unused IAM users and Root accounts without MFA. |
 
 ```bash
 # Example: Scan only EC2 and SageMaker resources
@@ -49,6 +50,7 @@ The `waste` and `report waste` subcommands support specific flags to tune the de
 | :--- | :--- | :--- |
 | `--lambda-memory-threshold` | `10` | Memory utilization threshold (%) below which Lambda functions are flagged as over-provisioned. |
 | `--secrets-idle-days` | `90` | Idle days threshold for flagging unused Secrets Manager secrets. |
+| `--iam-idle-days` | `90` | Idle days threshold for flagging unused IAM Users. |
 
 ## Region-Aware Cost Estimation
 
@@ -114,6 +116,12 @@ We group waste into primary infrastructure categories:
     title="Configuration and Secrets"
     link="configuration/"
     subtitle="Secrets Manager secrets not accessed within the configured idle threshold."
+  >}}
+  {{< hextra/feature-card
+    icon="shield-check"
+    title="Identity & Security"
+    link="security/"
+    subtitle="Unused IAM users and Root accounts without MFA."
   >}}
 {{< /hextra/feature-grid >}}
 

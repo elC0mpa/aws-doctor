@@ -49,6 +49,8 @@ type RenderWasteInput struct {
 	ECREmptyRepositories   []ECREmptyRepositoryInfo
 	ECRUntaggedImages      []ECRUntaggedImageInfo
 	UnusedSecrets          []UnusedSecretInfo
+	UnusedIAMUsers         []IAMUserWasteInfo
+	RootUserWaste          []IAMRootUserWasteInfo
 }
 
 // RenderCostComparisonInput represents the input data for rendering the cost comparison report
@@ -158,5 +160,13 @@ func (dest *RenderWasteInput) Merge(src RenderWasteInput) {
 
 	if len(src.UnusedSecrets) > 0 {
 		dest.UnusedSecrets = append(dest.UnusedSecrets, src.UnusedSecrets...)
+	}
+
+	if len(src.UnusedIAMUsers) > 0 {
+		dest.UnusedIAMUsers = append(dest.UnusedIAMUsers, src.UnusedIAMUsers...)
+	}
+
+	if len(src.RootUserWaste) > 0 {
+		dest.RootUserWaste = append(dest.RootUserWaste, src.RootUserWaste...)
 	}
 }

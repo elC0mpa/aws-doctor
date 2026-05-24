@@ -169,6 +169,12 @@ func TestOutputWasteCSV(t *testing.T) {
 		UnusedKeyPairs: []model.KeyPairWasteInfo{
 			{KeyName: "test-key", CreateTime: time.Now()},
 		},
+		UnusedIAMUsers: []model.IAMUserWasteInfo{
+			{UserName: "test-csv-user", PasswordLastUsed: "Never", AccessKeysStatus: "Inactive"},
+		},
+		RootUserWaste: []model.IAMRootUserWasteInfo{
+			{HasMFA: false},
+		},
 	}
 
 	output := captureStdout(func() {
@@ -177,6 +183,14 @@ func TestOutputWasteCSV(t *testing.T) {
 
 	if !strings.Contains(output, "Resource Category,Resource Identifier,Estimated Monthly Cost (USD),Metric / Size,Age (Days),Additional Details") {
 		t.Error("Output missing headers")
+	}
+
+	if !strings.Contains(output, "IAM User (Idle),test-csv-user") {
+		t.Error("Output missing IAM user row")
+	}
+
+	if !strings.Contains(output, "IAM Root (No MFA),root") {
+		t.Error("Output missing IAM root row")
 	}
 
 	if !strings.Contains(output, "EBS Volume (stopped),vol-123") {

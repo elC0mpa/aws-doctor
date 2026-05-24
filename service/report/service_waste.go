@@ -80,6 +80,10 @@ func (s *service) addWasteSections(m core.Maroto, input model.RenderWasteInput, 
 		hasWaste = true
 	}
 
+	if s.addIAMWaste(m, input) {
+		hasWaste = true
+	}
+
 	return hasWaste
 }
 
@@ -494,6 +498,35 @@ func (s *service) addSecretsManagerWaste(m core.Maroto, input model.RenderWasteI
 	for _, secret := range input.UnusedSecrets {
 		p := outputshared.PresentUnusedSecret(secret, pricingSvc)
 		s.addWasteRow(m, []string{p.Identifier, p.Age + " days ago", p.EstimatedCost})
+	}
+
+	m.AddRow(5, col.New(12))
+
+	return true
+}
+
+func (s *service) addIAMWaste(m core.Maroto, input model.RenderWasteInput) bool {
+	if len(input.UnusedIAMUsers) == 0 && len(input.RootUserWaste) == 0 {
+		return false
+	}
+
+	s.addWasteSection(m, "IAM Waste & Security", []string{"Resource", "Issue", "Action Required"})
+
+	if len(input.RootUserWaste) > 0 {
+		s.addWasteRow(m, []string{
+			"Root Account",
+			"MFA is NOT enabled for the root account",
+			"Enable Virtual MFA immediately",
+		})
+	}
+
+	for _, u := range input.UnusedIAMUsers {
+		issue := fmt.Sprintf("Pwd: %s | Keys: %s", u.PasswordLastUsed, u.AccessKeysStatus)
+		s.addWasteRow(m, []string{
+			fmt.Sprintf("User: %s", u.UserName),
+			issue,
+			"Delete or disable user",
+		})
 	}
 
 	m.AddRow(5, col.New(12))

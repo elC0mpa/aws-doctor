@@ -7,6 +7,7 @@ import (
 	awsec2 "github.com/elC0mpa/aws-doctor/service/ec2"
 	"github.com/elC0mpa/aws-doctor/service/ecr"
 	"github.com/elC0mpa/aws-doctor/service/elb"
+	"github.com/elC0mpa/aws-doctor/service/iam"
 	"github.com/elC0mpa/aws-doctor/service/lambda"
 	"github.com/elC0mpa/aws-doctor/service/output"
 	"github.com/elC0mpa/aws-doctor/service/pricing"
@@ -38,6 +39,7 @@ type service struct {
 	ecrService            ecr.Service
 	versionInfo           model.VersionInfo
 	vpcService            awsvpc.Service
+	iamService            iam.Service
 }
 
 // Config holds the dependencies for the orchestrator service.
@@ -59,6 +61,7 @@ type Config struct {
 	ECRService            ecr.Service
 	VersionInfo           model.VersionInfo
 	VPCService            awsvpc.Service
+	IAMService            iam.Service
 }
 
 // Service is the interface for the orchestrator service.
