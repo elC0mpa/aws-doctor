@@ -134,7 +134,7 @@ This approach lets you test multiple features together locally without affecting
 - **Target the `development` branch** - not `main`
 - **One feature per PR** - keep PRs focused and reviewable
 - **Include tests** - new features should have accompanying unit tests
-- **Update documentation** - update README.md if adding new flags or features. For developers and AI agents, also ensure `AGENTS.md` is updated if architectural patterns change.
+- **Update documentation** - update `README.md` (features and command lists) and the Docs Site (`docs/content/`) if adding new flags, waste checks, or features. Ensure new flags and arguments are added to the 'Selective Scanning' and 'Configuration Flags' tables in `docs/content/docs/waste-detection/_index.md` and `_index.es.md`. For developers and AI agents, also ensure `AGENTS.md` is updated if architectural patterns change.
 - **Follow existing patterns** - match the code style and architecture of existing code
 
 ### Docs Site Card Grids
