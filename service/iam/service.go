@@ -115,7 +115,7 @@ func (s *service) processIAMUser(ctx context.Context, user iamtypes.User, cutoff
 				AccessKeyId: key.AccessKeyId,
 			})
 			if err != nil {
-				return nil, fmt.Errorf("getting access key last used for %s: %w", aws.ToString(key.AccessKeyId), err)
+				continue
 			}
 
 			if lastUsedOut.AccessKeyLastUsed != nil && lastUsedOut.AccessKeyLastUsed.LastUsedDate != nil {

@@ -1245,17 +1245,21 @@ func drawIAMTable(out io.Writer, users []model.IAMUserWasteInfo, root []model.IA
 	t.AppendHeader(table.Row{"Resource", "Issue", "Action Required"})
 
 	if len(root) > 0 {
-		t.AppendRow(table.Row{
-			text.FgHiYellow.Sprint("Root Account"),
-			"MFA is NOT enabled for the root account",
-			"Enable Virtual MFA immediately",
-		})
+		for _, r := range root {
+			p := outputshared.PresentIAMRootWaste(r)
+			t.AppendRow(table.Row{
+				text.FgHiYellow.Sprint("Root Account"),
+				p.Details,
+				"Enable Virtual MFA immediately",
+			})
+		}
 	}
 
 	for _, u := range users {
-		issue := fmt.Sprintf("Pwd: %s | Keys: %s", u.PasswordLastUsed, u.AccessKeysStatus)
+		p := outputshared.PresentIAMUser(u)
+		issue := fmt.Sprintf("Pwd: %s | Keys: %s", p.Age, p.Metric)
 		t.AppendRow(table.Row{
-			fmt.Sprintf("User: %s", u.UserName),
+			fmt.Sprintf("User: %s", p.Identifier),
 			issue,
 			"Delete or disable user",
 		})

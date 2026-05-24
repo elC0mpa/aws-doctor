@@ -185,11 +185,11 @@ func TestOutputWasteCSV(t *testing.T) {
 		t.Error("Output missing headers")
 	}
 
-	if !strings.Contains(output, "IAM,User: test-csv-user") {
+	if !strings.Contains(output, "IAM User (Idle),test-csv-user") {
 		t.Error("Output missing IAM user row")
 	}
 
-	if !strings.Contains(output, "IAM,Root Account") {
+	if !strings.Contains(output, "IAM Root (No MFA),root") {
 		t.Error("Output missing IAM root row")
 	}
 

@@ -324,3 +324,27 @@ func PresentUnusedSecret(secret model.UnusedSecretInfo, pricingSvc pricing.Servi
 		Details:       fmt.Sprintf("Last accessed on %s", lastAccessed),
 	}
 }
+
+// PresentIAMUser returns a ResourceRow for an idle IAM user
+func PresentIAMUser(user model.IAMUserWasteInfo) ResourceRow {
+	return ResourceRow{
+		Category:      "IAM User (Idle)",
+		Identifier:    user.UserName,
+		EstimatedCost: NAValue,
+		Metric:        user.AccessKeysStatus,
+		Age:           user.PasswordLastUsed,
+		Details:       NAValue,
+	}
+}
+
+// PresentIAMRootWaste returns a ResourceRow for a root account without MFA
+func PresentIAMRootWaste(root model.IAMRootUserWasteInfo) ResourceRow {
+	return ResourceRow{
+		Category:      "IAM Root (No MFA)",
+		Identifier:    "root",
+		EstimatedCost: NAValue,
+		Metric:        NAValue,
+		Age:           NAValue,
+		Details:       "Root account has no MFA enabled",
+	}
+}

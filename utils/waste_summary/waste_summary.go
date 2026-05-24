@@ -202,6 +202,14 @@ func countOnlyCategories(input model.RenderWasteInput) []model.CategorySummary {
 		categories = append(categories, model.CategorySummary{Name: "ECR (Untagged Images)", Count: n, Cost: cost})
 	}
 
+	if n := len(input.UnusedIAMUsers); n > 0 {
+		categories = append(categories, model.CategorySummary{Name: "IAM Users (Idle)", Count: n})
+	}
+
+	if n := len(input.RootUserWaste); n > 0 {
+		categories = append(categories, model.CategorySummary{Name: "IAM Root (No MFA)", Count: n})
+	}
+
 	return categories
 }
 
