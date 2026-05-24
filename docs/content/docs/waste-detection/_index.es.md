@@ -34,6 +34,7 @@ Si sólo desea escanear servicios de AWS específicos, puede pasarlos como argum
 | `sagemaker` | Detección de endpoints de SageMaker inactivos (cero invocaciones en 14 días). |
 | `ecr` | Repositorios ECR sin políticas de ciclo de vida, repositorios vacíos e imágenes sin etiqueta. |
 | `secrets-manager` | Secretos de Secrets Manager no accedidos dentro del umbral de inactividad. |
+| `iam` | Usuarios IAM sin uso y cuentas Root sin MFA. |
 
 ```bash
 # Ejemplo: Escanear solo recursos de EC2 y SageMaker
@@ -48,6 +49,7 @@ Los subcomandos `waste` y `report waste` soportan flags específicos para ajusta
 | :--- | :--- | :--- |
 | `--lambda-memory-threshold` | `10` | Umbral de utilización de memoria (%) por debajo del cual las funciones Lambda se marcan como sobre-provisionadas. |
 | `--secrets-idle-days` | `90` | Umbral de días de inactividad para marcar secretos de Secrets Manager no utilizados. |
+| `--iam-idle-days` | `90` | Umbral de días de inactividad para marcar usuarios de IAM sin uso. |
 
 ## Estimación de Costos por Región
 
@@ -115,7 +117,7 @@ Agrupamos el desperdicio en categorías principales de infraestructura:
     subtitle="Secretos de Secrets Manager no accedidos dentro del umbral de inactividad configurado."
   >}}
   {{< hextra/feature-card
-    icon="shield"
+    icon="shield-check"
     title="Identidad y Seguridad"
     link="security/"
     subtitle="Usuarios IAM sin uso y cuentas Root sin MFA."
