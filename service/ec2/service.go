@@ -25,6 +25,94 @@ func NewService(awsconfig aws.Config, cwService cloudwatchMetricsService, pricin
 	}
 }
 
+func (s *service) Name() string {
+	return "ec2"
+}
+
+func (s *service) Analyze(ctx context.Context, flags model.Flags) (model.ScopeResult, error) {
+	start := time.Now()
+	input := model.RenderWasteInput{}
+
+	var errs []error
+
+	// Retrieve Unused EIPs
+	eips, err := s.GetUnusedElasticIPAddressesInfo(ctx)
+	if err != nil {
+		errs = append(errs, err)
+	} else {
+		input.ElasticIPs = eips
+	}
+
+	// Retrieve Unused Volumes
+	vols, err := s.GetUnusedEBSVolumes(ctx)
+	if err != nil {
+		errs = append(errs, err)
+	} else {
+		input.UnusedVolumes = vols
+	}
+
+	// Retrieve Stopped Instances and their volumes
+	stoppedInstances, stoppedVolumes, err := s.GetStoppedInstancesInfo(ctx, flags.EC2StoppedDays)
+	if err != nil {
+		errs = append(errs, err)
+	} else {
+		input.StoppedInstances = stoppedInstances
+		input.StoppedVolumes = stoppedVolumes
+	}
+
+	// Retrieve Expiring/Expired RIs
+	ris, err := s.GetReservedInstanceExpiringOrExpiredWaste(ctx, flags.EC2RiExpiringDays)
+	if err != nil {
+		errs = append(errs, err)
+	} else {
+		input.Ris = ris
+	}
+
+	// Retrieve Idle EC2 Instances
+	idleInstances, err := s.GetIdleInstances(ctx, flags.EC2IdleDays, flags.EC2IdleCPUPercent, float64(flags.EC2IdleNetworkBytesPerDay))
+	if err != nil {
+		errs = append(errs, err)
+	} else {
+		input.IdleEC2Instances = idleInstances
+	}
+
+	// Retrieve Unused AMIs
+	amis, err := s.GetUnusedAMIs(ctx, flags.EC2AmiStaleDays)
+	if err != nil {
+		errs = append(errs, err)
+	} else {
+		input.UnusedAMIs = amis
+	}
+
+	// Retrieve Orphaned Snapshots
+	snapshots, err := s.GetOrphanedSnapshots(ctx, flags.EC2SnapshotStaleDays)
+	if err != nil {
+		errs = append(errs, err)
+	} else {
+		input.OrphanedSnapshots = snapshots
+	}
+
+	// Retrieve Unused KeyPairs
+	keypairs, err := s.GetUnusedKeyPairs(ctx)
+	if err != nil {
+		errs = append(errs, err)
+	} else {
+		input.UnusedKeyPairs = keypairs
+	}
+
+	var finalErr error
+	if len(errs) > 0 {
+		finalErr = fmt.Errorf("ec2 analyze errors: %v", errs)
+	}
+
+	return model.ScopeResult{
+		Scope:    s.Name(),
+		Input:    input,
+		Duration: time.Since(start),
+		Err:      finalErr,
+	}, nil
+}
+
 func (s *service) GetElasticIPAddressesInfo(ctx context.Context) (*model.ElasticIPInfo, error) {
 	output, err := s.client.DescribeAddresses(ctx, nil)
 	if err != nil {

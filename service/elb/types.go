@@ -6,6 +6,7 @@ import (
 	elb "github.com/aws/aws-sdk-go-v2/service/elasticloadbalancingv2"
 	"github.com/aws/aws-sdk-go-v2/service/elasticloadbalancingv2/types"
 	"github.com/elC0mpa/aws-doctor/model"
+	"github.com/elC0mpa/aws-doctor/service/analyzer"
 )
 
 // ClientAPI is the interface for the AWS ELB client methods used by the service.
@@ -32,5 +33,6 @@ type pricingService interface {
 
 // Service is the interface for AWS ELB service.
 type Service interface {
+	analyzer.WasteAnalyzer
 	GetLoadBalancerWaste(ctx context.Context, idleDays int) ([]types.LoadBalancer, []model.ELBIdleInfo, error)
 }

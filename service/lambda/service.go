@@ -31,6 +31,41 @@ func NewService(awsconfig aws.Config, cwLogsService cloudwatchlogs.Service) Serv
 	}
 }
 
+func (s *service) Name() string {
+	return "lambda"
+}
+
+func (s *service) Analyze(ctx context.Context, flags model.Flags) (model.ScopeResult, error) {
+	start := time.Now()
+	input := model.RenderWasteInput{}
+
+	var errs []error
+
+	memoryThreshold := flags.LambdaMemoryThreshold
+	if memoryThreshold == 0 {
+		memoryThreshold = 10 // default
+	}
+
+	overProvisioned, err := s.GetOverProvisionedFunctions(ctx, memoryThreshold, flags.LambdaLookbackDays)
+	if err != nil {
+		errs = append(errs, err)
+	} else {
+		input.OverProvisionedLambdas = overProvisioned
+	}
+
+	var finalErr error
+	if len(errs) > 0 {
+		finalErr = fmt.Errorf("lambda analyze errors: %v", errs)
+	}
+
+	return model.ScopeResult{
+		Scope:    s.Name(),
+		Input:    input,
+		Duration: time.Since(start),
+		Err:      finalErr,
+	}, nil
+}
+
 func (s *service) GetOverProvisionedFunctions(ctx context.Context, memoryThresholdPercent int, lookbackDays int) ([]model.LambdaOverProvisionedInfo, error) {
 	functions, err := s.listAllFunctions(ctx)
 	if err != nil {

@@ -43,24 +43,14 @@ const (
 // NewService creates a new orchestrator service.
 func NewService(cfg Config) Service {
 	return &service{
-		stsService:            cfg.STSService,
-		costService:           cfg.CostService,
-		ec2Service:            cfg.EC2Service,
-		elbService:            cfg.ELBService,
-		s3Service:             cfg.S3Service,
-		cloudwatchlogsService: cfg.CloudWatchLogsService,
-		rdsService:            cfg.RDSService,
-		lambdaService:         cfg.LambdaService,
-		sagemakerService:      cfg.SageMakerService,
-		secretsmanagerService: cfg.SecretsManagerService,
-		pricingService:        cfg.PricingService,
-		outputService:         cfg.OutputService,
-		updateService:         cfg.UpdateService,
-		reportService:         cfg.ReportService,
-		ecrService:            cfg.ECRService,
-		versionInfo:           cfg.VersionInfo,
-		vpcService:            cfg.VPCService,
-		iamService:            cfg.IAMService,
+		stsService:     cfg.STSService,
+		costService:    cfg.CostService,
+		pricingService: cfg.PricingService,
+		outputService:  cfg.OutputService,
+		updateService:  cfg.UpdateService,
+		reportService:  cfg.ReportService,
+		registry:       cfg.Registry,
+		versionInfo:    cfg.VersionInfo,
 	}
 }
 
@@ -251,7 +241,47 @@ func (s *service) wasteWorkflow(wasteChecks []string, generateReport bool, repor
 	resultCh := make(chan model.ScopeResult, 20)
 	g, ctx := errgroup.WithContext(ctx)
 
-	s.dispatchWasteChecks(ctx, g, resultCh, wasteChecks, lambdaMemoryThreshold, secretsIdleDays, iamIdleDays)
+	flags := model.Flags{
+		WasteChecks:               wasteChecks,
+		LambdaMemoryThreshold:     lambdaMemoryThreshold,
+		SecretsIdleDays:           secretsIdleDays,
+		IAMIdleDays:               iamIdleDays,
+		EC2StoppedDays:            ec2StoppedDays,
+		EC2RiExpiringDays:         ec2RiExpiringDays,
+		EC2AmiStaleDays:           ec2AmiStaleDays,
+		EC2SnapshotStaleDays:      ec2SnapshotStaleDays,
+		EC2IdleDays:               ec2IdleDays,
+		EC2IdleCPUPercent:         ec2IdleCPUPercent,
+		EC2IdleNetworkBytesPerDay: ec2IdleNetworkBytesPerDay,
+		SageMakerIdleDays:         sagemakerIdleDays,
+		VPCNatIdleDays:            vpcNatIdleDays,
+		ELBIdleDays:               elbIdleDays,
+		RDSIdleDays:               rdsIdleDays,
+		RDSSnapshotDays:           rdsSnapshotDays,
+		LambdaLookbackDays:        lambdaLookbackDays,
+	}
+
+	analyzers := s.registry.GetAnalyzers()
+	for _, a := range analyzers {
+		if !shouldRunCheck(wasteChecks, a.Name()) {
+			continue
+		}
+
+		analyzer := a
+
+		g.Go(func() error {
+			res, err := analyzer.Analyze(ctx, flags)
+			if err != nil {
+				// For now, we mimic old behavior by passing the error inside ScopeResult
+				// The previous code didn't fail the errgroup for an individual check failure
+				res.Err = err
+			}
+
+			resultCh <- res
+
+			return nil
+		})
+	}
 
 	// Wait and close channel in background
 	go func() {
@@ -310,52 +340,6 @@ func (s *service) wasteWorkflow(wasteChecks []string, generateReport bool, repor
 	}
 
 	return s.outputService.RenderWaste(finalInput, s.pricingService)
-}
-
-func (s *service) dispatchWasteChecks(ctx context.Context, g *errgroup.Group, resultCh chan<- model.ScopeResult, wasteChecks []string, lambdaMemoryThreshold int, secretsIdleDays int, iamIdleDays int) {
-	if shouldRunCheck(wasteChecks, "ec2") {
-		s.queueEC2Checks(ctx, g, resultCh)
-	}
-
-	if shouldRunCheck(wasteChecks, "vpc") {
-		s.queueVPCChecks(ctx, g, resultCh)
-	}
-
-	if shouldRunCheck(wasteChecks, "elb") {
-		s.queueELBChecks(ctx, g, resultCh)
-	}
-
-	if shouldRunCheck(wasteChecks, "s3") {
-		s.queueS3Checks(ctx, g, resultCh)
-	}
-
-	if shouldRunCheck(wasteChecks, "cloudwatch") {
-		s.queueCloudWatchLogsChecks(ctx, g, resultCh)
-	}
-
-	if shouldRunCheck(wasteChecks, "rds") {
-		s.queueRDSChecks(ctx, g, resultCh)
-	}
-
-	if shouldRunCheck(wasteChecks, "lambda") {
-		s.queueLambdaChecks(ctx, g, resultCh, lambdaMemoryThreshold)
-	}
-
-	if shouldRunCheck(wasteChecks, "sagemaker") {
-		s.queueSagemakerChecks(ctx, g, resultCh)
-	}
-
-	if shouldRunCheck(wasteChecks, "ecr") {
-		s.queueECRChecks(ctx, g, resultCh)
-	}
-
-	if shouldRunCheck(wasteChecks, "secrets-manager") {
-		s.queueSecretsManagerChecks(ctx, g, resultCh, secretsIdleDays)
-	}
-
-	if shouldRunCheck(wasteChecks, "iam") {
-		s.queueIAMChecks(ctx, g, resultCh, iamIdleDays)
-	}
 }
 
 func shouldRunCheck(wasteChecks []string, name string) bool {

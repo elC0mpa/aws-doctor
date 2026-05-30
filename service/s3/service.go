@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"sync"
+	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
@@ -21,6 +22,37 @@ func NewService(awsconfig aws.Config) Service {
 	return &service{
 		client: client,
 	}
+}
+
+func (s *service) Name() string {
+	return "s3"
+}
+
+func (s *service) Analyze(ctx context.Context, flags model.Flags) (model.ScopeResult, error) {
+	start := time.Now()
+	input := model.RenderWasteInput{}
+
+	var errs []error
+
+	unusedBuckets, uploads, err := s.GetS3Waste(ctx)
+	if err != nil {
+		errs = append(errs, err)
+	} else {
+		input.S3Buckets = unusedBuckets
+		input.S3MultipartUploads = uploads
+	}
+
+	var finalErr error
+	if len(errs) > 0 {
+		finalErr = fmt.Errorf("s3 analyze errors: %v", errs)
+	}
+
+	return model.ScopeResult{
+		Scope:    s.Name(),
+		Input:    input,
+		Duration: time.Since(start),
+		Err:      finalErr,
+	}, nil
 }
 
 func (s *service) GetS3Waste(ctx context.Context) ([]model.S3BucketWasteInfo, []model.S3MultipartUploadWasteInfo, error) {

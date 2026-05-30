@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"sync"
+	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/ecr"
@@ -23,6 +24,38 @@ func NewService(awsconfig aws.Config, pricingService pricing.Service) Service {
 		client:         client,
 		pricingService: pricingService,
 	}
+}
+
+func (s *service) Name() string {
+	return "ecr"
+}
+
+func (s *service) Analyze(ctx context.Context, flags model.Flags) (model.ScopeResult, error) {
+	start := time.Now()
+	input := model.RenderWasteInput{}
+
+	var errs []error
+
+	noPolicy, emptyRepos, untaggedImages, err := s.GetECRWaste(ctx)
+	if err != nil {
+		errs = append(errs, err)
+	} else {
+		input.ECRNoLifecyclePolicies = noPolicy
+		input.ECREmptyRepositories = emptyRepos
+		input.ECRUntaggedImages = untaggedImages
+	}
+
+	var finalErr error
+	if len(errs) > 0 {
+		finalErr = fmt.Errorf("ecr analyze errors: %v", errs)
+	}
+
+	return model.ScopeResult{
+		Scope:    s.Name(),
+		Input:    input,
+		Duration: time.Since(start),
+		Err:      finalErr,
+	}, nil
 }
 
 func (s *service) GetECRWaste(ctx context.Context) ([]model.ECRNoLifecyclePolicyInfo, []model.ECREmptyRepositoryInfo, []model.ECRUntaggedImageInfo, error) {

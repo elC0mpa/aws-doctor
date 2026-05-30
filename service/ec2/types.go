@@ -6,6 +6,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/ec2"
 	"github.com/aws/aws-sdk-go-v2/service/ec2/types"
 	"github.com/elC0mpa/aws-doctor/model"
+	"github.com/elC0mpa/aws-doctor/service/analyzer"
 )
 
 // ClientAPI is the interface for the AWS EC2 client methods used by the service.
@@ -40,6 +41,7 @@ type cloudwatchMetricsService interface {
 
 // Service is the interface for AWS EC2 service.
 type Service interface {
+	analyzer.WasteAnalyzer
 	GetElasticIPAddressesInfo(ctx context.Context) (*model.ElasticIPInfo, error)
 	GetUnusedElasticIPAddressesInfo(ctx context.Context) ([]types.Address, error)
 	GetUnusedEBSVolumes(ctx context.Context) ([]types.Volume, error)

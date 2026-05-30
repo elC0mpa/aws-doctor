@@ -3,7 +3,9 @@ package elb
 
 import (
 	"context"
+	"fmt"
 	"sync"
+	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	elb "github.com/aws/aws-sdk-go-v2/service/elasticloadbalancingv2"
@@ -21,6 +23,37 @@ func NewService(awsconfig aws.Config, cwService cloudwatchMetricsService, pricin
 		cwService:      cwService,
 		pricingService: pricingSvc,
 	}
+}
+
+func (s *service) Name() string {
+	return "elb"
+}
+
+func (s *service) Analyze(ctx context.Context, flags model.Flags) (model.ScopeResult, error) {
+	start := time.Now()
+	input := model.RenderWasteInput{}
+
+	var errs []error
+
+	unusedLBs, idleLBs, err := s.GetLoadBalancerWaste(ctx, flags.ELBIdleDays)
+	if err != nil {
+		errs = append(errs, err)
+	} else {
+		input.LoadBalancers = unusedLBs
+		input.IdleLoadBalancers = idleLBs
+	}
+
+	var finalErr error
+	if len(errs) > 0 {
+		finalErr = fmt.Errorf("elb analyze errors: %v", errs)
+	}
+
+	return model.ScopeResult{
+		Scope:    s.Name(),
+		Input:    input,
+		Duration: time.Since(start),
+		Err:      finalErr,
+	}, nil
 }
 
 // fetchLoadBalancersAndTargetGroups paginates all load balancers and target groups,

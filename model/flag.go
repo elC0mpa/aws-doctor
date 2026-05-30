@@ -16,4 +16,19 @@ type Flags struct {
 	LambdaMemoryThreshold int    // Memory utilization threshold (%) for Lambda over-provisioned detection (default: 10)
 	SecretsIdleDays       int    // Idle days threshold for flagging unused Secrets Manager secrets (default: 90)
 	IAMIdleDays           int    // Idle days threshold for flagging unused IAM Users
+
+	// Internal Thresholds passed from orchestrator
+	EC2StoppedDays            int
+	EC2RiExpiringDays         int
+	EC2AmiStaleDays           int
+	EC2SnapshotStaleDays      int
+	EC2IdleDays               int
+	EC2IdleCPUPercent         float64
+	EC2IdleNetworkBytesPerDay int
+	SageMakerIdleDays         int
+	VPCNatIdleDays            int
+	ELBIdleDays               int
+	RDSIdleDays               int
+	RDSSnapshotDays           int
+	LambdaLookbackDays        int
 }

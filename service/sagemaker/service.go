@@ -23,6 +23,7 @@ package sagemaker
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	sm "github.com/aws/aws-sdk-go-v2/service/sagemaker"
@@ -40,6 +41,36 @@ func NewService(awsconfig aws.Config, cwService cloudWatchMetricsService, pricin
 		cwService:      cwService,
 		pricingService: pricingSvc,
 	}
+}
+
+func (s *service) Name() string {
+	return "sagemaker"
+}
+
+func (s *service) Analyze(ctx context.Context, flags model.Flags) (model.ScopeResult, error) {
+	start := time.Now()
+	input := model.RenderWasteInput{}
+
+	var errs []error
+
+	idleEndpoints, err := s.GetIdleEndpoints(ctx, flags.SageMakerIdleDays)
+	if err != nil {
+		errs = append(errs, err)
+	} else {
+		input.IdleSageMakerEndpoints = idleEndpoints
+	}
+
+	var finalErr error
+	if len(errs) > 0 {
+		finalErr = fmt.Errorf("sagemaker analyze errors: %v", errs)
+	}
+
+	return model.ScopeResult{
+		Scope:    s.Name(),
+		Input:    input,
+		Duration: time.Since(start),
+		Err:      finalErr,
+	}, nil
 }
 
 // GetIdleEndpoints returns InService SageMaker real-time inference endpoints whose production

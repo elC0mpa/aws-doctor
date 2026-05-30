@@ -24,6 +24,38 @@ func NewService(awsconfig aws.Config, cwService cloudwatchMetricsService, pricin
 	}
 }
 
+func (s *service) Name() string {
+	return "rds"
+}
+
+func (s *service) Analyze(ctx context.Context, flags model.Flags) (model.ScopeResult, error) {
+	start := time.Now()
+	input := model.RenderWasteInput{}
+
+	var errs []error
+
+	unusedInstances, unusedSnapshots, idleInstances, err := s.GetRDSWaste(ctx, flags.RDSIdleDays, flags.RDSSnapshotDays)
+	if err != nil {
+		errs = append(errs, err)
+	} else {
+		input.RDSInstances = unusedInstances
+		input.RDSSnapshots = unusedSnapshots
+		input.RDSIdleInstances = idleInstances
+	}
+
+	var finalErr error
+	if len(errs) > 0 {
+		finalErr = fmt.Errorf("rds analyze errors: %v", errs)
+	}
+
+	return model.ScopeResult{
+		Scope:    s.Name(),
+		Input:    input,
+		Duration: time.Since(start),
+		Err:      finalErr,
+	}, nil
+}
+
 // GetRDSWaste returns stopped RDS instances, old manual snapshots, and idle instances.
 func (s *service) GetRDSWaste(ctx context.Context, idleDays int, snapshotDays int) ([]model.RDSInstanceWasteInfo, []model.RDSSnapshotWasteInfo, []model.RDSIdleInstanceInfo, error) {
 	g, ctx := errgroup.WithContext(ctx)

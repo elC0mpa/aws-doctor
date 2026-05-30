@@ -21,6 +21,41 @@ func NewService(awsconfig aws.Config, pricingService pricingService) Service {
 	}
 }
 
+func (s *service) Name() string {
+	return "secrets-manager"
+}
+
+func (s *service) Analyze(ctx context.Context, flags model.Flags) (model.ScopeResult, error) {
+	start := time.Now()
+	input := model.RenderWasteInput{}
+
+	var errs []error
+
+	idleDays := flags.SecretsIdleDays
+	if idleDays == 0 {
+		idleDays = 90
+	}
+
+	unusedSecrets, err := s.GetUnusedSecrets(ctx, idleDays)
+	if err != nil {
+		errs = append(errs, err)
+	} else {
+		input.UnusedSecrets = unusedSecrets
+	}
+
+	var finalErr error
+	if len(errs) > 0 {
+		finalErr = fmt.Errorf("secrets-manager analyze errors: %v", errs)
+	}
+
+	return model.ScopeResult{
+		Scope:    s.Name(),
+		Input:    input,
+		Duration: time.Since(start),
+		Err:      finalErr,
+	}, nil
+}
+
 func (s *service) GetUnusedSecrets(ctx context.Context, idleDays int) ([]model.UnusedSecretInfo, error) {
 	var unusedSecrets []model.UnusedSecretInfo
 

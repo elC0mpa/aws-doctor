@@ -24,6 +24,36 @@ func NewService(awsconfig aws.Config, cwService cloudwatchMetricsService, pricin
 	}
 }
 
+func (s *service) Name() string {
+	return "vpc"
+}
+
+func (s *service) Analyze(ctx context.Context, flags model.Flags) (model.ScopeResult, error) {
+	start := time.Now()
+	input := model.RenderWasteInput{}
+
+	var errs []error
+
+	idleNATs, err := s.GetIdleNATGateways(ctx, 7) // Hardcoding threshold
+	if err != nil {
+		errs = append(errs, err)
+	} else {
+		input.IdleNATGateways = idleNATs
+	}
+
+	var finalErr error
+	if len(errs) > 0 {
+		finalErr = fmt.Errorf("vpc analyze errors: %v", errs)
+	}
+
+	return model.ScopeResult{
+		Scope:    s.Name(),
+		Input:    input,
+		Duration: time.Since(start),
+		Err:      finalErr,
+	}, nil
+}
+
 // GetIdleNATGateways returns NAT Gateways that have processed 0 bytes over the idleDays period.
 func (s *service) GetIdleNATGateways(ctx context.Context, idleDays int) ([]model.NATGatewayWasteInfo, error) {
 	paginator := ec2.NewDescribeNatGatewaysPaginator(s.client, &ec2.DescribeNatGatewaysInput{
