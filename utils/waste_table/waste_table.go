@@ -3,6 +3,7 @@ package wastetable
 import (
 	"fmt"
 	"io"
+	"sort"
 	"strings"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -1285,8 +1286,15 @@ func drawErrorsSection(out io.Writer, errors map[string]string) {
 	t.SetOutputMirror(out)
 	t.AppendHeader(table.Row{"Scope", "Error"})
 
-	for scope, errMsg := range errors {
-		t.AppendRow(table.Row{scope, errMsg})
+	var scopes []string
+	for scope := range errors {
+		scopes = append(scopes, scope)
+	}
+
+	sort.Strings(scopes)
+
+	for _, scope := range scopes {
+		t.AppendRow(table.Row{scope, errors[scope]})
 	}
 
 	t.SetStyle(table.StyleRounded)
@@ -1309,8 +1317,15 @@ func RenderErrorsTable(errors map[string]string) string {
 	t.SetOutputMirror(b)
 	t.AppendHeader(table.Row{"Scope", "Error"})
 
-	for scope, errMsg := range errors {
-		t.AppendRow(table.Row{scope, errMsg})
+	var scopes []string
+	for scope := range errors {
+		scopes = append(scopes, scope)
+	}
+
+	sort.Strings(scopes)
+
+	for _, scope := range scopes {
+		t.AppendRow(table.Row{scope, errors[scope]})
 	}
 
 	t.SetStyle(table.StyleRounded)
