@@ -3,6 +3,7 @@ package rds
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"math"
 	"time"
@@ -49,7 +50,7 @@ func (s *service) Analyze(ctx context.Context, flags model.Flags) (model.ScopeRe
 
 	var finalErr error
 	if len(errs) > 0 {
-		finalErr = fmt.Errorf("rds analyze errors: %v", errs)
+		finalErr = fmt.Errorf("rds analyze errors: %w", errors.Join(errs...))
 	}
 
 	return model.ScopeResult{

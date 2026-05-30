@@ -51,7 +51,7 @@ func (s *service) Analyze(ctx context.Context, flags model.Flags) (model.ScopeRe
 
 	var finalErr error
 	if len(errs) > 0 {
-		finalErr = fmt.Errorf("ecr analyze errors: %v", errs)
+		finalErr = fmt.Errorf("ecr analyze errors: %w", errors.Join(errs...))
 	}
 
 	return model.ScopeResult{

@@ -3,6 +3,7 @@ package ec2
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strings"
 	"sync"
@@ -179,7 +180,7 @@ func (s *service) Analyze(ctx context.Context, flags model.Flags) (model.ScopeRe
 
 	var finalErr error
 	if len(errs) > 0 {
-		finalErr = fmt.Errorf("ec2 analyze errors: %v", errs)
+		finalErr = fmt.Errorf("ec2 analyze errors: %w", errors.Join(errs...))
 	}
 
 	return model.ScopeResult{
