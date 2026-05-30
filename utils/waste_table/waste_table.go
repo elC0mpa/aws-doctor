@@ -1294,3 +1294,27 @@ func drawErrorsSection(out io.Writer, errors map[string]string) {
 
 	_, _ = fmt.Fprintln(out)
 }
+
+// RenderErrorsTable renders the errors as a string for the TUI.
+func RenderErrorsTable(errors map[string]string) string {
+	if len(errors) == 0 {
+		return ""
+	}
+
+	b := &strings.Builder{}
+	_, _ = fmt.Fprintln(b, text.FgHiRed.Sprint(" ⚠️  ERRORS ENCOUNTERED DURING SCAN"))
+	_, _ = fmt.Fprintln(b, text.FgRed.Sprint(" ------------------------------------------------"))
+
+	t := table.NewWriter()
+	t.SetOutputMirror(b)
+	t.AppendHeader(table.Row{"Scope", "Error"})
+
+	for scope, errMsg := range errors {
+		t.AppendRow(table.Row{scope, errMsg})
+	}
+
+	t.SetStyle(table.StyleRounded)
+	t.Render()
+
+	return b.String()
+}
