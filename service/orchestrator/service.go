@@ -277,11 +277,14 @@ func (s *service) wasteWorkflow(wasteChecks []string, generateReport bool, repor
 
 			if err != nil {
 				res.Err = err
+			}
+
+			if res.Err != nil {
 				if res.Input.Errors == nil {
 					res.Input.Errors = make(map[string]string)
 				}
 
-				res.Input.Errors[res.Scope] = err.Error()
+				res.Input.Errors[res.Scope] = res.Err.Error()
 			}
 
 			resultCh <- res
