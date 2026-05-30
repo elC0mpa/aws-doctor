@@ -42,9 +42,6 @@ func (s *service) Analyze(ctx context.Context, flags model.Flags) (model.ScopeRe
 	var errs []error
 
 	idleDays := flags.IAMIdleDays
-	if idleDays == 0 {
-		idleDays = 90
-	}
 
 	unusedUsers, rootWaste, err := s.GetIAMWaste(ctx, idleDays)
 	if err != nil {

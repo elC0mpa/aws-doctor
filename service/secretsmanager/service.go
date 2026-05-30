@@ -37,9 +37,6 @@ func (s *service) Analyze(ctx context.Context, flags model.Flags) (model.ScopeRe
 	var errs []error
 
 	idleDays := flags.SecretsIdleDays
-	if idleDays == 0 {
-		idleDays = 90
-	}
 
 	unusedSecrets, err := s.GetUnusedSecrets(ctx, idleDays)
 	if err != nil {

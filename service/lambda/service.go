@@ -47,9 +47,6 @@ func (s *service) Analyze(ctx context.Context, flags model.Flags) (model.ScopeRe
 	var errs []error
 
 	memoryThreshold := flags.LambdaMemoryThreshold
-	if memoryThreshold == 0 {
-		memoryThreshold = 10 // default
-	}
 
 	overProvisioned, err := s.GetOverProvisionedFunctions(ctx, memoryThreshold, flags.LambdaLookbackDays)
 	if err != nil {
