@@ -5,10 +5,12 @@ import (
 
 	"github.com/aws/aws-sdk-go-v2/service/iam"
 	"github.com/elC0mpa/aws-doctor/model"
+	"github.com/elC0mpa/aws-doctor/service/analyzer"
 )
 
 // Service defines the interface for the IAM service.
 type Service interface {
+	analyzer.WasteAnalyzer
 	// GetIAMWaste returns a list of unused IAM users and an alert if the root account lacks MFA.
 	GetIAMWaste(ctx context.Context, idleDays int) ([]model.IAMUserWasteInfo, []model.IAMRootUserWasteInfo, error)
 }

@@ -5,6 +5,7 @@ import (
 
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/elC0mpa/aws-doctor/model"
+	"github.com/elC0mpa/aws-doctor/service/analyzer"
 )
 
 // ClientAPI is the interface for the AWS S3 client methods used by the service.
@@ -21,5 +22,6 @@ type service struct {
 
 // Service is the interface for AWS S3 service.
 type Service interface {
+	analyzer.WasteAnalyzer
 	GetS3Waste(ctx context.Context) ([]model.S3BucketWasteInfo, []model.S3MultipartUploadWasteInfo, error)
 }

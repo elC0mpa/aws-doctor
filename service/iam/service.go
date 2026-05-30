@@ -2,6 +2,7 @@ package iam
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"sync"
 	"time"
@@ -20,7 +21,47 @@ type service struct {
 // NewService creates a new instance of the IAM service.
 func NewService(awsconfig aws.Config) Service {
 	client := iam.NewFromConfig(awsconfig)
-	return &service{client: client}
+
+	return &service{
+		client: client,
+	}
+}
+
+func (s *service) Name() string {
+	return "iam"
+}
+
+func (s *service) TabName() string {
+	return "IAM"
+}
+
+func (s *service) Analyze(ctx context.Context, flags model.Flags) (model.ScopeResult, error) {
+	start := time.Now()
+	input := model.RenderWasteInput{}
+
+	var errs []error
+
+	idleDays := flags.IAMIdleDays
+
+	unusedUsers, rootWaste, err := s.GetIAMWaste(ctx, idleDays)
+	if err != nil {
+		errs = append(errs, err)
+	} else {
+		input.UnusedIAMUsers = unusedUsers
+		input.RootUserWaste = rootWaste
+	}
+
+	var finalErr error
+	if len(errs) > 0 {
+		finalErr = fmt.Errorf("iam analyze errors: %w", errors.Join(errs...))
+	}
+
+	return model.ScopeResult{
+		Scope:    s.Name(),
+		Input:    input,
+		Duration: time.Since(start),
+		Err:      finalErr,
+	}, nil
 }
 
 func (s *service) GetIAMWaste(ctx context.Context, idleDays int) ([]model.IAMUserWasteInfo, []model.IAMRootUserWasteInfo, error) {

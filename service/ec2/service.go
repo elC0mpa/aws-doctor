@@ -3,9 +3,13 @@ package ec2
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strings"
+	"sync"
 	"time"
+
+	"golang.org/x/sync/errgroup"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/ec2"
@@ -23,6 +27,168 @@ func NewService(awsconfig aws.Config, cwService cloudwatchMetricsService, pricin
 		cwService:      cwService,
 		pricingService: pricingSvc,
 	}
+}
+
+func (s *service) Name() string {
+	return "ec2"
+}
+
+func (s *service) TabName() string {
+	return "EC2"
+}
+
+func (s *service) Analyze(ctx context.Context, flags model.Flags) (model.ScopeResult, error) {
+	start := time.Now()
+	input := model.RenderWasteInput{}
+
+	var errs []error
+
+	g, gCtx := errgroup.WithContext(ctx)
+
+	var mu sync.Mutex
+
+	// Retrieve Unused EIPs
+	g.Go(func() error {
+		eips, err := s.GetUnusedElasticIPAddressesInfo(gCtx)
+
+		mu.Lock()
+		defer mu.Unlock()
+
+		if err != nil {
+			errs = append(errs, err)
+		} else {
+			input.ElasticIPs = eips
+		}
+
+		return nil
+	})
+
+	// Retrieve Unused Volumes
+	g.Go(func() error {
+		vols, err := s.GetUnusedEBSVolumes(gCtx)
+
+		mu.Lock()
+		defer mu.Unlock()
+
+		if err != nil {
+			errs = append(errs, err)
+		} else {
+			input.UnusedVolumes = vols
+		}
+
+		return nil
+	})
+
+	// Retrieve Stopped Instances and their volumes
+	g.Go(func() error {
+		stoppedInstances, stoppedVolumes, err := s.GetStoppedInstancesInfo(gCtx, flags.EC2StoppedDays)
+
+		mu.Lock()
+		defer mu.Unlock()
+
+		if err != nil {
+			errs = append(errs, err)
+		} else {
+			input.StoppedInstances = stoppedInstances
+			input.StoppedVolumes = stoppedVolumes
+		}
+
+		return nil
+	})
+
+	// Retrieve Expiring/Expired RIs
+	g.Go(func() error {
+		ris, err := s.GetReservedInstanceExpiringOrExpiredWaste(gCtx, flags.EC2RiExpiringDays)
+
+		mu.Lock()
+		defer mu.Unlock()
+
+		if err != nil {
+			errs = append(errs, err)
+		} else {
+			input.Ris = ris
+		}
+
+		return nil
+	})
+
+	// Retrieve Idle EC2 Instances
+	g.Go(func() error {
+		idleInstances, err := s.GetIdleInstances(gCtx, flags.EC2IdleDays, flags.EC2IdleCPUPercent, float64(flags.EC2IdleNetworkBytesPerDay))
+
+		mu.Lock()
+		defer mu.Unlock()
+
+		if err != nil {
+			errs = append(errs, err)
+		} else {
+			input.IdleEC2Instances = idleInstances
+		}
+
+		return nil
+	})
+
+	// Retrieve Unused AMIs
+	g.Go(func() error {
+		amis, err := s.GetUnusedAMIs(gCtx, flags.EC2AmiStaleDays)
+
+		mu.Lock()
+		defer mu.Unlock()
+
+		if err != nil {
+			errs = append(errs, err)
+		} else {
+			input.UnusedAMIs = amis
+		}
+
+		return nil
+	})
+
+	// Retrieve Orphaned Snapshots
+	g.Go(func() error {
+		snapshots, err := s.GetOrphanedSnapshots(gCtx, flags.EC2SnapshotStaleDays)
+
+		mu.Lock()
+		defer mu.Unlock()
+
+		if err != nil {
+			errs = append(errs, err)
+		} else {
+			input.OrphanedSnapshots = snapshots
+		}
+
+		return nil
+	})
+
+	// Retrieve Unused KeyPairs
+	g.Go(func() error {
+		keypairs, err := s.GetUnusedKeyPairs(gCtx)
+
+		mu.Lock()
+		defer mu.Unlock()
+
+		if err != nil {
+			errs = append(errs, err)
+		} else {
+			input.UnusedKeyPairs = keypairs
+		}
+
+		return nil
+	})
+
+	_ = g.Wait()
+
+	var finalErr error
+	if len(errs) > 0 {
+		finalErr = fmt.Errorf("ec2 analyze errors: %w", errors.Join(errs...))
+	}
+
+	return model.ScopeResult{
+		Scope:    s.Name(),
+		Input:    input,
+		Duration: time.Since(start),
+		Err:      finalErr,
+	}, nil
 }
 
 func (s *service) GetElasticIPAddressesInfo(ctx context.Context) (*model.ElasticIPInfo, error) {

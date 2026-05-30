@@ -7,6 +7,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/sts"
 	"github.com/elC0mpa/aws-doctor/mocks/services"
 	"github.com/elC0mpa/aws-doctor/model"
+	"github.com/elC0mpa/aws-doctor/service/analyzer"
 	"github.com/stretchr/testify/mock"
 )
 
@@ -43,13 +44,12 @@ func TestWasteWorkflow_NonInteractive(t *testing.T) {
 	mockSTSSvc := &services.MockSTSService{}
 	mockOutputSvc := &services.MockOutputService{}
 	mockPricingSvc := &services.MockPricingService{}
-	mockVPCSvc := &services.MockVPCService{}
 
 	s := &service{
+		registry:       analyzer.NewRegistry(),
 		stsService:     mockSTSSvc,
 		outputService:  mockOutputSvc,
 		pricingService: mockPricingSvc,
-		vpcService:     mockVPCSvc,
 	}
 
 	acc := "123456789012"
@@ -59,8 +59,6 @@ func TestWasteWorkflow_NonInteractive(t *testing.T) {
 	mockOutputSvc.On("StopSpinner").Return()
 	mockOutputSvc.On("IsInteractive").Return(false)
 	mockOutputSvc.On("RenderWaste", mock.Anything, mockPricingSvc).Return(nil)
-
-	mockVPCSvc.On("GetIdleNATGateways", mock.Anything, mock.Anything).Return(nil, nil)
 
 	err := s.wasteWorkflow([]string{"vpc"}, false, "", 0, 0, 0)
 	if err != nil {
@@ -74,6 +72,7 @@ func TestTrendWorkflow(t *testing.T) {
 	mockCostSvc := &services.MockCostService{}
 
 	s := &service{
+		registry:      analyzer.NewRegistry(),
 		stsService:    mockSTSSvc,
 		outputService: mockOutputSvc,
 		costService:   mockCostSvc,
@@ -97,6 +96,7 @@ func TestWasteWorkflow_STSError(t *testing.T) {
 	mockOutputSvc := &services.MockOutputService{}
 
 	s := &service{
+		registry:       analyzer.NewRegistry(),
 		stsService:     mockSTSSvc,
 		pricingService: mockPricingSvc,
 		outputService:  mockOutputSvc,
@@ -116,13 +116,12 @@ func TestWasteWorkflow_LoadRegionRatesError_Ignored(t *testing.T) {
 	mockSTSSvc := &services.MockSTSService{}
 	mockPricingSvc := &services.MockPricingService{}
 	mockOutputSvc := &services.MockOutputService{}
-	mockVPCSvc := &services.MockVPCService{}
 
 	s := &service{
+		registry:       analyzer.NewRegistry(),
 		stsService:     mockSTSSvc,
 		pricingService: mockPricingSvc,
 		outputService:  mockOutputSvc,
-		vpcService:     mockVPCSvc,
 	}
 
 	acc := "123456789012"
@@ -132,7 +131,7 @@ func TestWasteWorkflow_LoadRegionRatesError_Ignored(t *testing.T) {
 	mockOutputSvc.On("SetSpinnerMessage", mock.Anything).Return()
 	mockOutputSvc.On("StopSpinner").Return()
 	mockOutputSvc.On("IsInteractive").Return(false)
-	mockVPCSvc.On("GetIdleNATGateways", mock.Anything, mock.Anything).Return(nil, nil)
+
 	mockOutputSvc.On("RenderWaste", mock.Anything, mockPricingSvc).Return(nil)
 
 	err := s.wasteWorkflow([]string{"vpc"}, false, "", 0, 0, 0)
@@ -145,13 +144,12 @@ func TestWasteWorkflow_RenderWaste_Error(t *testing.T) {
 	mockSTSSvc := &services.MockSTSService{}
 	mockPricingSvc := &services.MockPricingService{}
 	mockOutputSvc := &services.MockOutputService{}
-	mockVPCSvc := &services.MockVPCService{}
 
 	s := &service{
+		registry:       analyzer.NewRegistry(),
 		stsService:     mockSTSSvc,
 		pricingService: mockPricingSvc,
 		outputService:  mockOutputSvc,
-		vpcService:     mockVPCSvc,
 	}
 
 	acc := "123456789012"
@@ -160,7 +158,7 @@ func TestWasteWorkflow_RenderWaste_Error(t *testing.T) {
 	mockOutputSvc.On("SetSpinnerMessage", mock.Anything).Return()
 	mockOutputSvc.On("StopSpinner").Return()
 	mockOutputSvc.On("IsInteractive").Return(false)
-	mockVPCSvc.On("GetIdleNATGateways", mock.Anything, mock.Anything).Return(nil, nil)
+
 	mockOutputSvc.On("RenderWaste", mock.Anything, mockPricingSvc).Return(errors.New("render error")).Once()
 
 	err := s.wasteWorkflow([]string{"vpc"}, false, "", 0, 0, 0)
@@ -173,13 +171,12 @@ func TestWasteWorkflow_Interactive_EOF(t *testing.T) {
 	mockSTSSvc := &services.MockSTSService{}
 	mockPricingSvc := &services.MockPricingService{}
 	mockOutputSvc := &services.MockOutputService{}
-	mockVPCSvc := &services.MockVPCService{}
 
 	s := &service{
+		registry:       analyzer.NewRegistry(),
 		stsService:     mockSTSSvc,
 		pricingService: mockPricingSvc,
 		outputService:  mockOutputSvc,
-		vpcService:     mockVPCSvc,
 	}
 
 	acc := "123456789012"
@@ -189,7 +186,6 @@ func TestWasteWorkflow_Interactive_EOF(t *testing.T) {
 	mockOutputSvc.On("StopSpinner").Return()
 	mockOutputSvc.On("IsInteractive").Return(true)
 
-	mockVPCSvc.On("GetIdleNATGateways", mock.Anything, mock.Anything).Return(nil, nil)
 	mockOutputSvc.On("RenderWasteInteractive", acc, mock.Anything, mock.Anything, mock.Anything).Return(nil).Once()
 
 	err := s.wasteWorkflow([]string{"vpc"}, false, "", 0, 0, 0)

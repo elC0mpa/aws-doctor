@@ -204,6 +204,32 @@ Cost estimates for waste detection live in `service/pricing`. Each category fetc
 
 Keep the fallback table around — it is used both when the Pricing API is unreachable and when a specific SKU is missing from the response.
 
+### Adding a New Waste Detection Type
+
+1. **Model Type**: Add the appropriate struct in `model/` package (e.g., `model/ec2.go` for `KeyPairWasteInfo`).
+2. **Client Interface**: Define any new AWS client methods needed in the `*ClientAPI` interface (e.g., `service/ec2/types.go`).
+3. **Client Mock**: Update the corresponding mock in `mocks/awsinterfaces/` to implement the new client method.
+4. **Service Method**: Implement the logic in the service file (e.g., `service/ec2/service.go`). Use paginators for all AWS APIs that support them.
+5. **Service Interface**: Add the new method to the `Service` interface in `types.go`.
+6. **Service Mock**: Update the service mock in `mocks/services/` to include the new method.
+7. **Analyzer Registration**: 
+   - Ensure the service implements the `analyzer.WasteAnalyzer` interface (`Analyze` and `Name`).
+   - If adding a completely new service, register it in the orchestrator builder (e.g., `cmd/root.go`, `cmd/waste.go`) via the `registry.Register()` method, and add its tab name mapping in `service/orchestrator/service.go`.
+   - If adding a new check inside an existing service, simply add the new method call to the concurrent `errgroup` inside the service's `Analyze` method. No orchestrator changes needed!
+8. **Output Service**: 
+   - Update `model.RenderWasteInput` in `model/waste.go` to include the new slice, and update its `Merge()` method.
+   - Update `RenderWaste` signatures if necessary.
+9. **Utility Handlers**:
+   - Add a display function in `utils/waste_table/waste_table.go` and update the `RenderScopeTable` switch statement for the new scope (if applicable).
+   - Add a JSON output type in `model/output.go` and update `utils/json_output/json_output.go`.
+10. **Test Compliance**: **Update all existing test calls** in the service tests and `utils` when function signatures change. Run `go test ./...` frequently.
+11. **Documentation**:
+    - Update the feature checklist and 'Selective scanning' command list in `README.md`.
+    - Add the new check to the 'Selective Scanning' table in `docs/content/docs/waste-detection/_index.md` and `_index.es.md`.
+    - Create the dedicated documentation page for the category (e.g., `security.md` and `security.es.md`), **but only if the category doesn't exist already**.
+    - Add the feature card to the Docs Site grids following the "Docs Site Card Grids" rules.
+12. **Validation**: Run `go vet ./...` and `golangci-lint run` to ensure no regressions or interface mismatches were introduced.
+
 ### Import Organization
 
 ```go

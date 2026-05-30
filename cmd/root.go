@@ -6,6 +6,7 @@ import (
 	"os"
 
 	"github.com/elC0mpa/aws-doctor/model"
+	"github.com/elC0mpa/aws-doctor/service/analyzer"
 	awsconfig "github.com/elC0mpa/aws-doctor/service/aws_config"
 	"github.com/elC0mpa/aws-doctor/service/cache"
 	"github.com/elC0mpa/aws-doctor/service/cloudwatchlogs"
@@ -71,20 +72,25 @@ func buildOrchestrator(needsAWS bool) (orchestrator.Service, error) {
 
 	config.STSService = awssts.NewService(awsCfg)
 	config.CostService = awscostexplorer.NewService(awsCfg)
-	config.EC2Service = awsec2.NewService(awsCfg, cwMetricsService, pricingSvc)
-	config.ELBService = elb.NewService(awsCfg, cwMetricsService, pricingSvc)
-	config.S3Service = s3.NewService(awsCfg)
-	config.ECRService = ecr.NewService(awsCfg, pricingSvc)
-	cwLogsService := cloudwatchlogs.NewService(awsCfg, pricingSvc)
-	config.CloudWatchLogsService = cwLogsService
-	config.RDSService = rds.NewService(awsCfg, cwMetricsService, pricingSvc)
-	config.VPCService = awsvpc.NewService(awsCfg, cwMetricsService, pricingSvc)
-	config.LambdaService = awslambda.NewService(awsCfg, cwLogsService)
-	config.SageMakerService = awssagemaker.NewService(awsCfg, cwMetricsService, pricingSvc)
-	config.SecretsManagerService = awssecretsmanager.NewService(awsCfg, pricingSvc)
 	config.PricingService = pricingSvc
 	config.ReportService = report.NewService()
-	config.IAMService = iam.NewService(awsCfg)
+
+	reg := analyzer.NewRegistry()
+	cwLogsService := cloudwatchlogs.NewService(awsCfg, pricingSvc)
+
+	reg.Register(awsec2.NewService(awsCfg, cwMetricsService, pricingSvc))
+	reg.Register(awsvpc.NewService(awsCfg, cwMetricsService, pricingSvc))
+	reg.Register(elb.NewService(awsCfg, cwMetricsService, pricingSvc))
+	reg.Register(s3.NewService(awsCfg))
+	reg.Register(cwLogsService)
+	reg.Register(rds.NewService(awsCfg, cwMetricsService, pricingSvc))
+	reg.Register(awslambda.NewService(awsCfg, cwLogsService))
+	reg.Register(awssagemaker.NewService(awsCfg, cwMetricsService, pricingSvc))
+	reg.Register(ecr.NewService(awsCfg, pricingSvc))
+	reg.Register(awssecretsmanager.NewService(awsCfg, pricingSvc))
+	reg.Register(iam.NewService(awsCfg))
+
+	config.Registry = reg
 
 	return orchestrator.NewService(config), nil
 }

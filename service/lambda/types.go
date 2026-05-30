@@ -6,6 +6,7 @@ import (
 
 	awslambda "github.com/aws/aws-sdk-go-v2/service/lambda"
 	"github.com/elC0mpa/aws-doctor/model"
+	"github.com/elC0mpa/aws-doctor/service/analyzer"
 )
 
 // ClientAPI is the interface for the AWS Lambda client methods used by the service.
@@ -26,5 +27,6 @@ type service struct {
 
 // Service is the interface for AWS Lambda service.
 type Service interface {
+	analyzer.WasteAnalyzer
 	GetOverProvisionedFunctions(ctx context.Context, memoryThresholdPercent int, lookbackDays int) ([]model.LambdaOverProvisionedInfo, error)
 }

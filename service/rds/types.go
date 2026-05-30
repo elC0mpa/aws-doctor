@@ -5,6 +5,7 @@ import (
 
 	"github.com/aws/aws-sdk-go-v2/service/rds"
 	"github.com/elC0mpa/aws-doctor/model"
+	"github.com/elC0mpa/aws-doctor/service/analyzer"
 )
 
 // ClientAPI is the interface for the AWS RDS client methods used by the service.
@@ -33,5 +34,6 @@ type pricingService interface {
 
 // Service is the interface for AWS RDS service.
 type Service interface {
+	analyzer.WasteAnalyzer
 	GetRDSWaste(ctx context.Context, idleDays int, snapshotDays int) ([]model.RDSInstanceWasteInfo, []model.RDSSnapshotWasteInfo, []model.RDSIdleInstanceInfo, error)
 }
