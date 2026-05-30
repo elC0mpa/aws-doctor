@@ -199,7 +199,9 @@ func (m *wasteModel) syncViewportContent() {
 	case "":
 		contentStr = windowStyle.Render("Scanning " + activeScope + "... " + m.spinner.View())
 	case statusError:
-		contentStr = windowStyle.Render("Failed to scan " + activeScope)
+		errMsg := m.aggregatedData.Errors[activeScope]
+		text := lipgloss.NewStyle().Foreground(lipgloss.Color("9")).Render("⚠️  Error running checks for " + activeScope + ":\n\n" + errMsg)
+		contentStr = windowStyle.Render(text)
 	default:
 		tableStr := wastetable.RenderScopeTable(activeScope, m.aggregatedData, m.pricingSvc)
 		durationStr := ""
