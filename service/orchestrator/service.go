@@ -261,25 +261,6 @@ func (s *service) wasteWorkflow(wasteChecks []string, generateReport bool, repor
 		LambdaLookbackDays:        lambdaLookbackDays,
 	}
 
-	allScopes := []struct{ name, tab string }{
-		{"ec2", "EC2"},
-		{"vpc", "VPC"},
-		{"elb", "ELB"},
-		{"s3", "S3"},
-		{"cloudwatch", "CloudWatch"},
-		{"rds", "RDS"},
-		{"lambda", "Lambda"},
-		{"sagemaker", "SageMaker"},
-		{"ecr", "ECR"},
-		{"secrets-manager", "SecretsManager"},
-		{"iam", "IAM"},
-	}
-
-	tabMap := make(map[string]string)
-	for _, s := range allScopes {
-		tabMap[s.name] = s.tab
-	}
-
 	analyzers := s.registry.GetAnalyzers()
 	for _, a := range analyzers {
 		if !shouldRunCheck(wasteChecks, a.Name()) {
@@ -292,9 +273,7 @@ func (s *service) wasteWorkflow(wasteChecks []string, generateReport bool, repor
 			res, err := analyzer.Analyze(ctx, flags)
 
 			// Map the lowercase analyzer name back to the expected Tab name
-			if tab, ok := tabMap[analyzer.Name()]; ok {
-				res.Scope = tab
-			}
+			res.Scope = analyzer.TabName()
 
 			if err != nil {
 				// For now, we mimic old behavior by passing the error inside ScopeResult
@@ -321,9 +300,9 @@ func (s *service) wasteWorkflow(wasteChecks []string, generateReport bool, repor
 
 		var scopes []string
 
-		for _, s := range allScopes {
-			if shouldRunCheck(wasteChecks, s.name) {
-				scopes = append(scopes, s.tab)
+		for _, a := range analyzers {
+			if shouldRunCheck(wasteChecks, a.Name()) {
+				scopes = append(scopes, a.TabName())
 			}
 		}
 

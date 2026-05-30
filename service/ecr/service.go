@@ -30,6 +30,10 @@ func (s *service) Name() string {
 	return "ecr"
 }
 
+func (s *service) TabName() string {
+	return "ECR"
+}
+
 func (s *service) Analyze(ctx context.Context, flags model.Flags) (model.ScopeResult, error) {
 	start := time.Now()
 	input := model.RenderWasteInput{}

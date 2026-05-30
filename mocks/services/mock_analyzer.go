@@ -18,6 +18,12 @@ func (m *MockAnalyzer) Name() string {
 	return args.String(0)
 }
 
+// TabName returns the tab name of the mock analyzer.
+func (m *MockAnalyzer) TabName() string {
+	args := m.Called()
+	return args.String(0)
+}
+
 // Analyze performs the mock analysis.
 func (m *MockAnalyzer) Analyze(ctx context.Context, flags model.Flags) (model.ScopeResult, error) {
 	args := m.Called(ctx, flags)

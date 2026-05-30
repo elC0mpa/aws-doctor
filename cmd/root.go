@@ -79,14 +79,14 @@ func buildOrchestrator(needsAWS bool) (orchestrator.Service, error) {
 	cwLogsService := cloudwatchlogs.NewService(awsCfg, pricingSvc)
 
 	reg.Register(awsec2.NewService(awsCfg, cwMetricsService, pricingSvc))
+	reg.Register(awsvpc.NewService(awsCfg, cwMetricsService, pricingSvc))
 	reg.Register(elb.NewService(awsCfg, cwMetricsService, pricingSvc))
 	reg.Register(s3.NewService(awsCfg))
-	reg.Register(ecr.NewService(awsCfg, pricingSvc))
 	reg.Register(cwLogsService)
 	reg.Register(rds.NewService(awsCfg, cwMetricsService, pricingSvc))
-	reg.Register(awsvpc.NewService(awsCfg, cwMetricsService, pricingSvc))
 	reg.Register(awslambda.NewService(awsCfg, cwLogsService))
 	reg.Register(awssagemaker.NewService(awsCfg, cwMetricsService, pricingSvc))
+	reg.Register(ecr.NewService(awsCfg, pricingSvc))
 	reg.Register(awssecretsmanager.NewService(awsCfg, pricingSvc))
 	reg.Register(iam.NewService(awsCfg))
 

@@ -28,6 +28,10 @@ func (s *service) Name() string {
 	return "vpc"
 }
 
+func (s *service) TabName() string {
+	return "VPC"
+}
+
 func (s *service) Analyze(ctx context.Context, flags model.Flags) (model.ScopeResult, error) {
 	start := time.Now()
 	input := model.RenderWasteInput{}

@@ -47,6 +47,10 @@ func (s *service) Name() string {
 	return "sagemaker"
 }
 
+func (s *service) TabName() string {
+	return "SageMaker"
+}
+
 func (s *service) Analyze(ctx context.Context, flags model.Flags) (model.ScopeResult, error) {
 	start := time.Now()
 	input := model.RenderWasteInput{}

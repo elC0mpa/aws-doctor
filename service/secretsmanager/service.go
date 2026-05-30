@@ -25,6 +25,10 @@ func (s *service) Name() string {
 	return "secrets-manager"
 }
 
+func (s *service) TabName() string {
+	return "SecretsManager"
+}
+
 func (s *service) Analyze(ctx context.Context, flags model.Flags) (model.ScopeResult, error) {
 	start := time.Now()
 	input := model.RenderWasteInput{}
