@@ -159,6 +159,8 @@ func (m wasteModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 			m.scopeStatus["Summary"] = statusDone
 
+			m.syncViewportContent()
+
 			return m, nil
 		}
 
