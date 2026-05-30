@@ -158,9 +158,6 @@ func (m wasteModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.scopes = append(m.scopes, "Summary")
 
 			m.scopeStatus["Summary"] = statusDone
-			if len(m.aggregatedData.Errors) > 0 {
-				m.scopeStatus[scopeErrors] = statusDone
-			}
 
 			return m, nil
 		}
