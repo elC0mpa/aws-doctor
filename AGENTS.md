@@ -257,18 +257,17 @@ On the docs site, IAM permissions must be expressed using inline callouts or pla
 4. **Service Method**: Implement the logic in the service file (e.g., `service/ec2/service.go`). Use paginators for all AWS APIs that support them.
 5. **Service Interface**: Add the new method to the `Service` interface in `types.go`.
 6. **Service Mock**: Update the service mock in `mocks/services/` to include the new method. **This is critical to avoid `go vet` and build failures in orchestrator tests.**
-7. **Orchestrator**: 
-   - Add the concurrent call in `service/orchestrator/service.go` within `wasteWorkflow`.
-   - Update the `RenderWaste` call to pass the new data.
+7. **Analyzer Registration**: 
+   - Ensure the service implements the `analyzer.WasteAnalyzer` interface (`Analyze` and `Name`).
+   - If adding a completely new service, register it in the orchestrator builder (e.g., `cmd/root.go`, `cmd/waste.go`) via the `registry.Register()` method, and add its tab name mapping in `service/orchestrator/service.go`.
+   - If adding a new check inside an existing service, simply add the new method call to the concurrent `errgroup` inside the service's `Analyze` method. No orchestrator changes needed!
 8. **Output Service**: 
-   - Update `RenderWaste` in `service/output/service.go`.
-   - Update `Service` and `Renderer` interfaces in `service/output/types.go`.
-   - Update `realRenderer` implementation in `service/output/types.go`.
-   - Update `MockOutputService` in `mocks/services/output_service.go` and `MockRenderer` in `mocks/renderers/renderer.go`.
+   - Update `model.RenderWasteInput` in `model/waste.go` to include the new slice, and update its `Merge()` method.
+   - Update `RenderWaste` signatures if necessary (usually only needed if you require new pricing dependencies).
 9. **Utility Handlers**:
-   - Add a display function in `utils/waste_table/waste_table.go` and update `DrawWasteTable` signature.
+   - Add a display function in `utils/waste_table/waste_table.go` and update the `RenderScopeTable` switch statement for the new scope (if applicable).
    - Add a JSON output type in `model/output.go` and update `utils/json_output/json_output.go`.
-10. **Test Compliance**: **Update all existing test calls** in `service/orchestrator`, `service/output`, and `utils` when function signatures change. Run `go test ./...` frequently.
+10. **Test Compliance**: **Update all existing test calls** in the service tests and `utils` when function signatures change. Run `go test ./...` frequently.
 11. **Documentation**:
     - Update the feature checklist and 'Selective scanning' command list in `README.md`.
     - Add the new check to the 'Selective Scanning' table in `docs/content/docs/waste-detection/_index.md` and `_index.es.md`.
