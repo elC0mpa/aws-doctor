@@ -5,6 +5,7 @@ import (
 
 	"github.com/aws/aws-sdk-go-v2/service/ecr"
 	"github.com/elC0mpa/aws-doctor/model"
+	"github.com/elC0mpa/aws-doctor/service/analyzer"
 	"github.com/elC0mpa/aws-doctor/service/pricing"
 )
 
@@ -22,5 +23,6 @@ type service struct {
 
 // Service is the interface for AWS ECR service.
 type Service interface {
+	analyzer.WasteAnalyzer
 	GetECRWaste(ctx context.Context) ([]model.ECRNoLifecyclePolicyInfo, []model.ECREmptyRepositoryInfo, []model.ECRUntaggedImageInfo, error)
 }

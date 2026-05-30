@@ -3,6 +3,7 @@ package cloudwatchlogs
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"math"
 	"strconv"
@@ -23,6 +24,40 @@ func NewService(awsconfig aws.Config, pricingSvc pricingService) Service {
 		client:         client,
 		pricingService: pricingSvc,
 	}
+}
+
+func (s *service) Name() string {
+	return "cloudwatch"
+}
+
+func (s *service) TabName() string {
+	return "CloudWatch"
+}
+
+func (s *service) Analyze(ctx context.Context, flags model.Flags) (model.ScopeResult, error) {
+	start := time.Now()
+	input := model.RenderWasteInput{}
+
+	var errs []error
+
+	logs, err := s.GetCloudWatchLogsWaste(ctx)
+	if err != nil {
+		errs = append(errs, err)
+	} else {
+		input.CloudWatchLogGroups = logs
+	}
+
+	var finalErr error
+	if len(errs) > 0 {
+		finalErr = fmt.Errorf("cloudwatch analyze errors: %w", errors.Join(errs...))
+	}
+
+	return model.ScopeResult{
+		Scope:    s.Name(),
+		Input:    input,
+		Duration: time.Since(start),
+		Err:      finalErr,
+	}, nil
 }
 
 // GetCloudWatchLogsWaste returns a list of CloudWatch Log Groups without a retention policy.

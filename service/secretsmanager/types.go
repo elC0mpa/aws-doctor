@@ -5,6 +5,7 @@ import (
 
 	"github.com/aws/aws-sdk-go-v2/service/secretsmanager"
 	"github.com/elC0mpa/aws-doctor/model"
+	"github.com/elC0mpa/aws-doctor/service/analyzer"
 )
 
 // ClientAPI is the interface for the AWS Secrets Manager client methods used by the service.
@@ -20,6 +21,7 @@ type service struct {
 
 // Service is the interface for AWS Secrets Manager service.
 type Service interface {
+	analyzer.WasteAnalyzer
 	GetUnusedSecrets(ctx context.Context, idleDays int) ([]model.UnusedSecretInfo, error)
 }
 

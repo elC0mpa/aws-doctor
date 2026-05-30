@@ -5,6 +5,7 @@ import (
 
 	"github.com/aws/aws-sdk-go-v2/service/ec2"
 	"github.com/elC0mpa/aws-doctor/model"
+	"github.com/elC0mpa/aws-doctor/service/analyzer"
 )
 
 // ClientAPI is the interface for the AWS EC2 client methods used by the VPC service.
@@ -30,6 +31,7 @@ type pricingService interface {
 
 // Service is the interface for AWS VPC service.
 type Service interface {
+	analyzer.WasteAnalyzer
 	GetIdleNATGateways(ctx context.Context, idleDays int) ([]model.NATGatewayWasteInfo, error)
 }
 

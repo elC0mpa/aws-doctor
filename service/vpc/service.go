@@ -3,6 +3,7 @@ package vpc
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"time"
 
@@ -22,6 +23,40 @@ func NewService(awsconfig aws.Config, cwService cloudwatchMetricsService, pricin
 		cwService:      cwService,
 		pricingService: pricingSvc,
 	}
+}
+
+func (s *service) Name() string {
+	return "vpc"
+}
+
+func (s *service) TabName() string {
+	return "VPC"
+}
+
+func (s *service) Analyze(ctx context.Context, flags model.Flags) (model.ScopeResult, error) {
+	start := time.Now()
+	input := model.RenderWasteInput{}
+
+	var errs []error
+
+	idleNATs, err := s.GetIdleNATGateways(ctx, flags.VPCNatIdleDays)
+	if err != nil {
+		errs = append(errs, err)
+	} else {
+		input.IdleNATGateways = idleNATs
+	}
+
+	var finalErr error
+	if len(errs) > 0 {
+		finalErr = fmt.Errorf("vpc analyze errors: %w", errors.Join(errs...))
+	}
+
+	return model.ScopeResult{
+		Scope:    s.Name(),
+		Input:    input,
+		Duration: time.Since(start),
+		Err:      finalErr,
+	}, nil
 }
 
 // GetIdleNATGateways returns NAT Gateways that have processed 0 bytes over the idleDays period.

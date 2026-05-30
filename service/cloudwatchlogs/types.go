@@ -6,6 +6,7 @@ import (
 
 	"github.com/aws/aws-sdk-go-v2/service/cloudwatchlogs"
 	"github.com/elC0mpa/aws-doctor/model"
+	"github.com/elC0mpa/aws-doctor/service/analyzer"
 )
 
 // ClientAPI is the interface for the AWS CloudWatch Logs client methods used by the service.
@@ -17,6 +18,7 @@ type ClientAPI interface {
 
 // Service is the interface for AWS CloudWatch Logs service.
 type Service interface {
+	analyzer.WasteAnalyzer
 	GetCloudWatchLogsWaste(ctx context.Context) ([]model.CloudWatchLogsWasteInfo, error)
 	GetLambdaMaxMemoryUsedBatch(ctx context.Context, logGroupNames []string, startTime, endTime time.Time) (map[string]int32, error)
 	ListExistingLogGroups(ctx context.Context, prefix string) (map[string]struct{}, error)

@@ -5,6 +5,7 @@ import (
 
 	sm "github.com/aws/aws-sdk-go-v2/service/sagemaker"
 	"github.com/elC0mpa/aws-doctor/model"
+	"github.com/elC0mpa/aws-doctor/service/analyzer"
 )
 
 // ClientAPI is the subset of the AWS SageMaker client used by this service.
@@ -31,7 +32,8 @@ type pricingService interface {
 	CalculateSageMakerEndpointMonthlyCost(variants []model.SageMakerVariant) float64
 }
 
-// Service is the interface for SageMaker waste detection.
+// Service is the interface for AWS SageMaker service.
 type Service interface {
+	analyzer.WasteAnalyzer
 	GetIdleEndpoints(ctx context.Context, idleDays int) ([]model.IdleSageMakerEndpointInfo, error)
 }
