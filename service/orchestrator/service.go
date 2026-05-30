@@ -315,10 +315,10 @@ func (s *service) wasteWorkflow(wasteChecks []string, generateReport bool, repor
 		close(resultCh)
 	}()
 
-	s.outputService.StopSpinner()
-
 	isInteractive := s.outputService.IsInteractive() && !generateReport
 	if isInteractive {
+		s.outputService.StopSpinner()
+
 		var scopes []string
 
 		for _, s := range allScopes {
@@ -344,8 +344,11 @@ func (s *service) wasteWorkflow(wasteChecks []string, generateReport bool, repor
 	}
 
 	if err := g.Wait(); err != nil {
+		s.outputService.StopSpinner()
 		return err
 	}
+
+	s.outputService.StopSpinner()
 
 	if generateReport {
 		return s.handleWasteReport(finalInput, reportPath)
