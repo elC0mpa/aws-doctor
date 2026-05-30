@@ -39,7 +39,7 @@ func (s *service) Analyze(ctx context.Context, flags model.Flags) (model.ScopeRe
 
 	var errs []error
 
-	idleNATs, err := s.GetIdleNATGateways(ctx, 7) // Hardcoding threshold
+	idleNATs, err := s.GetIdleNATGateways(ctx, flags.VPCNatIdleDays)
 	if err != nil {
 		errs = append(errs, err)
 	} else {
