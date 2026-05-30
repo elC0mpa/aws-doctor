@@ -281,7 +281,7 @@ func (s *service) wasteWorkflow(wasteChecks []string, generateReport bool, repor
 					res.Input.Errors = make(map[string]string)
 				}
 
-				res.Input.Errors[analyzer.TabName()] = err.Error()
+				res.Input.Errors[res.Scope] = err.Error()
 			}
 
 			resultCh <- res
