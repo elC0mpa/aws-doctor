@@ -3,6 +3,7 @@ package csvoutput
 import (
 	"encoding/csv"
 	"errors"
+	"fmt"
 	"os"
 
 	"github.com/elC0mpa/aws-doctor/model"
@@ -58,6 +59,12 @@ func OutputTrendCSV(monthlyCosts []model.CostInfo, services []string) error {
 
 // OutputWasteCSV outputs waste detection data as CSV
 func OutputWasteCSV(input model.RenderWasteInput, pricingSvc pricing.Service) error {
+	if len(input.Errors) > 0 {
+		for scope, errMsg := range input.Errors {
+			_, _ = fmt.Fprintf(os.Stderr, "Warning: Error in %s: %s\n", scope, errMsg)
+		}
+	}
+
 	w := csv.NewWriter(os.Stdout)
 	defer w.Flush()
 

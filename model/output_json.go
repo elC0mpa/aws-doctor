@@ -55,6 +55,7 @@ type WasteReportJSON struct {
 	GeneratedAt               string                      `json:"generated_at"`
 	HasWaste                  bool                        `json:"has_waste"`
 	TotalEstimatedMonthlyCost float64                     `json:"total_estimated_monthly_cost"`
+	Errors                    map[string]string           `json:"errors,omitempty"`
 	Summary                   []WasteSummaryJSON          `json:"summary"`
 	UnusedElasticIPs          []ElasticIPJSON             `json:"unused_elastic_ips"`
 	UnusedEBSVolumes          []EBSVolumeJSON             `json:"unused_ebs_volumes"`

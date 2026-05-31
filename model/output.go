@@ -51,6 +51,7 @@ type RenderWasteInput struct {
 	UnusedSecrets          []UnusedSecretInfo
 	UnusedIAMUsers         []IAMUserWasteInfo
 	RootUserWaste          []IAMRootUserWasteInfo
+	Errors                 map[string]string
 }
 
 // RenderCostComparisonInput represents the input data for rendering the cost comparison report
@@ -168,5 +169,15 @@ func (dest *RenderWasteInput) Merge(src RenderWasteInput) {
 
 	if len(src.RootUserWaste) > 0 {
 		dest.RootUserWaste = append(dest.RootUserWaste, src.RootUserWaste...)
+	}
+
+	if len(src.Errors) > 0 {
+		if dest.Errors == nil {
+			dest.Errors = make(map[string]string)
+		}
+
+		for k, v := range src.Errors {
+			dest.Errors[k] = v
+		}
 	}
 }
