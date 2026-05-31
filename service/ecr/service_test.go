@@ -129,3 +129,15 @@ func TestGetECRWaste_Errors(t *testing.T) {
 		assert.Error(t, err)
 	})
 }
+
+func TestAnalyzerMethods(t *testing.T) {
+	svc := &service{}
+
+	if svc.Name() == "" {
+		t.Error("Name() should not be empty")
+	}
+
+	if svc.TabName() == "" {
+		t.Error("TabName() should not be empty")
+	}
+}
