@@ -436,3 +436,46 @@ func TestMapTrendRows(t *testing.T) {
 		})
 	}
 }
+
+func captureStderr(f func()) string {
+	old := os.Stderr
+	r, w, _ := os.Pipe()
+	os.Stderr = w
+
+	f()
+
+	_ = w.Close()
+	os.Stderr = old
+
+	var buf bytes.Buffer
+
+	_, _ = io.Copy(&buf, r)
+
+	return buf.String()
+}
+
+func TestOutputWasteCSV_WithErrors(t *testing.T) {
+	input := model.RenderWasteInput{
+		Errors: map[string]string{
+			"IAM": "Access Denied",
+		},
+	}
+
+	mockPricing := new(services.MockPricingService)
+
+	var stdout, stderr string
+
+	stdout = captureStdout(func() {
+		stderr = captureStderr(func() {
+			_ = OutputWasteCSV(input, mockPricing)
+		})
+	})
+
+	if !strings.Contains(stderr, "Warning: Error in IAM: Access Denied") {
+		t.Errorf("Expected stderr to contain error warning, got: %s", stderr)
+	}
+
+	if !strings.Contains(stdout, "Resource Category,Resource Identifier,Estimated Monthly Cost (USD)") {
+		t.Errorf("Expected stdout to contain CSV headers, got: %s", stdout)
+	}
+}
