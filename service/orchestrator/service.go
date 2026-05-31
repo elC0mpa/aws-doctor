@@ -276,9 +276,15 @@ func (s *service) wasteWorkflow(wasteChecks []string, generateReport bool, repor
 			res.Scope = analyzer.TabName()
 
 			if err != nil {
-				// For now, we mimic old behavior by passing the error inside ScopeResult
-				// The previous code didn't fail the errgroup for an individual check failure
 				res.Err = err
+			}
+
+			if res.Err != nil {
+				if res.Input.Errors == nil {
+					res.Input.Errors = make(map[string]string)
+				}
+
+				res.Input.Errors[res.Scope] = res.Err.Error()
 			}
 
 			resultCh <- res

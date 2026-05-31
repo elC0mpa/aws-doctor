@@ -81,6 +81,7 @@ func OutputWasteJSON(input model.RenderWasteInput, pricingSvc pricing.Service) e
 	output := model.WasteReportJSON{
 		AccountID:              input.AccountID,
 		GeneratedAt:            time.Now().UTC().Format(time.RFC3339),
+		Errors:                 input.Errors,
 		UnusedElasticIPs:       mapElasticIPs(input.ElasticIPs, pricingSvc),
 		UnusedEBSVolumes:       mapEBSVolumes(input.UnusedVolumes, "available", pricingSvc),
 		StoppedVolumes:         mapEBSVolumes(input.StoppedVolumes, "attached_to_stopped", pricingSvc),

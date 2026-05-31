@@ -16,6 +16,7 @@ import (
 const (
 	statusError = "error"
 	statusDone  = "done"
+	scopeErrors = "Errors"
 )
 
 var (
@@ -148,8 +149,17 @@ func (m wasteModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case scopeMsg:
 		if msg.Scope == "EOF" && !m.done {
 			m.done = true
+
+			if len(m.aggregatedData.Errors) > 0 {
+				m.scopes = append(m.scopes, scopeErrors)
+				m.scopeStatus[scopeErrors] = statusDone
+			}
+
 			m.scopes = append(m.scopes, "Summary")
+
 			m.scopeStatus["Summary"] = statusDone
+
+			m.syncViewportContent()
 
 			return m, nil
 		}
@@ -199,12 +209,19 @@ func (m *wasteModel) syncViewportContent() {
 	case "":
 		contentStr = windowStyle.Render("Scanning " + activeScope + "... " + m.spinner.View())
 	case statusError:
-		contentStr = windowStyle.Render("Failed to scan " + activeScope)
+		text := lipgloss.NewStyle().Foreground(lipgloss.Color("9")).Render("⚠️  Failed to scan " + activeScope + ". See 'Errors' tab for details.")
+		contentStr = windowStyle.Render(text)
 	default:
-		tableStr := wastetable.RenderScopeTable(activeScope, m.aggregatedData, m.pricingSvc)
+		var tableStr string
+		if activeScope == scopeErrors {
+			tableStr = wastetable.RenderErrorsTable(m.aggregatedData.Errors)
+		} else {
+			tableStr = wastetable.RenderScopeTable(activeScope, m.aggregatedData, m.pricingSvc)
+		}
+
 		durationStr := ""
 
-		if activeScope != "Summary" {
+		if activeScope != "Summary" && activeScope != scopeErrors {
 			duration := m.scopeDuration[activeScope]
 			durationStr = lipgloss.NewStyle().Foreground(lipgloss.Color("240")).Render("Fetched in " + duration.Round(time.Millisecond).String())
 		}
@@ -244,14 +261,18 @@ func (m wasteModel) View() string {
 	for i, scope := range m.scopes {
 		name := scope
 
-		status := m.scopeStatus[scope]
-		switch status {
-		case "":
-			name += " " + m.spinner.View()
-		case statusError:
-			name += " ❌"
-		default:
-			name += " ✅"
+		if scope == scopeErrors {
+			name += " ⚠️"
+		} else {
+			status := m.scopeStatus[scope]
+			switch status {
+			case "":
+				name += " " + m.spinner.View()
+			case statusError:
+				name += " ❌"
+			default:
+				name += " ✅"
+			}
 		}
 
 		if i == m.activeTab {

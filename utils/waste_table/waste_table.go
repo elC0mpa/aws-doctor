@@ -3,6 +3,7 @@ package wastetable
 import (
 	"fmt"
 	"io"
+	"sort"
 	"strings"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -21,12 +22,20 @@ func DrawWasteTable(out io.Writer, input model.RenderWasteInput, pricingSvc pric
 	drawHeader(out, input.AccountID)
 
 	if !hasAnyWaste(input) {
-		_, _ = fmt.Fprintln(out, "\n"+text.FgHiGreen.Sprint(" ✅  Your account is healthy! No waste found."))
-		return
+		if len(input.Errors) == 0 {
+			_, _ = fmt.Fprintln(out, "\n"+text.FgHiGreen.Sprint(" ✅  Your account is healthy! No waste found."))
+			return
+		}
+
+		_, _ = fmt.Fprintln(out, "\n"+text.FgYellow.Sprint(" ⚠️  No waste found, but some checks failed due to errors."))
+	} else {
+		drawWasteSections(out, input, pricingSvc)
+		drawSummaryTable(out, input, pricingSvc)
 	}
 
-	drawWasteSections(out, input, pricingSvc)
-	drawSummaryTable(out, input, pricingSvc)
+	if len(input.Errors) > 0 {
+		drawErrorsSection(out, input.Errors)
+	}
 }
 
 func drawHeader(out io.Writer, accountID string) {
@@ -1266,4 +1275,61 @@ func drawIAMTable(out io.Writer, users []model.IAMUserWasteInfo, root []model.IA
 	}
 
 	t.Render()
+}
+
+func drawErrorsSection(out io.Writer, errors map[string]string) {
+	_, _ = fmt.Fprintln(out)
+	_, _ = fmt.Fprintln(out, text.FgHiRed.Sprint(" ⚠️  ERRORS ENCOUNTERED DURING SCAN"))
+	_, _ = fmt.Fprintln(out, text.FgRed.Sprint(" ------------------------------------------------"))
+
+	t := table.NewWriter()
+	t.SetOutputMirror(out)
+	t.AppendHeader(table.Row{"Scope", "Error"})
+
+	var scopes []string
+	for scope := range errors {
+		scopes = append(scopes, scope)
+	}
+
+	sort.Strings(scopes)
+
+	for _, scope := range scopes {
+		t.AppendRow(table.Row{scope, errors[scope]})
+	}
+
+	t.SetStyle(table.StyleRounded)
+	t.Render()
+
+	_, _ = fmt.Fprintln(out)
+}
+
+// RenderErrorsTable renders the errors as a string for the TUI.
+func RenderErrorsTable(errors map[string]string) string {
+	if len(errors) == 0 {
+		return ""
+	}
+
+	b := &strings.Builder{}
+	_, _ = fmt.Fprintln(b, text.FgHiRed.Sprint(" ⚠️  ERRORS ENCOUNTERED DURING SCAN"))
+	_, _ = fmt.Fprintln(b, text.FgRed.Sprint(" ------------------------------------------------"))
+
+	t := table.NewWriter()
+	t.SetOutputMirror(b)
+	t.AppendHeader(table.Row{"Scope", "Error"})
+
+	var scopes []string
+	for scope := range errors {
+		scopes = append(scopes, scope)
+	}
+
+	sort.Strings(scopes)
+
+	for _, scope := range scopes {
+		t.AppendRow(table.Row{scope, errors[scope]})
+	}
+
+	t.SetStyle(table.StyleRounded)
+	t.Render()
+
+	return b.String()
 }

@@ -66,6 +66,47 @@ func TestWasteWorkflow_NonInteractive(t *testing.T) {
 	}
 }
 
+func TestWasteWorkflow_AnalyzerError(t *testing.T) {
+	mockSTSSvc := &services.MockSTSService{}
+	mockOutputSvc := &services.MockOutputService{}
+	mockPricingSvc := &services.MockPricingService{}
+
+	// Create a mock analyzer that returns an error
+	mockAnalyzer := &services.MockAnalyzer{}
+	mockAnalyzer.On("Name").Return("mock")
+	mockAnalyzer.On("TabName").Return("MockTab")
+	mockAnalyzer.On("Analyze", mock.Anything, mock.Anything).Return(model.ScopeResult{}, errors.New("mock analyzer failed"))
+
+	reg := analyzer.NewRegistry()
+	reg.Register(mockAnalyzer)
+
+	s := &service{
+		registry:       reg,
+		stsService:     mockSTSSvc,
+		outputService:  mockOutputSvc,
+		pricingService: mockPricingSvc,
+	}
+
+	acc := "123456789012"
+	mockSTSSvc.On("GetCallerIdentity", mock.Anything).Return(&sts.GetCallerIdentityOutput{Account: &acc}, nil)
+	mockPricingSvc.On("LoadRegionRates", mock.Anything).Return(nil)
+	mockOutputSvc.On("SetSpinnerMessage", mock.Anything).Return()
+	mockOutputSvc.On("StopSpinner").Return()
+	mockOutputSvc.On("IsInteractive").Return(false)
+
+	// Capture the RenderWasteInput to verify the Errors map
+	mockOutputSvc.On("RenderWaste", mock.MatchedBy(func(input model.RenderWasteInput) bool {
+		return input.Errors != nil && input.Errors["MockTab"] == "mock analyzer failed"
+	}), mockPricingSvc).Return(nil)
+
+	err := s.wasteWorkflow([]string{}, false, "", 0, 0, 0)
+	if err != nil {
+		t.Errorf("Unexpected workflow error: %v", err)
+	}
+
+	mockOutputSvc.AssertExpectations(t)
+}
+
 func TestTrendWorkflow(t *testing.T) {
 	mockSTSSvc := &services.MockSTSService{}
 	mockOutputSvc := &services.MockOutputService{}
