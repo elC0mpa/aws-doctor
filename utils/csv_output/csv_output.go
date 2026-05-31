@@ -3,6 +3,7 @@ package csvoutput
 import (
 	"encoding/csv"
 	"errors"
+	"fmt"
 	"os"
 
 	"github.com/elC0mpa/aws-doctor/model"
@@ -60,7 +61,7 @@ func OutputTrendCSV(monthlyCosts []model.CostInfo, services []string) error {
 func OutputWasteCSV(input model.RenderWasteInput, pricingSvc pricing.Service) error {
 	if len(input.Errors) > 0 {
 		for scope, errMsg := range input.Errors {
-			_, _ = os.Stderr.WriteString("Warning: Error in " + scope + ": " + errMsg + "\n")
+			_, _ = fmt.Fprintf(os.Stderr, "Warning: Error in %s: %s\n", scope, errMsg)
 		}
 	}
 
