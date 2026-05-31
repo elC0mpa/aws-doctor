@@ -31,6 +31,25 @@ func TestDrawWasteTable_NoWaste(t *testing.T) {
 	}
 }
 
+func TestDrawWasteTable_WithErrors(t *testing.T) {
+	var buf bytes.Buffer
+	DrawWasteTable(&buf, model.RenderWasteInput{
+		AccountID: "123456789012",
+		Errors: map[string]string{
+			"IAM": "Access Denied",
+		},
+	}, services.NewMockPricingService())
+	output := buf.String()
+
+	if !strings.Contains(output, "ERRORS ENCOUNTERED DURING SCAN") {
+		t.Error("DrawWasteTable() with errors missing errors section header")
+	}
+
+	if !strings.Contains(output, "IAM") || !strings.Contains(output, "Access Denied") {
+		t.Error("DrawWasteTable() missing error details")
+	}
+}
+
 func TestDrawWasteTable_WithElasticIPs(t *testing.T) {
 	elasticIPs := []types.Address{
 		{PublicIp: aws.String("1.2.3.4"), AllocationId: aws.String("eipalloc-123")},
@@ -1161,4 +1180,29 @@ func TestDrawWasteTable_WithUnusedSecrets(t *testing.T) {
 	if !strings.Contains(output, "my/unused/secret") {
 		t.Error("DrawWasteTable() missing secret name")
 	}
+}
+
+func TestRenderErrorsTable(t *testing.T) {
+	t.Run("empty errors", func(t *testing.T) {
+		output := RenderErrorsTable(nil)
+		if output != "" {
+			t.Errorf("Expected empty string, got %s", output)
+		}
+	})
+
+	t.Run("with errors", func(t *testing.T) {
+		output := RenderErrorsTable(map[string]string{
+			"IAM": "Access Denied",
+			"EC2": "Timeout",
+		})
+		if !strings.Contains(output, "ERRORS ENCOUNTERED DURING SCAN") {
+			t.Error("Missing errors section header")
+		}
+		if !strings.Contains(output, "IAM") || !strings.Contains(output, "Access Denied") {
+			t.Error("Missing IAM error details")
+		}
+		if !strings.Contains(output, "EC2") || !strings.Contains(output, "Timeout") {
+			t.Error("Missing EC2 error details")
+		}
+	})
 }

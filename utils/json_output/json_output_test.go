@@ -876,3 +876,48 @@ func BenchmarkOutputWasteJSON(b *testing.B) {
 		}, services.NewMockPricingService())
 	}
 }
+
+func TestOutputWasteJSON_AdditionalCoverage(t *testing.T) {
+	mockPricing := services.NewMockPricingService()
+
+	input := model.RenderWasteInput{
+		AccountID: "123456789012",
+		ECREmptyRepositories: []model.ECREmptyRepositoryInfo{
+			{RepositoryName: "empty-repo"},
+		},
+		ECRUntaggedImages: []model.ECRUntaggedImageInfo{
+			{RepositoryName: "repo1", UntaggedImageCount: 5},
+		},
+		IdleSageMakerEndpoints: []model.IdleSageMakerEndpointInfo{
+			{EndpointName: "idle-endpoint"},
+		},
+		Errors: map[string]string{
+			"IAM": "Access Denied",
+		},
+	}
+
+	output := captureStdout(func() {
+		_ = OutputWasteJSON(input, mockPricing)
+	})
+
+	var result model.WasteReportJSON
+	if err := json.Unmarshal([]byte(strings.TrimSpace(output)), &result); err != nil {
+		t.Fatalf("Output is not valid JSON: %v", err)
+	}
+
+	if len(result.ECREmptyRepositories) != 1 || result.ECREmptyRepositories[0].RepositoryName != "empty-repo" {
+		t.Error("Failed to map ECR empty repositories")
+	}
+
+	if len(result.ECRUntaggedImages) != 1 || result.ECRUntaggedImages[0].RepositoryName != "repo1" {
+		t.Error("Failed to map ECR untagged images")
+	}
+
+	if len(result.IdleSageMakerEndpoints) != 1 || result.IdleSageMakerEndpoints[0].EndpointName != "idle-endpoint" {
+		t.Error("Failed to map SageMaker endpoints")
+	}
+
+	if result.Errors["IAM"] != "Access Denied" {
+		t.Error("Failed to map Errors")
+	}
+}

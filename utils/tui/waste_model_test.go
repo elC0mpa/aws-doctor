@@ -1,6 +1,8 @@
 package tui
 
 import (
+	"errors"
+	"strings"
 	"testing"
 	"time"
 
@@ -163,5 +165,68 @@ func TestWasteModel_RenderScopes_ThroughView(t *testing.T) {
 		if view == "" {
 			t.Errorf("Empty view for tab %d (%s)", i, scopes[i])
 		}
+	}
+}
+
+func TestWasteModel_Update_ScopeError(t *testing.T) {
+	resultCh := make(chan model.ScopeResult)
+	mockPricing := pricing.NewService(aws.Config{})
+	wm := NewWasteModel("123456789012", resultCh, []string{"EC2"}, mockPricing)
+
+	updatedModel, _ := wm.Update(tea.WindowSizeMsg{Width: 100, Height: 50})
+	wm = updatedModel.(wasteModel)
+
+	updatedModel, _ = wm.Update(scopeMsg{Scope: "EC2", Err: errors.New("test error")})
+	wm = updatedModel.(wasteModel)
+
+	if wm.scopeStatus["EC2"] != "error" {
+		t.Error("Expected EC2 status to be statusError")
+	}
+
+	wm.syncViewportContent()
+	view := wm.View()
+	if !strings.Contains(view, "⚠️ ") {
+		t.Error("Expected error warning in viewport content")
+	}
+}
+
+func TestWasteModel_Update_EOFWithErrors(t *testing.T) {
+	resultCh := make(chan model.ScopeResult)
+	mockPricing := pricing.NewService(aws.Config{})
+	wm := NewWasteModel("123456789012", resultCh, []string{"EC2"}, mockPricing)
+
+	updatedModel, _ := wm.Update(tea.WindowSizeMsg{Width: 100, Height: 50})
+	wm = updatedModel.(wasteModel)
+
+	wm.aggregatedData.Errors = map[string]string{
+		"EC2": "Access Denied",
+	}
+
+	updatedModel, _ = wm.Update(scopeMsg{Scope: "EOF"})
+	wm = updatedModel.(wasteModel)
+
+	if !wm.done {
+		t.Error("Expected done to be true")
+	}
+
+	hasErrorsTab := false
+	for _, scope := range wm.scopes {
+		if scope == "Errors" {
+			hasErrorsTab = true
+			break
+		}
+	}
+
+	if !hasErrorsTab {
+		t.Error("Expected 'Errors' tab to be appended")
+	}
+
+	// Switch to Errors tab
+	wm.activeTab = len(wm.scopes) - 2 // "Errors" is inserted before "Summary"
+	wm.syncViewportContent()
+
+	view := wm.View()
+	if !strings.Contains(view, "ERRORS ENCOUNTERED DURING SCAN") {
+		t.Error("Expected errors section to be rendered in the view")
 	}
 }
