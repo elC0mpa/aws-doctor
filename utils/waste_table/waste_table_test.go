@@ -1198,9 +1198,11 @@ func TestRenderErrorsTable(t *testing.T) {
 		if !strings.Contains(output, "ERRORS ENCOUNTERED DURING SCAN") {
 			t.Error("Missing errors section header")
 		}
+
 		if !strings.Contains(output, "IAM") || !strings.Contains(output, "Access Denied") {
 			t.Error("Missing IAM error details")
 		}
+
 		if !strings.Contains(output, "EC2") || !strings.Contains(output, "Timeout") {
 			t.Error("Missing EC2 error details")
 		}

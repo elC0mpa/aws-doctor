@@ -137,11 +137,11 @@ func TestGetS3Waste(t *testing.T) {
 
 func TestAnalyzerMethods(t *testing.T) {
 	svc := &service{}
-	
+
 	if svc.Name() == "" {
 		t.Error("Name() should not be empty")
 	}
-	
+
 	if svc.TabName() == "" {
 		t.Error("TabName() should not be empty")
 	}

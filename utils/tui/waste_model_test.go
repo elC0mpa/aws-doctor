@@ -184,6 +184,7 @@ func TestWasteModel_Update_ScopeError(t *testing.T) {
 	}
 
 	wm.syncViewportContent()
+
 	view := wm.View()
 	if !strings.Contains(view, "⚠️ ") {
 		t.Error("Expected error warning in viewport content")
@@ -210,6 +211,7 @@ func TestWasteModel_Update_EOFWithErrors(t *testing.T) {
 	}
 
 	hasErrorsTab := false
+
 	for _, scope := range wm.scopes {
 		if scope == "Errors" {
 			hasErrorsTab = true

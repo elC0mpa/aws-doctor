@@ -448,6 +448,7 @@ func captureStderr(f func()) string {
 	os.Stderr = old
 
 	var buf bytes.Buffer
+
 	_, _ = io.Copy(&buf, r)
 
 	return buf.String()

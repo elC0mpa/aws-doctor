@@ -45,6 +45,7 @@ func TestRegistry(t *testing.T) {
 	if analyzers[0].Name() != "analyzer1" {
 		t.Errorf("Expected first analyzer to be analyzer1, got %s", analyzers[0].Name())
 	}
+
 	if analyzers[1].Name() != "analyzer2" {
 		t.Errorf("Expected second analyzer to be analyzer2, got %s", analyzers[1].Name())
 	}
