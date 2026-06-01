@@ -1,6 +1,7 @@
 package elb
 
 import (
+	"github.com/elC0mpa/aws-doctor/model"
 	"context"
 	"errors"
 	"testing"
@@ -135,4 +136,19 @@ func TestAnalyzerMethods(t *testing.T) {
 	if svc.TabName() == "" {
 		t.Error("TabName() should not be empty")
 	}
+}
+
+func TestService_Analyze(t *testing.T) {
+	mockClient := new(awsinterfaces.MockELBClient)
+	svc := &service{client: mockClient}
+	
+	assert.Equal(t, "elb", svc.Name())
+	assert.Equal(t, "ELB", svc.TabName())
+
+	mockClient.On("DescribeLoadBalancers", mock.Anything, mock.Anything, mock.Anything).Return(nil, errors.New("err")).Maybe()
+	mockClient.On("DescribeLoadBalancers", mock.Anything, mock.Anything).Return(nil, errors.New("err")).Maybe()
+
+	res, err := svc.Analyze(context.Background(), model.Flags{})
+	assert.NoError(t, err)
+	assert.Equal(t, "elb", res.Scope)
 }

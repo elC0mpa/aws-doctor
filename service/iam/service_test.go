@@ -146,3 +146,22 @@ func TestAnalyzerMethods(t *testing.T) {
 		t.Error("TabName() should not be empty")
 	}
 }
+
+func TestService_Analyze(t *testing.T) {
+	mockClient := new(awsinterfaces.MockIAMClientAPI)
+	svc := &service{client: mockClient}
+	
+	assert.Equal(t, "iam", svc.Name())
+	assert.Equal(t, "IAM", svc.TabName())
+
+	mockClient.On("GetAccountSummary", mock.Anything, mock.Anything, mock.Anything).Return(nil, errors.New("err")).Maybe()
+	mockClient.On("GetAccountSummary", mock.Anything, mock.Anything).Return(nil, errors.New("err")).Maybe()
+
+	mockClient.On("ListUsers", mock.Anything, mock.Anything, mock.Anything).Return(nil, errors.New("err")).Maybe()
+	mockClient.On("GetLoginProfile", mock.Anything, mock.Anything, mock.Anything).Return(nil, errors.New("err")).Maybe()
+	mockClient.On("ListAccessKeys", mock.Anything, mock.Anything, mock.Anything).Return(nil, errors.New("err")).Maybe()
+	mockClient.On("ListRoles", mock.Anything, mock.Anything, mock.Anything).Return(nil, errors.New("err")).Maybe()
+	res, err := svc.Analyze(context.Background(), model.Flags{})
+	assert.NoError(t, err)
+	assert.Equal(t, "iam", res.Scope)
+}

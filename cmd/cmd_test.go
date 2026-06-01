@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"os"
 	"testing"
 
 	"github.com/elC0mpa/aws-doctor/model"
@@ -197,6 +198,13 @@ func TestExecuteReportTrend(t *testing.T) {
 }
 
 func TestBuilders(t *testing.T) {
+	os.Setenv("AWS_REGION", "us-east-1")
+	os.Setenv("AWS_ACCESS_KEY_ID", "mock")
+	os.Setenv("AWS_SECRET_ACCESS_KEY", "mock")
+	defer os.Unsetenv("AWS_REGION")
+	defer os.Unsetenv("AWS_ACCESS_KEY_ID")
+	defer os.Unsetenv("AWS_SECRET_ACCESS_KEY")
+
 	_, _ = buildSystemOrchestrator()
 	_, _ = buildWasteOrchestrator()
 	_, _ = buildCostOrchestrator()

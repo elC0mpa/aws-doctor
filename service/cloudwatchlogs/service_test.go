@@ -13,6 +13,8 @@ import (
 	"github.com/elC0mpa/aws-doctor/mocks/services"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
+
+	"github.com/elC0mpa/aws-doctor/model"
 )
 
 func TestGetCloudWatchLogsWaste(t *testing.T) {
@@ -343,4 +345,18 @@ func TestAnalyzerMethods(t *testing.T) {
 	if svc.TabName() == "" {
 		t.Error("TabName() should not be empty")
 	}
+}
+
+func TestService_Analyze(t *testing.T) {
+	mockClient := new(awsinterfaces.MockCloudWatchLogsClient)
+	svc := &service{client: mockClient}
+
+	assert.Equal(t, "cloudwatch", svc.Name())
+	assert.Equal(t, "CloudWatch", svc.TabName())
+
+	mockClient.On("DescribeLogGroups", mock.Anything, mock.Anything, mock.Anything).Return(nil, errors.New("err"))
+
+	res, err := svc.Analyze(context.Background(), model.Flags{})
+	assert.NoError(t, err)
+	assert.Equal(t, "cloudwatch", res.Scope)
 }
