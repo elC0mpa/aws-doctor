@@ -11,30 +11,56 @@ import (
 	"github.com/elC0mpa/aws-doctor/service/update"
 )
 
-type service struct {
-	stsService     awssts.Service
-	costService    awscostexplorer.Service
-	pricingService pricing.Service
-	outputService  output.Service
-	updateService  update.Service
-	reportService  report.Service
-	registry       analyzer.Registry
-	versionInfo    model.VersionInfo
-}
-
-// Config holds the dependencies for the orchestrator service.
-type Config struct {
+// WasteConfig holds the dependencies for the waste orchestrator service.
+type WasteConfig struct {
 	STSService     awssts.Service
-	CostService    awscostexplorer.Service
 	PricingService pricing.Service
 	OutputService  output.Service
-	UpdateService  update.Service
 	ReportService  report.Service
 	Registry       analyzer.Registry
-	VersionInfo    model.VersionInfo
 }
 
-// Service is the interface for the orchestrator service.
-type Service interface {
-	Orchestrate(flags model.Flags) error
+// WasteService is the interface for the waste orchestrator service.
+type WasteService interface {
+	AnalyzeWaste(flags model.Flags) error
+}
+
+// CostConfig holds the dependencies for the cost orchestrator service.
+type CostConfig struct {
+	STSService    awssts.Service
+	CostService   awscostexplorer.Service
+	OutputService output.Service
+	ReportService report.Service
+}
+
+// CostService is the interface for the cost orchestrator service.
+type CostService interface {
+	CompareCosts(generateReport bool, reportPath string) error
+}
+
+// TrendConfig holds the dependencies for the trend orchestrator service.
+type TrendConfig struct {
+	STSService    awssts.Service
+	CostService   awscostexplorer.Service
+	OutputService output.Service
+	ReportService report.Service
+}
+
+// TrendService is the interface for the trend orchestrator service.
+type TrendService interface {
+	AnalyzeTrends(trendChecks []string, generateReport bool, reportPath string) error
+}
+
+// SystemConfig holds the dependencies for the system orchestrator service.
+type SystemConfig struct {
+	UpdateService update.Service
+	OutputService output.Service
+	VersionInfo   model.VersionInfo
+}
+
+// SystemService is the interface for the system orchestrator service.
+type SystemService interface {
+	Update() error
+	Version() error
+	CheckForUpdateInBackground() <-chan model.VersionCheckResult
 }

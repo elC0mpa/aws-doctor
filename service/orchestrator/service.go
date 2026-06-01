@@ -16,10 +16,7 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
-// EC2-related thresholds for the various waste checks. The idle thresholds flag an instance only
-// when the average CPU utilization AND the average daily network throughput (NetworkIn +
-// NetworkOut combined) across the lookback window are both below the configured values, matching
-// common Trusted-Advisor-style heuristics.
+// EC2-related thresholds for the various waste checks.
 const (
 	ec2StoppedDays            = 30
 	ec2RiExpiringDays         = 30
@@ -40,136 +37,115 @@ const (
 	lambdaLookbackDays = 14
 )
 
-// NewService creates a new orchestrator service.
-func NewService(cfg Config) Service {
-	return &service{
-		stsService:     cfg.STSService,
-		costService:    cfg.CostService,
-		pricingService: cfg.PricingService,
-		outputService:  cfg.OutputService,
-		updateService:  cfg.UpdateService,
-		reportService:  cfg.ReportService,
-		registry:       cfg.Registry,
-		versionInfo:    cfg.VersionInfo,
-	}
+// --- System Service ---
+
+type systemService struct {
+	cfg SystemConfig
 }
 
-func (s *service) Orchestrate(flags model.Flags) error {
-	if flags.Update {
-		return s.updateWorkflow()
+// NewSystemService creates a new system orchestrator service.
+func NewSystemService(cfg SystemConfig) SystemService {
+	return &systemService{cfg: cfg}
+}
+
+func (s *systemService) Version() error {
+	s.cfg.OutputService.StopSpinner()
+	s.cfg.OutputService.RenderVersion(s.cfg.VersionInfo)
+
+	return nil
+}
+
+func (s *systemService) Update() error {
+	s.cfg.OutputService.StopSpinner()
+
+	err := s.cfg.UpdateService.Update()
+	if err == nil {
+		return nil
 	}
 
-	if flags.Version {
-		return s.versionWorkflow()
+	if errors.Is(err, model.ErrHomebrewInstall) {
+		s.cfg.OutputService.PrintHomebrewUpdate()
+		return nil
 	}
 
-	// The notification prints to stderr, so running the check for every output format is safe for piping.
+	if errors.Is(err, model.ErrGoInstall) {
+		s.cfg.OutputService.PrintGoInstallUpdate()
+		return nil
+	}
+
+	if errors.Is(err, model.ErrAlreadyLatest) {
+		s.cfg.OutputService.PrintAlreadyLatest(s.cfg.VersionInfo.Version)
+		return nil
+	}
+
+	if errors.Is(err, model.ErrRateLimit) {
+		s.cfg.OutputService.PrintRateLimitError()
+		return err
+	}
+
+	var rateLimitErr *github.RateLimitError
+	if errors.As(err, &rateLimitErr) {
+		s.cfg.OutputService.PrintRateLimitError()
+		return err
+	}
+
+	s.cfg.OutputService.PrintUpdateError(err)
+
+	return err
+}
+
+func (s *systemService) CheckForUpdateInBackground() <-chan model.VersionCheckResult {
 	versionCh := make(chan model.VersionCheckResult, 1)
 
 	go func() {
 		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 		defer cancel()
 
-		latest, err := s.updateService.CheckForUpdate(ctx)
+		latest, err := s.cfg.UpdateService.CheckForUpdate(ctx)
 		versionCh <- model.VersionCheckResult{LatestVersion: latest, Err: err}
 	}()
 
-	var workflowErr error
-
-	switch {
-	case flags.Waste:
-		workflowErr = s.wasteWorkflow(flags.WasteChecks, flags.Report, flags.ReportPath, flags.LambdaMemoryThreshold, flags.SecretsIdleDays, flags.IAMIdleDays)
-	case flags.Trend:
-		workflowErr = s.trendWorkflow(flags.TrendChecks, flags.Report, flags.ReportPath)
-	default:
-		workflowErr = s.defaultWorkflow(flags.Report, flags.ReportPath)
-	}
-
-	select {
-	case result := <-versionCh:
-		if result.Err == nil && result.LatestVersion != nil {
-			s.outputService.PrintNewVersionAvailable(s.versionInfo.Version, *result.LatestVersion)
-		}
-	case <-time.After(500 * time.Millisecond):
-	}
-
-	return workflowErr
+	return versionCh
 }
 
-func (s *service) versionWorkflow() error {
-	s.outputService.StopSpinner()
+// --- Cost Service ---
 
-	s.outputService.RenderVersion(s.versionInfo)
-
-	return nil
+type costService struct {
+	cfg CostConfig
 }
 
-func (s *service) updateWorkflow() error {
-	s.outputService.StopSpinner()
-
-	err := s.updateService.Update()
-	if err == nil {
-		return nil
-	}
-
-	if errors.Is(err, model.ErrHomebrewInstall) {
-		s.outputService.PrintHomebrewUpdate()
-		return nil
-	}
-
-	if errors.Is(err, model.ErrGoInstall) {
-		s.outputService.PrintGoInstallUpdate()
-		return nil
-	}
-
-	if errors.Is(err, model.ErrAlreadyLatest) {
-		s.outputService.PrintAlreadyLatest(s.versionInfo.Version)
-		return nil
-	}
-
-	if errors.Is(err, model.ErrRateLimit) {
-		s.outputService.PrintRateLimitError()
-		return err
-	}
-
-	var rateLimitErr *github.RateLimitError
-	if errors.As(err, &rateLimitErr) {
-		s.outputService.PrintRateLimitError()
-		return err
-	}
-
-	s.outputService.PrintUpdateError(err)
-
-	return err
+// NewCostService creates a new cost orchestrator service.
+func NewCostService(cfg CostConfig) CostService {
+	return &costService{cfg: cfg}
 }
 
-func (s *service) defaultWorkflow(generateReport bool, reportPath string) error {
-	currentMonthData, err := s.costService.GetCurrentMonthCostsByService(context.Background())
+func (s *costService) CompareCosts(generateReport bool, reportPath string) error {
+	currentMonthData, err := s.cfg.CostService.GetCurrentMonthCostsByService(context.Background())
 	if err != nil {
 		return s.handleCostError(err)
 	}
 
-	lastMonthData, err := s.costService.GetLastMonthCostsByService(context.Background())
+	lastMonthData, err := s.cfg.CostService.GetLastMonthCostsByService(context.Background())
 	if err != nil {
 		return s.handleCostError(err)
 	}
 
-	currentTotalCost, err := s.costService.GetCurrentMonthTotalCosts(context.Background())
+	currentTotalCost, err := s.cfg.CostService.GetCurrentMonthTotalCosts(context.Background())
 	if err != nil {
 		return err
 	}
 
-	lastTotalCost, err := s.costService.GetLastMonthTotalCosts(context.Background())
+	lastTotalCost, err := s.cfg.CostService.GetLastMonthTotalCosts(context.Background())
 	if err != nil {
 		return err
 	}
 
-	stsResult, err := s.stsService.GetCallerIdentity(context.Background())
+	stsResult, err := s.cfg.STSService.GetCallerIdentity(context.Background())
 	if err != nil {
 		return err
 	}
 
-	s.outputService.StopSpinner()
+	s.cfg.OutputService.StopSpinner()
 
 	input := model.RenderCostComparisonInput{
 		AccountID:        *stsResult.Account,
@@ -180,20 +156,42 @@ func (s *service) defaultWorkflow(generateReport bool, reportPath string) error 
 	}
 
 	if generateReport {
-		path, err := s.reportService.GenerateCostComparisonReport(input, reportPath)
+		path, err := s.cfg.ReportService.GenerateCostComparisonReport(input, reportPath)
 		if err != nil {
 			return err
 		}
 
-		s.outputService.PrintReportSuccess(*path)
+		s.cfg.OutputService.PrintReportSuccess(*path)
 
 		return nil
 	}
 
-	return s.outputService.RenderCostComparison(input)
+	return s.cfg.OutputService.RenderCostComparison(input)
 }
 
-func (s *service) trendWorkflow(trendChecks []string, generateReport bool, reportPath string) error {
+func (s *costService) handleCostError(err error) error {
+	if errors.Is(err, model.ErrFirstDayOfMonth) {
+		s.cfg.OutputService.StopSpinner()
+		s.cfg.OutputService.PrintFirstDayOfMonthError()
+
+		return nil
+	}
+
+	return err
+}
+
+// --- Trend Service ---
+
+type trendService struct {
+	cfg TrendConfig
+}
+
+// NewTrendService creates a new trend orchestrator service.
+func NewTrendService(cfg TrendConfig) TrendService {
+	return &trendService{cfg: cfg}
+}
+
+func (s *trendService) AnalyzeTrends(trendChecks []string, generateReport bool, reportPath string) error {
 	var mappedServices []string
 
 	for _, svc := range trendChecks {
@@ -202,38 +200,49 @@ func (s *service) trendWorkflow(trendChecks []string, generateReport bool, repor
 		}
 	}
 
-	costInfo, err := s.costService.GetLastSixMonthsCosts(context.Background(), mappedServices)
+	costInfo, err := s.cfg.CostService.GetLastSixMonthsCosts(context.Background(), mappedServices)
 	if err != nil {
 		return err
 	}
 
-	stsResult, err := s.stsService.GetCallerIdentity(context.Background())
+	stsResult, err := s.cfg.STSService.GetCallerIdentity(context.Background())
 	if err != nil {
 		return err
 	}
 
-	s.outputService.StopSpinner()
+	s.cfg.OutputService.StopSpinner()
 
 	if generateReport {
-		path, err := s.reportService.GenerateTrendReport(*stsResult.Account, costInfo, trendChecks, reportPath)
+		path, err := s.cfg.ReportService.GenerateTrendReport(*stsResult.Account, costInfo, trendChecks, reportPath)
 		if err != nil {
 			return err
 		}
 
-		s.outputService.PrintReportSuccess(*path)
+		s.cfg.OutputService.PrintReportSuccess(*path)
 
 		return nil
 	}
 
-	return s.outputService.RenderTrend(*stsResult.Account, costInfo, trendChecks)
+	return s.cfg.OutputService.RenderTrend(*stsResult.Account, costInfo, trendChecks)
 }
 
-func (s *service) wasteWorkflow(wasteChecks []string, generateReport bool, reportPath string, lambdaMemoryThreshold int, secretsIdleDays int, iamIdleDays int) error {
+// --- Waste Service ---
+
+type wasteService struct {
+	cfg WasteConfig
+}
+
+// NewWasteService creates a new waste orchestrator service.
+func NewWasteService(cfg WasteConfig) WasteService {
+	return &wasteService{cfg: cfg}
+}
+
+func (s *wasteService) AnalyzeWaste(flags model.Flags) error {
 	ctx := context.Background()
 
 	s.loadPricing(ctx)
 
-	stsResult, err := s.stsService.GetCallerIdentity(ctx)
+	stsResult, err := s.cfg.STSService.GetCallerIdentity(ctx)
 	if err != nil {
 		return err
 	}
@@ -241,29 +250,24 @@ func (s *service) wasteWorkflow(wasteChecks []string, generateReport bool, repor
 	resultCh := make(chan model.ScopeResult, 20)
 	g, ctx := errgroup.WithContext(ctx)
 
-	flags := model.Flags{
-		WasteChecks:               wasteChecks,
-		LambdaMemoryThreshold:     lambdaMemoryThreshold,
-		SecretsIdleDays:           secretsIdleDays,
-		IAMIdleDays:               iamIdleDays,
-		EC2StoppedDays:            ec2StoppedDays,
-		EC2RiExpiringDays:         ec2RiExpiringDays,
-		EC2AmiStaleDays:           ec2AmiStaleDays,
-		EC2SnapshotStaleDays:      ec2SnapshotStaleDays,
-		EC2IdleDays:               ec2IdleDays,
-		EC2IdleCPUPercent:         ec2IdleCPUPercent,
-		EC2IdleNetworkBytesPerDay: ec2IdleNetworkBytesPerDay,
-		SageMakerIdleDays:         sagemakerIdleDays,
-		VPCNatIdleDays:            vpcNatIdleDays,
-		ELBIdleDays:               elbIdleDays,
-		RDSIdleDays:               rdsIdleDays,
-		RDSSnapshotDays:           rdsSnapshotDays,
-		LambdaLookbackDays:        lambdaLookbackDays,
-	}
+	// Ensure hardcoded thresholds are still populated
+	flags.EC2StoppedDays = ec2StoppedDays
+	flags.EC2RiExpiringDays = ec2RiExpiringDays
+	flags.EC2AmiStaleDays = ec2AmiStaleDays
+	flags.EC2SnapshotStaleDays = ec2SnapshotStaleDays
+	flags.EC2IdleDays = ec2IdleDays
+	flags.EC2IdleCPUPercent = ec2IdleCPUPercent
+	flags.EC2IdleNetworkBytesPerDay = ec2IdleNetworkBytesPerDay
+	flags.SageMakerIdleDays = sagemakerIdleDays
+	flags.VPCNatIdleDays = vpcNatIdleDays
+	flags.ELBIdleDays = elbIdleDays
+	flags.RDSIdleDays = rdsIdleDays
+	flags.RDSSnapshotDays = rdsSnapshotDays
+	flags.LambdaLookbackDays = lambdaLookbackDays
 
-	analyzers := s.registry.GetAnalyzers()
+	analyzers := s.cfg.Registry.GetAnalyzers()
 	for _, a := range analyzers {
-		if !shouldRunCheck(wasteChecks, a.Name()) {
+		if !shouldRunCheck(flags.WasteChecks, a.Name()) {
 			continue
 		}
 
@@ -272,7 +276,6 @@ func (s *service) wasteWorkflow(wasteChecks []string, generateReport bool, repor
 		g.Go(func() error {
 			res, err := analyzer.Analyze(ctx, flags)
 
-			// Map the lowercase analyzer name back to the expected Tab name
 			res.Scope = analyzer.TabName()
 
 			if err != nil {
@@ -300,23 +303,23 @@ func (s *service) wasteWorkflow(wasteChecks []string, generateReport bool, repor
 		close(resultCh)
 	}()
 
-	isInteractive := s.outputService.IsInteractive() && !generateReport
+	isInteractive := s.cfg.OutputService.IsInteractive() && !flags.Report
 	if isInteractive {
-		s.outputService.StopSpinner()
+		s.cfg.OutputService.StopSpinner()
 
 		var scopes []string
 
 		for _, a := range analyzers {
-			if shouldRunCheck(wasteChecks, a.Name()) {
+			if shouldRunCheck(flags.WasteChecks, a.Name()) {
 				scopes = append(scopes, a.TabName())
 			}
 		}
 
-		err := s.outputService.RenderWasteInteractive(*stsResult.Account, resultCh, scopes, s.pricingService)
+		err := s.cfg.OutputService.RenderWasteInteractive(*stsResult.Account, resultCh, scopes, s.cfg.PricingService)
 		workflowErr := g.Wait()
 
 		if err != nil {
-			s.outputService.PrintWasteError(err)
+			s.cfg.OutputService.PrintWasteError(err)
 			return err
 		}
 
@@ -329,59 +332,43 @@ func (s *service) wasteWorkflow(wasteChecks []string, generateReport bool, repor
 	}
 
 	if err := g.Wait(); err != nil {
-		s.outputService.StopSpinner()
+		s.cfg.OutputService.StopSpinner()
 		return err
 	}
 
-	s.outputService.StopSpinner()
+	s.cfg.OutputService.StopSpinner()
 
-	if generateReport {
-		return s.handleWasteReport(finalInput, reportPath)
+	if flags.Report {
+		return s.handleWasteReport(finalInput, flags.ReportPath)
 	}
 
-	return s.outputService.RenderWaste(finalInput, s.pricingService)
+	return s.cfg.OutputService.RenderWaste(finalInput, s.cfg.PricingService)
 }
 
 func shouldRunCheck(wasteChecks []string, name string) bool {
 	return len(wasteChecks) == 0 || slice.ContainsIgnoreCase(wasteChecks, name)
 }
 
-func (s *service) handleWasteReport(input model.RenderWasteInput, reportPath string) error {
-	path, err := s.reportService.GenerateWasteReport(input, s.pricingService, reportPath)
+func (s *wasteService) handleWasteReport(input model.RenderWasteInput, reportPath string) error {
+	path, err := s.cfg.ReportService.GenerateWasteReport(input, s.cfg.PricingService, reportPath)
 	if err != nil {
 		return err
 	}
 
-	s.outputService.PrintReportSuccess(*path)
+	s.cfg.OutputService.PrintReportSuccess(*path)
 
 	return nil
 }
 
-func (s *service) handleCostError(err error) error {
-	if errors.Is(err, model.ErrFirstDayOfMonth) {
-		s.outputService.StopSpinner()
-
-		s.outputService.PrintFirstDayOfMonthError()
-
-		return nil
-	}
-
-	return err
-}
-
-// loadPricing fetches region-aware pricing at the start of the waste workflow so the Calculate*
-// helpers can surface accurate rates instead of the hardcoded us-east-1 defaults. The call is
-// best-effort: any Pricing API failures are surfaced to stderr and the fallback constants cover
-// the missing entries. The spinner is updated in place so the user sees why startup is pausing.
-func (s *service) loadPricing(ctx context.Context) {
-	s.outputService.SetSpinnerMessage("Gathering pricing data...")
+func (s *wasteService) loadPricing(ctx context.Context) {
+	s.cfg.OutputService.SetSpinnerMessage("Gathering pricing data...")
 
 	pricingCtx, cancel := context.WithTimeout(ctx, 60*time.Second)
 	defer cancel()
 
-	if err := s.pricingService.LoadRegionRates(pricingCtx); err != nil {
+	if err := s.cfg.PricingService.LoadRegionRates(pricingCtx); err != nil {
 		fmt.Fprintf(os.Stderr, "warning: pricing API partial failure, falling back to defaults: %v\n", err)
 	}
 
-	s.outputService.SetSpinnerMessage("Please wait while data is being fetched...")
+	s.cfg.OutputService.SetSpinnerMessage("Please wait while data is being fetched...")
 }
