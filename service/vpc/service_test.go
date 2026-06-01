@@ -1,10 +1,11 @@
 package vpc
 
 import (
-	"github.com/elC0mpa/aws-doctor/model"
 	"context"
 	"errors"
 	"testing"
+
+	"github.com/elC0mpa/aws-doctor/model"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/ec2"
@@ -199,7 +200,7 @@ func TestAnalyzerMethods(t *testing.T) {
 func TestService_Analyze(t *testing.T) {
 	mockClient := new(awsinterfaces.MockEC2Client)
 	svc := &service{client: mockClient}
-	
+
 	assert.Equal(t, "vpc", svc.Name())
 	assert.Equal(t, "VPC", svc.TabName())
 

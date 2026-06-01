@@ -1,11 +1,12 @@
 package rds
 
 import (
-	"github.com/elC0mpa/aws-doctor/model"
 	"context"
 	"errors"
 	"testing"
 	"time"
+
+	"github.com/elC0mpa/aws-doctor/model"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/rds"
@@ -182,7 +183,7 @@ func TestAnalyzerMethods(t *testing.T) {
 func TestService_Analyze(t *testing.T) {
 	mockClient := new(awsinterfaces.MockRDSClient)
 	svc := &service{client: mockClient}
-	
+
 	assert.Equal(t, "rds", svc.Name())
 	assert.Equal(t, "RDS", svc.TabName())
 
@@ -190,6 +191,7 @@ func TestService_Analyze(t *testing.T) {
 	mockClient.On("DescribeDBInstances", mock.Anything, mock.Anything).Return(nil, errors.New("err")).Maybe()
 
 	mockClient.On("DescribeDBSnapshots", mock.Anything, mock.Anything, mock.Anything).Return(nil, errors.New("err")).Maybe()
+
 	res, err := svc.Analyze(context.Background(), model.Flags{})
 	assert.NoError(t, err)
 	assert.Equal(t, "rds", res.Scope)

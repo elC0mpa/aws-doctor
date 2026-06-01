@@ -1,10 +1,11 @@
 package elb
 
 import (
-	"github.com/elC0mpa/aws-doctor/model"
 	"context"
 	"errors"
 	"testing"
+
+	"github.com/elC0mpa/aws-doctor/model"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	elb "github.com/aws/aws-sdk-go-v2/service/elasticloadbalancingv2"
@@ -141,7 +142,7 @@ func TestAnalyzerMethods(t *testing.T) {
 func TestService_Analyze(t *testing.T) {
 	mockClient := new(awsinterfaces.MockELBClient)
 	svc := &service{client: mockClient}
-	
+
 	assert.Equal(t, "elb", svc.Name())
 	assert.Equal(t, "ELB", svc.TabName())
 

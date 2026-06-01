@@ -1,10 +1,11 @@
 package ecr
 
 import (
-	"github.com/elC0mpa/aws-doctor/model"
-	"errors"
 	"context"
+	"errors"
 	"testing"
+
+	"github.com/elC0mpa/aws-doctor/model"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/ecr"
@@ -147,7 +148,7 @@ func TestAnalyzerMethods(t *testing.T) {
 func TestService_Analyze(t *testing.T) {
 	mockClient := new(awsinterfaces.MockECRClient)
 	svc := &service{client: mockClient}
-	
+
 	assert.Equal(t, "ecr", svc.Name())
 	assert.Equal(t, "ECR", svc.TabName())
 

@@ -768,7 +768,7 @@ func TestAnalyzerMethods(t *testing.T) {
 func TestService_Analyze(t *testing.T) {
 	mockClient := new(awsinterfaces.MockEC2Client)
 	svc := &service{client: mockClient}
-	
+
 	assert.Equal(t, "ec2", svc.Name())
 	assert.Equal(t, "EC2", svc.TabName())
 
@@ -781,6 +781,7 @@ func TestService_Analyze(t *testing.T) {
 	mockClient.On("DescribeReservedInstances", mock.Anything, mock.Anything, mock.Anything).Return(nil, errors.New("err")).Maybe()
 	mockClient.On("DescribeSnapshots", mock.Anything, mock.Anything, mock.Anything).Return(nil, errors.New("err")).Maybe()
 	mockClient.On("DescribeImages", mock.Anything, mock.Anything, mock.Anything).Return(nil, errors.New("err")).Maybe()
+
 	res, err := svc.Analyze(context.Background(), model.Flags{})
 	assert.NoError(t, err)
 	assert.Equal(t, "ec2", res.Scope)
