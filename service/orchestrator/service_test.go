@@ -1,6 +1,7 @@
 package orchestrator
 
 import (
+	"errors"
 	"testing"
 	"time"
 
@@ -12,6 +13,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )
+
+const testReportPath = "test.pdf"
 
 func TestCompareCosts_Success(t *testing.T) {
 	mockSTS := new(services.MockSTSService)
@@ -176,4 +179,234 @@ func TestCheckForUpdateInBackground(t *testing.T) {
 	case <-time.After(2 * time.Second):
 		t.Fatal("Timeout waiting for background update")
 	}
+}
+
+func TestUpdate_Error(t *testing.T) {
+	mockUpdate := new(services.MockUpdateService)
+	mockOutput := new(services.MockOutputService)
+
+	cfg := SystemConfig{
+		UpdateService: mockUpdate,
+		OutputService: mockOutput,
+		VersionInfo:   model.VersionInfo{Version: "dev"},
+	}
+	svc := NewSystemService(cfg)
+
+	mockOutput.On("StopSpinner").Return()
+	mockUpdate.On("Update").Return(errors.New("update failed"))
+	mockOutput.On("PrintUpdateError", mock.Anything).Return()
+
+	err := svc.Update()
+
+	assert.Error(t, err)
+	assert.Equal(t, "update failed", err.Error())
+	mockOutput.AssertExpectations(t)
+	mockUpdate.AssertExpectations(t)
+}
+
+func TestCompareCosts_Error(t *testing.T) {
+	mockSTS := new(services.MockSTSService)
+	mockCost := new(services.MockCostService)
+	mockOutput := new(services.MockOutputService)
+
+	cfg := CostConfig{
+		STSService:    mockSTS,
+		CostService:   mockCost,
+		OutputService: mockOutput,
+	}
+	svc := NewCostService(cfg)
+
+	mockCost.On("GetCurrentMonthCostsByService", mock.Anything).Return(nil, errors.New("cost error"))
+	mockOutput.On("StopSpinner").Return()
+	mockOutput.On("PrintCostError", mock.Anything).Return()
+
+	err := svc.CompareCosts(false, "")
+
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "cost error")
+}
+
+func TestCompareCosts_ReportSuccess(t *testing.T) {
+	mockSTS := new(services.MockSTSService)
+	mockCost := new(services.MockCostService)
+	mockOutput := new(services.MockOutputService)
+	mockReport := new(services.MockReportService)
+
+	cfg := CostConfig{
+		STSService:    mockSTS,
+		CostService:   mockCost,
+		OutputService: mockOutput,
+		ReportService: mockReport,
+	}
+	svc := NewCostService(cfg)
+
+	mockCost.On("GetCurrentMonthCostsByService", mock.Anything).Return(&model.CostInfo{}, nil)
+	mockCost.On("GetLastMonthCostsByService", mock.Anything).Return(&model.CostInfo{}, nil)
+	mockCost.On("GetCurrentMonthTotalCosts", mock.Anything).Return(aws.String("100.00"), nil)
+	mockCost.On("GetLastMonthTotalCosts", mock.Anything).Return(aws.String("90.00"), nil)
+	mockSTS.On("GetCallerIdentity", mock.Anything).Return(&sts.GetCallerIdentityOutput{
+		Account: aws.String("123456789012"),
+	}, nil)
+
+	mockOutput.On("IsInteractive").Return(false)
+	mockOutput.On("StopSpinner").Return()
+
+	path := testReportPath
+	mockReport.On("GenerateCostComparisonReport", mock.Anything, testReportPath).Return(&path, nil)
+	mockOutput.On("PrintReportSuccess", path).Return()
+
+	mockOutput.On("PrintReportError", mock.Anything).Return()
+
+	err := svc.CompareCosts(true, testReportPath)
+
+	assert.NoError(t, err)
+}
+
+func TestCompareCosts_ReportError(t *testing.T) {
+	mockSTS := new(services.MockSTSService)
+	mockCost := new(services.MockCostService)
+	mockOutput := new(services.MockOutputService)
+	mockReport := new(services.MockReportService)
+
+	cfg := CostConfig{
+		STSService:    mockSTS,
+		CostService:   mockCost,
+		OutputService: mockOutput,
+		ReportService: mockReport,
+	}
+	svc := NewCostService(cfg)
+
+	mockCost.On("GetCurrentMonthCostsByService", mock.Anything).Return(&model.CostInfo{}, nil)
+	mockCost.On("GetLastMonthCostsByService", mock.Anything).Return(&model.CostInfo{}, nil)
+	mockCost.On("GetCurrentMonthTotalCosts", mock.Anything).Return(aws.String("100.00"), nil)
+	mockCost.On("GetLastMonthTotalCosts", mock.Anything).Return(aws.String("90.00"), nil)
+	mockSTS.On("GetCallerIdentity", mock.Anything).Return(&sts.GetCallerIdentityOutput{
+		Account: aws.String("123456789012"),
+	}, nil)
+
+	mockOutput.On("StopSpinner").Return()
+
+	mockReport.On("GenerateCostComparisonReport", mock.Anything, testReportPath).Return((*string)(nil), errors.New("report failed"))
+
+	mockOutput.On("PrintReportError", mock.Anything).Return()
+
+	err := svc.CompareCosts(true, testReportPath)
+
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "report failed")
+}
+
+func TestAnalyzeTrends_Error(t *testing.T) {
+	mockSTS := new(services.MockSTSService)
+	mockCost := new(services.MockCostService)
+	mockOutput := new(services.MockOutputService)
+
+	cfg := TrendConfig{
+		STSService:    mockSTS,
+		CostService:   mockCost,
+		OutputService: mockOutput,
+	}
+	svc := NewTrendService(cfg)
+
+	mockCost.On("GetLastSixMonthsCosts", mock.Anything, mock.Anything).Return([]model.CostInfo{}, errors.New("trend error"))
+	mockOutput.On("StopSpinner").Return()
+	mockOutput.On("PrintTrendError", mock.Anything).Return()
+
+	err := svc.AnalyzeTrends(nil, false, "")
+
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "trend error")
+}
+
+func TestAnalyzeTrends_ReportSuccess(t *testing.T) {
+	mockSTS := new(services.MockSTSService)
+	mockCost := new(services.MockCostService)
+	mockOutput := new(services.MockOutputService)
+	mockReport := new(services.MockReportService)
+
+	cfg := TrendConfig{
+		STSService:    mockSTS,
+		CostService:   mockCost,
+		OutputService: mockOutput,
+		ReportService: mockReport,
+	}
+	svc := NewTrendService(cfg)
+
+	mockCost.On("GetLastSixMonthsCosts", mock.Anything, mock.Anything).Return([]model.CostInfo{}, nil)
+	mockSTS.On("GetCallerIdentity", mock.Anything).Return(&sts.GetCallerIdentityOutput{
+		Account: aws.String("123456789012"),
+	}, nil)
+
+	mockOutput.On("IsInteractive").Return(false)
+	mockOutput.On("StopSpinner").Return()
+
+	path := testReportPath
+	mockReport.On("GenerateTrendReport", mock.Anything, mock.Anything, mock.Anything, testReportPath).Return(&path, nil)
+	mockOutput.On("PrintReportSuccess", path).Return()
+
+	mockOutput.On("PrintReportError", mock.Anything).Return()
+
+	err := svc.AnalyzeTrends(nil, true, testReportPath)
+
+	assert.NoError(t, err)
+}
+
+func TestAnalyzeWaste_Error(t *testing.T) {
+	mockSTS := new(services.MockSTSService)
+	mockOutput := new(services.MockOutputService)
+	mockPricing := new(services.MockPricingService)
+
+	cfg := WasteConfig{
+		STSService:     mockSTS,
+		PricingService: mockPricing,
+		OutputService:  mockOutput,
+		Registry:       analyzer.NewRegistry(),
+	}
+	svc := NewWasteService(cfg)
+
+	mockSTS.On("GetCallerIdentity", mock.Anything).Return(nil, errors.New("sts error"))
+	mockPricing.On("LoadRegionRates", mock.Anything).Return(nil).Maybe()
+	mockOutput.On("SetSpinnerMessage", mock.Anything).Return().Maybe()
+	mockOutput.On("StopSpinner").Return()
+	mockOutput.On("PrintWasteError", mock.Anything).Return()
+
+	err := svc.AnalyzeWaste(model.Flags{})
+
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "sts error")
+}
+
+func TestAnalyzeWaste_ReportSuccess(t *testing.T) {
+	mockSTS := new(services.MockSTSService)
+	mockPricing := new(services.MockPricingService)
+	mockOutput := new(services.MockOutputService)
+	mockReport := new(services.MockReportService)
+	mockRegistry := analyzer.NewRegistry()
+
+	cfg := WasteConfig{
+		STSService:     mockSTS,
+		PricingService: mockPricing,
+		OutputService:  mockOutput,
+		ReportService:  mockReport,
+		Registry:       mockRegistry,
+	}
+	svc := NewWasteService(cfg)
+
+	mockOutput.On("SetSpinnerMessage", mock.Anything).Return().Maybe()
+	mockPricing.On("LoadRegionRates", mock.Anything).Return(nil)
+	mockSTS.On("GetCallerIdentity", mock.Anything).Return(&sts.GetCallerIdentityOutput{
+		Account: aws.String("123456789012"),
+	}, nil)
+
+	mockOutput.On("IsInteractive").Return(false)
+	mockOutput.On("StopSpinner").Return()
+
+	path := testReportPath
+	mockReport.On("GenerateWasteReport", mock.Anything, mockPricing, testReportPath).Return(&path, nil)
+	mockOutput.On("PrintReportSuccess", path).Return()
+
+	flags := model.Flags{Report: true, ReportPath: testReportPath}
+	err := svc.AnalyzeWaste(flags)
+
+	assert.NoError(t, err)
 }

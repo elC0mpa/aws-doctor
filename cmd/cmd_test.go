@@ -195,3 +195,10 @@ func TestExecuteReportTrend(t *testing.T) {
 	assert.NoError(t, err)
 	mockTrend.AssertExpectations(t)
 }
+
+func TestBuilders(t *testing.T) {
+	_, _ = buildSystemOrchestrator()
+	_, _ = buildWasteOrchestrator()
+	_, _ = buildCostOrchestrator()
+	_, _ = buildTrendOrchestrator()
+}
