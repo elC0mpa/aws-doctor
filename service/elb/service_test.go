@@ -5,6 +5,8 @@ import (
 	"errors"
 	"testing"
 
+	"github.com/elC0mpa/aws-doctor/model"
+
 	"github.com/aws/aws-sdk-go-v2/aws"
 	elb "github.com/aws/aws-sdk-go-v2/service/elasticloadbalancingv2"
 	"github.com/aws/aws-sdk-go-v2/service/elasticloadbalancingv2/types"
@@ -135,4 +137,19 @@ func TestAnalyzerMethods(t *testing.T) {
 	if svc.TabName() == "" {
 		t.Error("TabName() should not be empty")
 	}
+}
+
+func TestService_Analyze(t *testing.T) {
+	mockClient := new(awsinterfaces.MockELBClient)
+	svc := &service{client: mockClient}
+
+	assert.Equal(t, "elb", svc.Name())
+	assert.Equal(t, "ELB", svc.TabName())
+
+	mockClient.On("DescribeLoadBalancers", mock.Anything, mock.Anything, mock.Anything).Return(nil, errors.New("err")).Maybe()
+	mockClient.On("DescribeLoadBalancers", mock.Anything, mock.Anything).Return(nil, errors.New("err")).Maybe()
+
+	res, err := svc.Analyze(context.Background(), model.Flags{})
+	assert.NoError(t, err)
+	assert.Equal(t, "elb", res.Scope)
 }

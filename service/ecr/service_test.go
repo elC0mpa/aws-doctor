@@ -2,7 +2,10 @@ package ecr
 
 import (
 	"context"
+	"errors"
 	"testing"
+
+	"github.com/elC0mpa/aws-doctor/model"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/ecr"
@@ -140,4 +143,19 @@ func TestAnalyzerMethods(t *testing.T) {
 	if svc.TabName() == "" {
 		t.Error("TabName() should not be empty")
 	}
+}
+
+func TestService_Analyze(t *testing.T) {
+	mockClient := new(awsinterfaces.MockECRClient)
+	svc := &service{client: mockClient}
+
+	assert.Equal(t, "ecr", svc.Name())
+	assert.Equal(t, "ECR", svc.TabName())
+
+	mockClient.On("DescribeRepositories", mock.Anything, mock.Anything, mock.Anything).Return(nil, errors.New("err")).Maybe()
+	mockClient.On("DescribeRepositories", mock.Anything, mock.Anything).Return(nil, errors.New("err")).Maybe()
+
+	res, err := svc.Analyze(context.Background(), model.Flags{})
+	assert.NoError(t, err)
+	assert.Equal(t, "ecr", res.Scope)
 }

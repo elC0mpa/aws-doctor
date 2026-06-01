@@ -12,6 +12,8 @@ import (
 	"github.com/elC0mpa/aws-doctor/mocks/services"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
+
+	"github.com/elC0mpa/aws-doctor/model"
 )
 
 type mockCWMetricsService struct {
@@ -194,4 +196,18 @@ func TestAnalyzerMethods(t *testing.T) {
 	if svc.TabName() == "" {
 		t.Error("TabName() should not be empty")
 	}
+}
+
+func TestService_Analyze(t *testing.T) {
+	mockClient := new(awsinterfaces.MockSageMakerClient)
+	svc := &service{client: mockClient}
+
+	assert.Equal(t, "sagemaker", svc.Name())
+	assert.Equal(t, "SageMaker", svc.TabName())
+
+	mockClient.On("ListEndpoints", mock.Anything, mock.Anything, mock.Anything).Return(nil, errors.New("err"))
+
+	res, err := svc.Analyze(context.Background(), model.Flags{SageMakerIdleDays: 90})
+	assert.NoError(t, err)
+	assert.Equal(t, "sagemaker", res.Scope)
 }

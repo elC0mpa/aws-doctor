@@ -18,19 +18,12 @@ var reportCostCmd = &cobra.Command{
 	Use:   "cost",
 	Short: "Generate a PDF report for cost comparison",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		orch, err := orchestratorBuilder(true)
+		orch, err := buildCostOrchestratorHook()
 		if err != nil {
 			return err
 		}
 
-		flags := model.Flags{
-			Region:     region,
-			Profile:    profile,
-			Report:     true,
-			ReportPath: reportOutPath,
-		}
-
-		return orch.Orchestrate(flags)
+		return orch.CompareCosts(true, reportOutPath)
 	},
 }
 
@@ -38,7 +31,7 @@ var reportWasteCmd = &cobra.Command{
 	Use:   "waste [checks...]",
 	Short: "Generate a PDF report for AWS waste detection",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		orch, err := orchestratorBuilder(true)
+		orch, err := buildWasteOrchestratorHook()
 		if err != nil {
 			return err
 		}
@@ -60,7 +53,7 @@ var reportWasteCmd = &cobra.Command{
 			IAMIdleDays:           iamIdleDays,
 		}
 
-		return orch.Orchestrate(flags)
+		return orch.AnalyzeWaste(flags)
 	},
 }
 
@@ -68,7 +61,7 @@ var reportTrendCmd = &cobra.Command{
 	Use:   "trend [services...]",
 	Short: "Generate a PDF report for AWS cost trends",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		orch, err := orchestratorBuilder(true)
+		orch, err := buildTrendOrchestratorHook()
 		if err != nil {
 			return err
 		}
@@ -78,16 +71,7 @@ var reportTrendCmd = &cobra.Command{
 			parsedChecks = append(parsedChecks, strings.Split(arg, ",")...)
 		}
 
-		flags := model.Flags{
-			Region:      region,
-			Profile:     profile,
-			Report:      true,
-			ReportPath:  reportOutPath,
-			Trend:       true,
-			TrendChecks: parsedChecks,
-		}
-
-		return orch.Orchestrate(flags)
+		return orch.AnalyzeTrends(parsedChecks, true, reportOutPath)
 	},
 }
 

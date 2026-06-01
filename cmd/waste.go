@@ -17,7 +17,7 @@ var wasteCmd = &cobra.Command{
 	Use:   "waste [checks...]",
 	Short: "Display AWS waste report (e.g., ec2 s3 ecr)",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		orch, err := orchestratorBuilder(true)
+		orch, err := buildWasteOrchestratorHook()
 		if err != nil {
 			return err
 		}
@@ -39,7 +39,7 @@ var wasteCmd = &cobra.Command{
 			IAMIdleDays:           iamIdleDays,
 		}
 
-		return orch.Orchestrate(flags)
+		return orch.AnalyzeWaste(flags)
 	},
 }
 

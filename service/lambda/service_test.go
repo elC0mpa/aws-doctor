@@ -9,6 +9,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/elC0mpa/aws-doctor/model"
+
 	"github.com/aws/aws-sdk-go-v2/aws"
 	awslambda "github.com/aws/aws-sdk-go-v2/service/lambda"
 	lambdatypes "github.com/aws/aws-sdk-go-v2/service/lambda/types"
@@ -312,4 +314,19 @@ func TestAnalyzerMethods(t *testing.T) {
 	if svc.TabName() == "" {
 		t.Error("TabName() should not be empty")
 	}
+}
+
+func TestService_Analyze(t *testing.T) {
+	mockClient := new(awsinterfaces.MockLambdaClient)
+	svc := &service{lambdaClient: mockClient}
+
+	assert.Equal(t, "lambda", svc.Name())
+	assert.Equal(t, "Lambda", svc.TabName())
+
+	mockClient.On("ListFunctions", mock.Anything, mock.Anything, mock.Anything).Return(nil, errors.New("err")).Maybe()
+	mockClient.On("ListFunctions", mock.Anything, mock.Anything).Return(nil, errors.New("err")).Maybe()
+
+	res, err := svc.Analyze(context.Background(), model.Flags{})
+	assert.NoError(t, err)
+	assert.Equal(t, "lambda", res.Scope)
 }

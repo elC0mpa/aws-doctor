@@ -58,8 +58,8 @@ aws-doctor/
 ### Key Flows
 
 - `app.go` delegates execution to `cmd.Execute()`.
-- `cmd/` package defines Cobra commands (e.g., `cmd/waste.go`), initializes AWS services, and invokes `service/orchestrator`.
-- `service/orchestrator` executes the workflow logic by calling service methods based on the configured model.Flags. It streams background results via `<-chan model.ScopeResult`.
+- `cmd/` package defines Cobra commands (e.g., `cmd/waste.go`). It uses domain-specific builders in `cmd/root.go` (e.g., `buildWasteOrchestrator`) to initialize AWS services and pass them into the appropriate orchestrator interface (`WasteService`, `CostService`, etc.).
+- `service/orchestrator` is modularized into domain-specific files (`service_waste.go`, `service_cost.go`, `service_system.go`, `service_trend.go`). It executes workflow logic based on the configured model.Flags and streams background results via `<-chan model.ScopeResult`.
 - `service/output` chooses between interactive TUI (using `utils/tui` if a real terminal is detected), static table, JSON, or CSV rendering.
 - `service/update` handles updates (invoked by `cmd/update.go`).
 
@@ -259,7 +259,7 @@ On the docs site, IAM permissions must be expressed using inline callouts or pla
 6. **Service Mock**: Update the service mock in `mocks/services/` to include the new method. **This is critical to avoid `go vet` and build failures in orchestrator tests.**
 7. **Analyzer Registration**: 
    - Ensure the service implements the `analyzer.WasteAnalyzer` interface (`Analyze` and `Name`).
-   - If adding a completely new service, register it in the orchestrator builder (e.g., `cmd/root.go`, `cmd/waste.go`) via the `registry.Register()` method, and add its tab name mapping in `service/orchestrator/service.go`.
+   - If adding a completely new service, register it in the orchestrator builder (e.g., `cmd/root.go`, `cmd/waste.go`) via the `registry.Register()` method.
    - If adding a new check inside an existing service, simply add the new method call to the concurrent `errgroup` inside the service's `Analyze` method. No orchestrator changes needed!
 8. **Output Service**: 
    - Update `model.RenderWasteInput` in `model/waste.go` to include the new slice, and update its `Merge()` method.

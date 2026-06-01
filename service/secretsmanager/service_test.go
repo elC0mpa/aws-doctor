@@ -12,6 +12,8 @@ import (
 	"github.com/elC0mpa/aws-doctor/mocks/awsinterfaces"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
+
+	"github.com/elC0mpa/aws-doctor/model"
 )
 
 func TestNewService(t *testing.T) {
@@ -106,4 +108,18 @@ func TestAnalyzerMethods(t *testing.T) {
 	if svc.TabName() == "" {
 		t.Error("TabName() should not be empty")
 	}
+}
+
+func TestService_Analyze(t *testing.T) {
+	mockClient := new(awsinterfaces.MockSecretsManagerClient)
+	svc := &service{client: mockClient}
+
+	assert.Equal(t, "secrets-manager", svc.Name())
+	assert.Equal(t, "SecretsManager", svc.TabName())
+
+	mockClient.On("ListSecrets", mock.Anything, mock.Anything, mock.Anything).Return(nil, errors.New("err"))
+
+	res, err := svc.Analyze(context.Background(), model.Flags{})
+	assert.NoError(t, err)
+	assert.Equal(t, "secrets-manager", res.Scope)
 }

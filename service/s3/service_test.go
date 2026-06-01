@@ -6,6 +6,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/elC0mpa/aws-doctor/model"
+
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/aws/aws-sdk-go-v2/service/s3/types"
@@ -145,4 +147,21 @@ func TestAnalyzerMethods(t *testing.T) {
 	if svc.TabName() == "" {
 		t.Error("TabName() should not be empty")
 	}
+}
+
+func TestService_Analyze(t *testing.T) {
+	mockClient := new(awsinterfaces.MockS3Client)
+	svc := &service{client: mockClient}
+
+	assert.Equal(t, "s3", svc.Name())
+	assert.Equal(t, "S3", svc.TabName())
+
+	mockClient.On("ListBuckets", mock.Anything, mock.Anything, mock.Anything).Return(nil, errors.New("err")).Maybe()
+	mockClient.On("ListBuckets", mock.Anything, mock.Anything).Return(nil, errors.New("err")).Maybe()
+
+	mockClient.On("Options").Return(s3.Options{Region: "us-east-1"}).Maybe()
+
+	res, err := svc.Analyze(context.Background(), model.Flags{})
+	assert.NoError(t, err)
+	assert.Equal(t, "s3", res.Scope)
 }
