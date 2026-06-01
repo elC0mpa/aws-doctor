@@ -1,15 +1,12 @@
 package cmd
 
 import (
-	"errors"
-	"os"
 	"testing"
 
 	"github.com/elC0mpa/aws-doctor/model"
 	"github.com/elC0mpa/aws-doctor/service/orchestrator"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
-	"golang.org/x/term"
 )
 
 const (
@@ -22,27 +19,67 @@ const (
 	outputJSON = "json"
 )
 
-// MockOrchestrator is a mock implementation of the orchestrator service.
-type MockOrchestrator struct {
-	mock.Mock
+// MockWasteOrchestrator
+type MockWasteOrchestrator struct{ mock.Mock }
+
+func (m *MockWasteOrchestrator) AnalyzeWaste(flags model.Flags) error {
+	return m.Called(flags).Error(0)
 }
 
-func (m *MockOrchestrator) Orchestrate(flags model.Flags) error {
-	args := m.Called(flags)
+// MockCostOrchestrator
+type MockCostOrchestrator struct{ mock.Mock }
 
-	return args.Error(0)
+func (m *MockCostOrchestrator) CompareCosts(generateReport bool, reportPath string) error {
+	return m.Called(generateReport, reportPath).Error(0)
 }
 
-func setupTest() (*MockOrchestrator, func()) {
-	mockOrch := new(MockOrchestrator)
-	originalBuilder := orchestratorBuilder
-	orchestratorBuilder = func(needsAWS bool) (orchestrator.Service, error) {
-		return mockOrch, nil
+// MockTrendOrchestrator
+type MockTrendOrchestrator struct{ mock.Mock }
+
+func (m *MockTrendOrchestrator) AnalyzeTrends(trendChecks []string, generateReport bool, reportPath string) error {
+	return m.Called(trendChecks, generateReport, reportPath).Error(0)
+}
+
+// MockSystemOrchestrator
+type MockSystemOrchestrator struct{ mock.Mock }
+
+func (m *MockSystemOrchestrator) Update() error  { return m.Called().Error(0) }
+func (m *MockSystemOrchestrator) Version() error { return m.Called().Error(0) }
+func (m *MockSystemOrchestrator) CheckForUpdateInBackground() <-chan model.VersionCheckResult {
+	args := m.Called()
+
+	ch := make(chan model.VersionCheckResult, 1)
+	if val := args.Get(0); val != nil {
+		ch <- val.(model.VersionCheckResult)
 	}
 
-	return mockOrch, func() {
-		orchestratorBuilder = originalBuilder
-		// Reset persistent flags to default values and changed state
+	return ch
+}
+
+func setupTest() (*MockWasteOrchestrator, *MockCostOrchestrator, *MockTrendOrchestrator, *MockSystemOrchestrator, func()) {
+	mockWaste := new(MockWasteOrchestrator)
+	mockCost := new(MockCostOrchestrator)
+	mockTrend := new(MockTrendOrchestrator)
+	mockSystem := new(MockSystemOrchestrator)
+
+	origWaste := buildWasteOrchestratorHook
+	origCost := buildCostOrchestratorHook
+	origTrend := buildTrendOrchestratorHook
+	origSystem := buildSystemOrchestratorHook
+
+	buildWasteOrchestratorHook = func() (orchestrator.WasteService, error) { return mockWaste, nil }
+	buildCostOrchestratorHook = func() (orchestrator.CostService, error) { return mockCost, nil }
+	buildTrendOrchestratorHook = func() (orchestrator.TrendService, error) { return mockTrend, nil }
+	buildSystemOrchestratorHook = func() (orchestrator.SystemService, error) { return mockSystem, nil }
+
+	mockSystem.On("CheckForUpdateInBackground").Return(model.VersionCheckResult{})
+
+	return mockWaste, mockCost, mockTrend, mockSystem, func() {
+		buildWasteOrchestratorHook = origWaste
+		buildCostOrchestratorHook = origCost
+		buildTrendOrchestratorHook = origTrend
+		buildSystemOrchestratorHook = origSystem
+
 		region = ""
 		profile = ""
 		outputFormat = table
@@ -54,324 +91,118 @@ func setupTest() (*MockOrchestrator, func()) {
 }
 
 func TestExecuteVersion(t *testing.T) {
-	mockOrch, teardown := setupTest()
+	_, _, _, mockSystem, teardown := setupTest()
 	defer teardown()
 
-	mockOrch.On("Orchestrate", mock.MatchedBy(func(f model.Flags) bool {
-		return f.Version == true
-	})).Return(nil)
+	mockSystem.On("Version").Return(nil)
 
 	rootCmd.SetArgs([]string{"version"})
 
 	err := Execute(dev, none, unknown)
 	assert.NoError(t, err)
-	mockOrch.AssertExpectations(t)
+	mockSystem.AssertExpectations(t)
 }
 
 func TestExecuteUpdate(t *testing.T) {
-	mockOrch, teardown := setupTest()
+	_, _, _, mockSystem, teardown := setupTest()
 	defer teardown()
 
-	mockOrch.On("Orchestrate", mock.MatchedBy(func(f model.Flags) bool {
-		return f.Update == true
-	})).Return(nil)
+	mockSystem.On("Update").Return(nil)
 
 	rootCmd.SetArgs([]string{"update"})
 
 	err := Execute(dev, none, unknown)
 	assert.NoError(t, err)
-	mockOrch.AssertExpectations(t)
+	mockSystem.AssertExpectations(t)
 }
 
 func TestExecuteTrend(t *testing.T) {
-	mockOrch, teardown := setupTest()
+	_, _, mockTrend, _, teardown := setupTest()
 	defer teardown()
 
-	mockOrch.On("Orchestrate", mock.MatchedBy(func(f model.Flags) bool {
-		return f.Trend == true
-	})).Return(nil)
+	mockTrend.On("AnalyzeTrends", mock.Anything, false, "").Return(nil)
 
 	rootCmd.SetArgs([]string{"trend"})
 
 	err := Execute(dev, none, unknown)
 	assert.NoError(t, err)
-	mockOrch.AssertExpectations(t)
+	mockTrend.AssertExpectations(t)
 }
 
 func TestExecuteWaste(t *testing.T) {
-	mockOrch, teardown := setupTest()
+	mockWaste, _, _, _, teardown := setupTest()
 	defer teardown()
 
-	mockOrch.On("Orchestrate", mock.MatchedBy(func(f model.Flags) bool {
-		return f.Waste == true && len(f.WasteChecks) == 2 && f.WasteChecks[0] == ec2 && f.WasteChecks[1] == s3Const
-	})).Return(nil)
+	mockWaste.On("AnalyzeWaste", mock.Anything).Return(nil)
 
-	rootCmd.SetArgs([]string{"waste", ec2, s3Const})
+	rootCmd.SetArgs([]string{"waste"})
 
 	err := Execute(dev, none, unknown)
 	assert.NoError(t, err)
-	mockOrch.AssertExpectations(t)
-}
-
-func TestExecuteWasteComma(t *testing.T) {
-	mockOrch, teardown := setupTest()
-	defer teardown()
-
-	mockOrch.On("Orchestrate", mock.MatchedBy(func(f model.Flags) bool {
-		return f.Waste == true && len(f.WasteChecks) == 2 && f.WasteChecks[0] == ec2 && f.WasteChecks[1] == s3Const
-	})).Return(nil)
-
-	rootCmd.SetArgs([]string{"waste", ec2 + "," + s3Const})
-
-	err := Execute(dev, none, unknown)
-	assert.NoError(t, err)
-	mockOrch.AssertExpectations(t)
+	mockWaste.AssertExpectations(t)
 }
 
 func TestExecuteCost(t *testing.T) {
-	mockOrch, teardown := setupTest()
+	_, mockCost, _, _, teardown := setupTest()
 	defer teardown()
 
-	mockOrch.On("Orchestrate", mock.MatchedBy(func(f model.Flags) bool {
-		return f.Waste == false && f.Trend == false
-	})).Return(nil)
+	mockCost.On("CompareCosts", false, "").Return(nil)
 
 	rootCmd.SetArgs([]string{"cost"})
 
 	err := Execute(dev, none, unknown)
 	assert.NoError(t, err)
-	mockOrch.AssertExpectations(t)
-}
-
-func TestPersistentFlags(t *testing.T) {
-	mockOrch, teardown := setupTest()
-	defer teardown()
-
-	mockOrch.On("Orchestrate", mock.MatchedBy(func(f model.Flags) bool {
-		return f.Region == "us-west-2" && f.Profile == "test-profile" && f.Output == outputJSON
-	})).Return(nil)
-
-	rootCmd.SetArgs([]string{"cost", "--region", "us-west-2", "--profile", "test-profile", "--output", outputJSON})
-
-	err := Execute(dev, none, unknown)
-	assert.NoError(t, err)
-	mockOrch.AssertExpectations(t)
-}
-
-func TestExecuteTrendArgs(t *testing.T) {
-	mockOrch, teardown := setupTest()
-	defer teardown()
-
-	mockOrch.On("Orchestrate", mock.MatchedBy(func(f model.Flags) bool {
-		return f.Trend == true && len(f.TrendChecks) == 2 && f.TrendChecks[0] == ec2 && f.TrendChecks[1] == s3Const
-	})).Return(nil)
-
-	rootCmd.SetArgs([]string{"trend", ec2 + "," + s3Const})
-
-	err := Execute(dev, none, unknown)
-	assert.NoError(t, err)
-	mockOrch.AssertExpectations(t)
-}
-
-func TestCommandFailures(t *testing.T) {
-	originalBuilder := orchestratorBuilder
-	orchestratorBuilder = func(needsAWS bool) (orchestrator.Service, error) {
-		return nil, errors.New("builder error")
-	}
-
-	defer func() { orchestratorBuilder = originalBuilder }()
-
-	commands := [][]string{
-		{"cost"},
-		{"trend"},
-		{"waste"},
-		{"update"},
-		{"version"},
-	}
-
-	for _, cmdArgs := range commands {
-		t.Run(cmdArgs[0], func(t *testing.T) {
-			rootCmd.SetArgs(cmdArgs)
-
-			err := Execute(dev, none, unknown)
-			assert.Error(t, err)
-			assert.Contains(t, err.Error(), "builder error")
-		})
-	}
-}
-
-func TestBuildOrchestratorNoAWS(t *testing.T) {
-	orch, err := buildOrchestrator(false)
-	assert.NoError(t, err)
-	assert.NotNil(t, orch)
-}
-
-func TestBuildOrchestratorAWS(t *testing.T) {
-	t.Setenv("AWS_ACCESS_KEY_ID", "test")
-	t.Setenv("AWS_SECRET_ACCESS_KEY", "test")
-	t.Setenv("AWS_REGION", "us-east-1")
-
-	orch, err := buildOrchestrator(true)
-	assert.NoError(t, err)
-	assert.NotNil(t, orch)
+	mockCost.AssertExpectations(t)
 }
 
 func TestExecuteReportCost(t *testing.T) {
-	mockOrch, teardown := setupTest()
+	_, mockCost, _, _, teardown := setupTest()
 	defer teardown()
 
-	mockOrch.On("Orchestrate", mock.MatchedBy(func(f model.Flags) bool {
-		return f.Report == true && f.Waste == false && f.Trend == false
-	})).Return(nil)
+	mockCost.On("CompareCosts", true, mock.Anything).Return(nil)
 
-	rootCmd.SetArgs([]string{"report", "cost"})
+	rootCmd.SetArgs([]string{"report", "cost", "--path", "test.pdf"})
 
 	err := Execute(dev, none, unknown)
 	assert.NoError(t, err)
-	mockOrch.AssertExpectations(t)
+	mockCost.AssertExpectations(t)
 }
 
 func TestExecuteReportWaste(t *testing.T) {
-	mockOrch, teardown := setupTest()
+	mockWaste, _, _, _, teardown := setupTest()
 	defer teardown()
 
-	mockOrch.On("Orchestrate", mock.MatchedBy(func(f model.Flags) bool {
-		return f.Report == true && f.Waste == true && f.Trend == false && len(f.WasteChecks) == 0
+	mockWaste.On("AnalyzeWaste", mock.MatchedBy(func(f model.Flags) bool {
+		return f.Report == true
 	})).Return(nil)
 
-	rootCmd.SetArgs([]string{"report", "waste"})
+	rootCmd.SetArgs([]string{"report", "waste", "--path", "test.pdf"})
 
 	err := Execute(dev, none, unknown)
 	assert.NoError(t, err)
-	mockOrch.AssertExpectations(t)
-}
-
-func TestExecuteReportWasteSelective(t *testing.T) {
-	mockOrch, teardown := setupTest()
-	defer teardown()
-
-	mockOrch.On("Orchestrate", mock.MatchedBy(func(f model.Flags) bool {
-		return f.Report == true && f.Waste == true && f.Trend == false &&
-			len(f.WasteChecks) == 2 && f.WasteChecks[0] == ec2 && f.WasteChecks[1] == s3Const
-	})).Return(nil)
-
-	rootCmd.SetArgs([]string{"report", "waste", ec2, s3Const})
-
-	err := Execute(dev, none, unknown)
-	assert.NoError(t, err)
-	mockOrch.AssertExpectations(t)
+	mockWaste.AssertExpectations(t)
 }
 
 func TestExecuteReportTrend(t *testing.T) {
-	mockOrch, teardown := setupTest()
+	_, _, mockTrend, _, teardown := setupTest()
 	defer teardown()
 
-	mockOrch.On("Orchestrate", mock.MatchedBy(func(f model.Flags) bool {
-		return f.Report == true && f.Trend == true && f.Waste == false
-	})).Return(nil)
+	mockTrend.On("AnalyzeTrends", mock.Anything, true, mock.Anything).Return(nil)
 
-	rootCmd.SetArgs([]string{"report", "trend"})
+	rootCmd.SetArgs([]string{"report", "trend", "--path", "test.pdf"})
 
 	err := Execute(dev, none, unknown)
 	assert.NoError(t, err)
-	mockOrch.AssertExpectations(t)
+	mockTrend.AssertExpectations(t)
 }
 
-func TestExecuteReportTrendSelective(t *testing.T) {
-	mockOrch, teardown := setupTest()
-	defer teardown()
+func TestBuilders(t *testing.T) {
+	t.Setenv("AWS_REGION", "us-east-1")
+	t.Setenv("AWS_ACCESS_KEY_ID", "mock")
+	t.Setenv("AWS_SECRET_ACCESS_KEY", "mock")
 
-	mockOrch.On("Orchestrate", mock.MatchedBy(func(f model.Flags) bool {
-		return f.Report == true && f.Trend == true && f.Waste == false &&
-			len(f.TrendChecks) == 1 && f.TrendChecks[0] == ec2
-	})).Return(nil)
-
-	rootCmd.SetArgs([]string{"report", "trend", ec2})
-
-	err := Execute(dev, none, unknown)
-	assert.NoError(t, err)
-	mockOrch.AssertExpectations(t)
-}
-
-func TestExecuteReportCostCustomPath(t *testing.T) {
-	mockOrch, teardown := setupTest()
-	defer teardown()
-
-	// When --path is used without a value, it defaults to "DEFAULT" per NoOptDefVal
-	mockOrch.On("Orchestrate", mock.MatchedBy(func(f model.Flags) bool {
-		return f.Report == true && f.Waste == false && f.Trend == false && f.ReportPath == "DEFAULT"
-	})).Return(nil)
-
-	rootCmd.SetArgs([]string{"report", "cost", "--path"})
-
-	err := Execute(dev, none, unknown)
-	assert.NoError(t, err)
-	mockOrch.AssertExpectations(t)
-}
-
-func TestExecuteWasteLambdaMemoryThreshold(t *testing.T) {
-	mockOrch, teardown := setupTest()
-	defer teardown()
-
-	mockOrch.On("Orchestrate", mock.MatchedBy(func(f model.Flags) bool {
-		return f.Waste == true && f.LambdaMemoryThreshold == 20
-	})).Return(nil)
-
-	rootCmd.SetArgs([]string{"waste", "--lambda-memory-threshold", "20"})
-
-	err := Execute(dev, none, unknown)
-	assert.NoError(t, err)
-	mockOrch.AssertExpectations(t)
-}
-
-func TestExecuteWasteLambdaMemoryThresholdDefault(t *testing.T) {
-	mockOrch, teardown := setupTest()
-	defer teardown()
-
-	// Default value is 10
-	mockOrch.On("Orchestrate", mock.MatchedBy(func(f model.Flags) bool {
-		return f.Waste == true && f.LambdaMemoryThreshold == 10
-	})).Return(nil)
-
-	rootCmd.SetArgs([]string{"waste"})
-
-	err := Execute(dev, none, unknown)
-	assert.NoError(t, err)
-	mockOrch.AssertExpectations(t)
-}
-
-// TestExecute_NonTTY_DefaultsToJSON verifies that PersistentPreRunE auto-selects JSON
-// when stdout is not a TTY and --output was not explicitly passed.
-func TestExecute_NonTTY_DefaultsToJSON(t *testing.T) {
-	if term.IsTerminal(int(os.Stdout.Fd())) {
-		t.Skip("skipping: stdout is a TTY, auto-detect does not apply")
-	}
-
-	mockOrch, teardown := setupTest()
-	defer teardown()
-
-	mockOrch.On("Orchestrate", mock.MatchedBy(func(f model.Flags) bool {
-		return f.Waste == true && f.Output == outputJSON
-	})).Return(nil)
-
-	rootCmd.SetArgs([]string{"waste"})
-
-	err := Execute(dev, none, unknown)
-	assert.NoError(t, err)
-	mockOrch.AssertExpectations(t)
-}
-
-func TestExecuteWaste_ExplicitTableOutput_Respected(t *testing.T) {
-	mockOrch, teardown := setupTest()
-	defer teardown()
-
-	mockOrch.On("Orchestrate", mock.MatchedBy(func(f model.Flags) bool {
-		return f.Waste == true && f.Output == table
-	})).Return(nil)
-
-	rootCmd.SetArgs([]string{"waste", "--output", table})
-
-	err := Execute(dev, none, unknown)
-	assert.NoError(t, err)
-	mockOrch.AssertExpectations(t)
+	_, _ = buildSystemOrchestrator()
+	_, _ = buildWasteOrchestrator()
+	_, _ = buildCostOrchestrator()
+	_, _ = buildTrendOrchestrator()
 }

@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"time"
 
 	"github.com/elC0mpa/aws-doctor/model"
 	"github.com/elC0mpa/aws-doctor/service/analyzer"
@@ -35,28 +36,33 @@ import (
 )
 
 var (
-	region              string
-	profile             string
-	outputFormat        string
-	versionInfo         model.VersionInfo
-	orchestratorBuilder = buildOrchestrator
+	region       string
+	profile      string
+	outputFormat string
+	versionInfo  model.VersionInfo
+
+	// Test hooks
+	buildWasteOrchestratorHook  = buildWasteOrchestrator
+	buildCostOrchestratorHook   = buildCostOrchestrator
+	buildTrendOrchestratorHook  = buildTrendOrchestrator
+	buildSystemOrchestratorHook = buildSystemOrchestrator
 )
 
-func buildOrchestrator(needsAWS bool) (orchestrator.Service, error) {
+func buildSystemOrchestrator() (orchestrator.SystemService, error) {
 	outputService := output.NewService(outputFormat)
 	cacheService := cache.NewService()
 	updateService := update.NewService(versionInfo, cacheService)
 
-	config := orchestrator.Config{
+	cfg := orchestrator.SystemConfig{
 		OutputService: outputService,
 		UpdateService: updateService,
 		VersionInfo:   versionInfo,
 	}
 
-	if !needsAWS {
-		return orchestrator.NewService(config), nil
-	}
+	return orchestrator.NewSystemService(cfg), nil
+}
 
+func buildWasteOrchestrator() (orchestrator.WasteService, error) {
 	cfgService := awsconfig.NewService()
 
 	awsCfg, err := cfgService.GetAWSCfg(context.Background(), region, profile)
@@ -67,17 +73,14 @@ func buildOrchestrator(needsAWS bool) (orchestrator.Service, error) {
 	banner.DrawBannerTitle()
 	spinner.StartSpinner()
 
+	outputService := output.NewService(outputFormat)
+	stsService := awssts.NewService(awsCfg)
 	cwMetricsService := cloudwatchmetrics.NewService(awsCfg)
 	pricingSvc := pricing.NewService(awsCfg)
-
-	config.STSService = awssts.NewService(awsCfg)
-	config.CostService = awscostexplorer.NewService(awsCfg)
-	config.PricingService = pricingSvc
-	config.ReportService = report.NewService()
+	cwLogsService := cloudwatchlogs.NewService(awsCfg, pricingSvc)
+	reportService := report.NewService()
 
 	reg := analyzer.NewRegistry()
-	cwLogsService := cloudwatchlogs.NewService(awsCfg, pricingSvc)
-
 	reg.Register(awsec2.NewService(awsCfg, cwMetricsService, pricingSvc))
 	reg.Register(awsvpc.NewService(awsCfg, cwMetricsService, pricingSvc))
 	reg.Register(elb.NewService(awsCfg, cwMetricsService, pricingSvc))
@@ -90,9 +93,57 @@ func buildOrchestrator(needsAWS bool) (orchestrator.Service, error) {
 	reg.Register(awssecretsmanager.NewService(awsCfg, pricingSvc))
 	reg.Register(iam.NewService(awsCfg))
 
-	config.Registry = reg
+	cfg := orchestrator.WasteConfig{
+		OutputService:  outputService,
+		STSService:     stsService,
+		PricingService: pricingSvc,
+		ReportService:  reportService,
+		Registry:       reg,
+	}
 
-	return orchestrator.NewService(config), nil
+	return orchestrator.NewWasteService(cfg), nil
+}
+
+func buildCostOrchestrator() (orchestrator.CostService, error) {
+	cfgService := awsconfig.NewService()
+
+	awsCfg, err := cfgService.GetAWSCfg(context.Background(), region, profile)
+	if err != nil {
+		return nil, fmt.Errorf("failed to load AWS config: %w", err)
+	}
+
+	banner.DrawBannerTitle()
+	spinner.StartSpinner()
+
+	cfg := orchestrator.CostConfig{
+		OutputService: output.NewService(outputFormat),
+		STSService:    awssts.NewService(awsCfg),
+		CostService:   awscostexplorer.NewService(awsCfg),
+		ReportService: report.NewService(),
+	}
+
+	return orchestrator.NewCostService(cfg), nil
+}
+
+func buildTrendOrchestrator() (orchestrator.TrendService, error) {
+	cfgService := awsconfig.NewService()
+
+	awsCfg, err := cfgService.GetAWSCfg(context.Background(), region, profile)
+	if err != nil {
+		return nil, fmt.Errorf("failed to load AWS config: %w", err)
+	}
+
+	banner.DrawBannerTitle()
+	spinner.StartSpinner()
+
+	cfg := orchestrator.TrendConfig{
+		OutputService: output.NewService(outputFormat),
+		STSService:    awssts.NewService(awsCfg),
+		CostService:   awscostexplorer.NewService(awsCfg),
+		ReportService: report.NewService(),
+	}
+
+	return orchestrator.NewTrendService(cfg), nil
 }
 
 var rootCmd = &cobra.Command{
@@ -108,7 +159,22 @@ func Execute(version, commit, date string) error {
 		Date:    date,
 	}
 
-	return rootCmd.Execute()
+	// Trigger background update
+	sysOrch, _ := buildSystemOrchestratorHook()
+	updateCh := sysOrch.CheckForUpdateInBackground()
+
+	err := rootCmd.Execute()
+
+	// Wait briefly for update check to complete and print if necessary
+	select {
+	case res := <-updateCh:
+		if res.Err == nil && res.LatestVersion != nil {
+			output.NewService(outputFormat).PrintNewVersionAvailable(versionInfo.Version, *res.LatestVersion)
+		}
+	case <-time.After(500 * time.Millisecond):
+	}
+
+	return err
 }
 
 func init() {
