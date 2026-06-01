@@ -44,7 +44,8 @@ func NewWasteService(cfg WasteConfig) WasteService {
 }
 
 func (s *wasteService) AnalyzeWaste(flags model.Flags) error {
-	ctx := context.Background()
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
 
 	s.loadPricing(ctx)
 
@@ -96,7 +97,11 @@ func (s *wasteService) AnalyzeWaste(flags model.Flags) error {
 				res.Input.Errors[res.Scope] = res.Err.Error()
 			}
 
-			resultCh <- res
+			select {
+			case resultCh <- res:
+			case <-ctx.Done():
+				return ctx.Err()
+			}
 
 			return nil
 		})
@@ -122,6 +127,9 @@ func (s *wasteService) AnalyzeWaste(flags model.Flags) error {
 		}
 
 		err := s.cfg.OutputService.RenderWasteInteractive(*stsResult.Account, resultCh, scopes, s.cfg.PricingService)
+
+		cancel() // ensure context is cancelled to release blocked analyzers
+
 		workflowErr := g.Wait()
 
 		if err != nil {
@@ -136,6 +144,8 @@ func (s *wasteService) AnalyzeWaste(flags model.Flags) error {
 	for res := range resultCh {
 		finalInput.Merge(res.Input)
 	}
+
+	cancel() // ensure context is cancelled
 
 	if err := g.Wait(); err != nil {
 		s.cfg.OutputService.StopSpinner()

@@ -214,7 +214,7 @@ Keep the fallback table around — it is used both when the Pricing API is unrea
 6. **Service Mock**: Update the service mock in `mocks/services/` to include the new method.
 7. **Analyzer Registration**: 
    - Ensure the service implements the `analyzer.WasteAnalyzer` interface (`Analyze` and `Name`).
-   - If adding a completely new service, register it in the orchestrator builder (e.g., `cmd/root.go`, `cmd/waste.go`) via the `registry.Register()` method, and add its tab name mapping in `service/orchestrator/service_waste.go`.
+   - If adding a completely new service, register it in the orchestrator builder (e.g., `cmd/root.go`, `cmd/waste.go`) via the `registry.Register()` method.
    - If adding a new check inside an existing service, simply add the new method call to the concurrent `errgroup` inside the service's `Analyze` method. No orchestrator changes needed!
 8. **Output Service**: 
    - Update `model.RenderWasteInput` in `model/waste.go` to include the new slice, and update its `Merge()` method.
