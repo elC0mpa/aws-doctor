@@ -5,13 +5,15 @@ import (
 	outputshared "github.com/elC0mpa/aws-doctor/utils/output_shared"
 )
 
+const strTotalCosts = "Total Costs"
+
 func mapTotalRow(lastTotal, currentTotal string) []string {
 	lastAmount, lastUnit := outputshared.ParseCostString(lastTotal)
 	currentAmount, currentUnit := outputshared.ParseCostString(currentTotal)
 	diff := currentAmount - lastAmount
 
 	return []string{
-		"Total Costs",
+		strTotalCosts,
 		outputshared.FormatCost(lastAmount, lastUnit),
 		outputshared.FormatCost(currentAmount, currentUnit),
 		outputshared.FormatCost(diff, currentUnit),

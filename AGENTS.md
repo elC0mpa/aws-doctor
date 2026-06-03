@@ -43,7 +43,7 @@ aws-doctor/
 |   |-- ec2/              # EC2 service (EIPs, EBS, instances)
 |   |-- elb/              # ELB service (load balancers)
 |   |-- orchestrator/     # Workflow coordination
-|   |-- output/           # Output rendering (table/json) + spinner control
+|   |-- output/           # Polymorphic Renderer interface (table/json/csv) & package-level printing helpers
 |   |-- sts/              # AWS STS service
 |   |-- update/           # Self-update workflow
 |-- utils/                # Utility functions, table rendering
@@ -60,7 +60,7 @@ aws-doctor/
 - `app.go` delegates execution to `cmd.Execute()`.
 - `cmd/` package defines Cobra commands (e.g., `cmd/waste.go`). It uses domain-specific builders in `cmd/root.go` (e.g., `buildWasteOrchestrator`) to initialize AWS services and pass them into the appropriate orchestrator interface (`WasteService`, `CostService`, etc.).
 - `service/orchestrator` is modularized into domain-specific files (`service_waste.go`, `service_cost.go`, `service_system.go`, `service_trend.go`). It executes workflow logic based on the configured model.Flags and streams background results via `<-chan model.ScopeResult`.
-- `service/output` chooses between interactive TUI (using `utils/tui` if a real terminal is detected), static table, JSON, or CSV rendering.
+- `service/output` defines a polymorphic `Renderer` interface and acts as a factory (`NewRenderer(format string)`) to return the appropriate implementation (interactive TUI, static table, JSON, or CSV). It also provides package-level printing functions for system messages.
 - `service/update` handles updates (invoked by `cmd/update.go`).
 
 ### Service Pattern

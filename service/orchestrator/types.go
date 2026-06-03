@@ -15,7 +15,7 @@ import (
 type WasteConfig struct {
 	STSService     awssts.Service
 	PricingService pricing.Service
-	OutputService  output.Service
+	Renderer       output.Renderer
 	ReportService  report.Service
 	Registry       analyzer.Registry
 }
@@ -29,7 +29,7 @@ type WasteService interface {
 type CostConfig struct {
 	STSService    awssts.Service
 	CostService   awscostexplorer.Service
-	OutputService output.Service
+	Renderer      output.Renderer
 	ReportService report.Service
 }
 
@@ -42,7 +42,7 @@ type CostService interface {
 type TrendConfig struct {
 	STSService    awssts.Service
 	CostService   awscostexplorer.Service
-	OutputService output.Service
+	Renderer      output.Renderer
 	ReportService report.Service
 }
 
@@ -54,7 +54,7 @@ type TrendService interface {
 // SystemConfig holds the dependencies for the system orchestrator service.
 type SystemConfig struct {
 	UpdateService update.Service
-	OutputService output.Service
+	Renderer      output.Renderer
 	VersionInfo   model.VersionInfo
 }
 

@@ -49,12 +49,12 @@ var (
 )
 
 func buildSystemOrchestrator() (orchestrator.SystemService, error) {
-	outputService := output.NewService(outputFormat)
+	renderer := output.NewRenderer(outputFormat)
 	cacheService := cache.NewService()
 	updateService := update.NewService(versionInfo, cacheService)
 
 	cfg := orchestrator.SystemConfig{
-		OutputService: outputService,
+		Renderer:      renderer,
 		UpdateService: updateService,
 		VersionInfo:   versionInfo,
 	}
@@ -73,7 +73,7 @@ func buildWasteOrchestrator() (orchestrator.WasteService, error) {
 	banner.DrawBannerTitle()
 	spinner.StartSpinner()
 
-	outputService := output.NewService(outputFormat)
+	renderer := output.NewRenderer(outputFormat)
 	stsService := awssts.NewService(awsCfg)
 	cwMetricsService := cloudwatchmetrics.NewService(awsCfg)
 	pricingSvc := pricing.NewService(awsCfg)
@@ -94,7 +94,7 @@ func buildWasteOrchestrator() (orchestrator.WasteService, error) {
 	reg.Register(iam.NewService(awsCfg))
 
 	cfg := orchestrator.WasteConfig{
-		OutputService:  outputService,
+		Renderer:       renderer,
 		STSService:     stsService,
 		PricingService: pricingSvc,
 		ReportService:  reportService,
@@ -116,7 +116,7 @@ func buildCostOrchestrator() (orchestrator.CostService, error) {
 	spinner.StartSpinner()
 
 	cfg := orchestrator.CostConfig{
-		OutputService: output.NewService(outputFormat),
+		Renderer:      output.NewRenderer(outputFormat),
 		STSService:    awssts.NewService(awsCfg),
 		CostService:   awscostexplorer.NewService(awsCfg),
 		ReportService: report.NewService(),
@@ -137,7 +137,7 @@ func buildTrendOrchestrator() (orchestrator.TrendService, error) {
 	spinner.StartSpinner()
 
 	cfg := orchestrator.TrendConfig{
-		OutputService: output.NewService(outputFormat),
+		Renderer:      output.NewRenderer(outputFormat),
 		STSService:    awssts.NewService(awsCfg),
 		CostService:   awscostexplorer.NewService(awsCfg),
 		ReportService: report.NewService(),
@@ -169,7 +169,7 @@ func Execute(version, commit, date string) error {
 	select {
 	case res := <-updateCh:
 		if res.Err == nil && res.LatestVersion != nil {
-			output.NewService(outputFormat).PrintNewVersionAvailable(versionInfo.Version, *res.LatestVersion)
+			output.PrintNewVersionAvailable(versionInfo.Version, *res.LatestVersion)
 		}
 	case <-time.After(500 * time.Millisecond):
 	}

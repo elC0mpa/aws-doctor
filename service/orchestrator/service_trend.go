@@ -4,6 +4,9 @@ import (
 	"context"
 	"strings"
 
+	"github.com/elC0mpa/aws-doctor/service/output"
+	"github.com/elC0mpa/aws-doctor/utils/spinner"
+
 	awscostexplorer "github.com/elC0mpa/aws-doctor/service/costexplorer"
 )
 
@@ -35,7 +38,7 @@ func (s *trendService) AnalyzeTrends(trendChecks []string, generateReport bool, 
 		return err
 	}
 
-	s.cfg.OutputService.StopSpinner()
+	spinner.StopSpinner()
 
 	if generateReport {
 		path, err := s.cfg.ReportService.GenerateTrendReport(*stsResult.Account, costInfo, trendChecks, reportPath)
@@ -43,10 +46,10 @@ func (s *trendService) AnalyzeTrends(trendChecks []string, generateReport bool, 
 			return err
 		}
 
-		s.cfg.OutputService.PrintReportSuccess(*path)
+		output.PrintReportSuccess(*path)
 
 		return nil
 	}
 
-	return s.cfg.OutputService.RenderTrend(*stsResult.Account, costInfo, trendChecks)
+	return s.cfg.Renderer.RenderTrend(*stsResult.Account, costInfo, trendChecks)
 }

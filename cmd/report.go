@@ -7,15 +7,17 @@ import (
 	"github.com/spf13/cobra"
 )
 
+const cmdReportName = "report"
+
 var reportOutPath string
 
 var reportCmd = &cobra.Command{
-	Use:   "report",
+	Use:   cmdReportName,
 	Short: "Generate PDF reports for AWS cost, waste, or trends",
 }
 
 var reportCostCmd = &cobra.Command{
-	Use:   "cost",
+	Use:   cmdCostName,
 	Short: "Generate a PDF report for cost comparison",
 	RunE: func(cmd *cobra.Command, args []string) error {
 		orch, err := buildCostOrchestratorHook()
