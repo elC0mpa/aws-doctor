@@ -20,6 +20,7 @@ func (r *tableRenderer) RenderCostComparison(input model.RenderCostComparisonInp
 }
 
 func (r *tableRenderer) RenderTrend(accountID string, costInfo []model.CostInfo, services []string) error {
+	// TODO: Support service-specific trends in barchart.DrawTrendChart if planned
 	barchart.DrawTrendChart(accountID, costInfo)
 	return nil
 }

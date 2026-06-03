@@ -68,7 +68,7 @@ func PrintFirstDayOfMonthError() {
 func PrintNewVersionAvailable(currentVersion, latestVersion string) {
 	fmt.Fprintln(os.Stderr)
 	fmt.Fprintln(os.Stderr, text.FgHiYellow.Sprintf(
-		"A new version of aws-doctor is available: %s → %s. Run 'aws-doctor update' to upgrade.",
+		"A new version of aws-doctor is available: version %s → version %s. Run 'aws-doctor update' to upgrade.",
 		currentVersion, latestVersion,
 	))
 }
