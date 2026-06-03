@@ -112,3 +112,13 @@ func (m *MockEC2Service) GetIdleInstances(ctx context.Context, idleDays int, cpu
 
 	return args.Get(0).([]model.EC2IdleInstanceInfo), args.Error(1)
 }
+
+// GetPublicIPv4Summary mocks the GetPublicIPv4Summary method.
+func (m *MockEC2Service) GetPublicIPv4Summary(ctx context.Context) (*model.PublicIPv4Summary, error) {
+	args := m.Called(ctx)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+
+	return args.Get(0).(*model.PublicIPv4Summary), args.Error(1)
+}
