@@ -18,6 +18,8 @@ import (
 	utilsec2 "github.com/elC0mpa/aws-doctor/utils/ec2"
 )
 
+const ownerSelf = "self"
+
 // NewService creates a new EC2 service.
 func NewService(awsconfig aws.Config, cwService cloudwatchMetricsService, pricingSvc pricingService) Service {
 	client := ec2.NewFromConfig(awsconfig)
@@ -431,7 +433,7 @@ func (s *service) GetUnusedAMIs(ctx context.Context, staleDays int) ([]model.AMI
 
 	// Get all owned AMIs using pagination
 	amiPaginator := ec2.NewDescribeImagesPaginator(s.client, &ec2.DescribeImagesInput{
-		Owners: []string{"self"},
+		Owners: []string{ownerSelf},
 	})
 
 	cutoffTime := time.Now().AddDate(0, 0, -staleDays)
@@ -520,7 +522,7 @@ func (s *service) GetOrphanedSnapshots(ctx context.Context, staleDays int) ([]mo
 	var allSnapshots []types.Snapshot
 
 	snapshotPaginator := ec2.NewDescribeSnapshotsPaginator(s.client, &ec2.DescribeSnapshotsInput{
-		OwnerIds: []string{"self"},
+		OwnerIds: []string{ownerSelf},
 	})
 	for snapshotPaginator.HasMorePages() {
 		page, err := snapshotPaginator.NextPage(ctx)
@@ -550,7 +552,7 @@ func (s *service) GetOrphanedSnapshots(ctx context.Context, staleDays int) ([]mo
 	snapshotToAMI := make(map[string]string)
 
 	imagePaginator := ec2.NewDescribeImagesPaginator(s.client, &ec2.DescribeImagesInput{
-		Owners: []string{"self"},
+		Owners: []string{ownerSelf},
 	})
 	for imagePaginator.HasMorePages() {
 		page, err := imagePaginator.NextPage(ctx)

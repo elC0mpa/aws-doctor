@@ -15,6 +15,8 @@ import (
 	wastesummary "github.com/elC0mpa/aws-doctor/utils/waste_summary"
 )
 
+const currencyUSD = "USD"
+
 // OutputCostComparisonJSON outputs cost comparison data as JSON
 func OutputCostComparisonJSON(input model.RenderCostComparisonInput) error {
 	lastTotalCost := cost.ParseCostString(input.LastTotalCost)
@@ -27,13 +29,13 @@ func OutputCostComparisonJSON(input model.RenderCostComparisonInput) error {
 			Start: aws.ToString(input.CurrentMonth.Start),
 			End:   aws.ToString(input.CurrentMonth.End),
 			Total: currentTotalCost,
-			Unit:  "USD",
+			Unit:  currencyUSD,
 		},
 		LastMonth: model.CostPeriodJSON{
 			Start: aws.ToString(input.LastMonth.Start),
 			End:   aws.ToString(input.LastMonth.End),
 			Total: lastTotalCost,
-			Unit:  "USD",
+			Unit:  currencyUSD,
 		},
 		ServiceBreakdown: []model.ServiceCostCompareJSON{},
 	}

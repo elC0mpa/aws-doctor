@@ -4,8 +4,10 @@ import (
 	"github.com/spf13/cobra"
 )
 
+const cmdCostName = "cost"
+
 var costCmd = &cobra.Command{
-	Use:   "cost",
+	Use:   cmdCostName,
 	Short: "Display comparative cost analytics (Current month vs. Last month)",
 	RunE: func(cmd *cobra.Command, args []string) error {
 		orch, err := buildCostOrchestratorHook()

@@ -1,16 +1,22 @@
 package awscostexplorer
 
+const svcLambdaName = "AWS Lambda"
+
+const svcS3Name = "Amazon Simple Storage Service"
+
+const svcEC2Name = "Amazon Elastic Compute Cloud - Compute"
+
 // ServiceNameMap maps common shorthand names to AWS Cost Explorer service names.
 var ServiceNameMap = map[string]string{
-	"ec2":            "Amazon Elastic Compute Cloud - Compute",
+	"ec2":            svcEC2Name,
 	"ecr":            "Amazon EC2 Container Registry (ECR)",
 	"eks":            "Amazon Elastic Container Service for Kubernetes",
 	"elb":            "Amazon Elastic Load Balancing",
 	"ec2-other":      "EC2 - Other",
-	"s3":             "Amazon Simple Storage Service",
+	"s3":             svcS3Name,
 	"rds":            "Amazon Relational Database Service",
 	"dynamodb":       "Amazon DynamoDB",
-	"lambda":         "AWS Lambda",
+	"lambda":         svcLambdaName,
 	"cloudwatch":     "Amazon CloudWatch",
 	"cloudfront":     "Amazon CloudFront",
 	"elasticache":    "Amazon ElastiCache",

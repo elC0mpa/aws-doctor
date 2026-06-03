@@ -17,6 +17,14 @@ import (
 	"github.com/johnfercher/maroto/v2/pkg/props"
 )
 
+const (
+	statusUnused = "Unused"
+	statusIdle   = "Idle"
+	colEstCost   = "Est. Cost"
+	colSize      = "Size"
+	colStatus    = "Status"
+)
+
 func (s *service) addWasteSections(m core.Maroto, input model.RenderWasteInput, pricingSvc pricing.Service) bool {
 	hasWaste := s.addEBSWaste(m, input, pricingSvc)
 
@@ -92,7 +100,7 @@ func (s *service) addEBSWaste(m core.Maroto, input model.RenderWasteInput, prici
 		return false
 	}
 
-	s.addWasteSection(m, "EBS Volume Waste", []string{"Status", "Volume ID", "Size", "Est. Cost"})
+	s.addWasteSection(m, "EBS Volume Waste", []string{colStatus, "Volume ID", colSize, colEstCost})
 
 	for _, v := range input.UnusedVolumes {
 		p := outputshared.PresentEBSVolume(v, "unattached", pricingSvc)
@@ -114,7 +122,7 @@ func (s *service) addElasticIPWaste(m core.Maroto, input model.RenderWasteInput,
 		return false
 	}
 
-	s.addWasteSection(m, "Elastic IP Waste", []string{"Status", "IP Address", "Allocation ID", "Est. Cost"})
+	s.addWasteSection(m, "Elastic IP Waste", []string{colStatus, "IP Address", "Allocation ID", colEstCost})
 
 	for _, ip := range input.ElasticIPs {
 		p := outputshared.PresentElasticIP(ip, pricingSvc)
@@ -131,7 +139,7 @@ func (s *service) addEC2Waste(m core.Maroto, input model.RenderWasteInput) bool 
 		return false
 	}
 
-	s.addWasteSection(m, "EC2 & Reserved Instance Waste", []string{"Status", "Instance ID", "Time Info"})
+	s.addWasteSection(m, "EC2 & Reserved Instance Waste", []string{colStatus, "Instance ID", "Time Info"})
 
 	for _, inst := range input.StoppedInstances {
 		p := outputshared.PresentStoppedInstance(inst)
@@ -167,11 +175,11 @@ func (s *service) addIdleEC2Waste(m core.Maroto, input model.RenderWasteInput) b
 		return false
 	}
 
-	s.addWasteSection(m, "Idle EC2 Instance Waste", []string{"Status", "Identifier", "Utilization", "Est. Cost"})
+	s.addWasteSection(m, "Idle EC2 Instance Waste", []string{colStatus, "Identifier", "Utilization", colEstCost})
 
 	for _, inst := range input.IdleEC2Instances {
 		p := outputshared.PresentIdleEC2Instance(inst)
-		s.addWasteRow(m, []string{"Idle", p.Identifier, p.Metric, p.EstimatedCost})
+		s.addWasteRow(m, []string{statusIdle, p.Identifier, p.Metric, p.EstimatedCost})
 	}
 
 	m.AddRow(5, col.New(12))
@@ -184,16 +192,16 @@ func (s *service) addLBWaste(m core.Maroto, input model.RenderWasteInput, pricin
 		return false
 	}
 
-	s.addWasteSection(m, "Load Balancer Waste", []string{"Status", "Name", "Type", "Est. Cost"})
+	s.addWasteSection(m, "Load Balancer Waste", []string{colStatus, "Name", "Type", colEstCost})
 
 	for _, lb := range input.LoadBalancers {
 		p := outputshared.PresentLoadBalancer(lb, pricingSvc)
-		s.addWasteRow(m, []string{"Unused", aws.ToString(lb.LoadBalancerName), p.Metric, p.EstimatedCost})
+		s.addWasteRow(m, []string{statusUnused, aws.ToString(lb.LoadBalancerName), p.Metric, p.EstimatedCost})
 	}
 
 	for _, lb := range input.IdleLoadBalancers {
 		p := outputshared.PresentIdleLoadBalancer(lb)
-		s.addWasteRow(m, []string{"Idle", lb.Name, p.Metric, p.EstimatedCost})
+		s.addWasteRow(m, []string{statusIdle, lb.Name, p.Metric, p.EstimatedCost})
 	}
 
 	m.AddRow(5, col.New(12))
@@ -206,7 +214,7 @@ func (s *service) addS3Waste(m core.Maroto, input model.RenderWasteInput) bool {
 		return false
 	}
 
-	s.addWasteSection(m, "S3 Bucket Waste", []string{"Status", "Bucket Name", "Info"})
+	s.addWasteSection(m, "S3 Bucket Waste", []string{colStatus, "Bucket Name", "Info"})
 
 	for _, b := range input.S3Buckets {
 		p := outputshared.PresentS3Bucket(b)
@@ -228,7 +236,7 @@ func (s *service) addCloudWatchWaste(m core.Maroto, input model.RenderWasteInput
 		return false
 	}
 
-	s.addWasteSection(m, "CloudWatch Log Group Waste", []string{"Status", "Log Group Name", "Size", "Est. Cost"})
+	s.addWasteSection(m, "CloudWatch Log Group Waste", []string{colStatus, "Log Group Name", colSize, colEstCost})
 
 	for _, lg := range input.CloudWatchLogGroups {
 		p := outputshared.PresentCloudWatchLogGroup(lg)
@@ -245,11 +253,11 @@ func (s *service) addAMIWaste(m core.Maroto, input model.RenderWasteInput) bool 
 		return false
 	}
 
-	s.addWasteSection(m, "Unused AMI Waste", []string{"Status", "AMI ID", "Age", "Max Savings"})
+	s.addWasteSection(m, "Unused AMI Waste", []string{colStatus, "AMI ID", "Age", "Max Savings"})
 
 	for _, ami := range input.UnusedAMIs {
 		p := outputshared.PresentAMI(ami)
-		s.addWasteRow(m, []string{"Unused", p.Identifier, p.Age + " days", fmt.Sprintf("$%.2f", ami.MaxPotentialSaving)})
+		s.addWasteRow(m, []string{statusUnused, p.Identifier, p.Age + " days", fmt.Sprintf("$%.2f", ami.MaxPotentialSaving)})
 	}
 
 	m.AddRow(5, col.New(12))
@@ -262,7 +270,7 @@ func (s *service) addSnapshotWaste(m core.Maroto, input model.RenderWasteInput) 
 		return false
 	}
 
-	s.addWasteSection(m, "EBS Snapshot Waste", []string{"Status", "Snapshot ID", "Size", "Max Savings"})
+	s.addWasteSection(m, "EBS Snapshot Waste", []string{colStatus, "Snapshot ID", colSize, "Max Savings"})
 
 	for _, snap := range input.OrphanedSnapshots {
 		p := outputshared.PresentSnapshot(snap)
@@ -279,11 +287,11 @@ func (s *service) addKeyPairWaste(m core.Maroto, input model.RenderWasteInput) b
 		return false
 	}
 
-	s.addWasteSection(m, "Unused Key Pair Waste", []string{"Status", "Key Name", "Age"})
+	s.addWasteSection(m, "Unused Key Pair Waste", []string{colStatus, "Key Name", "Age"})
 
 	for _, kp := range input.UnusedKeyPairs {
 		p := outputshared.PresentKeyPair(kp)
-		s.addWasteRow(m, []string{"Unused", p.Identifier, p.Age + " days"})
+		s.addWasteRow(m, []string{statusUnused, p.Identifier, p.Age + " days"})
 	}
 
 	m.AddRow(5, col.New(12))
@@ -296,7 +304,7 @@ func (s *service) addRDSWaste(m core.Maroto, input model.RenderWasteInput) bool 
 		return false
 	}
 
-	s.addWasteSection(m, "RDS Waste", []string{"Status", "Identifier", "Engine", "Est. Cost"})
+	s.addWasteSection(m, "RDS Waste", []string{colStatus, "Identifier", "Engine", colEstCost})
 
 	for _, inst := range input.RDSInstances {
 		p := outputshared.PresentRDSInstance(inst)
@@ -310,7 +318,7 @@ func (s *service) addRDSWaste(m core.Maroto, input model.RenderWasteInput) bool 
 
 	for _, inst := range input.RDSIdleInstances {
 		p := outputshared.PresentRDSIdleInstance(inst)
-		s.addWasteRow(m, []string{"Idle", p.Identifier, inst.Engine, p.EstimatedCost})
+		s.addWasteRow(m, []string{statusIdle, p.Identifier, inst.Engine, p.EstimatedCost})
 	}
 
 	m.AddRow(5, col.New(12))
@@ -323,11 +331,11 @@ func (s *service) addNATGatewayWaste(m core.Maroto, input model.RenderWasteInput
 		return false
 	}
 
-	s.addWasteSection(m, "NAT Gateway Waste", []string{"Status", "NAT Gateway ID", "VPC ID", "Est. Cost"})
+	s.addWasteSection(m, "NAT Gateway Waste", []string{colStatus, "NAT Gateway ID", "VPC ID", colEstCost})
 
 	for _, ng := range input.IdleNATGateways {
 		p := outputshared.PresentIdleNATGateway(ng)
-		s.addWasteRow(m, []string{"Idle", p.Identifier, ng.VPCID, p.EstimatedCost})
+		s.addWasteRow(m, []string{statusIdle, p.Identifier, ng.VPCID, p.EstimatedCost})
 	}
 
 	m.AddRow(5, col.New(12))
@@ -375,11 +383,11 @@ func (s *service) addSageMakerWaste(m core.Maroto, input model.RenderWasteInput)
 		return false
 	}
 
-	s.addWasteSection(m, "SageMaker Endpoints (Idle)", []string{"Status", "Endpoint", "Variants", "Est. Cost"})
+	s.addWasteSection(m, "SageMaker Endpoints (Idle)", []string{colStatus, "Endpoint", "Variants", colEstCost})
 
 	for _, ep := range input.IdleSageMakerEndpoints {
 		p := outputshared.PresentIdleSageMakerEndpoint(ep)
-		s.addWasteRow(m, []string{"Idle", p.Identifier, p.Details, p.EstimatedCost})
+		s.addWasteRow(m, []string{statusIdle, p.Identifier, p.Details, p.EstimatedCost})
 	}
 
 	m.AddRow(5, col.New(12))
@@ -466,7 +474,7 @@ func (s *service) addECRWaste(m core.Maroto, input model.RenderWasteInput) bool 
 		return false
 	}
 
-	s.addWasteSection(m, "ECR Repository Waste", []string{"Status", "Repository", "Info", "Est. Cost"})
+	s.addWasteSection(m, "ECR Repository Waste", []string{colStatus, "Repository", "Info", colEstCost})
 
 	for _, repo := range input.ECRNoLifecyclePolicies {
 		p := outputshared.PresentECRNoLifecyclePolicy(repo)
@@ -493,7 +501,7 @@ func (s *service) addSecretsManagerWaste(m core.Maroto, input model.RenderWasteI
 		return false
 	}
 
-	s.addWasteSection(m, "Secrets Manager Waste", []string{"Secret Name", "Last Accessed", "Est. Cost"})
+	s.addWasteSection(m, "Secrets Manager Waste", []string{"Secret Name", "Last Accessed", colEstCost})
 
 	for _, secret := range input.UnusedSecrets {
 		p := outputshared.PresentUnusedSecret(secret, pricingSvc)

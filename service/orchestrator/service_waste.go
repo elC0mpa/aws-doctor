@@ -6,6 +6,9 @@ import (
 	"os"
 	"time"
 
+	"github.com/elC0mpa/aws-doctor/service/output"
+	"github.com/elC0mpa/aws-doctor/utils/spinner"
+
 	"github.com/elC0mpa/aws-doctor/model"
 
 	"github.com/elC0mpa/aws-doctor/utils/slice"
@@ -114,9 +117,9 @@ func (s *wasteService) AnalyzeWaste(flags model.Flags) error {
 		close(resultCh)
 	}()
 
-	isInteractive := s.cfg.OutputService.IsInteractive() && !flags.Report
+	isInteractive := s.cfg.Renderer.IsInteractive() && !flags.Report
 	if isInteractive {
-		s.cfg.OutputService.StopSpinner()
+		spinner.StopSpinner()
 
 		var scopes []string
 
@@ -126,14 +129,14 @@ func (s *wasteService) AnalyzeWaste(flags model.Flags) error {
 			}
 		}
 
-		err := s.cfg.OutputService.RenderWasteInteractive(*stsResult.Account, resultCh, scopes, s.cfg.PricingService)
+		err := s.cfg.Renderer.RenderWasteInteractive(*stsResult.Account, resultCh, scopes, s.cfg.PricingService)
 
 		cancel() // ensure context is cancelled to release blocked analyzers
 
 		workflowErr := g.Wait()
 
 		if err != nil {
-			s.cfg.OutputService.PrintWasteError(err)
+			output.PrintWasteError(err)
 			return err
 		}
 
@@ -148,17 +151,17 @@ func (s *wasteService) AnalyzeWaste(flags model.Flags) error {
 	cancel() // ensure context is cancelled
 
 	if err := g.Wait(); err != nil {
-		s.cfg.OutputService.StopSpinner()
+		spinner.StopSpinner()
 		return err
 	}
 
-	s.cfg.OutputService.StopSpinner()
+	spinner.StopSpinner()
 
 	if flags.Report {
 		return s.handleWasteReport(finalInput, flags.ReportPath)
 	}
 
-	return s.cfg.OutputService.RenderWaste(finalInput, s.cfg.PricingService)
+	return s.cfg.Renderer.RenderWaste(finalInput, s.cfg.PricingService)
 }
 
 func shouldRunCheck(wasteChecks []string, name string) bool {
@@ -171,13 +174,13 @@ func (s *wasteService) handleWasteReport(input model.RenderWasteInput, reportPat
 		return err
 	}
 
-	s.cfg.OutputService.PrintReportSuccess(*path)
+	output.PrintReportSuccess(*path)
 
 	return nil
 }
 
 func (s *wasteService) loadPricing(ctx context.Context) {
-	s.cfg.OutputService.SetSpinnerMessage("Gathering pricing data...")
+	spinner.SetMessage("Gathering pricing data...")
 
 	pricingCtx, cancel := context.WithTimeout(ctx, 60*time.Second)
 	defer cancel()
@@ -186,5 +189,5 @@ func (s *wasteService) loadPricing(ctx context.Context) {
 		fmt.Fprintf(os.Stderr, "warning: pricing API partial failure, falling back to defaults: %v\n", err)
 	}
 
-	s.cfg.OutputService.SetSpinnerMessage("Please wait while data is being fetched...")
+	spinner.SetMessage("Please wait while data is being fetched...")
 }
