@@ -13,6 +13,8 @@ import (
 	wastetable "github.com/elC0mpa/aws-doctor/utils/waste_table"
 )
 
+const statusEOF = "EOF"
+
 const (
 	statusError = "error"
 	statusDone  = "done"
@@ -78,7 +80,7 @@ func waitForResult(resultCh <-chan model.ScopeResult) tea.Cmd {
 	return func() tea.Msg {
 		res, ok := <-resultCh
 		if !ok {
-			return scopeMsg{Scope: "EOF"}
+			return scopeMsg{Scope: statusEOF}
 		}
 
 		return scopeMsg(res)
@@ -147,7 +149,7 @@ func (m wasteModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 
 	case scopeMsg:
-		if msg.Scope == "EOF" && !m.done {
+		if msg.Scope == statusEOF && !m.done {
 			m.done = true
 
 			if len(m.aggregatedData.Errors) > 0 {

@@ -4,6 +4,10 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/ec2/types"
 )
 
+const instanceMLM5Xlarge = "ml.m5.xlarge"
+
+const instanceMLT2Medium = "ml.t2.medium"
+
 // The Pricing API endpoint is only served from us-east-1 and ap-south-1, but it returns pricing
 // data for every AWS region via the regionCode filter on each query. We always talk to us-east-1
 // since it is available to every AWS account.
@@ -127,10 +131,10 @@ var rdsInstancePricing = map[string]float64{
 }
 
 var sagemakerInstancePricing = map[string]float64{
-	"ml.t2.medium": 46.72, "ml.t2.large": 93.44, "ml.t2.xlarge": 186.15, "ml.t2.2xlarge": 372.30,
+	instanceMLT2Medium: 46.72, "ml.t2.large": 93.44, "ml.t2.xlarge": 186.15, "ml.t2.2xlarge": 372.30,
 	"ml.t3.medium": 41.61, "ml.t3.large": 83.22, "ml.t3.xlarge": 166.44, "ml.t3.2xlarge": 332.88,
 	"ml.m4.xlarge": 204.40, "ml.m4.2xlarge": 408.80, "ml.m4.4xlarge": 817.60,
-	"ml.m5.large": 101.91, "ml.m5.xlarge": 203.82, "ml.m5.2xlarge": 407.64, "ml.m5.4xlarge": 815.28,
+	"ml.m5.large": 101.91, instanceMLM5Xlarge: 203.82, "ml.m5.2xlarge": 407.64, "ml.m5.4xlarge": 815.28,
 	"ml.c4.xlarge": 176.66, "ml.c4.2xlarge": 353.32, "ml.c4.4xlarge": 706.64,
 	"ml.c5.large": 87.60, "ml.c5.xlarge": 175.20, "ml.c5.2xlarge": 350.40, "ml.c5.4xlarge": 700.80,
 	"ml.p2.xlarge": 1144.80, "ml.g4dn.xlarge": 538.72, "ml.g5.xlarge": 802.82,

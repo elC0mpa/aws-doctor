@@ -17,6 +17,14 @@ import (
 	"github.com/jedib0t/go-pretty/v6/text"
 )
 
+const serviceIAM = "IAM"
+
+const statusExpiringSoon = "EXPIRING SOON"
+
+const colEstCostMo = "Est. Cost/Mo"
+
+const colStatus = "Status"
+
 // DrawWasteTable renders a table containing detected AWS waste.
 func DrawWasteTable(out io.Writer, input model.RenderWasteInput, pricingSvc pricing.Service) {
 	drawHeader(out, input.AccountID)
@@ -149,7 +157,7 @@ func drawIdleEC2Table(out io.Writer, instances []model.EC2IdleInstanceInfo) {
 	t.SetStyle(table.StyleRounded)
 	t.SetTitle("Idle EC2 Instance Waste")
 
-	t.AppendHeader(table.Row{"Status", "Identifier", "Type", "Utilization", "Est. Cost/Mo"})
+	t.AppendHeader(table.Row{colStatus, "Identifier", "Type", "Utilization", colEstCostMo})
 
 	t.SetColumnConfigs([]table.ColumnConfig{
 		{Number: 5, Align: text.AlignRight},
@@ -212,7 +220,7 @@ func drawSecretsManagerTable(out io.Writer, secrets []model.UnusedSecretInfo, pr
 	t.SetStyle(table.StyleRounded)
 	t.SetTitle("Secrets Manager Waste")
 
-	t.AppendHeader(table.Row{"Secret Name", "Last Accessed", "Est. Cost/Mo"})
+	t.AppendHeader(table.Row{"Secret Name", "Last Accessed", colEstCostMo})
 
 	t.SetColumnConfigs([]table.ColumnConfig{
 		{Number: 3, Align: text.AlignRight},
@@ -236,7 +244,7 @@ func drawEBSTable(out io.Writer, unusedEBSVolumeInfo []ec2types.Volume, attached
 	t.SetStyle(table.StyleRounded)
 	t.SetTitle("EBS Volume Waste")
 
-	t.AppendHeader(table.Row{"Status", "Volume ID", "Size (GiB)", "Est. Cost/Mo"})
+	t.AppendHeader(table.Row{colStatus, "Volume ID", "Size (GiB)", colEstCostMo})
 
 	t.SetColumnConfigs([]table.ColumnConfig{
 		{Number: 3, Align: text.AlignRight},
@@ -280,7 +288,7 @@ func drawEC2Table(out io.Writer, instances []ec2types.Instance, ris []model.RiEx
 	t.SetStyle(table.StyleRounded)
 	t.SetTitle("EC2 & Reserved Instance Waste")
 
-	t.AppendHeader(table.Row{"Status", "Instance ID", "Time Info"})
+	t.AppendHeader(table.Row{colStatus, "Instance ID", "Time Info"})
 
 	t.SetColumnConfigs([]table.ColumnConfig{
 		{Number: 3, Align: text.AlignRight},
@@ -304,7 +312,7 @@ func drawEC2Table(out io.Writer, instances []ec2types.Instance, ris []model.RiEx
 		var expiring, expired []model.RiExpirationInfo
 
 		for _, ri := range ris {
-			if ri.Status == "EXPIRING SOON" {
+			if ri.Status == statusExpiringSoon {
 				expiring = append(expiring, ri)
 			} else {
 				expired = append(expired, ri)
@@ -355,7 +363,7 @@ func drawElasticIPTable(out io.Writer, elasticIPInfo []ec2types.Address, pricing
 	t.SetStyle(table.StyleRounded)
 	t.SetTitle("Elastic IP Waste")
 
-	t.AppendHeader(table.Row{"Status", "IP Address", "Allocation ID", "Est. Cost/Mo"})
+	t.AppendHeader(table.Row{colStatus, "IP Address", "Allocation ID", colEstCostMo})
 
 	statusUnused := "Unassociated"
 	rows := populateElasticIPRows(elasticIPInfo, pricingSvc)
@@ -439,7 +447,7 @@ func drawLoadBalancerTable(out io.Writer, loadBalancers []elbtypes.LoadBalancer,
 	t.SetStyle(table.StyleRounded)
 	t.SetTitle("Load Balancer Waste")
 
-	t.AppendHeader(table.Row{"Status", "Name", "Type", "Est. Cost/Mo"})
+	t.AppendHeader(table.Row{colStatus, "Name", "Type", colEstCostMo})
 
 	t.SetColumnConfigs([]table.ColumnConfig{
 		{Number: 4, Align: text.AlignRight},
@@ -515,7 +523,7 @@ func drawAMITable(out io.Writer, amis []model.AMIWasteInfo) {
 	t.SetStyle(table.StyleRounded)
 	t.SetTitle("Unused AMI Waste (Verify before delete - may be used by ASGs/Launch Templates)")
 
-	t.AppendHeader(table.Row{"Status", "AMI ID", "Name", "Age (Days)", "Max Savings/Mo"})
+	t.AppendHeader(table.Row{colStatus, "AMI ID", "Name", "Age (Days)", "Max Savings/Mo"})
 
 	t.SetColumnConfigs([]table.ColumnConfig{
 		{Number: 4, Align: text.AlignRight},
@@ -565,7 +573,7 @@ func drawSnapshotTable(out io.Writer, snapshots []model.SnapshotWasteInfo) {
 	t.SetStyle(table.StyleRounded)
 	t.SetTitle("EBS Snapshot Waste")
 
-	t.AppendHeader(table.Row{"Status", "Snapshot ID", "Reason", "Size (GB)", "Max Savings/MO"})
+	t.AppendHeader(table.Row{colStatus, "Snapshot ID", "Reason", "Size (GB)", "Max Savings/MO"})
 
 	t.SetColumnConfigs([]table.ColumnConfig{
 		{Number: 4, Align: text.AlignRight},
@@ -641,7 +649,7 @@ func drawKeyPairTable(out io.Writer, keyPairs []model.KeyPairWasteInfo) {
 	t.SetStyle(table.StyleRounded)
 	t.SetTitle("Unused EC2 Key Pair Waste")
 
-	t.AppendHeader(table.Row{"Status", "Key Name", "Key Pair ID", "Age (Days)"})
+	t.AppendHeader(table.Row{colStatus, "Key Name", "Key Pair ID", "Age (Days)"})
 
 	t.SetColumnConfigs([]table.ColumnConfig{
 		{Number: 4, Align: text.AlignRight},
@@ -670,7 +678,7 @@ func drawNatGatewayTable(out io.Writer, natGateways []model.NATGatewayWasteInfo)
 	t.SetStyle(table.StyleRounded)
 	t.SetTitle(" %s ", text.FgHiYellow.Sprint("NAT Gateway Waste"))
 
-	t.AppendHeader(table.Row{"Status", "NAT Gateway ID", "Metric", "Est. Cost/Mo"})
+	t.AppendHeader(table.Row{colStatus, "NAT Gateway ID", "Metric", colEstCostMo})
 
 	rows := populateNatGatewayRows(natGateways)
 	if len(rows) > 0 {
@@ -725,7 +733,7 @@ func drawS3Table(out io.Writer, buckets []model.S3BucketWasteInfo, multipartBuck
 	t.SetStyle(table.StyleRounded)
 	t.SetTitle("S3 Bucket Waste")
 
-	t.AppendHeader(table.Row{"Status", "Bucket Name", "Info"})
+	t.AppendHeader(table.Row{colStatus, "Bucket Name", "Info"})
 
 	var hasPreviousRows bool
 
@@ -798,7 +806,7 @@ func drawCloudWatchLogsTable(out io.Writer, logGroups []model.CloudWatchLogsWast
 	t.SetStyle(table.StyleRounded)
 	t.SetTitle("CloudWatch Log Group Waste")
 
-	t.AppendHeader(table.Row{"Status", "Log Group Name", "Size", "Created On", "Est. Cost/Mo"})
+	t.AppendHeader(table.Row{colStatus, "Log Group Name", "Size", "Created On", colEstCostMo})
 
 	t.SetColumnConfigs([]table.ColumnConfig{
 		{Number: 3, Align: text.AlignRight},
@@ -885,7 +893,7 @@ func drawRDSTable(out io.Writer, instances []model.RDSInstanceWasteInfo, snapsho
 	t.SetStyle(table.StyleRounded)
 	t.SetTitle("RDS Waste")
 
-	t.AppendHeader(table.Row{"Status", "Identifier", "Engine", "Info", "Est. Cost/Mo"})
+	t.AppendHeader(table.Row{colStatus, "Identifier", "Engine", "Info", colEstCostMo})
 
 	t.SetColumnConfigs([]table.ColumnConfig{
 		{Number: 5, Align: text.AlignRight},
@@ -999,7 +1007,7 @@ func drawLambdaTable(out io.Writer, lambdas []model.LambdaOverProvisionedInfo) {
 	t.SetStyle(table.StyleRounded)
 	t.SetTitle("Lambda Over-Provisioned Memory")
 
-	t.AppendHeader(table.Row{"Status", "Function Name", "Runtime", "Memory (Configured)", "Memory (Max Used)", "Utilization", "Recommended"})
+	t.AppendHeader(table.Row{colStatus, "Function Name", "Runtime", "Memory (Configured)", "Memory (Max Used)", "Utilization", "Recommended"})
 
 	t.SetColumnConfigs([]table.ColumnConfig{
 		{Number: 4, Align: text.AlignRight},
@@ -1050,7 +1058,7 @@ func drawSageMakerTable(out io.Writer, endpoints []model.IdleSageMakerEndpointIn
 	t.SetStyle(table.StyleRounded)
 	t.SetTitle("SageMaker Endpoints (Idle)")
 
-	t.AppendHeader(table.Row{"Status", "Endpoint", "Variants", "Days Checked", "Est. Cost/Mo"})
+	t.AppendHeader(table.Row{colStatus, "Endpoint", "Variants", "Days Checked", colEstCostMo})
 
 	t.SetColumnConfigs([]table.ColumnConfig{
 		{Number: 4, Align: text.AlignRight},
@@ -1097,7 +1105,7 @@ func drawECRTable(out io.Writer, noPolicy []model.ECRNoLifecyclePolicyInfo, empt
 	t.SetStyle(table.StyleRounded)
 	t.SetTitle("ECR Repository Waste")
 
-	t.AppendHeader(table.Row{"Status", "Repository Name", "Metric", "Est. Cost/Mo", "Details"})
+	t.AppendHeader(table.Row{colStatus, "Repository Name", "Metric", colEstCostMo, "Details"})
 
 	t.SetColumnConfigs([]table.ColumnConfig{
 		{Number: 4, Align: text.AlignRight},
@@ -1232,7 +1240,7 @@ func RenderScopeTable(scope string, input model.RenderWasteInput, pricingSvc pri
 		drawECRTable(out, input.ECRNoLifecyclePolicies, input.ECREmptyRepositories, input.ECRUntaggedImages)
 	case "SecretsManager":
 		drawSecretsManagerTable(out, input.UnusedSecrets, pricingSvc)
-	case "IAM":
+	case serviceIAM:
 		drawIAMTable(out, input.UnusedIAMUsers, input.RootUserWaste)
 	case "Summary":
 		drawSummaryTable(out, input, pricingSvc)
