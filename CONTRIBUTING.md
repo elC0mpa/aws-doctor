@@ -216,9 +216,9 @@ Keep the fallback table around — it is used both when the Pricing API is unrea
    - Ensure the service implements the `analyzer.WasteAnalyzer` interface (`Analyze` and `Name`).
    - If adding a completely new service, register it in the orchestrator builder (e.g., `cmd/root.go`, `cmd/waste.go`) via the `registry.Register()` method.
    - If adding a new check inside an existing service, simply add the new method call to the concurrent `errgroup` inside the service's `Analyze` method. No orchestrator changes needed!
-8. **Output Service**: 
+8. **Renderer Interface**: 
    - Update `model.RenderWasteInput` in `model/waste.go` to include the new slice, and update its `Merge()` method.
-   - Update `RenderWaste` signatures if necessary.
+   - Update `RenderWaste` signatures across the `Renderer` interface and its implementations (`renderer_table.go`, `renderer_json.go`, `renderer_csv.go`) if necessary.
 9. **Utility Handlers**:
    - Add a display function in `utils/waste_table/waste_table.go` and update the `RenderScopeTable` switch statement for the new scope (if applicable).
    - Add a JSON output type in `model/output.go` and update `utils/json_output/json_output.go`.
