@@ -178,6 +178,22 @@ func (s *service) Analyze(ctx context.Context, flags model.Flags) (model.ScopeRe
 		return nil
 	})
 
+	// Retrieve public IPv4 address summary (in-use IPs and estimated charge).
+	g.Go(func() error {
+		ipv4Summary, err := s.GetPublicIPv4Summary(gCtx)
+
+		mu.Lock()
+		defer mu.Unlock()
+
+		if err != nil {
+			errs = append(errs, err)
+		} else {
+			input.PublicIPv4Summary = ipv4Summary
+		}
+
+		return nil
+	})
+
 	_ = g.Wait()
 
 	var finalErr error
@@ -757,4 +773,97 @@ func (s *service) getResourceTypeFromDescription(description string) types.Netwo
 	}
 
 	return types.NetworkInterfaceType("interface")
+}
+
+// GetPublicIPv4Summary returns an account-wide count of in-use public IPv4
+// addresses across EC2 instances, Elastic IPs, NAT Gateways, and other ENIs,
+// along with an estimated hourly and monthly cost.
+//
+// Since February 2024, AWS charges $0.005/hr for every public IPv4 in use,
+// not just unassociated Elastic IPs. This method surfaces that charge so
+// users can decide whether to migrate to IPv6 or private endpoints.
+func (s *service) GetPublicIPv4Summary(ctx context.Context) (*model.PublicIPv4Summary, error) {
+	summary := &model.PublicIPv4Summary{}
+
+	// 1. EC2 instances with a public IP.
+	instPaginator := ec2.NewDescribeInstancesPaginator(s.client, &ec2.DescribeInstancesInput{
+		Filters: []types.Filter{
+			{Name: aws.String("instance-state-name"), Values: []string{"running", "stopped"}},
+		},
+	})
+	for instPaginator.HasMorePages() {
+		page, err := instPaginator.NextPage(ctx)
+		if err != nil {
+			return nil, fmt.Errorf("describing instances for IPv4 summary: %w", err)
+		}
+		for _, res := range page.Reservations {
+			for _, inst := range res.Instances {
+				if inst.PublicIpAddress != nil && *inst.PublicIpAddress != "" {
+					summary.EC2InstanceIPs++
+				}
+			}
+		}
+	}
+
+	// 2. Elastic IPs (in-use only; unassociated EIPs are billed separately
+	//    and already surfaced by GetUnusedElasticIPAddressesInfo).
+	addrOutput, err := s.client.DescribeAddresses(ctx, nil)
+	if err != nil {
+		return nil, fmt.Errorf("describing addresses for IPv4 summary: %w", err)
+	}
+	for _, addr := range addrOutput.Addresses {
+		if addr.AssociationId != nil {
+			summary.ElasticIPs++
+		}
+	}
+
+	// 3. NAT Gateway public IPs.
+	natOutput, err := s.client.DescribeNatGateways(ctx, &ec2.DescribeNatGatewaysInput{
+		Filter: []types.Filter{
+			{Name: aws.String("state"), Values: []string{"available", "pending"}},
+		},
+	})
+	if err != nil {
+		return nil, fmt.Errorf("describing NAT gateways for IPv4 summary: %w", err)
+	}
+	for _, ngw := range natOutput.NatGateways {
+		for _, addr := range ngw.NatGatewayAddresses {
+			if addr.PublicIp != nil && *addr.PublicIp != "" {
+				summary.NatGatewayIPs++
+			}
+		}
+	}
+
+	// 4. Other ENIs (LBs, RDS, EKS nodes, etc) — ENIs that have a public IP
+	//    via an association but are not covered by the EIP count above.
+	eniOutput, err := s.client.DescribeNetworkInterfaces(ctx, &ec2.DescribeNetworkInterfacesInput{
+		Filters: []types.Filter{
+			{Name: aws.String("association.public-ip"), Values: []string{"*"}},
+		},
+	})
+	if err != nil {
+		return nil, fmt.Errorf("describing network interfaces for IPv4 summary: %w", err)
+	}
+	// Deduplicate: skip ENIs that are the backing interface for an EIP already counted.
+	eipENIs := make(map[string]struct{}, len(addrOutput.Addresses))
+	for _, addr := range addrOutput.Addresses {
+		if addr.NetworkInterfaceId != nil {
+			eipENIs[*addr.NetworkInterfaceId] = struct{}{}
+		}
+	}
+	for _, eni := range eniOutput.NetworkInterfaces {
+		if eni.Association == nil || eni.Association.PublicIp == nil {
+			continue
+		}
+		if _, isEIP := eipENIs[aws.ToString(eni.NetworkInterfaceId)]; isEIP {
+			continue
+		}
+		summary.OtherENIIPs++
+	}
+
+	summary.TotalCount = summary.EC2InstanceIPs + summary.ElasticIPs + summary.NatGatewayIPs + summary.OtherENIIPs
+	summary.HourlyCostUSD = float64(summary.TotalCount) * model.PublicIPv4RatePerHour
+	summary.MonthlyCostUSD = summary.HourlyCostUSD * 730
+
+	return summary, nil
 }
