@@ -10,7 +10,7 @@ func newString(s string) *string { return &s }
 
 func TestJSONRenderer(t *testing.T) {
 	r := &jsonRenderer{}
-	
+
 	info := &model.CostInfo{}
 	info.Start = newString("start")
 	info.End = newString("end")
@@ -45,7 +45,7 @@ func TestJSONRenderer(t *testing.T) {
 
 func TestCSVRenderer(t *testing.T) {
 	r := &csvRenderer{}
-	
+
 	info := &model.CostInfo{}
 	info.Start = newString("start")
 	info.End = newString("end")
@@ -81,7 +81,7 @@ func TestCSVRenderer(t *testing.T) {
 func TestTableRenderer(t *testing.T) {
 	// For table renderer, Draw functions write directly to stdout. We can capture it.
 	r := &tableRenderer{}
-	
+
 	info := &model.CostInfo{}
 	info.Start = newString("start")
 	info.End = newString("end")
@@ -109,7 +109,7 @@ func TestTableRenderer(t *testing.T) {
 			t.Errorf("RenderWaste failed: %v", err)
 		}
 	})
-	
+
 	// We intentionally do not test RenderWasteInteractive here to avoid
 	// initializing the bubble tea UI during unit tests, which can block.
 

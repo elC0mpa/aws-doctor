@@ -44,9 +44,10 @@ func TestNewRenderer(t *testing.T) {
 			if renderer == nil {
 				t.Fatalf("Expected a renderer, got nil")
 			}
-			
+
 			// Compare types
 			expectedType := fmt.Sprintf("%T", tt.expected)
+
 			actualType := fmt.Sprintf("%T", renderer)
 			if actualType != expectedType {
 				t.Errorf("Expected type %s, got %s", expectedType, actualType)
