@@ -6,97 +6,97 @@ import (
 	"github.com/stretchr/testify/mock"
 )
 
-// MockOutputService is a mock implementation of the output service.
-type MockOutputService struct {
+// MockRenderer is a mock implementation of the output service.
+type MockRenderer struct {
 	mock.Mock
 }
 
 // RenderCostComparison mocks the RenderCostComparison method.
-func (m *MockOutputService) RenderCostComparison(input model.RenderCostComparisonInput) error {
+func (m *MockRenderer) RenderCostComparison(input model.RenderCostComparisonInput) error {
 	args := m.Called(input)
 	return args.Error(0)
 }
 
 // RenderTrend mocks the RenderTrend method.
-func (m *MockOutputService) RenderTrend(accountID string, costInfo []model.CostInfo, services []string) error {
+func (m *MockRenderer) RenderTrend(accountID string, costInfo []model.CostInfo, services []string) error {
 	args := m.Called(accountID, costInfo, services)
 	return args.Error(0)
 }
 
 // RenderWaste mocks the RenderWaste method.
-func (m *MockOutputService) RenderWaste(input model.RenderWasteInput, pricingSvc pricing.Service) error {
+func (m *MockRenderer) RenderWaste(input model.RenderWasteInput, pricingSvc pricing.Service) error {
 	args := m.Called(input, pricingSvc)
 	return args.Error(0)
 }
 
 // IsInteractive mocks the IsInteractive method.
-func (m *MockOutputService) IsInteractive() bool {
+func (m *MockRenderer) IsInteractive() bool {
 	args := m.Called()
 	return args.Bool(0)
 }
 
 // RenderWasteInteractive mocks the RenderWasteInteractive method.
-func (m *MockOutputService) RenderWasteInteractive(accountID string, resultCh <-chan model.ScopeResult, scopes []string, pricingSvc pricing.Service) error {
+func (m *MockRenderer) RenderWasteInteractive(accountID string, resultCh <-chan model.ScopeResult, scopes []string, pricingSvc pricing.Service) error {
 	args := m.Called(accountID, resultCh, scopes, pricingSvc)
 	return args.Error(0)
 }
 
 // StopSpinner mocks the StopSpinner method.
-func (m *MockOutputService) StopSpinner() {
+func (m *MockRenderer) StopSpinner() {
 	m.Called()
 }
 
 // SetSpinnerMessage mocks the SetSpinnerMessage method.
-func (m *MockOutputService) SetSpinnerMessage(message string) {
+func (m *MockRenderer) SetSpinnerMessage(message string) {
 	m.Called(message)
 }
 
 // PrintReportSuccess mocks the PrintReportSuccess method.
-func (m *MockOutputService) PrintReportSuccess(path string) {
+func (m *MockRenderer) PrintReportSuccess(path string) {
 	m.Called(path)
 }
 
 // PrintAlreadyLatest mocks the PrintAlreadyLatest method.
-func (m *MockOutputService) PrintAlreadyLatest(version string) {
+func (m *MockRenderer) PrintAlreadyLatest(version string) {
 	m.Called(version)
 }
 
 // PrintHomebrewUpdate mocks the PrintHomebrewUpdate method.
-func (m *MockOutputService) PrintHomebrewUpdate() {
+func (m *MockRenderer) PrintHomebrewUpdate() {
 	m.Called()
 }
 
 // PrintGoInstallUpdate mocks the PrintGoInstallUpdate method.
-func (m *MockOutputService) PrintGoInstallUpdate() {
+func (m *MockRenderer) PrintGoInstallUpdate() {
 	m.Called()
 }
 
 // PrintRateLimitError mocks the PrintRateLimitError method.
-func (m *MockOutputService) PrintRateLimitError() {
+func (m *MockRenderer) PrintRateLimitError() {
 	m.Called()
 }
 
 // PrintUpdateError mocks PrintUpdateError
-func (m *MockOutputService) PrintUpdateError(err error) {
+func (m *MockRenderer) PrintUpdateError(err error) {
 	m.Called(err)
 }
 
 // PrintWasteError mocks PrintWasteError
-func (m *MockOutputService) PrintWasteError(err error) {
+func (m *MockRenderer) PrintWasteError(err error) {
 	m.Called(err)
 }
 
 // RenderVersion mocks the RenderVersion method.
-func (m *MockOutputService) RenderVersion(versionInfo model.VersionInfo) {
+func (m *MockRenderer) RenderVersion(versionInfo model.VersionInfo) {
 	m.Called(versionInfo)
 }
 
 // PrintFirstDayOfMonthError mocks the PrintFirstDayOfMonthError method.
-func (m *MockOutputService) PrintFirstDayOfMonthError() {
+func (m *MockRenderer) PrintFirstDayOfMonthError() {
 	m.Called()
 }
 
 // PrintNewVersionAvailable mocks the PrintNewVersionAvailable method.
-func (m *MockOutputService) PrintNewVersionAvailable(currentVersion, latestVersion string) {
+func (m *MockRenderer) PrintNewVersionAvailable(currentVersion, latestVersion string) {
 	m.Called(currentVersion, latestVersion)
 }

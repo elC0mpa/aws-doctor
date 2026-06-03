@@ -5,6 +5,9 @@ import (
 	"errors"
 	"time"
 
+	"github.com/elC0mpa/aws-doctor/service/output"
+	"github.com/elC0mpa/aws-doctor/utils/spinner"
+
 	"github.com/google/go-github/v62/github"
 
 	"github.com/elC0mpa/aws-doctor/model"
@@ -20,14 +23,14 @@ func NewSystemService(cfg SystemConfig) SystemService {
 }
 
 func (s *systemService) Version() error {
-	s.cfg.OutputService.StopSpinner()
-	s.cfg.OutputService.RenderVersion(s.cfg.VersionInfo)
+	spinner.StopSpinner()
+	output.RenderVersion(s.cfg.VersionInfo)
 
 	return nil
 }
 
 func (s *systemService) Update() error {
-	s.cfg.OutputService.StopSpinner()
+	spinner.StopSpinner()
 
 	err := s.cfg.UpdateService.Update()
 	if err == nil {
@@ -35,32 +38,32 @@ func (s *systemService) Update() error {
 	}
 
 	if errors.Is(err, model.ErrHomebrewInstall) {
-		s.cfg.OutputService.PrintHomebrewUpdate()
+		output.PrintHomebrewUpdate()
 		return nil
 	}
 
 	if errors.Is(err, model.ErrGoInstall) {
-		s.cfg.OutputService.PrintGoInstallUpdate()
+		output.PrintGoInstallUpdate()
 		return nil
 	}
 
 	if errors.Is(err, model.ErrAlreadyLatest) {
-		s.cfg.OutputService.PrintAlreadyLatest(s.cfg.VersionInfo.Version)
+		output.PrintAlreadyLatest(s.cfg.VersionInfo.Version)
 		return nil
 	}
 
 	if errors.Is(err, model.ErrRateLimit) {
-		s.cfg.OutputService.PrintRateLimitError()
+		output.PrintRateLimitError()
 		return err
 	}
 
 	var rateLimitErr *github.RateLimitError
 	if errors.As(err, &rateLimitErr) {
-		s.cfg.OutputService.PrintRateLimitError()
+		output.PrintRateLimitError()
 		return err
 	}
 
-	s.cfg.OutputService.PrintUpdateError(err)
+	output.PrintUpdateError(err)
 
 	return err
 }

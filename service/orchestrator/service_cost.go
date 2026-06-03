@@ -4,6 +4,9 @@ import (
 	"context"
 	"errors"
 
+	"github.com/elC0mpa/aws-doctor/service/output"
+	"github.com/elC0mpa/aws-doctor/utils/spinner"
+
 	"github.com/elC0mpa/aws-doctor/model"
 )
 
@@ -42,7 +45,7 @@ func (s *costService) CompareCosts(generateReport bool, reportPath string) error
 		return err
 	}
 
-	s.cfg.OutputService.StopSpinner()
+	spinner.StopSpinner()
 
 	input := model.RenderCostComparisonInput{
 		AccountID:        *stsResult.Account,
@@ -58,18 +61,18 @@ func (s *costService) CompareCosts(generateReport bool, reportPath string) error
 			return err
 		}
 
-		s.cfg.OutputService.PrintReportSuccess(*path)
+		output.PrintReportSuccess(*path)
 
 		return nil
 	}
 
-	return s.cfg.OutputService.RenderCostComparison(input)
+	return s.cfg.Renderer.RenderCostComparison(input)
 }
 
 func (s *costService) handleCostError(err error) error {
 	if errors.Is(err, model.ErrFirstDayOfMonth) {
-		s.cfg.OutputService.StopSpinner()
-		s.cfg.OutputService.PrintFirstDayOfMonthError()
+		spinner.StopSpinner()
+		output.PrintFirstDayOfMonthError()
 
 		return nil
 	}
