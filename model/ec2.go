@@ -90,6 +90,9 @@ type PublicIPv4Summary struct {
 // PublicIPv4RatePerHour is the AWS per-IP hourly charge (since Feb 2024).
 const PublicIPv4RatePerHour = 0.005
 
+// HoursPerMonth is the standard 730-hour billing month used by AWS for monthly cost estimates.
+const HoursPerMonth = 730.0
+
 // KeyPairWasteInfo contains information about unused EC2 key pairs
 type KeyPairWasteInfo struct {
 	KeyName         string

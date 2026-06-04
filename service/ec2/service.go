@@ -785,6 +785,14 @@ func (s *service) getResourceTypeFromDescription(description string) types.Netwo
 func (s *service) GetPublicIPv4Summary(ctx context.Context) (*model.PublicIPv4Summary, error) {
 	summary := &model.PublicIPv4Summary{}
 
+	// uniqueIPs deduplicates across all sources — an EC2 instance with an EIP,
+	// or a NAT GW whose EIP also shows in DescribeAddresses, must not be counted twice.
+	uniqueIPs := make(map[string]struct{})
+
+	// instENIs collects every ENI attached to an EC2 instance so step 4 can
+	// exclude them from OtherENIIPs (auto-assigned public IPs would double-count).
+	instENIs := make(map[string]struct{})
+
 	// 1. EC2 instances with a public IP.
 	instPaginator := ec2.NewDescribeInstancesPaginator(s.client, &ec2.DescribeInstancesInput{
 		Filters: []types.Filter{
@@ -799,7 +807,15 @@ func (s *service) GetPublicIPv4Summary(ctx context.Context) (*model.PublicIPv4Su
 		for _, res := range page.Reservations {
 			for _, inst := range res.Instances {
 				if inst.PublicIpAddress != nil && *inst.PublicIpAddress != "" {
-					summary.EC2InstanceIPs++
+					if _, seen := uniqueIPs[*inst.PublicIpAddress]; !seen {
+						uniqueIPs[*inst.PublicIpAddress] = struct{}{}
+						summary.EC2InstanceIPs++
+					}
+				}
+				for _, ni := range inst.NetworkInterfaces {
+					if ni.NetworkInterfaceId != nil {
+						instENIs[*ni.NetworkInterfaceId] = struct{}{}
+					}
 				}
 			}
 		}
@@ -811,59 +827,79 @@ func (s *service) GetPublicIPv4Summary(ctx context.Context) (*model.PublicIPv4Su
 	if err != nil {
 		return nil, fmt.Errorf("describing addresses for IPv4 summary: %w", err)
 	}
-	for _, addr := range addrOutput.Addresses {
-		if addr.AssociationId != nil {
-			summary.ElasticIPs++
-		}
-	}
-
-	// 3. NAT Gateway public IPs.
-	natOutput, err := s.client.DescribeNatGateways(ctx, &ec2.DescribeNatGatewaysInput{
-		Filter: []types.Filter{
-			{Name: aws.String("state"), Values: []string{"available", "pending"}},
-		},
-	})
-	if err != nil {
-		return nil, fmt.Errorf("describing NAT gateways for IPv4 summary: %w", err)
-	}
-	for _, ngw := range natOutput.NatGateways {
-		for _, addr := range ngw.NatGatewayAddresses {
-			if addr.PublicIp != nil && *addr.PublicIp != "" {
-				summary.NatGatewayIPs++
-			}
-		}
-	}
-
-	// 4. Other ENIs (LBs, RDS, EKS nodes, etc) — ENIs that have a public IP
-	//    via an association but are not covered by the EIP count above.
-	eniOutput, err := s.client.DescribeNetworkInterfaces(ctx, &ec2.DescribeNetworkInterfacesInput{
-		Filters: []types.Filter{
-			{Name: aws.String("association.public-ip"), Values: []string{"*"}},
-		},
-	})
-	if err != nil {
-		return nil, fmt.Errorf("describing network interfaces for IPv4 summary: %w", err)
-	}
-	// Deduplicate: skip ENIs that are the backing interface for an EIP already counted.
 	eipENIs := make(map[string]struct{}, len(addrOutput.Addresses))
 	for _, addr := range addrOutput.Addresses {
+		if addr.AssociationId == nil {
+			continue
+		}
+		if addr.PublicIp != nil && *addr.PublicIp != "" {
+			if _, seen := uniqueIPs[*addr.PublicIp]; !seen {
+				uniqueIPs[*addr.PublicIp] = struct{}{}
+				summary.ElasticIPs++
+			}
+		}
 		if addr.NetworkInterfaceId != nil {
 			eipENIs[*addr.NetworkInterfaceId] = struct{}{}
 		}
 	}
-	for _, eni := range eniOutput.NetworkInterfaces {
-		if eni.Association == nil || eni.Association.PublicIp == nil {
-			continue
+
+	// 3. NAT Gateway public IPs — paginated for large accounts.
+	natPaginator := ec2.NewDescribeNatGatewaysPaginator(s.client, &ec2.DescribeNatGatewaysInput{
+		Filter: []types.Filter{
+			{Name: aws.String("state"), Values: []string{"available", "pending"}},
+		},
+	})
+	for natPaginator.HasMorePages() {
+		page, err := natPaginator.NextPage(ctx)
+		if err != nil {
+			return nil, fmt.Errorf("describing NAT gateways for IPv4 summary: %w", err)
 		}
-		if _, isEIP := eipENIs[aws.ToString(eni.NetworkInterfaceId)]; isEIP {
-			continue
+		for _, ngw := range page.NatGateways {
+			for _, addr := range ngw.NatGatewayAddresses {
+				if addr.PublicIp != nil && *addr.PublicIp != "" {
+					if _, seen := uniqueIPs[*addr.PublicIp]; !seen {
+						uniqueIPs[*addr.PublicIp] = struct{}{}
+						summary.NatGatewayIPs++
+					}
+				}
+			}
 		}
-		summary.OtherENIIPs++
 	}
 
-	summary.TotalCount = summary.EC2InstanceIPs + summary.ElasticIPs + summary.NatGatewayIPs + summary.OtherENIIPs
+	// 4. Other ENIs (LBs, RDS, EKS nodes, etc) — paginated; skip ENIs already
+	//    counted via EIPs (step 2) or EC2 instance interfaces (step 1).
+	eniPaginator := ec2.NewDescribeNetworkInterfacesPaginator(s.client, &ec2.DescribeNetworkInterfacesInput{
+		Filters: []types.Filter{
+			{Name: aws.String("association.public-ip"), Values: []string{"*"}},
+		},
+	})
+	for eniPaginator.HasMorePages() {
+		page, err := eniPaginator.NextPage(ctx)
+		if err != nil {
+			return nil, fmt.Errorf("describing network interfaces for IPv4 summary: %w", err)
+		}
+		for _, eni := range page.NetworkInterfaces {
+			if eni.Association == nil || eni.Association.PublicIp == nil {
+				continue
+			}
+			eniID := aws.ToString(eni.NetworkInterfaceId)
+			if _, isEIP := eipENIs[eniID]; isEIP {
+				continue
+			}
+			if _, isInst := instENIs[eniID]; isInst {
+				continue
+			}
+			ip := *eni.Association.PublicIp
+			if _, seen := uniqueIPs[ip]; !seen {
+				uniqueIPs[ip] = struct{}{}
+				summary.OtherENIIPs++
+			}
+		}
+	}
+
+	summary.TotalCount = len(uniqueIPs)
 	summary.HourlyCostUSD = float64(summary.TotalCount) * model.PublicIPv4RatePerHour
-	summary.MonthlyCostUSD = summary.HourlyCostUSD * 730
+	summary.MonthlyCostUSD = summary.HourlyCostUSD * model.HoursPerMonth
 
 	return summary, nil
 }
