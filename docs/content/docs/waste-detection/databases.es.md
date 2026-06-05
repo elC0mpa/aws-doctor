@@ -22,6 +22,11 @@ Encuentra instancias que están en estado `available` pero que han tenido **cero
 - **Razón**: Estas instancias están plenamente operativas y facturando por cómputo y almacenamiento, pero no están siendo utilizadas por ninguna aplicación.
 - **Acción**: Detenga la instancia si solo es necesaria ocasionalmente, o termínela si ya no se usa.
 
+{{< callout type="tip" >}}
+Puedes personalizar el umbral de 7 días de inactividad utilizando el flag `--rds-idle-days`.
+{{< /callout >}}
+
+
 ---
 
 ## RDS Snapshots
@@ -30,3 +35,8 @@ Encuentra instancias que están en estado `available` pero que han tenido **cero
 Identifica snapshots de RDS manuales que tienen **más de 30 días** de antigüedad.
 - **Razón**: A diferencia de los snapshots automáticos que se eliminan según una política de retención, los snapshots manuales persisten indefinidamente hasta que se eliminan manualmente, incurriendo en costos de almacenamiento continuos.
 - **Acción**: Revise los snapshots antiguos y elimine aquellos que ya no sean necesarios por cumplimiento o recuperación ante desastres.
+
+{{< callout type="tip" >}}
+Puedes personalizar el umbral de 30 días de antigüedad utilizando el flag `--rds-snapshot-days`.
+{{< /callout >}}
+

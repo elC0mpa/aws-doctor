@@ -35,6 +35,11 @@ Flags ELBs that have processed **zero requests or connections** over the last **
 - **Reason**: Load Balancers carry a fixed hourly cost regardless of traffic volume (~$16-20/month base cost).
 - **Action**: Delete or consolidate services into shared LBs.
 
+{{< callout type="tip" >}}
+You can customize the 7-day idle threshold using the `--elb-idle-days` flag.
+{{< /callout >}}
+
+
 ---
 
 ## NAT Gateways
@@ -45,6 +50,10 @@ Flags ELBs that have processed **zero requests or connections** over the last **
 NAT Gateways have a high hourly cost (~$32.85/month in most regions) even when they are not processing any traffic. If a NAT Gateway is idle, it is often a leftover from a previous architecture or an improperly decommissioned environment.
 
 - **Action**: Delete any NAT Gateway that shows no activity and is no longer required for outbound connectivity.
+
+{{< callout type="tip" >}}
+You can customize the 7-day idle threshold using the `--vpc-nat-idle-days` flag.
+{{< /callout >}}
 
 {{< callout type="info" >}}
 Future updates will include detection for **Unused VPC Endpoints**.

@@ -22,6 +22,11 @@ Finds instances that are in an `available` state but have had **zero database co
 - **Reason**: These instances are fully operational and billing for compute and storage but are not being utilized by any application.
 - **Action**: Stop the instance if it's only needed occasionally, or terminate it if it's no longer used.
 
+{{< callout type="tip" >}}
+You can customize the 7-day idle threshold using the `--rds-idle-days` flag.
+{{< /callout >}}
+
+
 ---
 
 ## RDS Snapshots
@@ -30,3 +35,8 @@ Finds instances that are in an `available` state but have had **zero database co
 Identifies manual RDS snapshots that are **older than 30 days**.
 - **Reason**: Unlike automated snapshots which are deleted according to a retention policy, manual snapshots persist indefinitely until manually deleted, incurring ongoing storage costs.
 - **Action**: Review old snapshots and delete those that are no longer required for compliance or disaster recovery.
+
+{{< callout type="tip" >}}
+You can customize the 30-day age threshold using the `--rds-snapshot-days` flag.
+{{< /callout >}}
+

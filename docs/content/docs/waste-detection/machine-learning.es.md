@@ -27,6 +27,11 @@ Un endpoint se marca como **inactivo** si cumple con los siguientes criterios:
 ### ¿Por qué 14 días?
 Utilizamos una ventana de observación de 14 días para tener en cuenta los modelos que podrían utilizarse para procesamiento quincenal o tareas programadas, asegurándonos de no marcar recursos que aún forman parte de un flujo de trabajo de producción regular (aunque poco frecuente).
 
+{{< callout type="tip" >}}
+Puedes personalizar el umbral de 14 días de inactividad utilizando el flag `--sagemaker-idle-days`.
+{{< /callout >}}
+
+
 ## Cómo Ejecutar
 Para ejecutar la detección de desperdicio de SageMaker de forma individual:
 
