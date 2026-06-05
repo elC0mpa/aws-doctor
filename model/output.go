@@ -181,4 +181,6 @@ func (dest *RenderWasteInput) Merge(src RenderWasteInput) {
 			dest.Errors[k] = v
 		}
 	}
+
+	dest.Flags = src.Flags
 }
