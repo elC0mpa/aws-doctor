@@ -51,6 +51,7 @@ func (s *wasteService) AnalyzeWaste(flags model.Flags) error {
 			res, err := analyzer.Analyze(ctx, flags)
 
 			res.Scope = analyzer.TabName()
+			res.Input.Flags = flags
 
 			if err != nil {
 				res.Err = err

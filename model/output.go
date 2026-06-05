@@ -52,6 +52,7 @@ type RenderWasteInput struct {
 	UnusedIAMUsers         []IAMUserWasteInfo
 	RootUserWaste          []IAMRootUserWasteInfo
 	Errors                 map[string]string
+	Flags                  Flags
 }
 
 // RenderCostComparisonInput represents the input data for rendering the cost comparison report

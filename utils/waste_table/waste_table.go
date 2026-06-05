@@ -128,19 +128,19 @@ func drawStorageSections(out io.Writer, input model.RenderWasteInput, pricingSvc
 
 	drawS3Table(out, input.S3Buckets, input.S3MultipartUploads)
 
-	drawSnapshotTable(out, input.OrphanedSnapshots)
+	drawSnapshotTable(out, input.OrphanedSnapshots, input.Flags)
 }
 
 func drawNetworkSections(out io.Writer, input model.RenderWasteInput, pricingSvc pricing.Service) {
 	drawElasticIPTable(out, input.ElasticIPs, pricingSvc)
 
-	drawLoadBalancerTable(out, input.LoadBalancers, input.IdleLoadBalancers, pricingSvc)
+	drawLoadBalancerTable(out, input.LoadBalancers, input.IdleLoadBalancers, pricingSvc, input.Flags)
 
-	drawNatGatewayTable(out, input.IdleNATGateways)
+	drawNatGatewayTable(out, input.IdleNATGateways, input.Flags)
 }
 
 func drawComputeSections(out io.Writer, input model.RenderWasteInput) {
-	drawEC2Table(out, input.StoppedInstances, input.Ris)
+	drawEC2Table(out, input.StoppedInstances, input.Ris, input.Flags)
 
 	drawIdleEC2Table(out, input.IdleEC2Instances)
 
@@ -197,7 +197,7 @@ func populateIdleEC2Rows(instances []model.EC2IdleInstanceInfo) []table.Row {
 }
 
 func drawDatabaseSections(out io.Writer, input model.RenderWasteInput) {
-	drawRDSTable(out, input.RDSInstances, input.RDSSnapshots, input.RDSIdleInstances)
+	drawRDSTable(out, input.RDSInstances, input.RDSSnapshots, input.RDSIdleInstances, input.Flags)
 }
 
 func drawServerlessSections(out io.Writer, input model.RenderWasteInput) {
@@ -282,7 +282,7 @@ func drawEBSTable(out io.Writer, unusedEBSVolumeInfo []ec2types.Volume, attached
 	}
 }
 
-func drawEC2Table(out io.Writer, instances []ec2types.Instance, ris []model.RiExpirationInfo) {
+func drawEC2Table(out io.Writer, instances []ec2types.Instance, ris []model.RiExpirationInfo, flags model.Flags) {
 	t := table.NewWriter()
 	t.SetOutputMirror(out)
 	t.SetStyle(table.StyleRounded)
@@ -297,7 +297,7 @@ func drawEC2Table(out io.Writer, instances []ec2types.Instance, ris []model.RiEx
 	var hasPreviousRows bool
 
 	if len(instances) > 0 {
-		statusLabel := "Stopped Instance(> 30 Days)"
+		statusLabel := fmt.Sprintf("Stopped Instance(> %d Days)", flags.EC2StoppedDays)
 		rows := populateInstanceRows(instances)
 
 		halfRow := len(rows) / 2
@@ -441,7 +441,7 @@ func populateRiRows(ris []model.RiExpirationInfo) []table.Row {
 	return rows
 }
 
-func drawLoadBalancerTable(out io.Writer, loadBalancers []elbtypes.LoadBalancer, idleLoadBalancers []model.ELBIdleInfo, pricingSvc pricing.Service) {
+func drawLoadBalancerTable(out io.Writer, unassociatedLbs []elbtypes.LoadBalancer, idleLbs []model.ELBIdleInfo, pricingSvc pricing.Service, flags model.Flags) {
 	t := table.NewWriter()
 	t.SetOutputMirror(out)
 	t.SetStyle(table.StyleRounded)
@@ -455,9 +455,9 @@ func drawLoadBalancerTable(out io.Writer, loadBalancers []elbtypes.LoadBalancer,
 
 	var hasPreviousRows bool
 
-	if len(loadBalancers) > 0 {
+	if len(unassociatedLbs) > 0 {
 		statusUnused := "No Target Groups"
-		rows := populateLoadBalancerRows(loadBalancers, pricingSvc)
+		rows := populateLoadBalancerRows(unassociatedLbs, pricingSvc)
 
 		if len(rows) > 0 {
 			halfRow := len(rows) / 2
@@ -469,13 +469,13 @@ func drawLoadBalancerTable(out io.Writer, loadBalancers []elbtypes.LoadBalancer,
 		hasPreviousRows = true
 	}
 
-	if len(idleLoadBalancers) > 0 {
+	if len(idleLbs) > 0 {
 		if hasPreviousRows {
 			t.AppendSeparator()
 		}
 
-		statusIdle := "Idle (0 connections)"
-		rows := populateIdleLoadBalancerRows(idleLoadBalancers)
+		statusIdle := fmt.Sprintf("0 connections in %d days", flags.ELBIdleDays)
+		rows := populateIdleLoadBalancerRows(idleLbs)
 
 		if len(rows) > 0 {
 			halfRow := len(rows) / 2
@@ -567,7 +567,7 @@ func populateAMIRows(amis []model.AMIWasteInfo) []table.Row {
 	return rows
 }
 
-func drawSnapshotTable(out io.Writer, snapshots []model.SnapshotWasteInfo) {
+func drawSnapshotTable(out io.Writer, snapshots []model.SnapshotWasteInfo, flags model.Flags) {
 	t := table.NewWriter()
 	t.SetOutputMirror(out)
 	t.SetStyle(table.StyleRounded)
@@ -610,7 +610,7 @@ func drawSnapshotTable(out io.Writer, snapshots []model.SnapshotWasteInfo) {
 			t.AppendSeparator()
 		}
 
-		statusLabel := "Stale(Old Backup > 90 days)"
+		statusLabel := fmt.Sprintf("Stale(Old Backup > %d days)", flags.EC2SnapshotStaleDays)
 		rows := populateSnapshotRows(stale)
 
 		halfRow := len(rows) / 2
@@ -672,7 +672,7 @@ func drawKeyPairTable(out io.Writer, keyPairs []model.KeyPairWasteInfo) {
 	}
 }
 
-func drawNatGatewayTable(out io.Writer, natGateways []model.NATGatewayWasteInfo) {
+func drawNatGatewayTable(out io.Writer, natGateways []model.NATGatewayWasteInfo, flags model.Flags) {
 	t := table.NewWriter()
 	t.SetOutputMirror(out)
 	t.SetStyle(table.StyleRounded)
@@ -683,7 +683,7 @@ func drawNatGatewayTable(out io.Writer, natGateways []model.NATGatewayWasteInfo)
 	rows := populateNatGatewayRows(natGateways)
 	if len(rows) > 0 {
 		halfRow := len(rows) / 2
-		rows[halfRow][0] = text.FgHiRed.Sprint("Idle (> 7 Days)")
+		rows[halfRow][0] = text.FgHiRed.Sprint(fmt.Sprintf("Idle (> %d Days)", flags.VPCNatIdleDays))
 	}
 
 	t.AppendRows(rows)
@@ -887,7 +887,7 @@ func drawSummaryTable(out io.Writer, input model.RenderWasteInput, pricingSvc pr
 	_, _ = fmt.Fprintln(out)
 }
 
-func drawRDSTable(out io.Writer, instances []model.RDSInstanceWasteInfo, snapshots []model.RDSSnapshotWasteInfo, idleInstances []model.RDSIdleInstanceInfo) {
+func drawRDSTable(out io.Writer, instances []model.RDSInstanceWasteInfo, snapshots []model.RDSSnapshotWasteInfo, idleInstances []model.RDSIdleInstanceInfo, flags model.Flags) {
 	t := table.NewWriter()
 	t.SetOutputMirror(out)
 	t.SetStyle(table.StyleRounded)
@@ -918,7 +918,7 @@ func drawRDSTable(out io.Writer, instances []model.RDSInstanceWasteInfo, snapsho
 			t.AppendSeparator()
 		}
 
-		statusLabel := "Old Snapshot (> 30 days)"
+		statusLabel := fmt.Sprintf("Old Snapshot (> %d days)", flags.RDSSnapshotDays)
 		rows := populateRDSSnapshotRows(snapshots)
 
 		halfRow := len(rows) / 2
@@ -934,7 +934,7 @@ func drawRDSTable(out io.Writer, instances []model.RDSInstanceWasteInfo, snapsho
 			t.AppendSeparator()
 		}
 
-		statusLabel := "Idle (0 connections)"
+		statusLabel := fmt.Sprintf("0 connections in %d days", flags.RDSIdleDays)
 		rows := populateRDSIdleRows(idleInstances)
 
 		halfRow := len(rows) / 2
@@ -1215,23 +1215,23 @@ func RenderScopeTable(scope string, input model.RenderWasteInput, pricingSvc pri
 
 	switch scope {
 	case "EC2":
-		drawEC2Table(out, input.StoppedInstances, input.Ris)
+		drawEC2Table(out, input.StoppedInstances, input.Ris, input.Flags)
 		drawIdleEC2Table(out, input.IdleEC2Instances)
 		drawAMITable(out, input.UnusedAMIs)
 		drawKeyPairTable(out, input.UnusedKeyPairs)
 		drawEBSTable(out, input.UnusedVolumes, input.StoppedVolumes, pricingSvc)
-		drawSnapshotTable(out, input.OrphanedSnapshots)
+		drawSnapshotTable(out, input.OrphanedSnapshots, input.Flags)
 		drawElasticIPTable(out, input.ElasticIPs, pricingSvc)
 	case "VPC":
-		drawNatGatewayTable(out, input.IdleNATGateways)
+		drawNatGatewayTable(out, input.IdleNATGateways, input.Flags)
 	case "ELB":
-		drawLoadBalancerTable(out, input.LoadBalancers, input.IdleLoadBalancers, pricingSvc)
+		drawLoadBalancerTable(out, input.LoadBalancers, input.IdleLoadBalancers, pricingSvc, input.Flags)
 	case "S3":
 		drawS3Table(out, input.S3Buckets, input.S3MultipartUploads)
 	case "CloudWatch":
 		drawCloudWatchLogsTable(out, input.CloudWatchLogGroups)
 	case "RDS":
-		drawRDSTable(out, input.RDSInstances, input.RDSSnapshots, input.RDSIdleInstances)
+		drawRDSTable(out, input.RDSInstances, input.RDSSnapshots, input.RDSIdleInstances, input.Flags)
 	case "Lambda":
 		drawLambdaTable(out, input.OverProvisionedLambdas)
 	case "SageMaker":
