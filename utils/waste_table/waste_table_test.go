@@ -337,6 +337,7 @@ func TestDrawEC2Table(t *testing.T) {
 	}
 
 	var buf13 bytes.Buffer
+
 	flags := model.Flags{EC2StoppedDays: 30}
 	drawEC2Table(&buf13, instances, ris, flags)
 	output := buf13.String()
@@ -360,6 +361,7 @@ func TestDrawEC2Table_OnlyInstances(t *testing.T) {
 	}
 
 	var buf14 bytes.Buffer
+
 	flags := model.Flags{EC2StoppedDays: 30}
 	drawEC2Table(&buf14, instances, nil, flags)
 	output := buf14.String()
@@ -375,6 +377,7 @@ func TestDrawEC2Table_OnlyRIs(t *testing.T) {
 	}
 
 	var buf15 bytes.Buffer
+
 	flags := model.Flags{EC2StoppedDays: 30}
 	drawEC2Table(&buf15, nil, ris, flags)
 	output := buf15.String()
@@ -457,6 +460,7 @@ func TestDrawSnapshotTable(t *testing.T) {
 	}
 
 	var buf18 bytes.Buffer
+
 	flags := model.Flags{EC2SnapshotStaleDays: 90}
 	drawSnapshotTable(&buf18, snapshots, flags)
 	output := buf18.String()
@@ -828,6 +832,7 @@ func TestDrawRDSTable(t *testing.T) {
 	}
 
 	var buf32 bytes.Buffer
+
 	flags := model.Flags{RDSSnapshotDays: 30}
 	drawRDSTable(&buf32, instances, snapshots, idleInstances, flags)
 	output := buf32.String()
@@ -855,6 +860,7 @@ func TestDrawNatGatewayTable(t *testing.T) {
 	}
 
 	var buf33 bytes.Buffer
+
 	flags := model.Flags{VPCNatIdleDays: 7}
 	drawNatGatewayTable(&buf33, gateways, flags)
 	output := buf33.String()
@@ -910,6 +916,7 @@ func TestDrawLoadBalancerTable_Idle(t *testing.T) {
 	}
 
 	var buf36 bytes.Buffer
+
 	flags := model.Flags{ELBIdleDays: 7}
 	drawLoadBalancerTable(&buf36, nil, idle, services.NewMockPricingService(), flags)
 	output := buf36.String()

@@ -274,10 +274,12 @@ func (s *service) addSnapshotWaste(m core.Maroto, input model.RenderWasteInput) 
 
 	for _, snap := range input.OrphanedSnapshots {
 		p := outputshared.PresentSnapshot(snap)
+
 		catStr := string(snap.Category)
 		if snap.Category == model.SnapshotCategoryStale {
 			catStr = fmt.Sprintf("Stale (> %dd)", input.Flags.EC2SnapshotStaleDays)
 		}
+
 		s.addWasteRow(m, []string{catStr, p.Identifier, p.Metric, p.EstimatedCost})
 	}
 
