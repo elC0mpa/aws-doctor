@@ -44,15 +44,28 @@ var reportWasteCmd = &cobra.Command{
 		}
 
 		flags := model.Flags{
-			Region:                region,
-			Profile:               profile,
-			Report:                true,
-			ReportPath:            reportOutPath,
-			Waste:                 true,
-			WasteChecks:           parsedChecks,
-			LambdaMemoryThreshold: lambdaMemoryThreshold,
-			SecretsIdleDays:       secretsIdleDays,
-			IAMIdleDays:           iamIdleDays,
+			Region:                    region,
+			Profile:                   profile,
+			Report:                    true,
+			ReportPath:                reportOutPath,
+			Waste:                     true,
+			WasteChecks:               parsedChecks,
+			LambdaMemoryThreshold:     lambdaMemoryThreshold,
+			SecretsIdleDays:           secretsIdleDays,
+			IAMIdleDays:               iamIdleDays,
+			EC2StoppedDays:            ec2StoppedDays,
+			EC2RiExpiringDays:         ec2RiExpiringDays,
+			EC2AmiStaleDays:           ec2AmiStaleDays,
+			EC2SnapshotStaleDays:      ec2SnapshotStaleDays,
+			EC2IdleDays:               ec2IdleDays,
+			EC2IdleCPUPercent:         ec2IdleCPUPercent,
+			EC2IdleNetworkBytesPerDay: ec2IdleNetworkBytesPerDay,
+			SageMakerIdleDays:         sagemakerIdleDays,
+			VPCNatIdleDays:            vpcNatIdleDays,
+			ELBIdleDays:               elbIdleDays,
+			RDSIdleDays:               rdsIdleDays,
+			RDSSnapshotDays:           rdsSnapshotDays,
+			LambdaLookbackDays:        lambdaLookbackDays,
 		}
 
 		return orch.AnalyzeWaste(flags)

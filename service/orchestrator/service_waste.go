@@ -16,27 +16,6 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
-// EC2-related thresholds for the various waste checks.
-const (
-	ec2StoppedDays            = 30
-	ec2RiExpiringDays         = 30
-	ec2AmiStaleDays           = 90
-	ec2SnapshotStaleDays      = 90
-	ec2IdleDays               = 14
-	ec2IdleCPUPercent         = 5.0
-	ec2IdleNetworkBytesPerDay = 5 * 1024 * 1024 // 5 MB/day, combined in+out
-)
-
-// Lookback windows and thresholds for the remaining waste checks.
-const (
-	sagemakerIdleDays  = 14
-	vpcNatIdleDays     = 7
-	elbIdleDays        = 7
-	rdsIdleDays        = 7
-	rdsSnapshotDays    = 30
-	lambdaLookbackDays = 14
-)
-
 type wasteService struct {
 	cfg WasteConfig
 }
@@ -59,21 +38,6 @@ func (s *wasteService) AnalyzeWaste(flags model.Flags) error {
 
 	resultCh := make(chan model.ScopeResult, 20)
 	g, ctx := errgroup.WithContext(ctx)
-
-	// Ensure hardcoded thresholds are still populated
-	flags.EC2StoppedDays = ec2StoppedDays
-	flags.EC2RiExpiringDays = ec2RiExpiringDays
-	flags.EC2AmiStaleDays = ec2AmiStaleDays
-	flags.EC2SnapshotStaleDays = ec2SnapshotStaleDays
-	flags.EC2IdleDays = ec2IdleDays
-	flags.EC2IdleCPUPercent = ec2IdleCPUPercent
-	flags.EC2IdleNetworkBytesPerDay = ec2IdleNetworkBytesPerDay
-	flags.SageMakerIdleDays = sagemakerIdleDays
-	flags.VPCNatIdleDays = vpcNatIdleDays
-	flags.ELBIdleDays = elbIdleDays
-	flags.RDSIdleDays = rdsIdleDays
-	flags.RDSSnapshotDays = rdsSnapshotDays
-	flags.LambdaLookbackDays = lambdaLookbackDays
 
 	analyzers := s.cfg.Registry.GetAnalyzers()
 	for _, a := range analyzers {
