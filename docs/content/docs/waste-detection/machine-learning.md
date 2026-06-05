@@ -27,6 +27,11 @@ An endpoint is flagged as **idle** if it meets the following criteria:
 ### Why 14 days?
 We use a 14-day lookback window to account for models that might be used for bi-weekly processing or scheduled tasks, ensuring we don't flag resources that are still part of a regular (though infrequent) production workflow.
 
+{{< callout type="tip" >}}
+You can customize the 14-day idle threshold using the `--sagemaker-idle-days` flag.
+{{< /callout >}}
+
+
 ## How to Run
 To run the SageMaker waste detection individually:
 

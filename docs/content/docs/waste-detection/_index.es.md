@@ -50,6 +50,19 @@ Los subcomandos `waste` y `report waste` soportan flags específicos para ajusta
 | `--lambda-memory-threshold` | `10` | Umbral de utilización de memoria (%) por debajo del cual las funciones Lambda se marcan como sobre-provisionadas. |
 | `--secrets-idle-days` | `90` | Umbral de días de inactividad para marcar secretos de Secrets Manager no utilizados. |
 | `--iam-idle-days` | `90` | Umbral de días de inactividad para marcar usuarios de IAM sin uso. |
+| `--ec2-stopped-days` | `30` | Umbral de días de inactividad para marcar instancias EC2 detenidas. |
+| `--ec2-ri-expiring-days` | `30` | Umbral de días para marcar Instancias Reservadas EC2 a punto de expirar. |
+| `--ec2-ami-stale-days` | `90` | Umbral de días para marcar AMIs obsoletas. |
+| `--ec2-snapshot-stale-days` | `90` | Umbral de días para marcar snapshots de EC2 obsoletos. |
+| `--ec2-idle-days` | `14` | Umbral de días de inactividad para marcar instancias EC2 inactivas. |
+| `--ec2-idle-cpu-percent` | `5.0` | Umbral de porcentaje de CPU para marcar instancias EC2 inactivas. |
+| `--ec2-idle-network-bytes` | `5242880` | Umbral de bytes de red por día para marcar instancias EC2 inactivas. |
+| `--sagemaker-idle-days` | `14` | Umbral de días de inactividad para marcar endpoints de SageMaker inactivos. |
+| `--vpc-nat-idle-days` | `7` | Umbral de días de inactividad para marcar NAT Gateways inactivos. |
+| `--elb-idle-days` | `7` | Umbral de días de inactividad para marcar Elastic Load Balancers inactivos. |
+| `--rds-idle-days` | `7` | Umbral de días de inactividad para marcar instancias RDS inactivas. |
+| `--rds-snapshot-days` | `30` | Umbral de días para marcar snapshots de RDS obsoletos. |
+| `--lambda-lookback-days` | `14` | Días de retrospectiva para analizar las funciones de Lambda. |
 
 ## Estimación de Costos por Región
 

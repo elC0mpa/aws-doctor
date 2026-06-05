@@ -51,6 +51,19 @@ The `waste` and `report waste` subcommands support specific flags to tune the de
 | `--lambda-memory-threshold` | `10` | Memory utilization threshold (%) below which Lambda functions are flagged as over-provisioned. |
 | `--secrets-idle-days` | `90` | Idle days threshold for flagging unused Secrets Manager secrets. |
 | `--iam-idle-days` | `90` | Idle days threshold for flagging unused IAM Users. |
+| `--ec2-stopped-days` | `30` | Idle days threshold for flagging stopped EC2 instances. |
+| `--ec2-ri-expiring-days` | `30` | Days threshold for flagging expiring EC2 Reserved Instances. |
+| `--ec2-ami-stale-days` | `90` | Days threshold for flagging stale AMIs. |
+| `--ec2-snapshot-stale-days` | `90` | Days threshold for flagging stale EC2 snapshots. |
+| `--ec2-idle-days` | `14` | Idle days threshold for flagging idle EC2 instances. |
+| `--ec2-idle-cpu-percent` | `5.0` | CPU percentage threshold for flagging idle EC2 instances. |
+| `--ec2-idle-network-bytes` | `5242880` | Network bytes per day threshold for flagging idle EC2 instances. |
+| `--sagemaker-idle-days` | `14` | Idle days threshold for flagging idle SageMaker endpoints. |
+| `--vpc-nat-idle-days` | `7` | Idle days threshold for flagging idle NAT Gateways. |
+| `--elb-idle-days` | `7` | Idle days threshold for flagging idle Elastic Load Balancers. |
+| `--rds-idle-days` | `7` | Idle days threshold for flagging idle RDS instances. |
+| `--rds-snapshot-days` | `30` | Days threshold for flagging stale RDS snapshots. |
+| `--lambda-lookback-days` | `14` | Lookback days for analyzing Lambda functions. |
 
 ## Region-Aware Cost Estimation
 

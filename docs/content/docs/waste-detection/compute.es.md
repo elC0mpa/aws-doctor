@@ -13,19 +13,31 @@ Audite su huella de EC2 y EBS para eliminar los costos de instancias y datos aba
 ## Instancias EC2
 
 ### Instancias Detenidas por Mucho Tiempo
-**AWS Doctor** identifica las instancias que han estado en estado `stopped` durante **más de 30 días**.
-- **Razón**: Aunque no paga por CPU/RAM cuando están detenidas, sigue pagando por los volúmenes raíz de EBS asociados y cualquier almacenamiento persistente.
-- **Acción**: Terminar o realizar un snapshot de los datos y eliminar.
+**AWS Doctor** identifica instancias que han estado en estado `stopped` por **más de 30 días**.
+- **Motivo**: Aunque no pagas por CPU/RAM cuando está detenida, sigues pagando por los volúmenes raíz EBS adjuntos y cualquier almacenamiento persistente.
+- **Acción**: Terminar o hacer un snapshot de los datos y eliminarlos.
 
-### Reserved Instances (RI) por Vencer
-Escanea RIs activas programadas para vencer en los **próximos 30 días** o que han vencido en los **últimos 30 días**.
-- **Razón**: Las RIs vencidas vuelven a los costosos precios de On-Demand sin previo aviso.
+{{< callout type="tip" >}}
+Puedes personalizar el umbral de 30 días utilizando el flag `--ec2-stopped-days`.
+{{< /callout >}}
+
+### Instancias Reservadas (RI) a Punto de Expirar
+Busca RIs activas programadas para expirar en los **próximos 30 días** o que hayan expirado en los **últimos 30 días**.
+- **Motivo**: Las RIs expiradas vuelven a los costosos precios On-Demand sin previo aviso.
 - **Acción**: Revisar el uso y renovar o migrar a Savings Plans.
 
+{{< callout type="tip" >}}
+Puedes personalizar el umbral de advertencia de 30 días utilizando el flag `--ec2-ri-expiring-days`.
+{{< /callout >}}
+
 ### Instancias en Ejecución Inactivas
-Encuentra instancias `running` cuya utilización promedio de CPU se mantuvo por debajo del **5%** y cuya suma NetworkIn + NetworkOut promedió menos de **5 MB/día** durante los últimos **14 días**.
-- **Razón**: Las máquinas de desarrollo olvidadas, los workers abandonados y las cargas de trabajo sobredimensionadas siguen facturando cómputo, almacenamiento y cualquier EIP asociado sin entregar valor.
-- **Acción**: Detenga la instancia unos días para verificar que nadie la note, luego redimensione a un tipo más pequeño o elimínela por completo.
+Encuentra instancias en estado `running` cuya utilización promedio de CPU se mantuvo por debajo del **5%** y cuya combinación de NetworkIn + NetworkOut promedió menos de **5 MB/día** durante los últimos **14 días**.
+- **Motivo**: Entornos de desarrollo olvidados, workers abandonados y cargas de trabajo sobre-dimensionadas siguen facturando por cómputo, almacenamiento y EIPs asociadas sin aportar valor.
+- **Acción**: Detener la instancia por unos días para verificar que nadie la eche de menos, luego reducir su tamaño o terminarla por completo.
+
+{{< callout type="tip" >}}
+Puedes ajustar la sensibilidad de esta verificación utilizando los flags `--ec2-idle-days`, `--ec2-idle-cpu-percent`, y `--ec2-idle-network-bytes`.
+{{< /callout >}}
 
 ---
 
@@ -38,7 +50,7 @@ Busca funciones Lambda donde el pico de utilización de memoria es significativa
 - **Motor de Recomendación**: Sugiere configurar la memoria al **doble del pico observado** (con un mínimo de 128 MB).
 
 {{< callout type="tip" >}}
-Puede ajustar la sensibilidad de esta verificación utilizando el flag `--lambda-memory-threshold` (por ejemplo, `--lambda-memory-threshold 20` para marcar funciones que usan menos del 20%).
+Puedes ajustar la sensibilidad de esta verificación utilizando el flag `--lambda-memory-threshold` (por ejemplo, `--lambda-memory-threshold 20` para marcar funciones que utilicen menos del 20%). También puedes ajustar la ventana de análisis con el flag `--lambda-lookback-days`.
 {{< /callout >}}
 
 ---
@@ -55,10 +67,14 @@ Encuentra snapshots donde el **volumen de origen ha sido eliminado** y el snapsh
 - **Razón**: A menudo creados durante copias de seguridad manuales o despliegues antiguos y olvidados.
 - **Acción**: Eliminar para ahorrar en costos de almacenamiento respaldados por S3.
 
-### Snapshots y AMIs Obsoletos
-Marca las AMIs y snapshots que tienen **más de 90 días** y no están asociados con ninguna instancia en ejecución o detenida.
-- **Razón**: Imágenes base y copias de seguridad desactualizadas que probablemente no se han tocado en un trimestre.
-- **Acción**: Limpiar versiones antiguas de imágenes.
+### Snapshots y AMIs Obsoletas
+Marca AMIs y snapshots que tienen **más de 90 días** de antigüedad y no están asociados a ninguna instancia en ejecución o detenida.
+- **Motivo**: Imágenes base desactualizadas y copias de seguridad que probablemente no se han tocado en un trimestre.
+- **Acción**: Dar de baja las AMIs y eliminar los snapshots para ahorrar costos de almacenamiento.
+
+{{< callout type="tip" >}}
+Puedes personalizar el umbral de 90 días de antigüedad utilizando los flags `--ec2-ami-stale-days` y `--ec2-snapshot-stale-days`.
+{{< /callout >}}
 
 ---
 

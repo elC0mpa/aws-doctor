@@ -8,10 +8,9 @@ import (
 )
 
 var (
-	lambdaMemoryThreshold int
-	secretsIdleDays       int
-	iamIdleDays           int
-
+	lambdaMemoryThreshold     int
+	secretsIdleDays           int
+	iamIdleDays               int
 	ec2StoppedDays            int
 	ec2RiExpiringDays         int
 	ec2AmiStaleDays           int
