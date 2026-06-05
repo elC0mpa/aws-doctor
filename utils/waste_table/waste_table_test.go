@@ -337,7 +337,9 @@ func TestDrawEC2Table(t *testing.T) {
 	}
 
 	var buf13 bytes.Buffer
-	drawEC2Table(&buf13, instances, ris)
+
+	flags := model.Flags{EC2StoppedDays: 30}
+	drawEC2Table(&buf13, instances, ris, flags)
 	output := buf13.String()
 
 	if !strings.Contains(output, "EC2 & Reserved Instance Waste") {
@@ -359,7 +361,9 @@ func TestDrawEC2Table_OnlyInstances(t *testing.T) {
 	}
 
 	var buf14 bytes.Buffer
-	drawEC2Table(&buf14, instances, nil)
+
+	flags := model.Flags{EC2StoppedDays: 30}
+	drawEC2Table(&buf14, instances, nil, flags)
 	output := buf14.String()
 
 	if !strings.Contains(output, "Stopped Instance") {
@@ -373,7 +377,9 @@ func TestDrawEC2Table_OnlyRIs(t *testing.T) {
 	}
 
 	var buf15 bytes.Buffer
-	drawEC2Table(&buf15, nil, ris)
+
+	flags := model.Flags{EC2StoppedDays: 30}
+	drawEC2Table(&buf15, nil, ris, flags)
 	output := buf15.String()
 
 	if !strings.Contains(output, "Expiring Soon") {
@@ -419,7 +425,7 @@ func TestDrawLoadBalancerTable(t *testing.T) {
 	}
 
 	var buf17 bytes.Buffer
-	drawLoadBalancerTable(&buf17, loadBalancers, nil, services.NewMockPricingService())
+	drawLoadBalancerTable(&buf17, loadBalancers, nil, services.NewMockPricingService(), model.Flags{})
 	output := buf17.String()
 
 	if !strings.Contains(output, "Load Balancer Waste") {
@@ -454,7 +460,9 @@ func TestDrawSnapshotTable(t *testing.T) {
 	}
 
 	var buf18 bytes.Buffer
-	drawSnapshotTable(&buf18, snapshots)
+
+	flags := model.Flags{EC2SnapshotStaleDays: 90}
+	drawSnapshotTable(&buf18, snapshots, flags)
 	output := buf18.String()
 
 	if !strings.Contains(output, "EBS Snapshot Waste") {
@@ -824,7 +832,9 @@ func TestDrawRDSTable(t *testing.T) {
 	}
 
 	var buf32 bytes.Buffer
-	drawRDSTable(&buf32, instances, snapshots, idleInstances)
+
+	flags := model.Flags{RDSSnapshotDays: 30}
+	drawRDSTable(&buf32, instances, snapshots, idleInstances, flags)
 	output := buf32.String()
 
 	if !strings.Contains(output, "RDS Waste") {
@@ -850,7 +860,9 @@ func TestDrawNatGatewayTable(t *testing.T) {
 	}
 
 	var buf33 bytes.Buffer
-	drawNatGatewayTable(&buf33, gateways)
+
+	flags := model.Flags{VPCNatIdleDays: 7}
+	drawNatGatewayTable(&buf33, gateways, flags)
 	output := buf33.String()
 
 	if !strings.Contains(output, "NAT Gateway Waste") {
@@ -904,7 +916,9 @@ func TestDrawLoadBalancerTable_Idle(t *testing.T) {
 	}
 
 	var buf36 bytes.Buffer
-	drawLoadBalancerTable(&buf36, nil, idle, services.NewMockPricingService())
+
+	flags := model.Flags{ELBIdleDays: 7}
+	drawLoadBalancerTable(&buf36, nil, idle, services.NewMockPricingService(), flags)
 	output := buf36.String()
 
 	if !strings.Contains(output, "idle-lb") {

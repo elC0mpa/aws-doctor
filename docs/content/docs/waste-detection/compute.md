@@ -17,15 +17,30 @@ Audit your EC2 and EBS footprint to eliminate costs from abandoned instances and
 - **Reason**: While you don't pay for CPU/RAM when stopped, you are still paying for the attached EBS root volumes and any persistent storage.
 - **Action**: Terminate or snapshot the data and delete.
 
+{{< callout type="tip" >}}
+You can customize the 30-day threshold using the `--ec2-stopped-days` flag.
+{{< /callout >}}
+
+
 ### Expiring Reserved Instances (RI)
 Scans for active RIs scheduled to expire in the **next 30 days** or that have expired in the **last 30 days**.
 - **Reason**: Expired RIs revert to expensive On-Demand pricing without warning.
 - **Action**: Review usage and renew or migrate to Savings Plans.
 
+{{< callout type="tip" >}}
+You can customize the 30-day warning threshold using the `--ec2-ri-expiring-days` flag.
+{{< /callout >}}
+
+
 ### Idle Running Instances
 Finds `running` instances whose average CPU utilization stayed under **5%** and whose combined NetworkIn + NetworkOut averaged under **5 MB/day** over the last **14 days**.
 - **Reason**: Forgotten dev boxes, abandoned workers, and over-sized workloads keep billing for compute, storage, and any attached EIPs while delivering no value.
 - **Action**: Stop the instance for a few days to verify nothing notices, then resize to a smaller type or terminate it entirely.
+
+{{< callout type="tip" >}}
+You can adjust the sensitivity of this check using the `--ec2-idle-days`, `--ec2-idle-cpu-percent`, and `--ec2-idle-network-bytes` flags.
+{{< /callout >}}
+
 
 ---
 
@@ -38,8 +53,9 @@ Scans for Lambda functions where peak memory utilization is significantly lower 
 - **Recommendation Engine**: Suggests setting memory to **2x the observed peak** (with a minimum of 128 MB).
 
 {{< callout type="tip" >}}
-You can tune the sensitivity of this check using the `--lambda-memory-threshold` flag (e.g., `--lambda-memory-threshold 20` to flag functions using less than 20%).
+You can tune the sensitivity of this check using the `--lambda-memory-threshold` flag (e.g., `--lambda-memory-threshold 20` to flag functions using less than 20%). You can also adjust the analysis window using the `--lambda-lookback-days` flag.
 {{< /callout >}}
+
 
 ---
 
@@ -58,7 +74,12 @@ Finds snapshots where the **source volume has been deleted** and the snapshot is
 ### Stale Snapshots & AMIs
 Flags AMIs and snapshots that are **older than 90 days** and are not associated with any running or stopped instance.
 - **Reason**: Outdated base images and backups that likely haven't been touched in a quarter.
-- **Action**: Clean up old versions of images.
+- **Action**: Deregister AMIs and delete snapshots to save storage costs.
+
+{{< callout type="tip" >}}
+You can customize the 90-day age thresholds using the `--ec2-ami-stale-days` and `--ec2-snapshot-stale-days` flags.
+{{< /callout >}}
+
 
 ---
 

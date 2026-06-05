@@ -35,6 +35,11 @@ Marca los ELB que han procesado **cero solicitudes o conexiones** durante los ú
 - **Razón**: Los Load Balancers tienen un costo fijo por hora independientemente del volumen de tráfico (~$16-20/mes de costo base).
 - **Acción**: Eliminar o consolidar servicios en LBs compartidos.
 
+{{< callout type="tip" >}}
+Puedes personalizar el umbral de 7 días de inactividad utilizando el flag `--elb-idle-days`.
+{{< /callout >}}
+
+
 ---
 
 ## NAT Gateways
@@ -45,6 +50,10 @@ Marca los ELB que han procesado **cero solicitudes o conexiones** durante los ú
 Los NAT Gateways tienen un alto costo por hora (~$32.85/mes en la mayoría de las regiones) incluso cuando no están procesando ningún tráfico. Si un NAT Gateway está inactivo, a menudo es un resto de una arquitectura anterior o de un entorno desmantelado incorrectamente.
 
 - **Acción**: Eliminar cualquier NAT Gateway que no muestre actividad y que ya no sea necesario para la conectividad de salida.
+
+{{< callout type="tip" >}}
+Puedes personalizar el umbral de 7 días de inactividad utilizando el flag `--vpc-nat-idle-days`.
+{{< /callout >}}
 
 {{< callout type="info" >}}
 Las futuras actualizaciones incluirán la detección de **VPC Endpoints sin usar**.
