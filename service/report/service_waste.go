@@ -149,7 +149,7 @@ func (s *service) addEC2Waste(m core.Maroto, input model.RenderWasteInput) bool 
 			timeInfo = p.Age + " days ago"
 		}
 
-		s.addWasteRow(m, []string{"Stopped (>30d)", p.Identifier, timeInfo})
+		s.addWasteRow(m, []string{fmt.Sprintf("Stopped (>%dd)", input.Flags.EC2StoppedDays), p.Identifier, timeInfo})
 	}
 
 	for _, ri := range input.Ris {
@@ -201,7 +201,7 @@ func (s *service) addLBWaste(m core.Maroto, input model.RenderWasteInput, pricin
 
 	for _, lb := range input.IdleLoadBalancers {
 		p := outputshared.PresentIdleLoadBalancer(lb)
-		s.addWasteRow(m, []string{statusIdle, lb.Name, p.Metric, p.EstimatedCost})
+		s.addWasteRow(m, []string{fmt.Sprintf("0 connections in %d days", input.Flags.ELBIdleDays), lb.Name, p.Metric, p.EstimatedCost})
 	}
 
 	m.AddRow(5, col.New(12))
@@ -274,7 +274,11 @@ func (s *service) addSnapshotWaste(m core.Maroto, input model.RenderWasteInput) 
 
 	for _, snap := range input.OrphanedSnapshots {
 		p := outputshared.PresentSnapshot(snap)
-		s.addWasteRow(m, []string{string(snap.Category), p.Identifier, p.Metric, p.EstimatedCost})
+		catStr := string(snap.Category)
+		if snap.Category == model.SnapshotCategoryStale {
+			catStr = fmt.Sprintf("Stale (> %dd)", input.Flags.EC2SnapshotStaleDays)
+		}
+		s.addWasteRow(m, []string{catStr, p.Identifier, p.Metric, p.EstimatedCost})
 	}
 
 	m.AddRow(5, col.New(12))
@@ -313,12 +317,12 @@ func (s *service) addRDSWaste(m core.Maroto, input model.RenderWasteInput) bool 
 
 	for _, snap := range input.RDSSnapshots {
 		p := outputshared.PresentRDSSnapshot(snap)
-		s.addWasteRow(m, []string{"Old Snapshot", p.Identifier, snap.Engine, p.EstimatedCost})
+		s.addWasteRow(m, []string{fmt.Sprintf("Old Snapshot (> %dd)", input.Flags.RDSSnapshotDays), p.Identifier, snap.Engine, p.EstimatedCost})
 	}
 
 	for _, inst := range input.RDSIdleInstances {
 		p := outputshared.PresentRDSIdleInstance(inst)
-		s.addWasteRow(m, []string{statusIdle, p.Identifier, inst.Engine, p.EstimatedCost})
+		s.addWasteRow(m, []string{fmt.Sprintf("0 connections in %d days", input.Flags.RDSIdleDays), p.Identifier, inst.Engine, p.EstimatedCost})
 	}
 
 	m.AddRow(5, col.New(12))
@@ -335,7 +339,7 @@ func (s *service) addNATGatewayWaste(m core.Maroto, input model.RenderWasteInput
 
 	for _, ng := range input.IdleNATGateways {
 		p := outputshared.PresentIdleNATGateway(ng)
-		s.addWasteRow(m, []string{statusIdle, p.Identifier, ng.VPCID, p.EstimatedCost})
+		s.addWasteRow(m, []string{fmt.Sprintf("Idle (> %dd)", input.Flags.VPCNatIdleDays), p.Identifier, ng.VPCID, p.EstimatedCost})
 	}
 
 	m.AddRow(5, col.New(12))
