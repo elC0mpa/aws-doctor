@@ -1,0 +1,22 @@
+/* docs/assets/css/custom.css */
+body {
+  font-family: 'Inter', sans-serif !important;
+}
+
+code, pre, .font-mono {
+  font-family: 'JetBrains Mono', monospace !important;
+}
+
+:root {
+  /* Hextra Light Mode overrides */
+  --hx-bg-body: #ffffff;
+}
+
+.dark, html[class~="dark"] {
+  /* Obsidian Dark Mode colors */
+  --hx-bg-body: #0f141a !important;
+  --hx-bg-nav: #0f141a !important;
+  --hx-bg-sidebar: #0f141a !important;
+  --hx-bg-content: #0f141a !important;
+  --hx-border-color: #1a222c !important;
+}
