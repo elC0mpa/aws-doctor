@@ -1,161 +1,70 @@
 ---
 title: "AWS Doctor"
 description: "AWS Doctor es una potente herramienta CLI de código abierto para auditar seguridad, costos y mejores prácticas en AWS. Identifica el desperdicio en la nube y optimiza tu infraestructura fácilmente."
-layout: "hextra-home"
+
+# Hero Section
+hero_title: "Reduce tu factura de AWS con un comando."
+hero_subtitle: "aws-doctor es una herramienta CLI de alto rendimiento que escanea tu infraestructura en busca de costos ocultos, recursos huérfanos y tendencias de gasto en segundos."
+hero_cta1: "Empezar"
+hero_cta2: "Ver en GitHub"
+
+# Core Features
+core_features_title: "Características Principales"
+features:
+  - title: "Análisis de Costos"
+    subtitle: "Obtenga una evaluación justa de su velocidad de gasto. AWS Doctor compara los costos del mes actual con el mismo periodo del mes anterior (ej. del 1 al 10), permitiéndole detectar anomalías y picos en tiempo real."
+    icon: "trending_up"
+    link: "docs/cost-analytics/"
+  - title: "Detección 'Zombie'"
+    subtitle: "Obtenga un chequeo de salud de alto nivel de toda su cuenta de AWS. La herramienta escanea múltiples servicios simultáneamente para identificar recursos inactivos, desconectados u olvidados."
+    icon: "delete"
+    link: "docs/waste-detection/"
+  - title: "Reportes PDF"
+    subtitle: "Genere reportes PDF profesionales para las partes interesadas. AWS Doctor ahora puede exportar todos los hallazgos, tendencias de costos y resúmenes de desperdicio en un documento limpio y listo para compartir."
+    icon: "print"
+    link: "docs/reporting/"
+  - title: "Precios por Región"
+    subtitle: "Las estimaciones de costos se respaldan con datos en tiempo real de la API de Precios de AWS para su región configurada. Si la API no está disponible, la herramienta usa valores predeterminados integrados para que su análisis nunca falle."
+    icon: "public"
+    link: "docs/waste-detection/#estimación-de-costos-por-región"
+  - title: "Formatos de Salida"
+    subtitle: "Elija el formato que mejor se adapte a su flujo de trabajo. Experimente una interfaz interactiva de terminal para auditorías manuales, o genere salida JSON estructurada para integrarla en sus pipelines de CI/CD."
+    icon: "terminal"
+    link: "docs/usage/"
+  - title: "Seguridad e IAM"
+    subtitle: "Soporte completo para roles protegidos por MFA y auditorías proactivas de credenciales IAM."
+    icon: "key"
+    link: "docs/usage/#soporte-para-mfa"
+
+# Instant Infrastructure Audit
+audit_title: "Auditoría Instantánea de Infraestructura"
+audit_items:
+  - title: "Cómputo y EBS"
+    subtitle: "Detecta instancias EC2 detenidas, volúmenes EBS sin usar, snapshots huérfanos, AMIs no utilizadas, key pairs sin usar, Reserved Instances por vencer y memoria sobre-provisionada en Lambda."
+    icon: "dns"
+  - title: "Bases de Datos"
+    subtitle: "Identifica instancias RDS detenidas, snapshots manuales antiguos y conexiones de base de datos inactivas."
+    icon: "database"
+  - title: "Almacenamiento y Logs"
+    subtitle: "Audita buckets S3 sin políticas de ciclo de vida, cargas multipartes abandonadas, grupos de logs de CloudWatch sin retención y repositorios ECR con imágenes sin etiqueta o sin políticas de ciclo de vida."
+    icon: "folder_zip"
+  - title: "Redes"
+    subtitle: "Identifica IPs Elásticas sin asociar, NAT Gateways inactivos y Load Balancers sin objetivos saludables."
+    icon: "share"
+  - title: "Machine Learning"
+    subtitle: "Detecta endpoints de SageMaker inactivos con cero invocaciones recientes."
+    icon: "memory"
+  - title: "Configuración y Secretos"
+    subtitle: "Marca secretos de Secrets Manager no utilizados que no han sido accedidos dentro de un umbral configurable."
+    icon: "key"
+  - title: "Identidad y Seguridad"
+    subtitle: "Usuarios IAM sin uso y cuentas Root sin MFA."
+    icon: "security"
+
+# Community Section
+community_title: "Código Abierto y Comunidad"
+community_subtitle: "Únete a los desarrolladores que auditan y optimizan su infraestructura en la nube con AWS Doctor."
+community_cta: "Únete a la Comunidad en GitHub"
+community_link1: "Reportar Errores"
+community_link2: "Contribuir Código"
 ---
-
-{{< hextra/hero-container
-  image="/images/logo.webp"
-  imageTitle="AWS Doctor"
-  imageWidth="512"
->}}
-{{< hextra/hero-badge link="https://github.com/elC0mpa/aws-doctor/releases" >}}
-  <div class="hx-w-2 hx-h-2 hx-rounded-full hx-bg-primary-400"></div>
-  <span>Última versión: {{< latest-version >}}</span>
-  {{< icon name="arrow-circle-right" attributes="height=14" >}}
-{{< /hextra/hero-badge >}}
-
-<div class="hx-mt-6 hx-mb-6 hx:mt-6">
-{{< hextra/hero-headline >}}
-  AWS Doctor
-{{< /hextra/hero-headline >}}
-</div>
-
-<div class="hx:mt-6 hx-mb-6">
-{{< hextra/hero-subtitle >}}
-  Potente CLI de código abierto para auditar seguridad, costos y mejores prácticas en AWS.
-{{< /hextra/hero-subtitle >}}
-</div>
-
-{{< hero-buttons >}}
-{{< hextra/hero-button text="Empezar" link="docs/" >}}
-{{< hextra/hero-badge style="display: flex; justify-content: center; padding: 13px 12px !important; font-size: .875rem !important;" link="https://github.com/elC0mpa/aws-doctor" >}}
-  <span>Ver en GitHub <img class="not-prose" style="display: inline; height: 22px; margin-left: 8px;" src='https://img.shields.io/github/stars/elC0mpa/aws-doctor?style=social'/></span>
-  {{< icon name="arrow-circle-right" attributes="height=14" >}}
-{{< /hextra/hero-badge >}}
-{{< /hero-buttons >}}
-{{< /hextra/hero-container >}}
-
-<div class="hx:mt-12"></div>
-
-{{< hextra/hero-section >}}
-  Características Principales
-{{< /hextra/hero-section >}}
-
-<div class="hx:mt-4"></div>
-
-{{< hextra/feature-grid cols="3" >}}
-  {{< hextra/feature-card
-    icon="trending-up"
-    title="Análisis de Costos"
-    subtitle="Obtenga una evaluación justa de su velocidad de gasto. AWS Doctor compara los costos del mes actual con el mismo periodo del mes anterior (ej. del 1 al 10), permitiéndole detectar anomalías y picos en tiempo real."
-    link="docs/cost-analytics/"
-  >}}
-
-  {{< hextra/feature-card
-    icon="trash"
-    title="Detección 'Zombie'"
-    subtitle="Obtenga un chequeo de salud de alto nivel de toda su cuenta de AWS. La herramienta escanea múltiples servicios simultáneamente para identificar recursos inactivos, desconectados u olvidados."
-    link="docs/waste-detection/"
-  >}}
-
-  {{< hextra/feature-card
-    icon="printer"
-    title="Reportes PDF"
-    subtitle="Genere reportes PDF profesionales para las partes interesadas. AWS Doctor ahora puede exportar todos los hallazgos, tendencias de costos y resúmenes de desperdicio en un documento limpio y listo para compartir."
-    link="docs/reporting/"
-  >}}
-
-  {{< hextra/feature-card
-    icon="globe-alt"
-    title="Precios por Región"
-    subtitle="Las estimaciones de costos se respaldan con datos en tiempo real de la API de Precios de AWS para su región configurada. Si la API no está disponible, la herramienta usa valores predeterminados integrados para que su análisis nunca falle."
-    link="docs/waste-detection/#estimación-de-costos-por-región"
-  >}}
-
-  {{< hextra/feature-card
-    icon="terminal"
-    title="Formatos de Salida"
-    subtitle="Elija el formato que mejor se adapte a su flujo de trabajo. Experimente una interfaz interactiva de terminal para auditorías manuales, o genere salida JSON estructurada para integrarla en sus pipelines de CI/CD."
-    link="docs/usage/"
-  >}}
-
-  {{< hextra/feature-card
-    icon="key"
-    title="Seguridad e IAM"
-    subtitle="Soporte completo para roles protegidos por MFA y auditorías proactivas de credenciales IAM."
-    link="docs/usage/#soporte-para-mfa"
-  >}}
-
-{{< /hextra/feature-grid >}}
-
-<div class="hx:mt-16"></div>
-
-{{< hextra/hero-section >}}
-  Auditoría Instantánea de Infraestructura
-{{< /hextra/hero-section >}}
-
-<div class="hx:mt-4"></div>
-
-{{< hextra/feature-grid cols="3" >}}
-  {{< hextra/feature-card
-    icon="server"
-    title="Cómputo y EBS"
-    subtitle="Detecta instancias EC2 detenidas, volúmenes EBS sin usar, snapshots huérfanos, AMIs no utilizadas, key pairs sin usar, Reserved Instances por vencer y memoria sobre-provisionada en Lambda."
-  >}}
-  {{< hextra/feature-card
-    icon="database"
-    title="Bases de Datos"
-    subtitle="Identifica instancias RDS detenidas, snapshots manuales antiguos y conexiones de base de datos inactivas."
-  >}}
-  {{< hextra/feature-card
-    icon="archive"
-    title="Almacenamiento y Logs"
-    subtitle="Audita buckets S3 sin políticas de ciclo de vida, cargas multipartes abandonadas, grupos de logs de CloudWatch sin retención y repositorios ECR con imágenes sin etiqueta o sin políticas de ciclo de vida."
-  >}}
-  {{< hextra/feature-card
-    icon="share"
-    title="Redes"
-    subtitle="Identifica IPs Elásticas sin asociar, NAT Gateways inactivos y Load Balancers sin objetivos saludables."
-  >}}
-  {{< hextra/feature-card
-    icon="chip"
-    title="Machine Learning"
-    subtitle="Detecta endpoints de SageMaker inactivos con cero invocaciones recientes."
-  >}}
-  {{< hextra/feature-card
-    icon="key"
-    title="Configuración y Secretos"
-    subtitle="Marca secretos de Secrets Manager no utilizados que no han sido accedidos dentro de un umbral configurable."
-  >}}
-  {{< hextra/feature-card
-    icon="shield-check"
-    title="Identidad y Seguridad"
-    subtitle="Usuarios IAM sin uso y cuentas Root sin MFA."
-  >}}
-{{< /hextra/feature-grid >}}
-
-<div class="hx:mt-16"></div>
-
-{{< hextra/hero-section >}}
-  Únete a la Comunidad
-{{< /hextra/hero-section >}}
-
-{{< repo-stats contribLabel="Colaboradores" forksLabel="Forks" >}}
-
-{{< hextra/feature-grid cols="2" >}}
-  {{< hextra/feature-card
-    icon="terminal"
-    title="Reportar Errores"
-    subtitle="¿Encontraste un error o tienes una idea para una nueva regla? Ayúdanos a mejorar la herramienta abriendo un issue en GitHub."
-    link="https://github.com/elC0mpa/aws-doctor/issues"
-  >}}
-  {{< hextra/feature-card
-    icon="github"
-    title="Contribuir Código"
-    subtitle="¿Listo para contribuir? Aceptamos PRs para nuevas funciones, correcciones y documentación."
-    link="https://github.com/elC0mpa/aws-doctor/pulls"
-  >}}
-{{< /hextra/feature-grid >}}
-
-<div class="hx:mt-24"></div>
