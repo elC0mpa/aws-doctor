@@ -1,0 +1,108 @@
+{{ define "main" }}
+
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/css/landing.css">
+
+<div class="landing-page">
+
+  <!-- Hero Section -->
+  <section class="hero-section">
+    <div class="hero-content">
+      <h1 class="hero-title">{{ .Params.hero_title }}</h1>
+      <p class="hero-subtitle">{{ .Params.hero_subtitle }}</p>
+      
+      <div class="hero-buttons">
+        <a href="docs/" class="btn btn-primary">{{ .Params.hero_cta1 }}</a>
+        <a href="https://github.com/elC0mpa/aws-doctor" class="btn btn-secondary">
+          {{ .Params.hero_cta2 }}
+          <img src="https://img.shields.io/github/stars/elC0mpa/aws-doctor?style=social" alt="GitHub Stars" class="github-stars">
+        </a>
+      </div>
+    </div>
+    
+    <div class="hero-terminal-wrapper">
+      <div class="terminal-shell">
+        <div class="terminal-header">
+          <div class="terminal-dots">
+            <span class="dot red"></span>
+            <span class="dot yellow"></span>
+            <span class="dot green"></span>
+          </div>
+          <div class="terminal-title">aws-doctor</div>
+        </div>
+        <div class="terminal-body">
+          <div class="terminal-gif-container">
+            <img src="/images/demo/waste.gif" alt="AWS Doctor Terminal Output" class="terminal-gif" />
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Core Features -->
+  <section class="core-features">
+    <div class="section-header">
+      <h2 class="section-title">{{ .Params.core_features_title }}</h2>
+      <div class="section-divider"></div>
+    </div>
+    <div class="features-grid">
+      {{ range .Params.features }}
+      <a href="{{ .link }}" class="feature-card" style="text-decoration: none; color: inherit; display: block;">
+        <div class="card-header">
+          <div class="feature-icon">
+            <!-- We can use Google Material Icons or custom SVG. Let's use Material Symbols -->
+            <span class="material-symbols-outlined">{{ .icon }}</span>
+          </div>
+          <h3 class="feature-title">{{ .title }}</h3>
+        </div>
+        <p class="feature-subtitle">{{ .subtitle }}</p>
+      </a>
+      {{ end }}
+    </div>
+  </section>
+
+  <!-- Instant Infrastructure Audit (Bento Box) -->
+  <section class="infrastructure-audit">
+    <div class="section-header">
+      <h2 class="section-title">{{ .Params.audit_title }}</h2>
+      <div class="section-divider"></div>
+    </div>
+    <div class="bento-grid">
+      {{ range $index, $item := .Params.audit_items }}
+      <div class="bento-card card-{{ $index }}">
+        <div class="card-header">
+          <div class="feature-icon">
+            <span class="material-symbols-outlined">{{ .icon }}</span>
+          </div>
+          <h3 class="feature-title">{{ .title }}</h3>
+        </div>
+        <p class="feature-subtitle">{{ .subtitle }}</p>
+      </div>
+      {{ end }}
+    </div>
+  </section>
+
+  <!-- Community Banner -->
+  <section class="community-banner">
+    <div class="community-content">
+      <h2 class="community-title">{{ .Params.community_title }}</h2>
+      <p class="community-subtitle">{{ .Params.community_subtitle }}</p>
+      
+      <div class="community-stats" style="display: flex; gap: 1rem; justify-content: center; margin-bottom: 2.5rem; flex-wrap: wrap;">
+        <img src="https://img.shields.io/github/stars/elC0mpa/aws-doctor?style=social" alt="GitHub Stars" style="height: 24px;">
+        <img src="https://img.shields.io/github/forks/elC0mpa/aws-doctor?style=social" alt="GitHub Forks" style="height: 24px;">
+        <img src="https://img.shields.io/github/contributors/elC0mpa/aws-doctor?style=social" alt="GitHub Contributors" style="height: 24px;">
+      </div>
+
+      <div class="community-buttons">
+        <a href="https://github.com/elC0mpa/aws-doctor/issues" class="btn btn-outline">{{ .Params.community_link1 }}</a>
+        <a href="https://github.com/elC0mpa/aws-doctor/pulls" class="btn btn-outline">{{ .Params.community_link2 }}</a>
+      </div>
+    </div>
+  </section>
+
+</div>
+
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0" rel="stylesheet" />
+
+{{ end }}
