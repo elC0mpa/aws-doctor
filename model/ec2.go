@@ -66,6 +66,33 @@ type SnapshotWasteInfo struct {
 	MaxPotentialSavings float64          // Max monthly savings (actual may be lower due to incremental storage)
 }
 
+// PublicIPv4Summary reports the total count of in-use public IPv4 addresses
+// across EC2 instances, Elastic IPs, NAT Gateways, and ENIs, together with
+// the estimated hourly and monthly cost at the AWS per-IP rate.
+// Since February 2024 AWS charges $0.005/hr for every public IPv4 in use.
+type PublicIPv4Summary struct {
+	// TotalCount is the total number of public IPv4 addresses detected.
+	TotalCount int
+	// EC2InstanceIPs is the count from EC2 instances with a public IP.
+	EC2InstanceIPs int
+	// ElasticIPs is the count from allocated Elastic IP addresses (in use).
+	ElasticIPs int
+	// NatGatewayIPs is the count from NAT Gateway public IPs.
+	NatGatewayIPs int
+	// OtherENIIPs is the count from other ENIs (LBs, RDS, etc).
+	OtherENIIPs int
+	// HourlyCostUSD is estimated cost at $0.005 per IP per hour.
+	HourlyCostUSD float64
+	// MonthlyCostUSD is estimated cost per 730-hour month.
+	MonthlyCostUSD float64
+}
+
+// PublicIPv4RatePerHour is the AWS per-IP hourly charge (since Feb 2024).
+const PublicIPv4RatePerHour = 0.005
+
+// HoursPerMonth is the standard 730-hour billing month used by AWS for monthly cost estimates.
+const HoursPerMonth = 730.0
+
 // KeyPairWasteInfo contains information about unused EC2 key pairs
 type KeyPairWasteInfo struct {
 	KeyName         string

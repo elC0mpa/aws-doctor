@@ -51,6 +51,7 @@ type RenderWasteInput struct {
 	UnusedSecrets          []UnusedSecretInfo
 	UnusedIAMUsers         []IAMUserWasteInfo
 	RootUserWaste          []IAMRootUserWasteInfo
+	PublicIPv4Summary      *PublicIPv4Summary
 	Errors                 map[string]string
 	Flags                  Flags
 }
