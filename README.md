@@ -131,11 +131,11 @@ A huge thank you to everyone who has contributed to **aws-doctor**! Your help ma
 
 ### Star History
 
-<a href="https://www.star-history.com/?type=date&legend=top-left&repos=elC0mpa%2Faws-doctor">
+<a href="https://star-history.dera.page/#elC0mpa/aws-doctor&type=date&legend=top-left">
  <picture>
-   <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/chart?repos=elC0mpa/aws-doctor&type=date&theme=dark&legend=top-left" />
-   <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/chart?repos=elC0mpa/aws-doctor&type=date&legend=top-left" />
-   <img alt="Star History Chart" src="https://api.star-history.com/chart?repos=elC0mpa/aws-doctor&type=date&legend=top-left" />
+   <source media="(prefers-color-scheme: dark)" srcset="https://star-history.dera.page/svg?repos=elC0mpa/aws-doctor&type=date&theme=dark&legend=top-left" />
+   <source media="(prefers-color-scheme: light)" srcset="https://star-history.dera.page/svg?repos=elC0mpa/aws-doctor&type=date&legend=top-left" />
+   <img alt="Star History Chart" src="https://star-history.dera.page/svg?repos=elC0mpa/aws-doctor&type=date&legend=top-left" />
  </picture>
 </a>
 
