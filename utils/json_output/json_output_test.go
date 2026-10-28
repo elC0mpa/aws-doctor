@@ -921,3 +921,56 @@ func TestOutputWasteJSON_AdditionalCoverage(t *testing.T) {
 		t.Error("Failed to map Errors")
 	}
 }
+
+func TestOutputWasteJSON_PublicIPv4Charges(t *testing.T) {
+	input := model.RenderWasteInput{
+		AccountID: "123456789012",
+		InUsePublicIPv4s: []model.PublicIPv4Address{
+			{PublicIP: "3.3.3.1", ResourceType: "EC2 Instance"},
+			{PublicIP: "3.3.3.2", ResourceType: "EC2 Instance"},
+			{PublicIP: "3.3.3.3", ResourceType: "NAT Gateway"},
+		},
+	}
+
+	var err error
+
+	output := captureStdout(func() {
+		err = OutputWasteJSON(input, services.NewMockPricingService())
+	})
+
+	if err != nil {
+		t.Fatalf("OutputWasteJSON() error = %v", err)
+	}
+
+	var result model.WasteReportJSON
+	if jsonErr := json.Unmarshal([]byte(strings.TrimSpace(output)), &result); jsonErr != nil {
+		t.Fatalf("Failed to parse output JSON: %v", jsonErr)
+	}
+
+	want := []model.PublicIPv4ChargeJSON{
+		{ResourceType: "EC2 Instance", Count: 2, EstimatedMonthlyCost: 7.30},
+		{ResourceType: "NAT Gateway", Count: 1, EstimatedMonthlyCost: 3.65},
+	}
+
+	if len(result.InUsePublicIPv4Charges) != len(want) {
+		t.Fatalf("InUsePublicIPv4Charges = %+v, want %+v", result.InUsePublicIPv4Charges, want)
+	}
+
+	for i, w := range want {
+		if result.InUsePublicIPv4Charges[i] != w {
+			t.Errorf("InUsePublicIPv4Charges[%d] = %+v, want %+v", i, result.InUsePublicIPv4Charges[i], w)
+		}
+	}
+
+	if !strings.Contains(output, `"in_use_public_ipv4_charges"`) {
+		t.Error("JSON output missing in_use_public_ipv4_charges key")
+	}
+
+	if result.HasWaste {
+		t.Error("HasWaste must stay false when only in-use public IPv4 addresses exist")
+	}
+
+	if result.TotalEstimatedMonthlyCost != 0 || len(result.Summary) != 0 {
+		t.Errorf("in-use public IPv4 charges must not enter the waste summary: total=%v summary=%+v", result.TotalEstimatedMonthlyCost, result.Summary)
+	}
+}

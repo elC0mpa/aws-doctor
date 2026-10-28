@@ -78,6 +78,7 @@ func OutputWasteCSV(input model.RenderWasteInput, pricingSvc pricing.Service) er
 	rows = append(rows, mapEBSVolumes(input.StoppedVolumes, "stopped", pricingSvc)...)
 	rows = append(rows, mapEBSVolumes(input.UnusedVolumes, "unattached", pricingSvc)...)
 	rows = append(rows, mapElasticIPs(input.ElasticIPs, pricingSvc)...)
+	rows = append(rows, mapPublicIPv4Charges(input.InUsePublicIPv4s, pricingSvc)...)
 	rows = append(rows, mapS3Buckets(input.S3Buckets)...)
 	rows = append(rows, mapS3MultipartUploads(input.S3MultipartUploads)...)
 	rows = append(rows, mapStoppedInstances(input.StoppedInstances)...)

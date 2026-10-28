@@ -12,6 +12,7 @@ import (
 	"github.com/elC0mpa/aws-doctor/service/pricing"
 	"github.com/elC0mpa/aws-doctor/utils/cost"
 	"github.com/elC0mpa/aws-doctor/utils/ec2"
+	outputshared "github.com/elC0mpa/aws-doctor/utils/output_shared"
 	wastesummary "github.com/elC0mpa/aws-doctor/utils/waste_summary"
 )
 
@@ -85,6 +86,7 @@ func OutputWasteJSON(input model.RenderWasteInput, pricingSvc pricing.Service) e
 		GeneratedAt:            time.Now().UTC().Format(time.RFC3339),
 		Errors:                 input.Errors,
 		UnusedElasticIPs:       mapElasticIPs(input.ElasticIPs, pricingSvc),
+		InUsePublicIPv4Charges: mapPublicIPv4Charges(input.InUsePublicIPv4s, pricingSvc),
 		UnusedEBSVolumes:       mapEBSVolumes(input.UnusedVolumes, "available", pricingSvc),
 		StoppedVolumes:         mapEBSVolumes(input.StoppedVolumes, "attached_to_stopped", pricingSvc),
 		StoppedInstances:       mapStoppedInstances(input.StoppedInstances),
@@ -160,6 +162,20 @@ func mapElasticIPs(elasticIPs []ec2types.Address, pricingSvc pricing.Service) []
 			PublicIP:             aws.ToString(ip.PublicIp),
 			AllocationID:         aws.ToString(ip.AllocationId),
 			EstimatedMonthlyCost: pricingSvc.CalculateEIPMonthlyCost(),
+		})
+	}
+
+	return result
+}
+
+func mapPublicIPv4Charges(addresses []model.PublicIPv4Address, pricingSvc pricing.Service) []model.PublicIPv4ChargeJSON {
+	var result []model.PublicIPv4ChargeJSON
+
+	for _, summary := range outputshared.SummarizePublicIPv4(addresses, pricingSvc) {
+		result = append(result, model.PublicIPv4ChargeJSON{
+			ResourceType:         summary.Name,
+			Count:                summary.Count,
+			EstimatedMonthlyCost: summary.Cost,
 		})
 	}
 

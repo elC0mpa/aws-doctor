@@ -7,7 +7,7 @@ weight: 30
 Descubra los costos de los activos de red desconectados y los recursos de conectividad inactivos.
 
 {{< callout type="info" >}}
-**Permisos Requeridos**: `ec2:DescribeAddresses`, `ec2:DescribeNatGateways`, `elasticloadbalancing:DescribeLoadBalancers`, `elasticloadbalancing:DescribeTargetGroups`, `cloudwatch:GetMetricStatistics`.
+**Permisos Requeridos**: `ec2:DescribeAddresses`, `ec2:DescribeNetworkInterfaces`, `ec2:DescribeNatGateways`, `elasticloadbalancing:DescribeLoadBalancers`, `elasticloadbalancing:DescribeTargetGroups`, `cloudwatch:GetMetricStatistics`.
 {{< /callout >}}
 
 ## Direcciones IP Elásticas (EIP)
@@ -18,6 +18,17 @@ Descubra los costos de los activos de red desconectados y los recursos de conect
 AWS cobra por todas las direcciones IPv4 públicas, incluyendo las IPs Elásticas. Mientras que una IP asociada proporciona conectividad, una EIP **sin asociar** (inactiva) es puro desperdicio: está pagando la tarifa por hora por un recurso que no proporciona ningún valor a su infraestructura.
 
 - **Acción**: Liberar cualquier EIP que no esté mapeada activamente a un servicio.
+
+---
+
+## Cargos por IPv4 Pública (en uso)
+
+Desde febrero de 2024, AWS cobra la tarifa por hora de IPv4 pública (~$0.005/hora, ~$3.65/mes) por **cada** dirección IPv4 pública, no solo por las IPs Elásticas inactivas. **AWS Doctor** lista las direcciones IPv4 públicas conectadas actualmente a interfaces de red y las resume en una tabla **Public IPv4 Charges (in use)** con una fila por tipo de recurso (EC2 Instance, NAT Gateway, Load Balancer, RDS Database, Other), la cantidad de direcciones y el costo mensual estimado.
+
+- **Solo informativo**: La mayoría de estas direcciones son necesarias, por lo que **no** se cuentan como desperdicio, no forman parte del **Total Estimated Monthly Waste** y no modifican el valor `has_waste` en la salida JSON. En JSON el resumen es el arreglo `in_use_public_ipv4_charges`.
+- **Acción**: Use la cifra para decidir dónde IPv6, VPC endpoints o menos direcciones públicas podrían reducir su factura.
+- **Estimación**: La cifra es `cantidad de direcciones x tarifa por hora x 730 horas`. Las direcciones traídas con BYOIP (bring-your-own-IP) no son facturadas por AWS pero igualmente se cuentan, y las 750 horas mensuales de la capa gratuita para cuentas nuevas no se descuentan.
+- **Alcance**: Las IPs Elásticas que no están asociadas a nada no aparecen aquí; se reportan en la tabla **Elastic IP Waste** de arriba.
 
 ---
 

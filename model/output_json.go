@@ -58,6 +58,7 @@ type WasteReportJSON struct {
 	Errors                    map[string]string           `json:"errors,omitempty"`
 	Summary                   []WasteSummaryJSON          `json:"summary"`
 	UnusedElasticIPs          []ElasticIPJSON             `json:"unused_elastic_ips"`
+	InUsePublicIPv4Charges    []PublicIPv4ChargeJSON      `json:"in_use_public_ipv4_charges"`
 	UnusedEBSVolumes          []EBSVolumeJSON             `json:"unused_ebs_volumes"`
 	StoppedVolumes            []EBSVolumeJSON             `json:"stopped_instance_volumes"`
 	StoppedInstances          []StoppedInstanceJSON       `json:"stopped_instances"`
@@ -171,6 +172,14 @@ type S3MultipartJSON struct {
 type ElasticIPJSON struct {
 	PublicIP             string  `json:"public_ip"`
 	AllocationID         string  `json:"allocation_id"`
+	EstimatedMonthlyCost float64 `json:"estimated_monthly_cost"`
+}
+
+// PublicIPv4ChargeJSON represents the in-use public IPv4 addresses of one resource type.
+// It is informational and never counts as waste.
+type PublicIPv4ChargeJSON struct {
+	ResourceType         string  `json:"resource_type"`
+	Count                int     `json:"count"`
 	EstimatedMonthlyCost float64 `json:"estimated_monthly_cost"`
 }
 

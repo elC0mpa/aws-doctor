@@ -15,6 +15,13 @@ type AttachedIPInfo struct {
 	ResourceType string
 }
 
+// PublicIPv4Address holds a public IPv4 address that is in use on a network interface.
+type PublicIPv4Address struct {
+	PublicIP           string
+	ResourceType       string
+	NetworkInterfaceID string
+}
+
 // RiExpirationInfo holds information about Reserved Instance expirations.
 type RiExpirationInfo struct {
 	ReservedInstanceID string

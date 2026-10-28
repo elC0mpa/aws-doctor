@@ -323,3 +323,19 @@ func TestCompute_ECR(t *testing.T) {
 	assert.Equal(t, "ECR (Untagged Images)", categories[2].Name)
 	assert.Equal(t, 2.50, total)
 }
+
+func TestCompute_InUsePublicIPv4sAreNotWaste(t *testing.T) {
+	input := model.RenderWasteInput{
+		InUsePublicIPv4s: []model.PublicIPv4Address{
+			{PublicIP: "3.3.3.1", ResourceType: "EC2 Instance"},
+			{PublicIP: "3.3.3.2", ResourceType: "NAT Gateway"},
+		},
+	}
+
+	m := services.NewMockPricingService()
+
+	categories, total := Compute(input, m)
+
+	assert.Empty(t, categories)
+	assert.Equal(t, 0.0, total)
+}

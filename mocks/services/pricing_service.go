@@ -20,6 +20,7 @@ type PricingService interface {
 	CalculateEBSMonthlyCost(sizeGiB int32, volumeType types.VolumeType) float64
 	CalculateEBSSnapshotMonthlyCost(sizeGB int64) float64
 	CalculateEIPMonthlyCost() float64
+	CalculatePublicIPv4InUseMonthlyCost() float64
 	CalculateLoadBalancerMonthlyCost(lbType elbtypes.LoadBalancerTypeEnum) float64
 	CalculateCloudWatchLogsMonthlyCost(storedBytes int64) float64
 	CalculateNATGatewayMonthlyCost() float64
@@ -58,6 +59,12 @@ func (m *MockPricingService) CalculateECRStorageMonthlyCost(sizeGB int64) float6
 
 // CalculateEIPMonthlyCost mocks the CalculateEIPMonthlyCost method.
 func (m *MockPricingService) CalculateEIPMonthlyCost() float64 {
+	args := m.Called()
+	return args.Get(0).(float64)
+}
+
+// CalculatePublicIPv4InUseMonthlyCost mocks the CalculatePublicIPv4InUseMonthlyCost method.
+func (m *MockPricingService) CalculatePublicIPv4InUseMonthlyCost() float64 {
 	args := m.Called()
 	return args.Get(0).(float64)
 }
@@ -124,6 +131,7 @@ func NewMockPricingService() *MockPricingService {
 	m.On("CalculateEBSMonthlyCost", mock.Anything, mock.Anything).Return(10.0).Maybe()
 	m.On("CalculateEBSSnapshotMonthlyCost", mock.Anything).Return(5.0).Maybe()
 	m.On("CalculateEIPMonthlyCost").Return(3.65).Maybe()
+	m.On("CalculatePublicIPv4InUseMonthlyCost").Return(3.65).Maybe()
 	m.On("CalculateLoadBalancerMonthlyCost", mock.Anything).Return(16.43).Maybe()
 	m.On("CalculateCloudWatchLogsMonthlyCost", mock.Anything).Return(1.0).Maybe()
 	m.On("CalculateNATGatewayMonthlyCost").Return(32.85).Maybe()

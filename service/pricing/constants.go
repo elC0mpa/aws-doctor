@@ -25,6 +25,7 @@ const hoursPerMonth = 730.0
 const (
 	categoryEBS              = "ebs"
 	categoryEIP              = "eip"
+	categoryPublicIPv4InUse  = "public-ipv4-in-use"
 	categoryNAT              = "nat"
 	categoryLBApp            = "lb-app"
 	categoryLBClassic        = "lb-classic"
@@ -44,6 +45,9 @@ const (
 
 	// EIPCostPerMonth is the default cost of an unassociated Elastic IP (~$0.005/hour * 730 hours).
 	EIPCostPerMonth = 3.65
+
+	// PublicIPv4InUseCostPerMonth is the default cost of an in-use public IPv4 address (~$0.005/hour * 730 hours).
+	PublicIPv4InUseCostPerMonth = 3.65
 
 	// EBSgp2CostPerGBMonth is the default cost of gp2 EBS storage per GB per month.
 	EBSgp2CostPerGBMonth = 0.10

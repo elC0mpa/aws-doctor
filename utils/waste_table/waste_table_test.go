@@ -1222,3 +1222,110 @@ func TestRenderErrorsTable(t *testing.T) {
 		}
 	})
 }
+
+func publicIPv4Fixture() []model.PublicIPv4Address {
+	return []model.PublicIPv4Address{
+		{PublicIP: "3.3.3.1", ResourceType: "EC2 Instance"},
+		{PublicIP: "3.3.3.2", ResourceType: "EC2 Instance"},
+		{PublicIP: "3.3.3.3", ResourceType: "EC2 Instance"},
+		{PublicIP: "3.3.3.4", ResourceType: "NAT Gateway"},
+		{PublicIP: "3.3.3.5", ResourceType: "Load Balancer"},
+		{PublicIP: "3.3.3.6", ResourceType: "Load Balancer"},
+		{PublicIP: "3.3.3.7", ResourceType: "RDS Database"},
+	}
+}
+
+func TestDrawPublicIPv4Table(t *testing.T) {
+	var buf bytes.Buffer
+	drawPublicIPv4Table(&buf, publicIPv4Fixture(), services.NewMockPricingService())
+	output := buf.String()
+
+	for _, want := range []string{
+		"Public IPv4 Charges (in use)",
+		"EC2 Instance", "NAT Gateway", "Load Balancer", "RDS Database",
+		"$10.95", "$7.30", "$3.65",
+		"Total", "$25.55",
+		"Informational",
+	} {
+		if !strings.Contains(output, want) {
+			t.Errorf("drawPublicIPv4Table() missing %q in:\n%s", want, output)
+		}
+	}
+
+	if strings.Contains(output, "3.3.3.1") {
+		t.Error("drawPublicIPv4Table() must not list individual IP addresses")
+	}
+}
+
+func TestDrawPublicIPv4Table_Empty(t *testing.T) {
+	var buf bytes.Buffer
+	drawPublicIPv4Table(&buf, nil, services.NewMockPricingService())
+
+	if buf.Len() != 0 {
+		t.Errorf("drawPublicIPv4Table() with no addresses should print nothing, got %q", buf.String())
+	}
+}
+
+func TestDrawWasteTable_PublicIPv4OnlyIsNotWaste(t *testing.T) {
+	var buf bytes.Buffer
+	DrawWasteTable(&buf, model.RenderWasteInput{
+		AccountID:        "123456789012",
+		InUsePublicIPv4s: publicIPv4Fixture(),
+	}, services.NewMockPricingService())
+	output := buf.String()
+
+	if !strings.Contains(output, "Public IPv4 Charges (in use)") {
+		t.Error("DrawWasteTable() should show the public IPv4 section when no waste exists")
+	}
+
+	if !strings.Contains(output, "No waste found") {
+		t.Error("DrawWasteTable() should still report no waste when only public IPv4 data exists")
+	}
+
+	if strings.Contains(output, "Waste Summary") || strings.Contains(output, "Total Estimated Monthly Waste") {
+		t.Error("DrawWasteTable() must not render a waste summary for public IPv4 data alone")
+	}
+}
+
+func TestDrawWasteTable_PublicIPv4DoesNotChangeWasteTotal(t *testing.T) {
+	elasticIPs := []types.Address{{PublicIp: aws.String("1.2.3.4"), AllocationId: aws.String("eipalloc-1")}}
+
+	var without, with bytes.Buffer
+
+	DrawWasteTable(&without, model.RenderWasteInput{AccountID: "1", ElasticIPs: elasticIPs}, services.NewMockPricingService())
+	DrawWasteTable(&with, model.RenderWasteInput{AccountID: "1", ElasticIPs: elasticIPs, InUsePublicIPv4s: publicIPv4Fixture()}, services.NewMockPricingService())
+
+	totalLine := func(out string) string {
+		for _, line := range strings.Split(out, "\n") {
+			if strings.Contains(line, "Total Estimated Monthly Waste") {
+				return line
+			}
+		}
+
+		return ""
+	}
+
+	if totalLine(without.String()) == "" {
+		t.Fatal("expected a Total Estimated Monthly Waste line")
+	}
+
+	if totalLine(without.String()) != totalLine(with.String()) {
+		t.Errorf("waste total changed: %q vs %q", totalLine(without.String()), totalLine(with.String()))
+	}
+
+	if !strings.Contains(with.String(), "Public IPv4 Charges (in use)") {
+		t.Error("expected the public IPv4 section alongside waste findings")
+	}
+}
+
+func TestRenderScopeTable_PublicIPv4(t *testing.T) {
+	input := model.RenderWasteInput{InUsePublicIPv4s: publicIPv4Fixture()}
+
+	if got := RenderScopeTable("EC2", input, services.NewMockPricingService()); !strings.Contains(got, "Public IPv4 Charges (in use)") {
+		t.Errorf("RenderScopeTable(EC2) missing public IPv4 section:\n%s", got)
+	}
+
+	if got := RenderScopeTable("VPC", input, services.NewMockPricingService()); strings.Contains(got, "Public IPv4") {
+		t.Errorf("RenderScopeTable(VPC) should not show the public IPv4 section:\n%s", got)
+	}
+}

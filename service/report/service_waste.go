@@ -134,6 +134,37 @@ func (s *service) addElasticIPWaste(m core.Maroto, input model.RenderWasteInput,
 	return true
 }
 
+func (s *service) addPublicIPv4Charges(m core.Maroto, input model.RenderWasteInput, pricingSvc pricing.Service) {
+	summaries := outputshared.SummarizePublicIPv4(input.InUsePublicIPv4s, pricingSvc)
+	if len(summaries) == 0 {
+		return
+	}
+
+	s.addWasteSection(m, "Public IPv4 Charges (in use)", []string{"Resource Type", "Count", colEstCost})
+
+	for _, summary := range summaries {
+		s.addWasteRow(m, []string{summary.Name, fmt.Sprintf("%d", summary.Count), fmt.Sprintf("$%.2f", summary.Cost)})
+	}
+
+	totalCount, totalCost := outputshared.TotalPublicIPv4(summaries)
+
+	m.AddRow(2, line.NewCol(12))
+
+	m.AddRow(
+		10,
+		text.NewCol(4, "Total", props.Text{Style: fontstyle.Bold, Size: 10}),
+		text.NewCol(4, fmt.Sprintf("%d", totalCount), props.Text{Style: fontstyle.Bold, Size: 10, Align: align.Right}),
+		text.NewCol(4, fmt.Sprintf("$%.2f", totalCost), props.Text{Style: fontstyle.Bold, Size: 10, Align: align.Right}),
+	)
+
+	m.AddRow(
+		8,
+		text.NewCol(12, "Informational: AWS bills every in-use public IPv4 address. Not included in the waste total.", props.Text{Size: 8, Style: fontstyle.Italic}),
+	)
+
+	m.AddRow(5, col.New(12))
+}
+
 func (s *service) addEC2Waste(m core.Maroto, input model.RenderWasteInput) bool {
 	if len(input.StoppedInstances) == 0 && len(input.Ris) == 0 {
 		return false

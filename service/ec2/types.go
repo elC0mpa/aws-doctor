@@ -44,6 +44,7 @@ type Service interface {
 	analyzer.WasteAnalyzer
 	GetElasticIPAddressesInfo(ctx context.Context) (*model.ElasticIPInfo, error)
 	GetUnusedElasticIPAddressesInfo(ctx context.Context) ([]types.Address, error)
+	GetInUsePublicIPv4Addresses(ctx context.Context) ([]model.PublicIPv4Address, error)
 	GetUnusedEBSVolumes(ctx context.Context) ([]types.Volume, error)
 	GetStoppedInstancesInfo(ctx context.Context, stoppedDays int) ([]types.Instance, []types.Volume, error)
 	GetReservedInstanceExpiringOrExpiredWaste(ctx context.Context, expiringDays int) ([]model.RiExpirationInfo, error)

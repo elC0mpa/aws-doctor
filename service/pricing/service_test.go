@@ -62,6 +62,29 @@ func TestCalculateEIPMonthlyCost(t *testing.T) {
 	})
 }
 
+func TestCalculatePublicIPv4InUseMonthlyCost(t *testing.T) {
+	s := &service{
+		prices: make(map[string]float64),
+	}
+
+	t.Run("fallback value", func(t *testing.T) {
+		cost := s.CalculatePublicIPv4InUseMonthlyCost()
+		assert.Equal(t, PublicIPv4InUseCostPerMonth, cost)
+	})
+
+	t.Run("cached value", func(t *testing.T) {
+		s.setPrice(priceKey(categoryPublicIPv4InUse, ""), 0.01)
+		cost := s.CalculatePublicIPv4InUseMonthlyCost()
+		assert.Equal(t, 7.3, cost)
+	})
+
+	t.Run("idle EIP rate does not affect in-use rate", func(t *testing.T) {
+		s := &service{prices: make(map[string]float64)}
+		s.setPrice(priceKey(categoryEIP, ""), 0.02)
+		assert.Equal(t, PublicIPv4InUseCostPerMonth, s.CalculatePublicIPv4InUseMonthlyCost())
+	})
+}
+
 func TestCalculateLoadBalancerMonthlyCost(t *testing.T) {
 	s := &service{
 		prices: make(map[string]float64),
@@ -242,6 +265,40 @@ func TestLoadRegionRates(t *testing.T) {
 	price, ok := s.lookupMonthly(priceKey(categoryEBS, "gp3"), 0)
 	assert.True(t, ok)
 	assert.Equal(t, 0.08, price)
+}
+
+func TestLoadRegionRates_PublicIPv4(t *testing.T) {
+	ctx := context.Background()
+	mockClient := new(awsinterfaces.MockPricingClient)
+	s := &service{
+		client: mockClient,
+		prices: make(map[string]float64),
+		region: "us-east-1",
+	}
+
+	inUseJSON := `{
+		"product": { "attributes": { "group": "VPCPublicIPv4Address", "usagetype": "USE1-PublicIPv4:InUseAddress" } },
+		"terms": { "OnDemand": { "SKU": { "priceDimensions": { "DIM": { "pricePerUnit": { "USD": "0.0050000000" } } } } } }
+	}`
+	idleJSON := `{
+		"product": { "attributes": { "group": "VPCPublicIPv4Address", "usagetype": "USE1-PublicIPv4:IdleAddress" } },
+		"terms": { "OnDemand": { "SKU": { "priceDimensions": { "DIM": { "pricePerUnit": { "USD": "0.0040000000" } } } } } }
+	}`
+
+	mockClient.On("GetProducts", mock.Anything, mock.Anything, mock.Anything).Return(&awspricing.GetProductsOutput{
+		PriceList: []string{inUseJSON, idleJSON},
+	}, nil)
+
+	err := s.LoadRegionRates(ctx)
+	assert.NoError(t, err)
+
+	inUse, ok := s.lookupMonthly(priceKey(categoryPublicIPv4InUse, ""), 0)
+	assert.True(t, ok)
+	assert.Equal(t, 0.005, inUse)
+
+	idle, ok := s.lookupMonthly(priceKey(categoryEIP, ""), 0)
+	assert.True(t, ok)
+	assert.Equal(t, 0.004, idle)
 }
 
 func TestLoadRegionRates_ECR(t *testing.T) {

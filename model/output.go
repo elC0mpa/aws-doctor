@@ -26,6 +26,7 @@ type ScopeResult struct {
 type RenderWasteInput struct {
 	AccountID              string
 	ElasticIPs             []types.Address
+	InUsePublicIPv4s       []PublicIPv4Address
 	UnusedVolumes          []types.Volume
 	StoppedVolumes         []types.Volume
 	Ris                    []RiExpirationInfo
@@ -70,6 +71,10 @@ type RenderCostComparisonInput struct {
 func (dest *RenderWasteInput) Merge(src RenderWasteInput) {
 	if len(src.ElasticIPs) > 0 {
 		dest.ElasticIPs = append(dest.ElasticIPs, src.ElasticIPs...)
+	}
+
+	if len(src.InUsePublicIPv4s) > 0 {
+		dest.InUsePublicIPv4s = append(dest.InUsePublicIPv4s, src.InUsePublicIPv4s...)
 	}
 
 	if len(src.UnusedVolumes) > 0 {
