@@ -85,6 +85,8 @@ func (s *service) GenerateWasteReport(input model.RenderWasteInput, pricingSvc p
 		s.addWasteSummary(m, input, pricingSvc)
 	}
 
+	s.addPublicIPv4Charges(m, input, pricingSvc)
+
 	s.addFooter(m, WasteReport)
 
 	return s.generateAndSave(m, path)

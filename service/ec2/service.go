@@ -20,6 +20,14 @@ import (
 
 const ownerSelf = "self"
 
+const (
+	publicIPv4TypeEC2Instance  = "EC2 Instance"
+	publicIPv4TypeNATGateway   = "NAT Gateway"
+	publicIPv4TypeLoadBalancer = "Load Balancer"
+	publicIPv4TypeRDS          = "RDS Database"
+	publicIPv4TypeOther        = "Other"
+)
+
 // NewService creates a new EC2 service.
 func NewService(awsconfig aws.Config, cwService cloudwatchMetricsService, pricingSvc pricingService) Service {
 	client := ec2.NewFromConfig(awsconfig)
@@ -60,6 +68,22 @@ func (s *service) Analyze(ctx context.Context, flags model.Flags) (model.ScopeRe
 			errs = append(errs, err)
 		} else {
 			input.ElasticIPs = eips
+		}
+
+		return nil
+	})
+
+	// Retrieve In-Use Public IPv4 Addresses
+	g.Go(func() error {
+		addresses, err := s.GetInUsePublicIPv4Addresses(gCtx)
+
+		mu.Lock()
+		defer mu.Unlock()
+
+		if err != nil {
+			errs = append(errs, err)
+		} else {
+			input.InUsePublicIPv4s = addresses
 		}
 
 		return nil
@@ -256,6 +280,87 @@ func (s *service) GetUnusedElasticIPAddressesInfo(ctx context.Context) ([]types.
 	}
 
 	return unusedEIPs, nil
+}
+
+// GetInUsePublicIPv4Addresses returns every distinct public IPv4 address attached to a network
+// interface in the region. AWS bills each of them whether it belongs to an instance, an Elastic
+// IP, a NAT Gateway, a load balancer, or another managed service.
+func (s *service) GetInUsePublicIPv4Addresses(ctx context.Context) ([]model.PublicIPv4Address, error) {
+	var addresses []model.PublicIPv4Address
+
+	seen := make(map[string]struct{})
+	paginator := ec2.NewDescribeNetworkInterfacesPaginator(s.client, &ec2.DescribeNetworkInterfacesInput{})
+
+	for paginator.HasMorePages() {
+		page, err := paginator.NextPage(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, ni := range page.NetworkInterfaces {
+			resourceType := s.getPublicIPv4ResourceType(ni)
+
+			for _, ip := range networkInterfacePublicIPs(ni) {
+				if _, ok := seen[ip]; ok {
+					continue
+				}
+
+				seen[ip] = struct{}{}
+
+				addresses = append(addresses, model.PublicIPv4Address{
+					PublicIP:           ip,
+					ResourceType:       resourceType,
+					NetworkInterfaceID: aws.ToString(ni.NetworkInterfaceId),
+				})
+			}
+		}
+	}
+
+	return addresses, nil
+}
+
+// networkInterfacePublicIPs lists the public IPs on an interface, including those mapped to
+// secondary private IPs. The primary private IP's association can appear at both levels, so
+// callers must dedupe.
+func networkInterfacePublicIPs(ni types.NetworkInterface) []string {
+	var ips []string
+
+	if ni.Association != nil && aws.ToString(ni.Association.PublicIp) != "" {
+		ips = append(ips, aws.ToString(ni.Association.PublicIp))
+	}
+
+	for _, privateIP := range ni.PrivateIpAddresses {
+		if privateIP.Association != nil && aws.ToString(privateIP.Association.PublicIp) != "" {
+			ips = append(ips, aws.ToString(privateIP.Association.PublicIp))
+		}
+	}
+
+	return ips
+}
+
+func (s *service) getPublicIPv4ResourceType(ni types.NetworkInterface) string {
+	interfaceType := ni.InterfaceType
+
+	if interfaceType == types.NetworkInterfaceTypeInterface {
+		if ni.Attachment != nil && ni.Attachment.InstanceId != nil {
+			return publicIPv4TypeEC2Instance
+		}
+
+		interfaceType = s.getResourceTypeFromDescription(aws.ToString(ni.Description))
+	}
+
+	switch interfaceType {
+	case types.NetworkInterfaceTypeNatGateway:
+		return publicIPv4TypeNATGateway
+	case types.NetworkInterfaceTypeLoadBalancer,
+		types.NetworkInterfaceTypeNetworkLoadBalancer,
+		types.NetworkInterfaceTypeGatewayLoadBalancer:
+		return publicIPv4TypeLoadBalancer
+	case "rds_database":
+		return publicIPv4TypeRDS
+	default:
+		return publicIPv4TypeOther
+	}
 }
 
 func (s *service) GetUnusedEBSVolumes(ctx context.Context) ([]types.Volume, error) {

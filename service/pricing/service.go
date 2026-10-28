@@ -112,6 +112,11 @@ func (s *service) LoadRegionRates(ctx context.Context) error {
 		termMatch("group", "VPCPublicIPv4Address"),
 	}, matchUsagetypeContains("PublicIPv4:IdleAddress"))
 
+	fetch(categoryPublicIPv4InUse, "AmazonVPC", []pricingtypes.Filter{
+		regionFilter,
+		termMatch("group", "VPCPublicIPv4Address"),
+	}, matchUsagetypeContains("PublicIPv4:InUseAddress"))
+
 	fetch(categoryNAT, "AmazonEC2", []pricingtypes.Filter{
 		regionFilter,
 		termMatch("productFamily", "NAT Gateway"),
@@ -241,6 +246,14 @@ func (s *service) CalculateEIPMonthlyCost() float64 {
 	}
 
 	return EIPCostPerMonth
+}
+
+func (s *service) CalculatePublicIPv4InUseMonthlyCost() float64 {
+	if v, ok := s.lookupMonthly(priceKey(categoryPublicIPv4InUse, ""), hoursPerMonth); ok {
+		return v
+	}
+
+	return PublicIPv4InUseCostPerMonth
 }
 
 func (s *service) CalculateLoadBalancerMonthlyCost(lbType elbtypes.LoadBalancerTypeEnum) float64 {

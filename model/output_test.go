@@ -29,6 +29,7 @@ func TestMerge(t *testing.T) {
 			"IAM": "access denied",
 		},
 		ElasticIPs:             []ec2types.Address{{}},
+		InUsePublicIPv4s:       []PublicIPv4Address{{}},
 		UnusedVolumes:          []ec2types.Volume{{}},
 		StoppedVolumes:         []ec2types.Volume{{}},
 		Ris:                    []RiExpirationInfo{{}},
@@ -63,6 +64,7 @@ func TestMerge(t *testing.T) {
 	}
 
 	assertLenOne(t, "ElasticIPs", len(dest.ElasticIPs))
+	assertLenOne(t, "InUsePublicIPv4s", len(dest.InUsePublicIPv4s))
 	assertLenOne(t, "UnusedVolumes", len(dest.UnusedVolumes))
 	assertLenOne(t, "StoppedVolumes", len(dest.StoppedVolumes))
 	assertLenOne(t, "Ris", len(dest.Ris))

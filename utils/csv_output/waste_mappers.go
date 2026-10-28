@@ -35,6 +35,17 @@ func mapElasticIPs(elasticIPs []ec2types.Address, pricingSvc pricing.Service) []
 	return result
 }
 
+func mapPublicIPv4Charges(addresses []model.PublicIPv4Address, pricingSvc pricing.Service) [][]string {
+	summaries := outputshared.SummarizePublicIPv4(addresses, pricingSvc)
+
+	result := make([][]string, 0, len(summaries))
+	for _, summary := range summaries {
+		result = append(result, outputshared.PresentPublicIPv4Charge(summary).ToSlice())
+	}
+
+	return result
+}
+
 func mapEBSVolumes(volumes []ec2types.Volume, status string, pricingSvc pricing.Service) [][]string {
 	result := make([][]string, 0, len(volumes))
 	for _, vol := range volumes {

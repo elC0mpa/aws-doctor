@@ -29,17 +29,17 @@ const colStatus = "Status"
 func DrawWasteTable(out io.Writer, input model.RenderWasteInput, pricingSvc pricing.Service) {
 	drawHeader(out, input.AccountID)
 
-	if !hasAnyWaste(input) {
-		if len(input.Errors) == 0 {
-			_, _ = fmt.Fprintln(out, "\n"+text.FgHiGreen.Sprint(" ✅  Your account is healthy! No waste found."))
-			return
-		}
-
-		_, _ = fmt.Fprintln(out, "\n"+text.FgYellow.Sprint(" ⚠️  No waste found, but some checks failed due to errors."))
-	} else {
+	switch {
+	case hasAnyWaste(input):
 		drawWasteSections(out, input, pricingSvc)
 		drawSummaryTable(out, input, pricingSvc)
+	case len(input.Errors) == 0:
+		_, _ = fmt.Fprintln(out, "\n"+text.FgHiGreen.Sprint(" ✅  Your account is healthy! No waste found."))
+	default:
+		_, _ = fmt.Fprintln(out, "\n"+text.FgYellow.Sprint(" ⚠️  No waste found, but some checks failed due to errors."))
 	}
+
+	drawPublicIPv4Table(out, input.InUsePublicIPv4s, pricingSvc)
 
 	if len(input.Errors) > 0 {
 		drawErrorsSection(out, input.Errors)
@@ -380,6 +380,38 @@ func drawElasticIPTable(out io.Writer, elasticIPInfo []ec2types.Address, pricing
 
 		_, _ = fmt.Fprintln(out)
 	}
+}
+
+func drawPublicIPv4Table(out io.Writer, addresses []model.PublicIPv4Address, pricingSvc pricing.Service) {
+	summaries := outputshared.SummarizePublicIPv4(addresses, pricingSvc)
+	if len(summaries) == 0 {
+		return
+	}
+
+	t := table.NewWriter()
+	t.SetOutputMirror(out)
+	t.SetStyle(table.StyleRounded)
+	t.SetTitle("Public IPv4 Charges (in use)")
+
+	t.AppendHeader(table.Row{"Resource Type", "Count", colEstCostMo})
+	t.SetColumnConfigs([]table.ColumnConfig{
+		{Number: 2, Align: text.AlignRight},
+		{Number: 3, Align: text.AlignRight},
+	})
+
+	for _, summary := range summaries {
+		t.AppendRow(table.Row{summary.Name, summary.Count, fmt.Sprintf("$%.2f", summary.Cost)})
+	}
+
+	totalCount, totalCost := outputshared.TotalPublicIPv4(summaries)
+
+	t.AppendSeparator()
+	t.AppendRow(table.Row{text.FgHiWhite.Sprint("Total"), totalCount, fmt.Sprintf("$%.2f", totalCost)})
+
+	t.Render()
+
+	_, _ = fmt.Fprintln(out, text.FgHiYellow.Sprint(" * Informational: AWS bills every in-use public IPv4 address. Not included in the waste total."))
+	_, _ = fmt.Fprintln(out)
 }
 
 func populateEBSRows(volumes []ec2types.Volume, status string, pricingSvc pricing.Service) []table.Row {
@@ -1222,6 +1254,7 @@ func RenderScopeTable(scope string, input model.RenderWasteInput, pricingSvc pri
 		drawEBSTable(out, input.UnusedVolumes, input.StoppedVolumes, pricingSvc)
 		drawSnapshotTable(out, input.OrphanedSnapshots, input.Flags)
 		drawElasticIPTable(out, input.ElasticIPs, pricingSvc)
+		drawPublicIPv4Table(out, input.InUsePublicIPv4s, pricingSvc)
 	case "VPC":
 		drawNatGatewayTable(out, input.IdleNATGateways, input.Flags)
 	case "ELB":

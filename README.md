@@ -106,6 +106,7 @@ go install github.com/elC0mpa/aws-doctor@latest
 - **📄 Professional PDF Reports:** Generate branded, ready-to-share PDF documents for costs, trends, and waste analysis.
 - **📉 Fair Cost Comparison:** Compares identical time windows between months to spot real anomalies.
 - **🧟 Zombie Discovery:** Scans for idle EIPs, stopped instances, idle running EC2 instances, orphaned snapshots, idle RDS instances, idle NAT Gateways, idle Load Balancers, over-provisioned Lambda memory, idle SageMaker real-time inference endpoints, ECR repositories with untagged images, missing lifecycle policies, or no images at all, unused Secrets Manager secrets, and unused IAM users or Root accounts without MFA. Supports selective service filtering (`ec2`, `s3`, `elb`, `cloudwatch`, `rds`, `vpc`, `lambda`, `sagemaker`, `ecr`, `secrets-manager`, `iam`).
+- **🌐 Public IPv4 Charges:** Summarizes every in-use public IPv4 address (EC2 instances, NAT Gateways, Load Balancers, RDS, and other managed services) by resource type with an estimated monthly cost, since AWS bills them all. Informational only: not counted as waste and excluded from the waste total.
 - **📊 6-Month Trends:** High-fidelity ANSI visualization of your spending velocity.
 - **📤 Multiple Output Formats:** Export results in `table`, `json`, or `csv` for easy integration with other tools or reporting.
 - **🔔 Update Notifications:** Automatically checks for new versions in the background and notifies you after command output.

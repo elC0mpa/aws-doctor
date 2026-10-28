@@ -2,6 +2,7 @@ package csvoutput
 
 import (
 	"bytes"
+	"encoding/csv"
 	"fmt"
 	"io"
 	"os"
@@ -477,5 +478,46 @@ func TestOutputWasteCSV_WithErrors(t *testing.T) {
 
 	if !strings.Contains(stdout, "Resource Category,Resource Identifier,Estimated Monthly Cost (USD)") {
 		t.Errorf("Expected stdout to contain CSV headers, got: %s", stdout)
+	}
+}
+
+func TestOutputWasteCSV_PublicIPv4Charges(t *testing.T) {
+	input := model.RenderWasteInput{
+		AccountID: "123456789012",
+		InUsePublicIPv4s: []model.PublicIPv4Address{
+			{PublicIP: "3.3.3.1", ResourceType: "EC2 Instance"},
+			{PublicIP: "3.3.3.2", ResourceType: "EC2 Instance"},
+			{PublicIP: "3.3.3.3", ResourceType: "NAT Gateway"},
+		},
+	}
+
+	var err error
+
+	output := captureStdout(func() {
+		err = OutputWasteCSV(input, services.NewMockPricingService())
+	})
+
+	if err != nil {
+		t.Fatalf("OutputWasteCSV() error = %v", err)
+	}
+
+	records, parseErr := csv.NewReader(strings.NewReader(output)).ReadAll()
+	if parseErr != nil {
+		t.Fatalf("failed to parse CSV: %v", parseErr)
+	}
+
+	want := [][]string{
+		{"Public IPv4 (in use)", "EC2 Instance", "$7.30", "2 addresses", "-", "Informational: not included in estimated waste"},
+		{"Public IPv4 (in use)", "NAT Gateway", "$3.65", "1 address", "-", "Informational: not included in estimated waste"},
+	}
+
+	if len(records) != 1+len(want) {
+		t.Fatalf("expected header plus %d rows, got %d: %v", len(want), len(records), records)
+	}
+
+	for i, row := range want {
+		if strings.Join(records[i+1], "|") != strings.Join(row, "|") {
+			t.Errorf("row %d = %v, want %v", i, records[i+1], row)
+		}
 	}
 }

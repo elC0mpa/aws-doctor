@@ -21,6 +21,7 @@ type Service interface {
 	CalculateEBSMonthlyCost(sizeGiB int32, volumeType types.VolumeType) float64
 	CalculateEBSSnapshotMonthlyCost(sizeGB int64) float64
 	CalculateEIPMonthlyCost() float64
+	CalculatePublicIPv4InUseMonthlyCost() float64
 	CalculateLoadBalancerMonthlyCost(lbType elbtypes.LoadBalancerTypeEnum) float64
 	CalculateCloudWatchLogsMonthlyCost(storedBytes int64) float64
 	CalculateNATGatewayMonthlyCost() float64

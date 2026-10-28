@@ -302,6 +302,25 @@ func TestGenerateReports(t *testing.T) {
 		assert.NoError(t, err)
 	})
 
+	t.Run("WasteReport_PublicIPv4Charges", func(t *testing.T) {
+		path := filepath.Join(tempDir, "waste_public_ipv4.pdf")
+		input := model.RenderWasteInput{
+			AccountID: "123456789012",
+			InUsePublicIPv4s: []model.PublicIPv4Address{
+				{PublicIP: "3.3.3.1", ResourceType: "EC2 Instance"},
+				{PublicIP: "3.3.3.2", ResourceType: "NAT Gateway"},
+			},
+		}
+
+		gotPath, err := s.GenerateWasteReport(input, services.NewMockPricingService(), path)
+		assert.NoError(t, err)
+
+		pdf, err := os.ReadFile(*gotPath)
+		assert.NoError(t, err)
+		assert.Contains(t, string(pdf), "Public IPv4 Charges")
+		assert.Contains(t, string(pdf), "NAT Gateway")
+	})
+
 	t.Run("TrendReport_NoServices", func(t *testing.T) {
 		path := filepath.Join(tempDir, "trend_no_svc.pdf")
 		costInfo := []model.CostInfo{

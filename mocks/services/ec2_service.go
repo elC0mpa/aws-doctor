@@ -33,6 +33,16 @@ func (m *MockEC2Service) GetUnusedElasticIPAddressesInfo(ctx context.Context) ([
 	return args.Get(0).([]types.Address), args.Error(1)
 }
 
+// GetInUsePublicIPv4Addresses mocks the GetInUsePublicIPv4Addresses method.
+func (m *MockEC2Service) GetInUsePublicIPv4Addresses(ctx context.Context) ([]model.PublicIPv4Address, error) {
+	args := m.Called(ctx)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+
+	return args.Get(0).([]model.PublicIPv4Address), args.Error(1)
+}
+
 // GetUnusedEBSVolumes mocks the GetUnusedEBSVolumes method.
 func (m *MockEC2Service) GetUnusedEBSVolumes(ctx context.Context) ([]types.Volume, error) {
 	args := m.Called(ctx)

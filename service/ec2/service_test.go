@@ -126,6 +126,170 @@ func TestGetElasticIPAddressesInfo_ENIError(t *testing.T) {
 	mockClient.AssertExpectations(t)
 }
 
+func TestGetInUsePublicIPv4Addresses(t *testing.T) {
+	mockClient := new(awsinterfaces.MockEC2Client)
+	s := &service{client: mockClient}
+
+	page1 := &ec2.DescribeNetworkInterfacesOutput{
+		NextToken: aws.String("page-2"),
+		NetworkInterfaces: []types.NetworkInterface{
+			{
+				// Instance ENI with an auto-assigned public IP. AWS reports the primary
+				// private IP's association both at the top level and in PrivateIpAddresses.
+				NetworkInterfaceId: aws.String("eni-instance"),
+				InterfaceType:      types.NetworkInterfaceTypeInterface,
+				Attachment:         &types.NetworkInterfaceAttachment{InstanceId: aws.String("i-0abc")},
+				Association:        &types.NetworkInterfaceAssociation{PublicIp: aws.String("3.3.3.1")},
+				PrivateIpAddresses: []types.NetworkInterfacePrivateIpAddress{
+					{Primary: aws.Bool(true), Association: &types.NetworkInterfaceAssociation{PublicIp: aws.String("3.3.3.1")}},
+				},
+			},
+			{
+				NetworkInterfaceId: aws.String("eni-nat"),
+				InterfaceType:      types.NetworkInterfaceTypeNatGateway,
+				Association:        &types.NetworkInterfaceAssociation{PublicIp: aws.String("3.3.3.2")},
+			},
+			{
+				NetworkInterfaceId: aws.String("eni-no-public-ip"),
+				InterfaceType:      types.NetworkInterfaceTypeInterface,
+				Attachment:         &types.NetworkInterfaceAttachment{InstanceId: aws.String("i-0def")},
+				PrivateIpAddresses: []types.NetworkInterfacePrivateIpAddress{
+					{Primary: aws.Bool(true)},
+				},
+			},
+		},
+	}
+
+	page2 := &ec2.DescribeNetworkInterfacesOutput{
+		NetworkInterfaces: []types.NetworkInterface{
+			{
+				NetworkInterfaceId: aws.String("eni-alb"),
+				InterfaceType:      types.NetworkInterfaceTypeInterface,
+				Description:        aws.String("ELB app/my-alb/abc123"),
+				Association:        &types.NetworkInterfaceAssociation{PublicIp: aws.String("3.3.3.3")},
+			},
+			{
+				// Secondary private IP carrying an Elastic IP; the ENI has no top-level association.
+				NetworkInterfaceId: aws.String("eni-secondary"),
+				InterfaceType:      types.NetworkInterfaceTypeInterface,
+				Attachment:         &types.NetworkInterfaceAttachment{InstanceId: aws.String("i-0ghi")},
+				PrivateIpAddresses: []types.NetworkInterfacePrivateIpAddress{
+					{Primary: aws.Bool(true)},
+					{Primary: aws.Bool(false), Association: &types.NetworkInterfaceAssociation{PublicIp: aws.String("3.3.3.4")}},
+				},
+			},
+			{
+				// Same public IP already seen on page 1; counted once.
+				NetworkInterfaceId: aws.String("eni-duplicate"),
+				InterfaceType:      types.NetworkInterfaceTypeNatGateway,
+				Association:        &types.NetworkInterfaceAssociation{PublicIp: aws.String("3.3.3.2")},
+			},
+		},
+	}
+
+	mockClient.On("DescribeNetworkInterfaces", mock.Anything, mock.MatchedBy(func(in *ec2.DescribeNetworkInterfacesInput) bool {
+		return in.NextToken == nil
+	}), mock.Anything).Return(page1, nil).Once()
+	mockClient.On("DescribeNetworkInterfaces", mock.Anything, mock.MatchedBy(func(in *ec2.DescribeNetworkInterfacesInput) bool {
+		return aws.ToString(in.NextToken) == "page-2"
+	}), mock.Anything).Return(page2, nil).Once()
+
+	got, err := s.GetInUsePublicIPv4Addresses(context.Background())
+
+	assert.NoError(t, err)
+	assert.Equal(t, []model.PublicIPv4Address{
+		{PublicIP: "3.3.3.1", ResourceType: "EC2 Instance", NetworkInterfaceID: "eni-instance"},
+		{PublicIP: "3.3.3.2", ResourceType: "NAT Gateway", NetworkInterfaceID: "eni-nat"},
+		{PublicIP: "3.3.3.3", ResourceType: "Load Balancer", NetworkInterfaceID: "eni-alb"},
+		{PublicIP: "3.3.3.4", ResourceType: "EC2 Instance", NetworkInterfaceID: "eni-secondary"},
+	}, got)
+	mockClient.AssertExpectations(t)
+}
+
+func TestGetInUsePublicIPv4Addresses_Error(t *testing.T) {
+	mockClient := new(awsinterfaces.MockEC2Client)
+	s := &service{client: mockClient}
+
+	mockClient.On("DescribeNetworkInterfaces", mock.Anything, mock.Anything, mock.Anything).Return(nil, errors.New("access denied"))
+
+	got, err := s.GetInUsePublicIPv4Addresses(context.Background())
+
+	assert.Error(t, err)
+	assert.Nil(t, got)
+}
+
+func TestGetPublicIPv4ResourceType(t *testing.T) {
+	s := &service{}
+
+	tests := []struct {
+		name string
+		ni   types.NetworkInterface
+		want string
+	}{
+		{
+			name: "instance_attachment",
+			ni: types.NetworkInterface{
+				InterfaceType: types.NetworkInterfaceTypeInterface,
+				Attachment:    &types.NetworkInterfaceAttachment{InstanceId: aws.String("i-1")},
+			},
+			want: "EC2 Instance",
+		},
+		{
+			name: "nat_gateway_type",
+			ni:   types.NetworkInterface{InterfaceType: types.NetworkInterfaceTypeNatGateway},
+			want: "NAT Gateway",
+		},
+		{
+			name: "application_load_balancer_description",
+			ni: types.NetworkInterface{
+				InterfaceType: types.NetworkInterfaceTypeInterface,
+				Description:   aws.String("ELB app/web/123"),
+			},
+			want: "Load Balancer",
+		},
+		{
+			name: "network_load_balancer_description",
+			ni: types.NetworkInterface{
+				InterfaceType: types.NetworkInterfaceTypeInterface,
+				Description:   aws.String("ELB net/web/123"),
+			},
+			want: "Load Balancer",
+		},
+		{
+			name: "gateway_load_balancer_type",
+			ni:   types.NetworkInterface{InterfaceType: types.NetworkInterfaceTypeGatewayLoadBalancer},
+			want: "Load Balancer",
+		},
+		{
+			name: "rds_description",
+			ni: types.NetworkInterface{
+				InterfaceType: types.NetworkInterfaceTypeInterface,
+				Description:   aws.String("RDSNetworkInterface"),
+			},
+			want: "RDS Database",
+		},
+		{
+			name: "other_managed_service",
+			ni: types.NetworkInterface{
+				InterfaceType: types.NetworkInterfaceTypeInterface,
+				Description:   aws.String("VPC Endpoint Interface vpce-0abc"),
+			},
+			want: "Other",
+		},
+		{
+			name: "unknown_without_description",
+			ni:   types.NetworkInterface{InterfaceType: types.NetworkInterfaceTypeInterface},
+			want: "Other",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equal(t, tt.want, s.getPublicIPv4ResourceType(tt.ni))
+		})
+	}
+}
+
 func TestGetUnusedElasticIPAddressesInfo(t *testing.T) {
 	mockClient := new(awsinterfaces.MockEC2Client)
 	s := &service{client: mockClient, pricingService: new(services.MockPricingService)}
@@ -777,6 +941,7 @@ func TestService_Analyze(t *testing.T) {
 
 	mockClient.On("DescribeVolumes", mock.Anything, mock.Anything, mock.Anything).Return(nil, errors.New("err")).Maybe()
 	mockClient.On("DescribeAddresses", mock.Anything, mock.Anything, mock.Anything).Return(nil, errors.New("err")).Maybe()
+	mockClient.On("DescribeNetworkInterfaces", mock.Anything, mock.Anything, mock.Anything).Return(nil, errors.New("err")).Maybe()
 	mockClient.On("DescribeKeyPairs", mock.Anything, mock.Anything, mock.Anything).Return(nil, errors.New("err")).Maybe()
 	mockClient.On("DescribeReservedInstances", mock.Anything, mock.Anything, mock.Anything).Return(nil, errors.New("err")).Maybe()
 	mockClient.On("DescribeSnapshots", mock.Anything, mock.Anything, mock.Anything).Return(nil, errors.New("err")).Maybe()
@@ -785,4 +950,33 @@ func TestService_Analyze(t *testing.T) {
 	res, err := svc.Analyze(context.Background(), model.Flags{})
 	assert.NoError(t, err)
 	assert.Equal(t, "ec2", res.Scope)
+}
+
+func TestService_Analyze_InUsePublicIPv4Addresses(t *testing.T) {
+	mockClient := new(awsinterfaces.MockEC2Client)
+	svc := &service{client: mockClient}
+
+	mockClient.On("DescribeInstances", mock.Anything, mock.Anything, mock.Anything).Return(nil, errors.New("err")).Maybe()
+	mockClient.On("DescribeVolumes", mock.Anything, mock.Anything, mock.Anything).Return(nil, errors.New("err")).Maybe()
+	mockClient.On("DescribeAddresses", mock.Anything, mock.Anything, mock.Anything).Return(nil, errors.New("err")).Maybe()
+	mockClient.On("DescribeKeyPairs", mock.Anything, mock.Anything, mock.Anything).Return(nil, errors.New("err")).Maybe()
+	mockClient.On("DescribeReservedInstances", mock.Anything, mock.Anything, mock.Anything).Return(nil, errors.New("err")).Maybe()
+	mockClient.On("DescribeSnapshots", mock.Anything, mock.Anything, mock.Anything).Return(nil, errors.New("err")).Maybe()
+	mockClient.On("DescribeImages", mock.Anything, mock.Anything, mock.Anything).Return(nil, errors.New("err")).Maybe()
+	mockClient.On("DescribeNetworkInterfaces", mock.Anything, mock.Anything, mock.Anything).Return(&ec2.DescribeNetworkInterfacesOutput{
+		NetworkInterfaces: []types.NetworkInterface{
+			{
+				NetworkInterfaceId: aws.String("eni-nat"),
+				InterfaceType:      types.NetworkInterfaceTypeNatGateway,
+				Association:        &types.NetworkInterfaceAssociation{PublicIp: aws.String("3.3.3.2")},
+			},
+		},
+	}, nil)
+
+	res, err := svc.Analyze(context.Background(), model.Flags{})
+
+	assert.NoError(t, err)
+	assert.Equal(t, []model.PublicIPv4Address{
+		{PublicIP: "3.3.3.2", ResourceType: "NAT Gateway", NetworkInterfaceID: "eni-nat"},
+	}, res.Input.InUsePublicIPv4s)
 }
